@@ -4,7 +4,7 @@ import { Header } from './Header';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Audio Notes',
+  title: 'Sidestage',
   description: 'Timestamped, collaborative notes on Google Drive audio.',
 };
 
