@@ -1,4 +1,6 @@
-# Audio Notes
+# Sidestage
+
+Built as an experiment to gain experience working with Claude Code
 
 Timestamped, collaborative notes on Google Drive audio files. Built with
 Next.js (App Router, TypeScript, Tailwind), Auth.js v5 for Google sign-in,
@@ -218,13 +220,13 @@ that folder.
 
 **Environment variables** (Project → Settings → Environment Variables):
 
-| Variable                       | Value                                                      | Env(s)               |
-| ------------------------------ | ---------------------------------------------------------- | -------------------- |
-| `AUTH_SECRET`                  | `openssl rand -base64 32` (fresh per environment)          | Production, Preview  |
-| `AUTH_GOOGLE_ID`               | OAuth client ID                                            | Production, Preview  |
-| `AUTH_GOOGLE_SECRET`           | OAuth client secret                                        | Production, Preview  |
-| `AUTH_TRUST_HOST`              | `true`                                                     | Production, Preview  |
-| `NEXT_PUBLIC_GOOGLE_API_KEY`   | Picker API key                                             | Production, Preview  |
+| Variable                     | Value                                             | Env(s)              |
+| ---------------------------- | ------------------------------------------------- | ------------------- |
+| `AUTH_SECRET`                | `openssl rand -base64 32` (fresh per environment) | Production, Preview |
+| `AUTH_GOOGLE_ID`             | OAuth client ID                                   | Production, Preview |
+| `AUTH_GOOGLE_SECRET`         | OAuth client secret                               | Production, Preview |
+| `AUTH_TRUST_HOST`            | `true`                                            | Production, Preview |
+| `NEXT_PUBLIC_GOOGLE_API_KEY` | Picker API key                                    | Production, Preview |
 
 `AUTH_URL` is not needed on Vercel — Auth.js v5 derives it from
 `VERCEL_URL`.
