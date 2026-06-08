@@ -27,7 +27,7 @@ export function Header() {
 
   return (
     <header className="border-b border-neutral-200 dark:border-neutral-800">
-      <nav className="mx-auto flex justify-between max-w-3xl items-center gap-1 px-6 py-3">
+      <nav className="mx-auto flex flex-col flex-wrap sm:flex-row sm:justify-between max-w-3xl items-center gap-1 px-1 sm:px-6 py-3">
         <h3 className="font-serif mb-2 text-4xl">side<span className="text-cyan-600">stage</span></h3>
         <span>
           {NAV_LINKS.map((link) => {
@@ -40,8 +40,8 @@ export function Header() {
                 className={
                   'rounded-md px-3 py-1.5 text-sm transition ' +
                   (isActive
-                    ? 'bg-neutral-100 font-medium text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
-                    : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-neutral-100')
+                    ? 'bg-neutral-100 font-medium text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100 text-nowrap'
+                    : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-neutral-100 text-nowrap')
                 }
               >
                 {link.label}
