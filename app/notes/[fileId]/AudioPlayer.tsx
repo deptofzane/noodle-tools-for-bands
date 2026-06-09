@@ -78,8 +78,14 @@ export function AudioPlayer({
     setCurrentTime(0);
 
     const engine = createAudioEngine({
-      url: `/api/drive/file/${fileId}/stream`,
+      // `name` is a hint to the streaming proxy: when Drive returns a
+      // generic Content-Type (commonly `application/octet-stream` for
+      // files whose metadata was lost), the proxy derives the real
+      // `audio/*` type from the filename. Firefox mobile is strict
+      // about that header, so this avoids playback failures there.
+      url: `/api/drive/file/${fileId}/stream?name=${encodeURIComponent(fileName)}`,
       mimeType,
+      fileName,
       onReady: (dur) => {
         setDuration(dur);
         setIsReady(true);
@@ -130,7 +136,7 @@ export function AudioPlayer({
       window.removeEventListener('pagehide', handlePageHide);
       teardown();
     };
-  }, [fileId, mimeType, externalEngineRef]);
+  }, [fileId, fileName, mimeType, externalEngineRef]);
 
   // Tick the current-time display while playing.
   //

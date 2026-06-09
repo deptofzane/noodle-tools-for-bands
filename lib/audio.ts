@@ -55,6 +55,17 @@ export type AudioEngine = {
 export type AudioEngineOptions = {
   url: string;
   mimeType: string;
+  /**
+   * Original Drive filename (e.g., "recording.mp3"). Used to derive
+   * the Howler format hint. We prefer the filename extension over
+   * Drive's MIME type because Drive's audio MIME labels are
+   * inconsistent — the same `.mp3` can come back as `audio/mpeg`,
+   * `audio/mp3`, `audio/x-mpeg`, or `application/octet-stream`. Firefox
+   * is stricter than Chrome about format hints aligning with the bytes
+   * the decoder finds; trusting the user-visible filename gives the
+   * most reliable result.
+   */
+  fileName?: string;
   onReady?: (durationSec: number) => void;
   onError?: (err: unknown) => void;
   onEnd?: () => void;
@@ -71,7 +82,7 @@ export function createAudioEngine(opts: AudioEngineOptions): AudioEngine {
   const sound = new Howl({
     src: [opts.url],
     html5: true,
-    format: [mimeToFormat(opts.mimeType, opts.url)],
+    format: [resolveFormat(opts.fileName, opts.mimeType, opts.url)],
     preload: 'metadata',
     onload: () => opts.onReady?.(sound.duration()),
     onloaderror: (_id, err) => opts.onError?.(err),
@@ -120,15 +131,32 @@ export function createAudioEngine(opts: AudioEngineOptions): AudioEngine {
 }
 
 /**
- * Map a Drive MIME type (or filename hint) to Howler's `format` field.
+ * Resolve a Howler `format` value, preferring (in order):
+ *   1. The Drive filename's extension — the most reliable signal,
+ *      since users see and trust the filename, and Drive's MIME labels
+ *      for audio are inconsistent enough that we shouldn't trust them
+ *      as the primary source.
+ *   2. The MIME type — best-effort sniffing for cases where the
+ *      filename is missing or doesn't end in a recognized extension.
+ *   3. The URL's extension — only useful when neither of the above
+ *      yields anything (the streaming URL itself has no extension).
+ *   4. `'mp3'` — last-ditch default that covers the most common case.
  *
- * Howler uses this string to decide which decoder to attempt. It's
- * required because our streaming URL has no file extension. When the
- * MIME type is missing or generic (e.g., application/octet-stream from
- * a Drive upload that lost its metadata), we fall back to the URL's
- * extension if any, then default to mp3 as a best guess.
+ * Why this matters on Firefox: Chrome's media engine recovers
+ * gracefully when the format hint mismatches the actual bytes; Firefox
+ * mobile refuses to start playback. A wrong hint (e.g., 'mp3' for a
+ * file Drive labels `application/octet-stream` but is actually an
+ * m4a) breaks Firefox without breaking Chrome — exactly the
+ * cross-browser disparity we've been chasing.
  */
-function mimeToFormat(mime: string, url?: string): string {
+function resolveFormat(
+  fileName: string | undefined,
+  mime: string,
+  url?: string,
+): string {
+  const fromName = extensionFromName(fileName);
+  if (fromName) return fromName;
+
   if (mime.includes('mpeg')) return 'mp3';
   if (mime.includes('mp4')) return 'm4a';
   if (mime.includes('m4a')) return 'm4a';
@@ -139,11 +167,48 @@ function mimeToFormat(mime: string, url?: string): string {
   if (mime.includes('flac')) return 'flac';
   if (mime.includes('aac')) return 'aac';
 
-  // Fallback: try the URL's extension (mostly for octet-stream files)
-  const ext = url?.toLowerCase().match(/\.([a-z0-9]+)(?:\?|$)/)?.[1];
-  if (ext) return ext;
+  const fromUrl = extensionFromName(url);
+  if (fromUrl) return fromUrl;
 
   return 'mp3';
+}
+
+/**
+ * Pull an audio extension off a filename or URL, normalizing common
+ * aliases to the form Howler expects (`aif` → `aiff`, etc.). Returns
+ * null when no usable audio extension is present.
+ */
+function extensionFromName(name: string | undefined): string | null {
+  if (!name) return null;
+  const ext = name.toLowerCase().match(/\.([a-z0-9]+)(?:\?|$)/)?.[1];
+  if (!ext) return null;
+  switch (ext) {
+    case 'mp3':
+      return 'mp3';
+    case 'm4a':
+      return 'm4a';
+    case 'mp4':
+      return 'm4a'; // audio-only mp4 container
+    case 'wav':
+    case 'wave':
+      return 'wav';
+    case 'ogg':
+    case 'oga':
+      return 'ogg';
+    case 'opus':
+      return 'opus';
+    case 'webm':
+      return 'webm';
+    case 'flac':
+      return 'flac';
+    case 'aac':
+      return 'aac';
+    case 'aiff':
+    case 'aif':
+      return 'aiff';
+    default:
+      return null;
+  }
 }
 
 /** Format `seconds` as `m:ss` or `h:mm:ss`. */
