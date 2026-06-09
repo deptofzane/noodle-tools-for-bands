@@ -54,7 +54,7 @@ export default async function LibraryPage() {
 
   if (!driveConnected) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-start gap-4 px-6 pt-6 sm:pt-20">
+      <main className="mx-auto flex max-w-xl flex-col justify-start gap-4 px-6 pt-6 sm:pt-20 h-max">
         <h1 className="text-2xl font-semibold tracking-tight">
           Connect Google Drive
         </h1>

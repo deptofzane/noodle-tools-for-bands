@@ -134,6 +134,13 @@ export function NotesPanel({
   );
 
   // Initial render: hydrate from cache, then fetch fresh.
+  //
+  // The first fetch is wrapped in `trackPending` so the Header spinner
+  // reflects the load. The same `fetchNotes` is also called by the SSE
+  // change handler and the 30-second background poll below, but those
+  // intentionally bypass `trackPending` — wrapping them would keep the
+  // spinner on more or less continuously while collaborators are
+  // active, which would defeat the "user-triggered action" signal.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -142,13 +149,13 @@ export function NotesPanel({
         setNotes(cached);
       }
       if (!cancelled) {
-        await fetchNotes();
+        await trackPending(() => fetchNotes());
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [fileId, fetchNotes]);
+  }, [fileId, fetchNotes, trackPending]);
 
   // SSE subscription for real-time updates from collaborators.
   useEffect(() => {

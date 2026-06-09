@@ -135,23 +135,26 @@ export function LibraryClient({ apiKey }: { apiKey: string }) {
     setLoading(true);
     setError(null);
     setActivity(null); // reset stale activity while the new list loads
-    trackPending(() => fetch(`/api/drive/folder/${folder.id}/audio`))
-      .then(async (r) => {
+    // Wrap fetch + parse + state update so the Header spinner stays on
+    // until the file list actually renders, not just until the network
+    // call returns.
+    void trackPending(async () => {
+      try {
+        const r = await fetch(`/api/drive/folder/${folder.id}/audio`);
         if (!r.ok) {
           const body = await r.json().catch(() => ({}));
           throw new Error(body.message ?? body.error ?? `HTTP ${r.status}`);
         }
-        return r.json() as Promise<{ files: AudioFile[] }>;
-      })
-      .then((data) => {
+        const data = (await r.json()) as { files: AudioFile[] };
         if (!cancelled) setFiles(data.files);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(String(e.message ?? e));
-      })
-      .finally(() => {
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : String(e));
+        }
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    });
     return () => {
       cancelled = true;
     };
@@ -169,20 +172,21 @@ export function LibraryClient({ apiKey }: { apiKey: string }) {
       return;
     }
     let cancelled = false;
-    trackPending(() => fetch(`/api/drive/folder/${folder.id}/activity`))
-      .then(async (r) => {
+    void trackPending(async () => {
+      try {
+        const r = await fetch(`/api/drive/folder/${folder.id}/activity`);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json() as Promise<{ activity: FolderActivitySummary[] }>;
-      })
-      .then((data) => {
+        const data = (await r.json()) as {
+          activity: FolderActivitySummary[];
+        };
         if (!cancelled) setActivity(data.activity);
-      })
-      .catch((e) => {
+      } catch (e) {
         if (!cancelled) {
           console.error('[library] activity fetch failed', e);
           setActivity([]); // settle to empty so the UI stops "waiting"
         }
-      });
+      }
+    });
     return () => {
       cancelled = true;
     };

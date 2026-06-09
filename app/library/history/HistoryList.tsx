@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { AnnotatedFileSummary } from '@/lib/notes';
+import { useTrackPending } from '../../PendingActionProvider';
 
 /**
  * History list — closed conversations only.
@@ -16,28 +17,30 @@ import type { AnnotatedFileSummary } from '@/lib/notes';
 export function HistoryList() {
   const [files, setFiles] = useState<AnnotatedFileSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const trackPending = useTrackPending();
 
   useEffect(() => {
     let cancelled = false;
     setError(null);
-    fetch('/api/notes/annotated?filter=closed', { cache: 'no-store' })
-      .then(async (r) => {
+    void trackPending(async () => {
+      try {
+        const r = await fetch('/api/notes/annotated?filter=closed', {
+          cache: 'no-store',
+        });
         if (!r.ok) {
           const body = await r.json().catch(() => ({}));
           throw new Error(body.message ?? body.error ?? `HTTP ${r.status}`);
         }
-        return r.json() as Promise<{ files: AnnotatedFileSummary[] }>;
-      })
-      .then((data) => {
+        const data = (await r.json()) as { files: AnnotatedFileSummary[] };
         if (!cancelled) setFiles(data.files);
-      })
-      .catch((e) => {
+      } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
-      });
+      }
+    });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [trackPending]);
 
   if (error) {
     return (

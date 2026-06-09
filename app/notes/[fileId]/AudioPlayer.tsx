@@ -13,6 +13,7 @@ import {
   formatDuration,
   type AudioEngine,
 } from '@/lib/audio';
+import { useTrackBoolean } from '../../PendingActionProvider';
 
 type AudioPlayerProps = {
   fileId: string;
@@ -51,6 +52,12 @@ export function AudioPlayer({
   const [duration, setDuration] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Show the global pending indicator while the audio is loading. The
+  // condition flips off as soon as Howler reports readiness or an
+  // error, so the spinner clears at the same moment the "Loading
+  // audio…" inline message disappears.
+  useTrackBoolean(!isReady && !error);
 
   // Spin up the engine on mount. Tear it down on unmount.
   useEffect(() => {

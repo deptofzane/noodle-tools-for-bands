@@ -156,7 +156,7 @@ export function NoteItem({ note, fileId, folderId, onMutated }: NoteItemProps) {
                 type="button"
                 onClick={handleToggleResolved}
                 disabled={isResolving}
-                className="text-xs text-neutral-500 hover:text-neutral-900 disabled:opacity-50 dark:hover:text-neutral-100"
+                className="text-xs text-neutral-500 sm:hover:text-neutral-900 disabled:opacity-50 sm:dark:hover:text-neutral-100"
               >
                 {isResolved ? 'Reopen thread' : 'Resolve thread'}
               </button>
