@@ -5,6 +5,7 @@ import { formatDuration } from '@/lib/audio';
 import type { ThreadedNote } from '@/lib/notes';
 import type { ActivityKind, ConversationActivity } from '@/lib/activity';
 import { readCachedNotes, writeCachedNotes } from '@/lib/notes-cache';
+import { useTrackPending } from '../../PendingActionProvider';
 import { usePlayer } from './PlayerContext';
 import { NoteForm } from './NoteForm';
 import { NoteItem } from './NoteItem';
@@ -60,6 +61,7 @@ export function NotesPanel({
   const inFlight = useRef(false);
   const reopenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const player = usePlayer();
+  const trackPending = useTrackPending();
 
   // Make sure any pending auto-dismiss is cleared on unmount.
   useEffect(() => {
@@ -104,18 +106,20 @@ export function NotesPanel({
     async (next: boolean) => {
       setStateBusy(true);
       try {
-        const res = await fetch(
-          `/api/files/${fileId}/notes?folder=${folderId}`,
-          {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ closed: next }),
-          },
-        );
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.message ?? `HTTP ${res.status}`);
-        }
+        await trackPending(async () => {
+          const res = await fetch(
+            `/api/files/${fileId}/notes?folder=${folderId}`,
+            {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ closed: next }),
+            },
+          );
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.message ?? `HTTP ${res.status}`);
+          }
+        });
         // Optimistic: update local state immediately so the banner /
         // button label changes without waiting on the refetch.
         setClosed(next);
@@ -126,7 +130,7 @@ export function NotesPanel({
         setStateBusy(false);
       }
     },
-    [fileId, folderId, fetchNotes],
+    [fileId, folderId, fetchNotes, trackPending],
   );
 
   // Initial render: hydrate from cache, then fetch fresh.
@@ -221,18 +225,20 @@ export function NotesPanel({
 
   const handleCreate = async (body: string) => {
     const wasClosed = closed;
-    const res = await fetch(`/api/files/${fileId}/notes?folder=${folderId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        timestampMs: Math.floor(composerTime * 1000),
-        body,
-      }),
+    await trackPending(async () => {
+      const res = await fetch(`/api/files/${fileId}/notes?folder=${folderId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          timestampMs: Math.floor(composerTime * 1000),
+          body,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message ?? `HTTP ${res.status}`);
+      }
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message ?? `HTTP ${res.status}`);
-    }
     setComposerOpen(false);
     await fetchNotes();
     // If we just added a note to a closed conversation, the server
@@ -270,7 +276,7 @@ export function NotesPanel({
                   : 'Mark this conversation closed (moves it to History)'
               }
             >
-              {stateBusy ? '…' : closed ? 'Reopen' : 'Close'}
+              {stateBusy ? '…' : closed ? 'Reopen conversation' : 'Close conversation'}
             </button>
           )}
         </div>
@@ -460,6 +466,10 @@ function describeKind(kind: ActivityKind): string {
       return 'closed the conversation';
     case 'reopened':
       return 'reopened the conversation';
+    case 'resolved':
+      return 'resolved a thread';
+    case 'unresolved':
+      return 'reopened a thread';
     default:
       // Exhaustiveness check — TypeScript will error here if a new
       // ActivityKind is added without updating this switch.

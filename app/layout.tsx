@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { auth } from '@/auth';
 import { Header } from './Header';
+import { PendingActionProvider } from './PendingActionProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -50,8 +51,10 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-screen bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100">
-        {isSignedIn && <Header />}
-        {children}
+        <PendingActionProvider>
+          {isSignedIn && <Header />}
+          {children}
+        </PendingActionProvider>
       </body>
     </html>
   );

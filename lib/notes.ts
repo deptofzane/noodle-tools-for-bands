@@ -48,6 +48,13 @@ export interface StoredNote {
   body: string;
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
+  /**
+   * Whether the thread is marked resolved. Only meaningful for
+   * top-level notes (parentNoteId === null) — replies inherit nothing.
+   * Optional for backward compatibility with notes written before the
+   * field existed; absent/undefined reads as "not resolved" in the UI.
+   */
+  resolved?: boolean;
 }
 
 /** Author identity, denormalized into each notes file. */
@@ -597,6 +604,68 @@ export async function updateNote(
     subFolder.closed,
     author,
     'note-updated',
+  );
+  return updated;
+}
+
+/**
+ * Toggle the resolved flag on a thread.
+ *
+ * Same constraints as updateNote: only the thread author can flip the
+ * flag, because the mutation only touches the author's own
+ * `user-<sub>.json`. Replies and notes authored by anyone else are
+ * untouched. The data layer enforces this implicitly — if the note
+ * isn't found in the requesting user's file, we throw
+ * `NoteNotFoundError`, identical to attempts to edit someone else's
+ * note.
+ *
+ * Idempotent: calling with the already-current state is a no-op write
+ * + no activity log entry, so accidental double-clicks don't spam the
+ * activity log.
+ */
+export async function setNoteResolved(
+  drive: drive_v3.Drive,
+  audioFile: { id: string; name: string },
+  folderId: string,
+  author: NotesAuthor,
+  noteId: string,
+  resolved: boolean,
+): Promise<StoredNote> {
+  const subFolder = await findNotesSubfolder(drive, folderId, audioFile.name);
+  if (!subFolder) throw new NoteNotFoundError(noteId);
+
+  const myFileName = userFileName(author.sub);
+  const existing = await findFileByName(drive, subFolder.id, myFileName);
+  if (!existing) throw new NoteNotFoundError(noteId);
+
+  const current = await fetchNotesFile(drive, existing.id);
+  if (!current) throw new NoteNotFoundError(noteId);
+
+  const idx = current.notes.findIndex((n) => n.id === noteId);
+  if (idx === -1) throw new NoteNotFoundError(noteId);
+
+  const previous = current.notes[idx]!;
+  // Treat absent `resolved` as false for the comparison. If the flag
+  // already matches the requested state, return immediately — no
+  // write, no activity entry.
+  if (Boolean(previous.resolved) === resolved) {
+    return previous;
+  }
+
+  const updated: StoredNote = {
+    ...previous,
+    resolved,
+    updatedAt: new Date().toISOString(),
+  };
+  current.notes[idx] = updated;
+  await writeNotesFile(drive, existing.id, current);
+  await recordActivity(
+    drive,
+    subFolder.id,
+    audioFile,
+    subFolder.closed,
+    author,
+    resolved ? 'resolved' : 'unresolved',
   );
   return updated;
 }

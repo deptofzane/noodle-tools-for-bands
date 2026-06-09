@@ -20,7 +20,7 @@ export default async function HistoryPage() {
   if (!hasAllDriveScopes(session.scopes)) redirect('/library');
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-6 py-12">
+    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-4 px-6 py-4">
       <header className="flex items-center gap-2 text-xs text-neutral-500">
         <Link
           href="/library"

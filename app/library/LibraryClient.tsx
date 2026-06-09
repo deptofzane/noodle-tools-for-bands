@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FolderActivitySummary } from '@/lib/notes';
+import { useTrackPending } from '../PendingActionProvider';
 
 /**
  * Library client component.
@@ -73,6 +74,7 @@ const PICKER_SCRIPT_SRC = 'https://apis.google.com/js/api.js';
 const FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
 
 export function LibraryClient({ apiKey }: { apiKey: string }) {
+  const trackPending = useTrackPending();
   const [pickerReady, setPickerReady] = useState(false);
   const [folder, setFolder] = useState<Folder | null>(null);
   const [files, setFiles] = useState<AudioFile[] | null>(null);
@@ -133,7 +135,7 @@ export function LibraryClient({ apiKey }: { apiKey: string }) {
     setLoading(true);
     setError(null);
     setActivity(null); // reset stale activity while the new list loads
-    fetch(`/api/drive/folder/${folder.id}/audio`)
+    trackPending(() => fetch(`/api/drive/folder/${folder.id}/audio`))
       .then(async (r) => {
         if (!r.ok) {
           const body = await r.json().catch(() => ({}));
@@ -153,7 +155,7 @@ export function LibraryClient({ apiKey }: { apiKey: string }) {
     return () => {
       cancelled = true;
     };
-  }, [folder]);
+  }, [folder, trackPending]);
 
   // Lazy-load per-conversation activity once the audio list has come
   // back. Decoupled from the audio fetch so the file list paints fast
@@ -167,7 +169,7 @@ export function LibraryClient({ apiKey }: { apiKey: string }) {
       return;
     }
     let cancelled = false;
-    fetch(`/api/drive/folder/${folder.id}/activity`)
+    trackPending(() => fetch(`/api/drive/folder/${folder.id}/activity`))
       .then(async (r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json() as Promise<{ activity: FolderActivitySummary[] }>;
@@ -184,7 +186,7 @@ export function LibraryClient({ apiKey }: { apiKey: string }) {
     return () => {
       cancelled = true;
     };
-  }, [folder, files]);
+  }, [folder, files, trackPending]);
 
   // O(1) lookup by audio file id while rendering the file list.
   const activityByFileId = useMemo(() => {
@@ -195,7 +197,7 @@ export function LibraryClient({ apiKey }: { apiKey: string }) {
 
   const openPicker = useCallback(async () => {
     setError(null);
-    const tokenRes = await fetch('/api/drive/token');
+    const tokenRes = await trackPending(() => fetch('/api/drive/token'));
     if (!tokenRes.ok) {
       const body = await tokenRes.json().catch(() => ({}));
       setError(body.message ?? 'Could not retrieve Drive token.');

@@ -42,7 +42,9 @@ export type ActivityKind =
   | 'note-deleted'
   | 'reply-created'
   | 'closed'
-  | 'reopened';
+  | 'reopened'
+  | 'resolved'
+  | 'unresolved';
 
 export interface ActivityActor {
   sub: string;

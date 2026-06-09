@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { usePendingCount } from './PendingActionProvider';
 
 /**
  * Top-of-page navigation, shown on every signed-in route. Rendered
@@ -24,12 +25,33 @@ const NAV_LINKS = [
 
 export function Header() {
   const pathname = usePathname();
+  const pendingCount = usePendingCount();
 
   return (
     <header className="border-b border-neutral-200 dark:border-neutral-800">
       <nav className="mx-auto flex flex-col flex-wrap sm:flex-row sm:justify-between max-w-3xl items-center gap-1 px-1 sm:px-6 py-3">
-        <h3 className="font-serif mb-2 text-4xl">side<span className="text-cyan-600">stage</span></h3>
-        <span>
+        <span className="flex flex-row gap-2 items-center">
+          <h3 className="font-serif mb-2 text-4xl ml-10 sm:ml-0">side<span className="text-cyan-600">stage</span></h3>
+          {/*
+            Reserve a fixed slot so layout doesn't shift when the
+            spinner appears/disappears. The slot is always rendered;
+            only its visibility flips with pendingCount.
+          */}
+          <span
+            role="status"
+            aria-live="polite"
+            aria-label={pendingCount > 0 ? 'Loading' : undefined}
+            className="ml-2 inline-flex h-5 w-5 items-center justify-center"
+          >
+            {pendingCount > 0 && (
+              <span
+                aria-hidden="true"
+                className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-cyan-600 dark:border-neutral-700 dark:border-t-cyan-400"
+              />
+            )}
+          </span>
+        </span>
+        <span className="inline-flex items-center">
           {NAV_LINKS.map((link) => {
             const isActive = pathname === link.href;
             return (

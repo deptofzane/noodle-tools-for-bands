@@ -5,16 +5,21 @@ import { getDriveClient } from '@/lib/drive';
 import {
   deleteNote,
   NoteNotFoundError,
+  setNoteResolved,
   updateNote,
   type NotesAuthor,
 } from '@/lib/notes';
 
 /**
  * PATCH  /api/files/[fileId]/notes/[noteId]?folder=<folderId>
- *   Body: { body: string }
- *   → Edits a note. Only the author can edit their own notes; the
- *     data layer enforces this by only looking inside the requesting
- *     user's notes JSON file.
+ *   Body: { body: string }       → Edits a note's body.
+ *   Body: { resolved: boolean }  → Toggles the resolved flag on a
+ *                                  top-level thread.
+ *
+ *   Both variants are author-only — the data layer enforces this by
+ *   only looking inside the requesting user's notes JSON file.
+ *   Mixed bodies (both `body` and `resolved`) are rejected so the
+ *   intent of the request is always unambiguous.
  *
  * DELETE /api/files/[fileId]/notes/[noteId]?folder=<folderId>
  *   → Deletes a note (and any replies the same user made to it).
@@ -81,14 +86,24 @@ export async function PATCH(
       email: session.user.email,
       name: session.user.name,
     };
-    const updated = await updateNote(
-      drive,
-      { id: file.id, name: file.name },
-      folderId!,
-      actor,
-      noteId,
-      payload.body,
-    );
+    const updated =
+      payload.kind === 'body'
+        ? await updateNote(
+            drive,
+            { id: file.id, name: file.name },
+            folderId!,
+            actor,
+            noteId,
+            payload.body,
+          )
+        : await setNoteResolved(
+            drive,
+            { id: file.id, name: file.name },
+            folderId!,
+            actor,
+            noteId,
+            payload.resolved,
+          );
     return NextResponse.json({ note: updated });
   } catch (err) {
     if (err instanceof NoteNotFoundError) {
@@ -153,20 +168,47 @@ export async function DELETE(
 // Helpers
 // ---------------------------------------------------------------------------
 
+type NoteUpdatePayload =
+  | { kind: 'body'; body: string }
+  | { kind: 'resolved'; resolved: boolean };
+
 function validateNoteUpdate(
   input: unknown,
-): { body: string } | { error: string; message: string } {
+): NoteUpdatePayload | { error: string; message: string } {
   if (input == null || typeof input !== 'object') {
     return { error: 'bad_body', message: 'Request body must be JSON.' };
   }
   const i = input as Record<string, unknown>;
+
+  const hasBody = 'body' in i;
+  const hasResolved = 'resolved' in i;
+
+  // Mixed payloads are ambiguous — caller must pick one operation per
+  // request. Cheaper than guessing which field "wins."
+  if (hasBody && hasResolved) {
+    return {
+      error: 'mixed_payload',
+      message: 'Request may include `body` OR `resolved`, not both.',
+    };
+  }
+
+  if (hasResolved) {
+    if (typeof i.resolved !== 'boolean') {
+      return {
+        error: 'bad_resolved',
+        message: '`resolved` must be a boolean.',
+      };
+    }
+    return { kind: 'resolved', resolved: i.resolved };
+  }
+
   if (typeof i.body !== 'string' || i.body.trim().length === 0) {
     return { error: 'empty_body', message: 'Note body cannot be empty.' };
   }
   if (i.body.length > 10_000) {
     return { error: 'body_too_long', message: 'Note body is too long.' };
   }
-  return { body: i.body.trim() };
+  return { kind: 'body', body: i.body.trim() };
 }
 
 function driveErrorToResponse(err: unknown, context: string) {
