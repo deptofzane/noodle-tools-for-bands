@@ -60,6 +60,18 @@ export function AudioPlayer({
   useTrackBoolean(!isReady && !error);
 
   // Spin up the engine on mount. Tear it down on unmount.
+  //
+  // Mobile Firefox can navigate away from the page without running
+  // React's effect cleanup (e.g. swipe-back triggering bfcache, or a
+  // fast page-replace before unmount). When that happens, the Howler
+  // instance leaks its slot in `Howler.html5PoolSize`. After a few
+  // such navigations the pool exhausts and new audio refuses to load.
+  // The `pagehide` listener below catches the case where the page is
+  // being fully unloaded (`persisted=false`) and forces teardown then,
+  // so the slot is released. We skip teardown when `persisted=true`
+  // because that means the browser is freezing the page into bfcache
+  // and will restore it — destroying the engine there would break
+  // playback on restoration.
   useEffect(() => {
     setIsReady(false);
     setError(null);
@@ -95,10 +107,28 @@ export function AudioPlayer({
     engineRef.current = engine;
     if (externalEngineRef) externalEngineRef.current = engine;
 
-    return () => {
+    let destroyed = false;
+    const teardown = () => {
+      if (destroyed) return;
+      destroyed = true;
       engine.destroy();
-      engineRef.current = null;
-      if (externalEngineRef) externalEngineRef.current = null;
+      // Guarded ref clears: by the time a pagehide-triggered teardown
+      // runs, React may have already remounted the component with a
+      // new engine. Don't null out a ref that points at someone else.
+      if (engineRef.current === engine) engineRef.current = null;
+      if (externalEngineRef && externalEngineRef.current === engine) {
+        externalEngineRef.current = null;
+      }
+    };
+
+    const handlePageHide = (e: PageTransitionEvent) => {
+      if (!e.persisted) teardown();
+    };
+    window.addEventListener('pagehide', handlePageHide);
+
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+      teardown();
     };
   }, [fileId, mimeType, externalEngineRef]);
 

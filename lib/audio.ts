@@ -1,4 +1,4 @@
-import { Howl } from 'howler';
+import { Howl, Howler } from 'howler';
 
 /**
  * Audio engine wrapper.
@@ -20,6 +20,28 @@ import { Howl } from 'howler';
  *     (`/api/drive/file/[fileId]/stream`) has no file extension for
  *     Howler to sniff. We pass it explicitly based on Drive's mimeType.
  */
+
+/**
+ * Raise Howler's internal HTML5 audio pool from the default of 10.
+ *
+ * Every Howl created with `html5: true` checks out a slot from this
+ * pool. The default of 10 is plenty for a sound-effect-y app, but
+ * here each navigation between audio files creates and tears down a
+ * Howl. If even a handful of unloads don't cleanly return their slot
+ * — which can happen when the user navigates away mid-load — the
+ * pool runs out and new Howls silently fail to start streaming. On
+ * mobile Firefox this surfaced as "audio stops loading after the
+ * first few files."
+ *
+ * 30 gives us a much bigger buffer before any leaked slot becomes
+ * fatal, and is paired with the stop+unload teardown in
+ * `createAudioEngine` (which makes leaks much less likely in the
+ * first place) and a `pagehide` listener in `AudioPlayer` (which
+ * forces teardown when mobile browsers skip the React unmount path).
+ *
+ * Set once at module load — before any Howl is constructed.
+ */
+Howler.html5PoolSize = 30;
 
 export type AudioEngine = {
   play: () => void;
@@ -76,7 +98,24 @@ export function createAudioEngine(opts: AudioEngineOptions): AudioEngine {
       return typeof t === 'number' && Number.isFinite(t) ? t : 0;
     },
     isPlaying: () => sound.playing(),
-    destroy: () => sound.unload(),
+    /**
+     * Stop, then unload. The explicit `stop()` puts Howler's HTML5
+     * audio element into a clean state before `unload()` returns it
+     * to the global pool. Without this, an unload that fires while
+     * the underlying `<audio>` is still in a loading/playing state
+     * sometimes leaks the slot — which, after a handful of
+     * navigations, exhausts `Howler.html5PoolSize` and causes new
+     * Howls to silently fail. The `try/catch` covers the rare case
+     * where the sound was never successfully constructed.
+     */
+    destroy: () => {
+      try {
+        sound.stop();
+      } catch {
+        // never-loaded sounds can throw from stop(); safe to ignore
+      }
+      sound.unload();
+    },
   };
 }
 
