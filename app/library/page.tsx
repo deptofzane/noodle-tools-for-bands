@@ -68,8 +68,8 @@ export default async function LibraryPage() {
           What this effectively means is Sidestage needs two permissions to function correctly.
         </p>
         <p>
-          The first is <b><i>See and download all your Google Drive files</i></b>. This lets the files picker work so you can navigate through your files, select what you want, and download them
-          locally so you can add notes.
+          The first is <b><i>See and download all your Google Drive files</i></b>. This lets the files picker work so you can navigate through your files, select what you want, and view them
+          in the browser so you can add notes.
         </p>
         <p> 
           The second is <b><i>See, edit, create, and delete only the specific Google Drive files you use with this app</i></b>. Since all notes you read and create will be

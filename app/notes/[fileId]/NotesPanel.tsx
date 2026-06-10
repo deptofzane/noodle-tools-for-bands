@@ -88,7 +88,8 @@ export function NotesPanel({
         exists?: boolean;
         activity?: ConversationActivity;
       };
-      setNotes(data.notes);
+      const reorderedNotes = reorderNotes(data.notes);
+      setNotes(reorderedNotes);
       setClosed(data.closed ?? false);
       setConversationExists(data.exists ?? data.notes.length > 0);
       setActivity(data.activity ?? null);
@@ -101,6 +102,20 @@ export function NotesPanel({
       inFlight.current = false;
     }
   }, [fileId, folderId]);
+
+  // move resolved threads to the end of the conversation regardless of timestamp
+  const reorderNotes = (notes: ThreadedNote[]): ThreadedNote[] => {
+    let resolved = [];
+    let unresolved = [];
+    for(const note of notes) {
+      if (note?.resolved && note?.resolved === true) {
+        resolved.push(note)
+      } else {
+        unresolved.push(note)
+      }
+    }
+    return [...unresolved, ...resolved];
+  }
 
   const setConversationClosed = useCallback(
     async (next: boolean) => {
