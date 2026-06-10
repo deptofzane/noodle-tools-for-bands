@@ -70,6 +70,10 @@ export function NotesPanel({
     };
   }, []);
 
+  useEffect(() => {
+    console.log('check notes', notes)
+  }, [notes])
+
   const fetchNotes = useCallback(async () => {
     if (inFlight.current) return;
     inFlight.current = true;
@@ -91,11 +95,11 @@ export function NotesPanel({
       const reorderedNotes = reorderNotes(data.notes);
       setNotes(reorderedNotes);
       setClosed(data.closed ?? false);
-      setConversationExists(data.exists ?? data.notes.length > 0);
+      setConversationExists(data.exists ?? reorderedNotes.length > 0);
       setActivity(data.activity ?? null);
       setError(null);
       // Best-effort cache update. Awaits inside but errors are swallowed.
-      void writeCachedNotes(fileId, data.notes);
+      void writeCachedNotes(fileId, reorderedNotes);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
