@@ -109,8 +109,8 @@ export function NotesPanel({
 
   // move resolved threads to the end of the conversation regardless of timestamp
   const reorderNotes = (notes: ThreadedNote[]): ThreadedNote[] => {
-    let resolved = [];
-    let unresolved = [];
+    const resolved = [];
+    const unresolved = [];
     for(const note of notes) {
       if (note?.resolved && note?.resolved === true) {
         resolved.push(note)
