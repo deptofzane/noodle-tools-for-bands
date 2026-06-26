@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatDuration } from '@/lib/audio';
 import type { ThreadedNote, ApiNote } from '@/lib/notes';
 import { useTrackPending } from '../../PendingActionProvider';
 import { usePlayer } from './PlayerContext';
 import { NoteForm } from './NoteForm';
+import { Linkify } from './Linkify';
 
 /**
  * One top-level note in the panel — header, body, replies, and the
@@ -22,13 +23,29 @@ interface NoteItemProps {
   fileId: string;
   folderId: string;
   onMutated: () => void;
+  /**
+   * True when this thread is the deep-link target (`?thread=`). It gets
+   * force-expanded, scrolled into view, briefly highlighted, and the
+   * player seeks to its timestamp on mount.
+   */
+  highlighted?: boolean;
 }
 
-export function NoteItem({ note, fileId, folderId, onMutated }: NoteItemProps) {
+export function NoteItem({
+  note,
+  fileId,
+  folderId,
+  onMutated,
+  highlighted = false,
+}: NoteItemProps) {
   const player = usePlayer();
   const trackPending = useTrackPending();
+  const liRef = useRef<HTMLLIElement>(null);
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [copied, setCopied] = useState(false);
+  // Temporary highlight ring for a deep-linked thread; fades on its own.
+  const [showHighlight, setShowHighlight] = useState(highlighted);
   // Per-thread collapse. Ephemeral — not persisted to Drive, not in
   // localStorage. Resolved threads collapse on mount by default; the
   // user can still expand them locally without flipping the resolved
@@ -36,11 +53,37 @@ export function NoteItem({ note, fileId, folderId, onMutated }: NoteItemProps) {
   // surprise interaction with collaborative edits: a thread you
   // minimized could quietly grow new replies offscreen.
   const [isMinimized, setIsMinimized] = useState<boolean>(
-    Boolean(note.resolved),
+    // A deep-linked thread always opens expanded, even if resolved.
+    Boolean(note.resolved) && !highlighted,
   );
   const [isResolving, setIsResolving] = useState(false);
 
   const seekToNote = () => player.seek(note.timestampMs / 1000);
+
+  // On mount as the deep-link target: scroll into view, seek the player
+  // to the thread's timestamp, then let the highlight fade.
+  useEffect(() => {
+    if (!highlighted) return;
+    liRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    player.seek(note.timestampMs / 1000);
+    const t = setTimeout(() => setShowHighlight(false), 3000);
+    return () => clearTimeout(t);
+    // Run once when this becomes the highlighted thread.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlighted]);
+
+  const handleCopyLink = async () => {
+    const url = `${window.location.origin}/notes/${fileId}?folder=${folderId}&thread=${note.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API unavailable (e.g., insecure context) — fall back
+      // to a prompt so the user can copy manually.
+      window.prompt('Copy link to this thread:', url);
+    }
+  };
 
   const replyCount = note.replies.length;
   const replyLabel = `${replyCount} ${replyCount === 1 ? 'reply' : 'replies'}`;
@@ -129,7 +172,14 @@ export function NoteItem({ note, fileId, folderId, onMutated }: NoteItemProps) {
   };
 
   return (
-    <li className="rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+    <li
+      ref={liRef}
+      className={`rounded-lg border p-3 transition-colors duration-700 ${
+        showHighlight
+          ? 'border-blue-400 bg-blue-50 ring-2 ring-blue-300 dark:border-blue-500 dark:bg-blue-950/40 dark:ring-blue-700'
+          : 'border-neutral-200 dark:border-neutral-800'
+      }`}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0 sm:gap-2">
           <span className="flex flex-row gap-2">
@@ -191,7 +241,7 @@ export function NoteItem({ note, fileId, folderId, onMutated }: NoteItemProps) {
             </div>
           ) : (
             <p className="mt-2 whitespace-pre-wrap text-sm leading-snug">
-              {note.body}
+              <Linkify text={note.body} />
             </p>
           )}
 
@@ -203,6 +253,15 @@ export function NoteItem({ note, fileId, folderId, onMutated }: NoteItemProps) {
                 className="hover:text-neutral-900 dark:hover:text-neutral-100"
               >
                 Reply
+              </button>
+              <span aria-hidden="true">·</span>
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="hover:text-neutral-900 dark:hover:text-neutral-100"
+                title="Copy a link to this thread"
+              >
+                {copied ? 'Link copied' : 'Copy link'}
               </button>
               {note.isMine && (
                 <>
@@ -316,7 +375,7 @@ function ReplyItem({
         </div>
       ) : (
         <p className="mt-1 whitespace-pre-wrap text-sm leading-snug">
-          {reply.body}
+          <Linkify text={reply.body} />
         </p>
       )}
       {reply.isMine && !isEditing && (

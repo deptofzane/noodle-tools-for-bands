@@ -37,10 +37,16 @@ export function NotesPanel({
   fileId,
   folderId,
   currentUserSub,
+  initialThreadId = null,
 }: {
   fileId: string;
   folderId: string;
   currentUserSub: string;
+  /**
+   * Thread to scroll to + highlight on load (from the `?thread=`
+   * deep link). Matched against the top-level notes once they load.
+   */
+  initialThreadId?: string | null;
 }) {
   const [notes, setNotes] = useState<ThreadedNote[] | null>(null);
   const [closed, setClosed] = useState(false);
@@ -386,6 +392,7 @@ export function NotesPanel({
               fileId={fileId}
               folderId={folderId}
               onMutated={fetchNotes}
+              highlighted={note.id === initialThreadId}
             />
           ))}
         </ul>

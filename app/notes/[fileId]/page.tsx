@@ -23,7 +23,7 @@ export default async function NotesPage({
   searchParams,
 }: {
   params: Promise<{ fileId: string }>;
-  searchParams: Promise<{ folder?: string }>;
+  searchParams: Promise<{ folder?: string; thread?: string }>;
 }) {
   const session = await auth();
   if (!session?.user) return null;
@@ -33,7 +33,7 @@ export default async function NotesPage({
   if (!session.accessToken) redirect('/login');
 
   const { fileId } = await params;
-  const { folder: folderQuery } = await searchParams;
+  const { folder: folderQuery, thread: threadQuery } = await searchParams;
 
   if (!isValidDriveId(fileId)) notFound();
 
@@ -85,6 +85,7 @@ export default async function NotesPage({
         mimeType={file.mimeType}
         folderId={folderId}
         currentUserSub={session.user.sub}
+        initialThreadId={threadQuery ?? null}
       />
     </main>
   );

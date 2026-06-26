@@ -24,12 +24,18 @@ export function NotesView({
   mimeType,
   folderId,
   currentUserSub,
+  initialThreadId = null,
 }: {
   fileId: string;
   fileName: string;
   mimeType: string;
   folderId: string | null;
   currentUserSub: string;
+  /**
+   * Thread (top-level note) to scroll to, highlight, and seek the
+   * player to on load. Comes from the `?thread=` deep-link param.
+   */
+  initialThreadId?: string | null;
 }) {
   const engineRef = useRef<AudioEngine | null>(null);
 
@@ -59,6 +65,7 @@ export function NotesView({
             fileId={fileId}
             folderId={folderId}
             currentUserSub={currentUserSub}
+            initialThreadId={initialThreadId}
           />
         ) : (
           <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
