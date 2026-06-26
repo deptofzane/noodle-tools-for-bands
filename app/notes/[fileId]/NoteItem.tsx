@@ -5,7 +5,7 @@ import { formatDuration } from '@/lib/audio';
 import type { ThreadedNote, ApiNote } from '@/lib/notes';
 import { useTrackPending } from '../../PendingActionProvider';
 import { usePlayer } from './PlayerContext';
-import { NoteForm } from './NoteForm';
+import { NoteForm, type Mentionable } from './NoteForm';
 import { Linkify } from './Linkify';
 
 /**
@@ -29,6 +29,10 @@ interface NoteItemProps {
    * player seeks to its timestamp on mount.
    */
   highlighted?: boolean;
+  /** Participants offered in reply `@`-mention autocomplete. */
+  mentionables?: Mentionable[];
+  /** Participant labels, for highlighting `@mentions` in bodies. */
+  mentionLabels?: string[];
 }
 
 export function NoteItem({
@@ -37,6 +41,8 @@ export function NoteItem({
   folderId,
   onMutated,
   highlighted = false,
+  mentionables = [],
+  mentionLabels = [],
 }: NoteItemProps) {
   const player = usePlayer();
   const trackPending = useTrackPending();
@@ -152,14 +158,14 @@ export function NoteItem({
     }
   };
 
-  const handleReply = async (body: string) => {
+  const handleReply = async (body: string, mentions: string[]) => {
     await trackPending(async () => {
       const res = await fetch(
         `/api/files/${fileId}/notes/${note.id}/replies?folder=${folderId}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ body }),
+          body: JSON.stringify({ body, mentions }),
         },
       );
       if (!res.ok) {
@@ -241,7 +247,7 @@ export function NoteItem({
             </div>
           ) : (
             <p className="mt-2 whitespace-pre-wrap text-sm leading-snug">
-              <Linkify text={note.body} />
+              <Linkify text={note.body} mentionLabels={mentionLabels} />
             </p>
           )}
 
@@ -292,10 +298,11 @@ export function NoteItem({
           {isReplying && (
             <div className="mt-3 rounded-md border border-neutral-200 bg-neutral-50 p-2 dark:border-neutral-800 dark:bg-neutral-900">
               <NoteForm
-                placeholder="Write a reply…"
+                placeholder="Write a reply… Use @ to tag someone."
                 submitLabel="Reply"
                 onSubmit={handleReply}
                 onCancel={() => setIsReplying(false)}
+                mentionables={mentionables}
               />
             </div>
           )}
@@ -309,6 +316,7 @@ export function NoteItem({
                   fileId={fileId}
                   folderId={folderId}
                   onMutated={onMutated}
+                  mentionLabels={mentionLabels}
                 />
               ))}
             </ul>
@@ -324,11 +332,13 @@ function ReplyItem({
   fileId,
   folderId,
   onMutated,
+  mentionLabels = [],
 }: {
   reply: ThreadedNote;
   fileId: string;
   folderId: string;
   onMutated: () => void;
+  mentionLabels?: string[];
 }) {
   const [isEditing, setIsEditing] = useState(false);
 
@@ -375,7 +385,7 @@ function ReplyItem({
         </div>
       ) : (
         <p className="mt-1 whitespace-pre-wrap text-sm leading-snug">
-          <Linkify text={reply.body} />
+          <Linkify text={reply.body} mentionLabels={mentionLabels} />
         </p>
       )}
       {reply.isMine && !isEditing && (

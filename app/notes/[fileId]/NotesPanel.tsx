@@ -1,14 +1,42 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { formatDuration } from '@/lib/audio';
 import type { ThreadedNote } from '@/lib/notes';
 import type { ActivityKind, ConversationActivity } from '@/lib/activity';
 import { readCachedNotes, writeCachedNotes } from '@/lib/notes-cache';
 import { useTrackPending } from '../../PendingActionProvider';
 import { usePlayer } from './PlayerContext';
-import { NoteForm } from './NoteForm';
+import { NoteForm, type Mentionable } from './NoteForm';
 import { NoteItem } from './NoteItem';
+
+/**
+ * Collect the distinct authors across all notes + replies, to offer as
+ * `@`-mention targets. Excludes the current user (you don't mention
+ * yourself). Limited to people who've posted — a fuller roster from
+ * Drive folder permissions is a future upgrade.
+ */
+function collectParticipants(
+  notes: ThreadedNote[] | null,
+  excludeSub: string,
+): Mentionable[] {
+  const byId = new Map<string, Mentionable>();
+  const walk = (list: ThreadedNote[]) => {
+    for (const n of list) {
+      const sub = n.author?.sub;
+      if (sub && sub !== excludeSub && !byId.has(sub)) {
+        byId.set(sub, {
+          sub,
+          name: n.author?.name,
+          email: n.author?.email,
+        });
+      }
+      if (n.replies.length > 0) walk(n.replies);
+    }
+  };
+  walk(notes ?? []);
+  return [...byId.values()];
+}
 
 /**
  * The notes side panel.
@@ -68,6 +96,17 @@ export function NotesPanel({
   const reopenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const player = usePlayer();
   const trackPending = useTrackPending();
+
+  // Participants offered in the `@`-mention autocomplete, plus their
+  // display labels for highlighting mentions in rendered bodies.
+  const participants = useMemo(
+    () => collectParticipants(notes, currentUserSub),
+    [notes, currentUserSub],
+  );
+  const mentionLabels = useMemo(
+    () => participants.map((p) => p.name ?? p.email ?? 'user'),
+    [participants],
+  );
 
   // Make sure any pending auto-dismiss is cleared on unmount.
   useEffect(() => {
@@ -255,7 +294,7 @@ export function NotesPanel({
     setComposerOpen(true);
   };
 
-  const handleCreate = async (body: string) => {
+  const handleCreate = async (body: string, mentions: string[]) => {
     const wasClosed = closed;
     await trackPending(async () => {
       const res = await fetch(`/api/files/${fileId}/notes?folder=${folderId}`, {
@@ -264,6 +303,7 @@ export function NotesPanel({
         body: JSON.stringify({
           timestampMs: Math.floor(composerTime * 1000),
           body,
+          mentions,
         }),
       });
       if (!res.ok) {
@@ -351,10 +391,11 @@ export function NotesPanel({
                 </span>
               </>
             }
-            placeholder="What stood out at this moment?"
+            placeholder="What stood out at this moment? Use @ to tag someone."
             submitLabel="Add note"
             onSubmit={handleCreate}
             onCancel={() => setComposerOpen(false)}
+            mentionables={participants}
           />
         </div>
       ) : (
@@ -393,6 +434,8 @@ export function NotesPanel({
               folderId={folderId}
               onMutated={fetchNotes}
               highlighted={note.id === initialThreadId}
+              mentionables={participants}
+              mentionLabels={mentionLabels}
             />
           ))}
         </ul>

@@ -4,6 +4,8 @@ import { hasAllDriveScopes } from '@/lib/google';
 import { getDriveClient } from '@/lib/drive';
 import {
   listAnnotatedFiles,
+  listMentionsOfUser,
+  type AnnotatedFileSummary,
   type AnnotatedFilesFilter,
 } from '@/lib/notes';
 
@@ -36,16 +38,54 @@ export async function GET(req: Request) {
   const drive = getDriveClient(session.accessToken);
 
   try {
-    const files = await listAnnotatedFiles(drive, session.user.sub, {
-      filter,
-    });
+    // Two independent scans run in parallel:
+    //   - listAnnotatedFiles: conversations I've personally posted in
+    //     (participation-scoped).
+    //   - listMentionsOfUser: conversations I was @-mentioned in,
+    //     including ones I've never posted in.
+    // We merge them so a mention surfaces a conversation even when the
+    // participation scan wouldn't have found it.
+    const [files, mentions] = await Promise.all([
+      listAnnotatedFiles(drive, session.user.sub, { filter }),
+      listMentionsOfUser(drive, session.user.sub),
+    ]);
+
+    const byId = new Map<string, AnnotatedFileSummary>(
+      files.map((f) => [f.audioFileId, { ...f }]),
+    );
+
+    for (const m of mentions) {
+      // Respect the same open/closed filter the list view uses, so a
+      // mention in a closed conversation doesn't leak into "Open".
+      if (filter === 'open' && m.closed) continue;
+      if (filter === 'closed' && !m.closed) continue;
+
+      const existing = byId.get(m.audioFileId);
+      if (existing) {
+        existing.mentionedAt = m.mentionedAt;
+        existing.mentionedBy = m.mentionedBy;
+      } else {
+        byId.set(m.audioFileId, {
+          audioFileId: m.audioFileId,
+          audioFileName: m.audioFileName,
+          // No participation row, so the mention is the only timestamp
+          // we have to sort/display by.
+          lastModifiedISO: m.mentionedAt,
+          closed: m.closed,
+          mentionedAt: m.mentionedAt,
+          mentionedBy: m.mentionedBy,
+        });
+      }
+    }
+
+    const merged = [...byId.values()];
     // Most recently modified first.
-    files.sort((a, b) => {
+    merged.sort((a, b) => {
       const aT = a.lastModifiedISO ?? '';
       const bT = b.lastModifiedISO ?? '';
       return bT.localeCompare(aT);
     });
-    return NextResponse.json({ files });
+    return NextResponse.json({ files: merged });
   } catch (err) {
     const status =
       typeof err === 'object' && err !== null && 'code' in err

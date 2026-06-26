@@ -1,28 +1,84 @@
 import { Fragment, type ReactNode } from 'react';
 
 /**
- * Render plain text with bare http(s) URLs turned into clickable links.
+ * Render plain text with bare http(s) URLs turned into clickable links
+ * and `@mentions` of known participants styled.
  *
- * Deliberately minimal — this is NOT a markdown renderer. It only
- * autolinks absolute http/https URLs (the shape produced by the "Copy
- * link to thread" affordance, plus any links collaborators paste in).
- * Everything else is rendered as-is, so the surrounding
- * `whitespace-pre-wrap` still preserves newlines and spacing.
+ * Deliberately minimal — this is NOT a markdown renderer. It autolinks
+ * absolute http/https URLs (the shape produced by "Copy link to
+ * thread", plus pasted links) and highlights `@Display Name` runs that
+ * match a `mentionLabels` entry. Everything else renders as-is, so the
+ * surrounding `whitespace-pre-wrap` still preserves newlines/spacing.
  *
- * Links open in a new tab. An in-app thread link loads the notes page
- * fresh, where the `?thread=` param scrolls to + highlights the target.
+ * Mentions are matched against the known participant labels (rather than
+ * a naive `@word` regex) so multi-word display names like "@Jane Doe"
+ * highlight in full. The functional side of mentions — notifications —
+ * relies on each note's structured `mentions` array, not on this render
+ * pass, so an unmatched label is only ever a cosmetic miss.
  */
 
-// Match an absolute http(s) URL run. We grab a greedy non-space chunk
-// and then trim trailing punctuation below, so "(see https://x/y)."
-// links to "https://x/y" rather than swallowing the ")." .
 const URL_RE = /(https?:\/\/[^\s<]+)/g;
 const TRAILING_PUNCT_RE = /[).,;:!?'"\]]+$/;
 
-export function Linkify({ text }: { text: string }): ReactNode {
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function Linkify({
+  text,
+  mentionLabels = [],
+}: {
+  text: string;
+  /** Known participant display labels, for highlighting `@label`. */
+  mentionLabels?: string[];
+}): ReactNode {
+  // First split out mentions (longest label first so "@Jane Doe" wins
+  // over "@Jane"), then URL-linkify the remaining text segments.
+  const labels = [...new Set(mentionLabels.filter(Boolean))].sort(
+    (a, b) => b.length - a.length,
+  );
+  const mentionRe =
+    labels.length > 0
+      ? new RegExp(`@(?:${labels.map(escapeRegExp).join('|')})`, 'g')
+      : null;
+
+  const out: ReactNode[] = [];
+  let key = 0;
+
+  if (!mentionRe) {
+    return <>{linkifyUrls(text, () => key++)}</>;
+  }
+
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  mentionRe.lastIndex = 0;
+  while ((match = mentionRe.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      out.push(
+        ...linkifyUrls(text.slice(lastIndex, match.index), () => key++),
+      );
+    }
+    out.push(
+      <span
+        key={key++}
+        className="rounded bg-blue-100 px-1 font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+      >
+        {match[0]}
+      </span>,
+    );
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    out.push(...linkifyUrls(text.slice(lastIndex), () => key++));
+  }
+
+  return <>{out}</>;
+}
+
+/** Turn bare http(s) URLs in a plain string into anchor nodes. */
+function linkifyUrls(text: string, nextKey: () => number): ReactNode[] {
   const parts: ReactNode[] = [];
   let lastIndex = 0;
-  let key = 0;
   let match: RegExpExecArray | null;
 
   URL_RE.lastIndex = 0;
@@ -38,12 +94,12 @@ export function Linkify({ text }: { text: string }): ReactNode {
 
     if (matchStart > lastIndex) {
       parts.push(
-        <Fragment key={key++}>{text.slice(lastIndex, matchStart)}</Fragment>,
+        <Fragment key={nextKey()}>{text.slice(lastIndex, matchStart)}</Fragment>,
       );
     }
     parts.push(
       <a
-        key={key++}
+        key={nextKey()}
         href={url}
         target="_blank"
         rel="noopener noreferrer"
@@ -53,14 +109,14 @@ export function Linkify({ text }: { text: string }): ReactNode {
       </a>,
     );
     if (trailing) {
-      parts.push(<Fragment key={key++}>{trailing}</Fragment>);
+      parts.push(<Fragment key={nextKey()}>{trailing}</Fragment>);
     }
     lastIndex = matchStart + raw.length;
   }
 
   if (lastIndex < text.length) {
-    parts.push(<Fragment key={key++}>{text.slice(lastIndex)}</Fragment>);
+    parts.push(<Fragment key={nextKey()}>{text.slice(lastIndex)}</Fragment>);
   }
 
-  return <>{parts}</>;
+  return parts;
 }

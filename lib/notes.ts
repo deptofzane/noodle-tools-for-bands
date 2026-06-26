@@ -4,6 +4,7 @@ import {
   fetchActivityFile,
   findActivityFile,
   listActivityFilesByParent,
+  listAllActivityFiles,
   recordActivity,
   type ConversationActivity,
 } from '@/lib/activity';
@@ -55,6 +56,13 @@ export interface StoredNote {
    * field existed; absent/undefined reads as "not resolved" in the UI.
    */
   resolved?: boolean;
+  /**
+   * Subs of users @-mentioned in this note/reply. Machine-readable
+   * truth for notifications — the body carries the matching `@Name`
+   * display text. Optional + omitted when empty for backward
+   * compatibility and to keep notes files clean.
+   */
+  mentions?: string[];
 }
 
 /** Author identity, denormalized into each notes file. */
@@ -108,6 +116,33 @@ export interface AnnotatedFileSummary {
   };
   /** True if the conversation has been marked closed (folder name ends in `.closed`). */
   closed: boolean;
+  /**
+   * ISO timestamp of the most recent activity entry that @-mentions the
+   * requesting user, if any. Populated by merging in `listMentionsOfUser`
+   * at the API layer — `listAnnotatedFiles` itself leaves it undefined.
+   */
+  mentionedAt?: string;
+  /** Who most recently mentioned the requesting user. */
+  mentionedBy?: {
+    sub: string;
+    name?: string | null;
+    email?: string | null;
+  };
+}
+
+/** A conversation in which the requesting user was @-mentioned. */
+export interface MentionSummary {
+  audioFileId: string;
+  audioFileName: string;
+  closed: boolean;
+  /** ISO timestamp of the most recent mention of the user. */
+  mentionedAt: string;
+  /** Who made that most-recent mention. */
+  mentionedBy: {
+    sub: string;
+    name?: string | null;
+    email?: string | null;
+  };
 }
 
 /** Metadata about a notes subfolder, including its closed state. */
@@ -160,6 +195,27 @@ function userFileName(userSub: string): string {
 /** Escape a value for Drive's `q` query DSL (single-quoted strings). */
 function escapeForQuery(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+/**
+ * Coerce a client-supplied `mentions` value into a clean list of subs:
+ * strings only, trimmed, deduped, and capped. Anything malformed is
+ * dropped rather than rejected — mentions are advisory metadata, not
+ * something worth failing a note write over.
+ */
+export function sanitizeMentions(input: unknown): string[] {
+  if (!Array.isArray(input)) return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const v of input) {
+    if (typeof v !== 'string') continue;
+    const sub = v.trim();
+    if (!sub || sub.length > 255 || seen.has(sub)) continue;
+    seen.add(sub);
+    out.push(sub);
+    if (out.length >= 50) break;
+  }
+  return out;
 }
 
 export class NoteNotFoundError extends Error {
@@ -433,11 +489,13 @@ export async function createNote(
   author: NotesAuthor,
   timestampMs: number,
   body: string,
+  mentions: string[] = [],
 ): Promise<StoredNote> {
   return addNoteToOwnFile(drive, audioFile, folderId, author, {
     timestampMs,
     body,
     parentNoteId: null,
+    mentions,
   });
 }
 
@@ -448,6 +506,7 @@ export async function createReply(
   author: NotesAuthor,
   parentNoteId: string,
   body: string,
+  mentions: string[] = [],
 ): Promise<StoredNote> {
   // We need the parent's timestampMs (replies inherit it for query
   // simplicity). It might live in someone else's notes file, so we
@@ -475,6 +534,7 @@ export async function createReply(
     timestampMs: parentTimestampMs,
     body,
     parentNoteId,
+    mentions,
   });
 }
 
@@ -483,9 +543,10 @@ async function addNoteToOwnFile(
   audioFile: { id: string; name: string },
   folderId: string,
   author: NotesAuthor,
-  draft: Pick<StoredNote, 'timestampMs' | 'body' | 'parentNoteId'>,
+  draft: Pick<StoredNote, 'timestampMs' | 'body' | 'parentNoteId' | 'mentions'>,
 ): Promise<StoredNote> {
   const now = new Date().toISOString();
+  const mentions = draft.mentions ?? [];
   const note: StoredNote = {
     id: randomUUID(),
     timestampMs: draft.timestampMs,
@@ -493,6 +554,8 @@ async function addNoteToOwnFile(
     body: draft.body,
     createdAt: now,
     updatedAt: now,
+    // Omit when empty to keep notes files clean.
+    ...(mentions.length > 0 ? { mentions } : {}),
   };
 
   // Find or create the subfolder. If we find an existing one that's
@@ -541,6 +604,7 @@ async function addNoteToOwnFile(
       subFolder.closed,
       author,
       draft.parentNoteId === null ? 'note-created' : 'reply-created',
+      mentions,
     );
     return note;
   }
@@ -565,6 +629,7 @@ async function addNoteToOwnFile(
     subFolder.closed,
     author,
     draft.parentNoteId === null ? 'note-created' : 'reply-created',
+    mentions,
   );
   return note;
 }
@@ -979,4 +1044,57 @@ export async function listFolderActivity(
   return summaries.filter(
     (s): s is FolderActivitySummary => s !== null,
   );
+}
+
+// ---------------------------------------------------------------------------
+// Mentions
+// ---------------------------------------------------------------------------
+
+/**
+ * Find every conversation in which the user was recently @-mentioned.
+ *
+ * Unlike `listAnnotatedFiles` (which is scoped to conversations the user
+ * has personally posted in), this scans *all* visible `_activity.json`
+ * files and inspects their logs for entries that mention the user's
+ * sub. That's what lets a mention reach someone who has never posted in
+ * the conversation.
+ *
+ * Cost: 1 broad list + N activity reads (one per visible conversation),
+ * the same order of magnitude as the Library view. The activity log is
+ * capped (see `MAX_LOG_ENTRIES`), so only *recent* mentions surface —
+ * an intentional bound, not a bug.
+ *
+ * Returns one entry per conversation, carrying the most recent mention
+ * (log is newest-first, so the first match wins).
+ */
+export async function listMentionsOfUser(
+  drive: drive_v3.Drive,
+  currentUserSub: string,
+): Promise<MentionSummary[]> {
+  const activityFiles = await listAllActivityFiles(drive);
+  if (activityFiles.length === 0) return [];
+
+  const summaries = await Promise.all(
+    activityFiles.map<Promise<MentionSummary | null>>(async ({ id }) => {
+      const activity = await fetchActivityFile(drive, id);
+      if (!activity?.audioFileId || !activity?.audioFileName) return null;
+      const hit = (activity.log ?? []).find((entry) =>
+        entry.mentions?.includes(currentUserSub),
+      );
+      if (!hit) return null;
+      return {
+        audioFileId: activity.audioFileId,
+        audioFileName: activity.audioFileName,
+        closed: activity.closed,
+        mentionedAt: hit.at,
+        mentionedBy: {
+          sub: hit.by.sub,
+          name: hit.by.name,
+          email: hit.by.email,
+        },
+      };
+    }),
+  );
+
+  return summaries.filter((s): s is MentionSummary => s !== null);
 }

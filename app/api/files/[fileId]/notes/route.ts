@@ -6,6 +6,7 @@ import {
   NotesAccessError,
   createNote,
   loadNotes,
+  sanitizeMentions,
   setConversationClosed,
   type NotesAuthor,
 } from '@/lib/notes';
@@ -208,6 +209,7 @@ export async function POST(
       author,
       payload.timestampMs,
       payload.body,
+      payload.mentions,
     );
     return NextResponse.json({ note }, { status: 201 });
   } catch (err) {
@@ -222,7 +224,7 @@ export async function POST(
 function validateNoteCreate(
   input: unknown,
 ):
-  | { timestampMs: number; body: string }
+  | { timestampMs: number; body: string; mentions: string[] }
   | { error: string; message: string } {
   if (input == null || typeof input !== 'object') {
     return { error: 'bad_body', message: 'Request body must be JSON.' };
@@ -241,7 +243,11 @@ function validateNoteCreate(
   if (i.body.length > 10_000) {
     return { error: 'body_too_long', message: 'Note body is too long (max 10,000 chars).' };
   }
-  return { timestampMs: Math.floor(i.timestampMs), body: i.body.trim() };
+  return {
+    timestampMs: Math.floor(i.timestampMs),
+    body: i.body.trim(),
+    mentions: sanitizeMentions(i.mentions),
+  };
 }
 
 function driveErrorToResponse(err: unknown, context: string) {

@@ -2,7 +2,12 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { hasAllDriveScopes, isValidDriveId } from '@/lib/google';
 import { getDriveClient } from '@/lib/drive';
-import { createReply, NoteNotFoundError, type NotesAuthor } from '@/lib/notes';
+import {
+  createReply,
+  NoteNotFoundError,
+  sanitizeMentions,
+  type NotesAuthor,
+} from '@/lib/notes';
 
 /**
  * POST /api/files/[fileId]/notes/[noteId]/replies?folder=<folderId>
@@ -69,6 +74,7 @@ export async function POST(
       author,
       noteId,
       payload.body,
+      payload.mentions,
     );
     return NextResponse.json({ note: reply }, { status: 201 });
   } catch (err) {
@@ -89,7 +95,7 @@ export async function POST(
 
 function validateReplyCreate(
   input: unknown,
-): { body: string } | { error: string; message: string } {
+): { body: string; mentions: string[] } | { error: string; message: string } {
   if (input == null || typeof input !== 'object') {
     return { error: 'bad_body', message: 'Request body must be JSON.' };
   }
@@ -100,5 +106,5 @@ function validateReplyCreate(
   if (i.body.length > 10_000) {
     return { error: 'body_too_long', message: 'Reply body is too long.' };
   }
-  return { body: i.body.trim() };
+  return { body: i.body.trim(), mentions: sanitizeMentions(i.mentions) };
 }

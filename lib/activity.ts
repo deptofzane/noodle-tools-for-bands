@@ -57,6 +57,12 @@ export interface ActivityLogEntry {
   at: string;
   by: ActivityActor;
   kind: ActivityKind;
+  /**
+   * Subs @-mentioned by this entry's note/reply, if any. Lets the
+   * "mentions of me" scan find conversations a user was tagged in
+   * without reading every per-user notes file. Omitted when empty.
+   */
+  mentions?: string[];
 }
 
 export interface ConversationActivity {
@@ -132,12 +138,15 @@ export async function recordActivity(
   closed: boolean,
   actor: ActivityActor,
   kind: ActivityKind,
+  mentions: string[] = [],
 ): Promise<void> {
   try {
     const entry: ActivityLogEntry = {
       at: new Date().toISOString(),
       by: { sub: actor.sub, name: actor.name, email: actor.email },
       kind,
+      // Omit when empty to keep the log compact.
+      ...(mentions.length > 0 ? { mentions } : {}),
     };
 
     const list = await drive.files.list({
@@ -239,4 +248,28 @@ export async function listActivityFilesByParent(
     if (!result.has(pid)) result.set(pid, f.id);
   }
   return result;
+}
+
+/**
+ * List every `_activity.json` file visible to the caller, regardless of
+ * which folder it lives in. Used by the "mentions of me" scan, which
+ * must reach conversations the user has never personally posted in (so
+ * the participation-scoped `listAnnotatedFiles` query can't find them).
+ *
+ * Cost: a single broad list. Callers fetch each file's contents
+ * separately. The page-size cap (200) bounds the scan to the most
+ * recently modified conversations.
+ */
+export async function listAllActivityFiles(
+  drive: drive_v3.Drive,
+): Promise<Array<{ id: string }>> {
+  const res = await drive.files.list({
+    q: `name = '${ACTIVITY_FILE_NAME}' and mimeType = '${JSON_MIME}' and trashed = false`,
+    fields: 'files(id, modifiedTime)',
+    pageSize: 200,
+    orderBy: 'modifiedTime desc',
+  });
+  return (res.data.files ?? [])
+    .filter((f): f is { id: string } => Boolean(f.id))
+    .map((f) => ({ id: f.id }));
 }
