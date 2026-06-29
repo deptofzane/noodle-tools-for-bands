@@ -84,3 +84,12 @@ export async function removeMember(bandId: string, userId: string) {
     .delete(bandMembers)
     .where(and(eq(bandMembers.bandId, bandId), eq(bandMembers.userId, userId)));
 }
+
+/**
+ * Delete a band and everything it owns. FK cascades remove its members,
+ * conversations, and (through conversations) notes, mentions, activity,
+ * and read state. Irreversible.
+ */
+export async function deleteBand(bandId: string): Promise<void> {
+  await db.delete(bands).where(eq(bands.id, bandId));
+}

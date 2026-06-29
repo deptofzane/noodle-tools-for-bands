@@ -47,6 +47,9 @@ export function BandDetailClient({
   const [busy, setBusy] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const trackPending = useTrackPending();
   const router = useRouter();
 
@@ -147,15 +150,22 @@ export function BandDetailClient({
     }
   };
 
-  // Close the leave-confirmation modal on Escape.
+  const closeDelete = () => {
+    setDeleteOpen(false);
+    setDeleteConfirmText('');
+  };
+
+  // Close whichever confirmation modal is open on Escape.
   useEffect(() => {
-    if (!leaveOpen) return;
+    if (!leaveOpen && !deleteOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !leaving) setLeaveOpen(false);
+      if (e.key !== 'Escape') return;
+      if (leaveOpen && !leaving) setLeaveOpen(false);
+      if (deleteOpen && !deleting) closeDelete();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [leaveOpen, leaving]);
+  }, [leaveOpen, deleteOpen, leaving, deleting]);
 
   const handleLeave = async () => {
     if (leaving) return;
@@ -177,6 +187,26 @@ export function BandDetailClient({
     }
   };
 
+  const handleDelete = async () => {
+    if (deleting || !data || deleteConfirmText.trim() !== data.band.name) return;
+    setDeleting(true);
+    try {
+      await trackPending(async () => {
+        const r = await fetch(`/api/bands/${bandId}`, { method: 'DELETE' });
+        if (!r.ok) {
+          const b = await r.json().catch(() => ({}));
+          throw new Error(b.message ?? `HTTP ${r.status}`);
+        }
+      });
+      router.push('/bands');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      closeDelete();
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (error) {
     return (
       <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
@@ -195,7 +225,15 @@ export function BandDetailClient({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">{data.band.name}</h1>
-        {!isOwner && (
+        {isOwner ? (
+          <button
+            type="button"
+            onClick={() => setDeleteOpen(true)}
+            className="shrink-0 rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+          >
+            Delete band
+          </button>
+        ) : (
           <button
             type="button"
             onClick={() => setLeaveOpen(true)}
@@ -337,6 +375,61 @@ export function BandDetailClient({
                 className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
               >
                 {leaving ? 'Leaving…' : 'Leave band'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-band-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => {
+            if (!deleting) closeDelete();
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-5 shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="delete-band-title" className="text-base font-semibold">
+              Delete {data.band.name}?
+            </h2>
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+              This permanently deletes the band, its membership, and all of its
+              audio conversations and notes. This can’t be undone.
+            </p>
+            <label className="mt-3 block text-xs text-neutral-600 dark:text-neutral-400">
+              Type <span className="font-semibold">{data.band.name}</span> to
+              confirm:
+            </label>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder={data.band.name}
+              autoFocus
+              className="mt-1 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 dark:border-neutral-700 dark:bg-neutral-900"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeDelete}
+                disabled={deleting}
+                className="rounded-md px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting || deleteConfirmText.trim() !== data.band.name}
+                className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
+              >
+                {deleting ? 'Deleting…' : 'Delete band'}
               </button>
             </div>
           </div>
