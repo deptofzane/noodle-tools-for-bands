@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth';
 import authConfig from './auth.config';
 import { refreshGoogleAccessToken } from '@/lib/google';
+import { upsertUser } from '@/lib/db/users';
 
 /**
  * Local typed view of the JWT payload's app-owned fields.
@@ -106,6 +107,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // OAuth token. The refresh token is NEVER exposed here.
       session.accessToken = t.accessToken;
       return session;
+    },
+  },
+  events: {
+    async signIn({ profile }) {
+      // OAuth sign-in: persist/refresh the user row keyed by Google sub.
+      if (!profile?.sub) return;
+      await upsertUser({
+        googleSub: profile.sub,
+        email: profile.email,
+        name: profile.name,
+      });
     },
   },
 });
