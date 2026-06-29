@@ -22,7 +22,7 @@ import { NoteItem } from './NoteItem';
  * Mentions target band members, by user id.
  */
 
-const POLL_INTERVAL_MS = 15_000;
+const POLL_INTERVAL_MS = 30_000;
 
 interface ConversationMember {
   userId: string;
@@ -149,7 +149,58 @@ export function NotesPanel({
     })();
   }, [fetchNotes, markRead, trackPending]);
 
-  // Backstop polling (DB-backed; replaces the Drive Changes SSE feed).
+  // Real-time updates via SSE (Postgres LISTEN/NOTIFY). On each change
+  // event, refetch. Reconnects with backoff; the poll below is a backstop.
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
+      return;
+    }
+    let es: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+    let backoffMs = 1000;
+    const MAX_BACKOFF_MS = 30_000;
+
+    const connect = () => {
+      if (cancelled) return;
+      try {
+        es = new EventSource(`/api/conversations/${conversationId}/events`);
+      } catch {
+        scheduleReconnect();
+        return;
+      }
+      es.addEventListener('open', () => {
+        backoffMs = 1000;
+      });
+      es.addEventListener('change', () => {
+        void fetchNotes();
+      });
+      es.addEventListener('error', () => {
+        es?.close();
+        es = null;
+        scheduleReconnect();
+      });
+    };
+
+    const scheduleReconnect = () => {
+      if (cancelled) return;
+      reconnectTimer = setTimeout(() => {
+        connect();
+        backoffMs = Math.min(backoffMs * 2, MAX_BACKOFF_MS);
+      }, backoffMs);
+    };
+
+    connect();
+    return () => {
+      cancelled = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      es?.close();
+      es = null;
+    };
+  }, [conversationId, fetchNotes]);
+
+  // Backstop polling — catches anything the SSE feed missed (transient
+  // disconnects). Quiet, since SSE does the real-time work.
   useEffect(() => {
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') void fetchNotes();

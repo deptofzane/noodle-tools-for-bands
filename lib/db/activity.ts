@@ -1,6 +1,7 @@
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { db, type DbExecutor } from './index';
 import { activityLog, users } from './schema';
+import { CONVERSATION_CHANNEL } from './notify';
 
 /**
  * Activity log data layer (Postgres).
@@ -33,9 +34,12 @@ export async function recordActivity(
   actorId: string,
   kind: ActivityKind,
 ): Promise<void> {
-  await exec
-    .insert(activityLog)
-    .values({ conversationId, actorId, kind });
+  await exec.insert(activityLog).values({ conversationId, actorId, kind });
+  // Real-time signal for the SSE hub. Inside the caller's transaction, so
+  // it's delivered on commit and rolled back with a failed mutation.
+  await exec.execute(
+    sql`select pg_notify(${CONVERSATION_CHANNEL}, ${conversationId})`,
+  );
 }
 
 /** Recent activity for a conversation (newest first), with actor info. */
