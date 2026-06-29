@@ -18,6 +18,7 @@ import { usePendingCount } from './PendingActionProvider';
  */
 const NAV_LINKS = [
   { href: '/library', label: 'Library' },
+  { href: '/bands', label: 'Bands' },
   { href: '/library/annotated', label: 'Open Conversations' },
   { href: '/library/history', label: 'History' },
   { href: '/account', label: 'Account' },
