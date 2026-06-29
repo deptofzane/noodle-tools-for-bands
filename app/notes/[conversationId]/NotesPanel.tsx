@@ -5,6 +5,7 @@ import { formatDuration } from '@/lib/audio';
 import type { ThreadedNote } from '@/lib/db/notes';
 import type { ActivityKind, ConversationActivity } from '@/lib/db/activity';
 import { useTrackPending } from '../../PendingActionProvider';
+import { useToast } from '../../ToastProvider';
 import { usePlayer } from './PlayerContext';
 import { NoteForm, type Mentionable } from './NoteForm';
 import { NoteItem } from './NoteItem';
@@ -51,6 +52,7 @@ export function NotesPanel({
   const inFlight = useRef(false);
   const player = usePlayer();
   const trackPending = useTrackPending();
+  const showToast = useToast();
 
   // Mention roster = band members (minus yourself), by user id.
   const participants = useMemo<Mentionable[]>(
@@ -133,12 +135,12 @@ export function NotesPanel({
         setClosed(next);
         await fetchNotes();
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        showToast(e instanceof Error ? e.message : String(e));
       } finally {
         setStateBusy(false);
       }
     },
-    [conversationId, fetchNotes, trackPending],
+    [conversationId, fetchNotes, trackPending, showToast],
   );
 
   // Initial load + mark read.

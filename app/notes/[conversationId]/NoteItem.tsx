@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { formatDuration } from '@/lib/audio';
 import type { ThreadedNote, ApiNote } from '@/lib/db/notes';
 import { useTrackPending } from '../../PendingActionProvider';
+import { useToast } from '../../ToastProvider';
 import { usePlayer } from './PlayerContext';
 import { NoteForm, type Mentionable } from './NoteForm';
 import { Linkify } from './Linkify';
@@ -34,6 +35,7 @@ export function NoteItem({
 }: NoteItemProps) {
   const player = usePlayer();
   const trackPending = useTrackPending();
+  const showToast = useToast();
   const liRef = useRef<HTMLLIElement>(null);
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -90,7 +92,7 @@ export function NoteItem({
       });
       onMutated();
     } catch (err) {
-      alert(
+      showToast(
         `Failed to ${isResolved ? 'reopen' : 'resolve'} thread: ${
           err instanceof Error ? err.message : String(err)
         }`,
@@ -127,7 +129,7 @@ export function NoteItem({
       }),
     );
     if (res.ok || res.status === 204) onMutated();
-    else alert('Failed to delete note.');
+    else showToast('Failed to delete note.');
   };
 
   const handleReply = async (body: string, mentions: string[]) => {
@@ -310,6 +312,7 @@ function ReplyItem({
   mentionLabels?: string[];
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const showToast = useToast();
 
   const handleEdit = async (body: string) => {
     const res = await fetch(
@@ -335,7 +338,7 @@ function ReplyItem({
       { method: 'DELETE' },
     );
     if (res.ok || res.status === 204) onMutated();
-    else alert('Failed to delete reply.');
+    else showToast('Failed to delete reply.');
   };
 
   return (
