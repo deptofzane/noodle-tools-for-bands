@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { PickerButton, type PickedFile } from '../../PickerButton';
 import { useTrackPending } from '../../PendingActionProvider';
+import { useToast } from '../../ToastProvider';
 
 interface Member {
   userId: string;
@@ -52,6 +53,7 @@ export function BandDetailClient({
   const [deleting, setDeleting] = useState(false);
   const trackPending = useTrackPending();
   const router = useRouter();
+  const showToast = useToast();
 
   const load = useCallback(async () => {
     try {
@@ -100,10 +102,10 @@ export function BandDetailClient({
         });
         await load();
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        showToast(e instanceof Error ? e.message : String(e));
       }
     },
-    [bandId, load, trackPending],
+    [bandId, load, trackPending, showToast],
   );
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -126,7 +128,7 @@ export function BandDetailClient({
       setEmail('');
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      showToast(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
@@ -146,7 +148,7 @@ export function BandDetailClient({
       });
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      showToast(e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -180,7 +182,7 @@ export function BandDetailClient({
       });
       router.push('/bands');
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      showToast(e instanceof Error ? e.message : String(e));
       setLeaveOpen(false);
     } finally {
       setLeaving(false);
@@ -200,7 +202,7 @@ export function BandDetailClient({
       });
       router.push('/bands');
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      showToast(e instanceof Error ? e.message : String(e));
       closeDelete();
     } finally {
       setDeleting(false);

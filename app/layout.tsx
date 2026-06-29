@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { auth } from '@/auth';
 import { Header } from './Header';
 import { PendingActionProvider } from './PendingActionProvider';
+import { ToastProvider } from './ToastProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -52,8 +53,10 @@ export default async function RootLayout({
       </head>
       <body className="min-h-screen bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100">
         <PendingActionProvider>
-          {isSignedIn && <Header />}
-          {children}
+          <ToastProvider>
+            {isSignedIn && <Header />}
+            {children}
+          </ToastProvider>
         </PendingActionProvider>
       </body>
     </html>

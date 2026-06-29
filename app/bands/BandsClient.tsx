@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTrackPending } from '../PendingActionProvider';
+import { useToast } from '../ToastProvider';
 
 interface BandSummary {
   id: string;
@@ -22,6 +23,7 @@ export function BandsClient() {
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
   const trackPending = useTrackPending();
+  const showToast = useToast();
 
   const load = useCallback(async () => {
     try {
@@ -62,7 +64,7 @@ export function BandsClient() {
       setName('');
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      showToast(e instanceof Error ? e.message : String(e));
     } finally {
       setCreating(false);
     }
