@@ -66,28 +66,41 @@ export function PickerButton({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const w = window as unknown as PickerWindow;
-    if (w.google?.picker) {
-      setPickerReady(true);
-      return;
-    }
-    const existing = document.querySelector<HTMLScriptElement>(
-      `script[src="${PICKER_SCRIPT_SRC}"]`,
-    );
-    const script = existing ?? document.createElement('script');
-    if (!existing) {
+    let cancelled = false;
+
+    const ensureScript = () => {
+      if (document.querySelector(`script[src="${PICKER_SCRIPT_SRC}"]`)) return;
+      const script = document.createElement('script');
       script.src = PICKER_SCRIPT_SRC;
       script.async = true;
       document.body.appendChild(script);
-    }
-    const onLoad = () => {
-      (window as unknown as PickerWindow).gapi?.load('picker', () =>
-        setPickerReady(true),
-      );
     };
-    if (existing) onLoad();
-    else script.addEventListener('load', onLoad);
-    return () => script.removeEventListener('load', onLoad);
+
+    // Poll until gapi loads, then load the picker module. Polling (rather
+    // than a one-shot `load` listener) survives React Strict Mode's
+    // mount→unmount→mount cycle, which otherwise drops the listener and
+    // leaves the button permanently disabled.
+    const tick = () => {
+      if (cancelled) return;
+      const w = window as unknown as PickerWindow;
+      if (w.google?.picker) {
+        setPickerReady(true);
+        return;
+      }
+      if (w.gapi) {
+        w.gapi.load('picker', () => {
+          if (!cancelled) setPickerReady(true);
+        });
+        return;
+      }
+      ensureScript();
+      setTimeout(tick, 100);
+    };
+
+    tick();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const openPicker = useCallback(async () => {
