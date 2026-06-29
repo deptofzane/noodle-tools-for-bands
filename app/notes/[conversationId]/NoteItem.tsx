@@ -45,6 +45,8 @@ export function NoteItem({
     Boolean(note.resolved) && !highlighted,
   );
   const [isResolving, setIsResolving] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const seekToNote = () => player.seek(note.timestampMs / 1000);
 
@@ -60,6 +62,16 @@ export function NoteItem({
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlighted]);
+
+  // Close the delete-confirmation modal on Escape.
+  useEffect(() => {
+    if (!confirmDeleteOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !deleting) setConfirmDeleteOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [confirmDeleteOpen, deleting]);
 
   const handleCopyLink = async () => {
     const url = `${window.location.origin}/notes/${conversationId}?thread=${note.id}`;
@@ -122,14 +134,20 @@ export function NoteItem({
   };
 
   const handleDelete = async () => {
-    if (!confirm('Delete this note? Its replies will be removed too.')) return;
-    const res = await trackPending(() =>
-      fetch(`/api/conversations/${conversationId}/notes/${note.id}`, {
-        method: 'DELETE',
-      }),
-    );
-    if (res.ok || res.status === 204) onMutated();
-    else showToast('Failed to delete note.');
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      const res = await trackPending(() =>
+        fetch(`/api/conversations/${conversationId}/notes/${note.id}`, {
+          method: 'DELETE',
+        }),
+      );
+      if (res.ok || res.status === 204) onMutated();
+      else showToast('Failed to delete note.');
+    } finally {
+      setDeleting(false);
+      setConfirmDeleteOpen(false);
+    }
   };
 
   const handleReply = async (body: string, mentions: string[]) => {
@@ -256,7 +274,7 @@ export function NoteItem({
                   <span aria-hidden="true">·</span>
                   <button
                     type="button"
-                    onClick={handleDelete}
+                    onClick={() => setConfirmDeleteOpen(true)}
                     className="hover:text-red-600 dark:hover:text-red-400"
                   >
                     Delete
@@ -295,6 +313,49 @@ export function NoteItem({
             </ul>
           )}
         </>
+      )}
+
+      {confirmDeleteOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-thread-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => {
+            if (!deleting) setConfirmDeleteOpen(false);
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-5 shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="delete-thread-title" className="text-base font-semibold">
+              Delete thread?
+            </h2>
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+              This deletes the note and all of its replies. This can’t be
+              undone.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteOpen(false)}
+                disabled={deleting}
+                className="rounded-md px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
+              >
+                {deleting ? 'Deleting…' : 'Delete thread'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </li>
   );
