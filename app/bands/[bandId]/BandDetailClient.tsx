@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PickerButton, type PickedFile } from '../../PickerButton';
 import { useTrackPending } from '../../PendingActionProvider';
 
@@ -44,7 +45,10 @@ export function BandDetailClient({
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const trackPending = useTrackPending();
+  const router = useRouter();
 
   const load = useCallback(async () => {
     try {
@@ -143,6 +147,36 @@ export function BandDetailClient({
     }
   };
 
+  // Close the leave-confirmation modal on Escape.
+  useEffect(() => {
+    if (!leaveOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !leaving) setLeaveOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [leaveOpen, leaving]);
+
+  const handleLeave = async () => {
+    if (leaving) return;
+    setLeaving(true);
+    try {
+      await trackPending(async () => {
+        const r = await fetch(`/api/bands/${bandId}/leave`, { method: 'POST' });
+        if (!r.ok) {
+          const b = await r.json().catch(() => ({}));
+          throw new Error(b.message ?? `HTTP ${r.status}`);
+        }
+      });
+      router.push('/bands');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setLeaveOpen(false);
+    } finally {
+      setLeaving(false);
+    }
+  };
+
   if (error) {
     return (
       <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
@@ -159,7 +193,18 @@ export function BandDetailClient({
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold tracking-tight">{data.band.name}</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">{data.band.name}</h1>
+        {!isOwner && (
+          <button
+            type="button"
+            onClick={() => setLeaveOpen(true)}
+            className="shrink-0 rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+          >
+            Leave band
+          </button>
+        )}
+      </div>
 
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
@@ -253,6 +298,49 @@ export function BandDetailClient({
             They must have signed in to the app at least once.
           </p>
         </form>
+      )}
+
+      {leaveOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="leave-band-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => {
+            if (!leaving) setLeaveOpen(false);
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-5 shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="leave-band-title" className="text-base font-semibold">
+              Leave {data.band.name}?
+            </h2>
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+              You’ll lose access to this band’s audio and conversations. An
+              owner can add you back later.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setLeaveOpen(false)}
+                disabled={leaving}
+                className="rounded-md px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleLeave}
+                disabled={leaving}
+                className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
+              >
+                {leaving ? 'Leaving…' : 'Leave band'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
