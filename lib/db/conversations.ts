@@ -99,6 +99,31 @@ export async function assertConversationMember(
   return m;
 }
 
+/**
+ * True if the user may access a Drive audio file: i.e. some band they
+ * belong to owns a conversation registered to that file. This is the
+ * authorization boundary for the streaming proxy now that the service
+ * account can read files regardless of the user's personal Drive ACL.
+ */
+export async function userCanAccessAudio(
+  userId: string,
+  driveAudioFileId: string,
+): Promise<boolean> {
+  const [row] = await db
+    .select({ id: conversations.id })
+    .from(conversations)
+    .innerJoin(
+      bandMembers,
+      and(
+        eq(bandMembers.bandId, conversations.bandId),
+        eq(bandMembers.userId, userId),
+      ),
+    )
+    .where(eq(conversations.driveAudioFileId, driveAudioFileId))
+    .limit(1);
+  return Boolean(row);
+}
+
 export async function listBandConversations(
   bandId: string,
 ): Promise<Conversation[]> {

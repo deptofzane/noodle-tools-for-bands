@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { getDriveClient } from '@/lib/drive';
+import { shareFileWithServiceAccount } from '@/lib/drive-service';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import {
@@ -54,5 +57,19 @@ export async function POST(
     driveAudioFileId,
     audioFileName,
   );
+
+  // Best-effort: share the file with the service account so every band
+  // member can stream it regardless of their personal Drive access. Uses
+  // the registrant's token (they can access the Picker-opened file). A
+  // no-op when no service account is configured; failures fall back to
+  // personal-token streaming.
+  const session = await auth();
+  if (session?.accessToken) {
+    await shareFileWithServiceAccount(
+      getDriveClient(session.accessToken),
+      driveAudioFileId,
+    );
+  }
+
   return NextResponse.json({ conversation }, { status: 201 });
 }

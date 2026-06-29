@@ -1,7 +1,11 @@
 import { Readable } from 'node:stream';
+import { type drive_v3 } from 'googleapis';
 import { auth } from '@/auth';
 import { hasAllDriveScopes, isValidDriveId } from '@/lib/google';
 import { getDriveClient } from '@/lib/drive';
+import { getServiceDriveClient } from '@/lib/drive-service';
+import { getCurrentDbUser } from '@/lib/current-user';
+import { userCanAccessAudio } from '@/lib/db/conversations';
 
 /**
  * Streaming proxy for audio files in Drive.
@@ -19,9 +23,14 @@ import { getDriveClient } from '@/lib/drive';
  *     are proxied back
  *   - We return 206 Partial Content when Drive does; 200 otherwise
  *
- * Authorization is delegated to Drive: each user streams with their
- * own access token, so revoking access in Drive immediately cuts off
- * playback for that user.
+ * Authorization is enforced in our own DB by band membership
+ * (`userCanAccessAudio`): you may stream a file iff a band you belong to
+ * owns a conversation registered to it. We then fetch bytes with the
+ * service account (so any band member can play, regardless of personal
+ * Drive sharing), falling back to the user's personal token when no
+ * service account is configured or the file isn't shared with it. The
+ * membership check is essential — the service account can read every
+ * file ever shared with it, so it is NOT the access boundary.
  */
 
 /**
@@ -52,16 +61,21 @@ export async function GET(
   if (session.error === 'RefreshAccessTokenError') {
     return new Response('refresh_failed', { status: 401 });
   }
-  if (!hasAllDriveScopes(session.scopes)) {
-    return new Response('scope_missing', { status: 403 });
-  }
-  if (!session.accessToken) {
-    return new Response('no_token', { status: 401 });
-  }
 
   const { fileId } = await params;
   if (!isValidDriveId(fileId)) {
     return new Response('invalid_file_id', { status: 400 });
+  }
+
+  // Authorize in our DB: the user must belong to a band that owns a
+  // conversation for this file. This is the access boundary now that the
+  // service account can read files outside the user's personal ACL.
+  const user = await getCurrentDbUser();
+  if (!user) {
+    return new Response('no_user', { status: 401 });
+  }
+  if (!(await userCanAccessAudio(user.id, fileId))) {
+    return new Response('forbidden', { status: 403 });
   }
 
   // Optional `?name=<filename>` hint from the client. Used purely to
@@ -72,16 +86,36 @@ export async function GET(
   const nameHint = reqUrl.searchParams.get('name');
 
   const range = req.headers.get('range') ?? undefined;
-  const drive = getDriveClient(session.accessToken);
+  const getHeaders = range ? { Range: range } : undefined;
+
+  // Try the service account first (works for any member); fall back to the
+  // user's personal token when there's no SA or the file isn't shared with
+  // it. Authorization already happened above.
+  const candidates: drive_v3.Drive[] = [];
+  const serviceClient = getServiceDriveClient();
+  if (serviceClient) candidates.push(serviceClient);
+  if (session.accessToken && hasAllDriveScopes(session.scopes)) {
+    candidates.push(getDriveClient(session.accessToken));
+  }
+  if (candidates.length === 0) {
+    return new Response('no_drive_access', { status: 403 });
+  }
 
   try {
-    const driveRes = await drive.files.get(
-      { fileId, alt: 'media' },
-      {
-        responseType: 'stream',
-        headers: range ? { Range: range } : undefined,
-      },
-    );
+    let driveRes;
+    let lastErr: unknown;
+    for (const client of candidates) {
+      try {
+        driveRes = await client.files.get(
+          { fileId, alt: 'media' },
+          { responseType: 'stream', headers: getHeaders },
+        );
+        break;
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    if (!driveRes) throw lastErr;
 
     // Build response headers, preserving what Drive returned where it
     // makes sense. We always advertise Range support.
