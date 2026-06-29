@@ -3,6 +3,7 @@ import { getCurrentDbUser } from '@/lib/current-user';
 import { getConversationMembership, setConversationClosed } from '@/lib/db/conversations';
 import { getConversationActivity } from '@/lib/db/activity';
 import { loadNotes } from '@/lib/db/notes';
+import { listMembers } from '@/lib/db/bands';
 
 /**
  * GET   /api/conversations/[conversationId]
@@ -24,9 +25,10 @@ export async function GET(
   const membership = await getConversationMembership(user.id, conversationId);
   if (!membership) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
-  const [notes, activity] = await Promise.all([
+  const [notes, activity, members] = await Promise.all([
     loadNotes(conversationId, user.id),
     getConversationActivity(conversationId),
+    listMembers(membership.conversation.bandId),
   ]);
 
   return NextResponse.json({
@@ -34,6 +36,7 @@ export async function GET(
     closed: membership.conversation.closed,
     notes,
     activity,
+    members,
     myRole: membership.role,
   });
 }

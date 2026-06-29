@@ -2,20 +2,25 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import type { AnnotatedFileSummary } from '@/lib/notes';
 import { useTrackPending } from '../../PendingActionProvider';
 
 /**
  * History list — closed conversations only.
  *
- * Fetches `/api/notes/annotated?filter=closed`. The entries are all
- * closed by definition, so no per-entry badge is needed. Reading from
- * this view is read-only: clicking through to a conversation opens it
- * in the notes page, but viewing alone doesn't reopen — only adding a
- * note does (server-side).
+ * Fetches /api/conversations/annotated?filter=closed. Read-only: opening
+ * a conversation doesn't reopen it (only an explicit Reopen does).
  */
+
+interface ConversationListItem {
+  conversationId: string;
+  bandName: string;
+  audioFileName: string | null;
+  lastActivityAt: string;
+  lastActivityBy: { name: string | null; email: string | null } | null;
+}
+
 export function HistoryList() {
-  const [files, setFiles] = useState<AnnotatedFileSummary[] | null>(null);
+  const [items, setItems] = useState<ConversationListItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const trackPending = useTrackPending();
 
@@ -24,15 +29,15 @@ export function HistoryList() {
     setError(null);
     void trackPending(async () => {
       try {
-        const r = await fetch('/api/notes/annotated?filter=closed', {
+        const r = await fetch('/api/conversations/annotated?filter=closed', {
           cache: 'no-store',
         });
         if (!r.ok) {
           const body = await r.json().catch(() => ({}));
           throw new Error(body.message ?? body.error ?? `HTTP ${r.status}`);
         }
-        const data = (await r.json()) as { files: AnnotatedFileSummary[] };
-        if (!cancelled) setFiles(data.files);
+        const data = (await r.json()) as { conversations: ConversationListItem[] };
+        if (!cancelled) setItems(data.conversations);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
       }
@@ -50,11 +55,11 @@ export function HistoryList() {
     );
   }
 
-  if (files === null) {
+  if (items === null) {
     return <p className="text-sm text-neutral-500">Loading…</p>;
   }
 
-  if (files.length === 0) {
+  if (items.length === 0) {
     return (
       <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
         Nothing in history yet. Conversations show up here when you close
@@ -66,27 +71,25 @@ export function HistoryList() {
   return (
     <div className="flex flex-col gap-3">
       <p className="text-xs text-neutral-500">
-        {files.length} closed{' '}
-        {files.length === 1 ? 'conversation' : 'conversations'}
+        {items.length} closed{' '}
+        {items.length === 1 ? 'conversation' : 'conversations'}
       </p>
       <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-        {files.map((file) => (
-          <li key={file.audioFileId}>
+        {items.map((item) => (
+          <li key={item.conversationId}>
             <Link
-              href={`/notes/${file.audioFileId}`}
+              href={`/notes/${item.conversationId}`}
               className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
             >
               <div className="min-w-0 flex-1">
-                <div className="truncate font-medium">{file.audioFileName}</div>
-                {file.lastModifiedISO && (
-                  <div className="mt-0.5 text-xs text-neutral-500">
-                    Closed · last activity{' '}
-                    {formatRelativeTime(file.lastModifiedISO)}
-                    {file.lastActivityBy && (
-                      <> by {actorLabel(file.lastActivityBy)}</>
-                    )}
-                  </div>
-                )}
+                <div className="truncate font-medium">
+                  {item.audioFileName ?? 'Untitled audio'}
+                </div>
+                <div className="mt-0.5 text-xs text-neutral-500">
+                  {item.bandName} · Closed · last activity{' '}
+                  {formatRelativeTime(item.lastActivityAt)}
+                  {item.lastActivityBy && <> by {actorLabel(item.lastActivityBy)}</>}
+                </div>
               </div>
             </Link>
           </li>

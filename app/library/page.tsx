@@ -1,6 +1,6 @@
+import Link from 'next/link';
 import { auth, signIn } from '@/auth';
 import { REQUIRED_DRIVE_SCOPES, hasAllDriveScopes } from '@/lib/google';
-import { LibraryClient } from './LibraryClient';
 
 /**
  * The Library page.
@@ -15,9 +15,9 @@ import { LibraryClient } from './LibraryClient';
  *    `drive.readonly` (read access for listing folders and streaming
  *    audio). `include_granted_scopes=true` so the user's existing
  *    identity scopes aren't clobbered.
- * 3. Drive scopes granted → render the client-side LibraryClient,
- *    which loads the Google Picker, lets the user pick a folder, and
- *    fetches the folder's audio files from our API.
+ * 3. Drive scopes granted → a short landing that points to Bands
+ *    (where audio is registered via the Picker) and Open Conversations.
+ *    Audio/notes are organized by band now, not by Drive folder.
  */
 export default async function LibraryPage() {
   const session = await auth();
@@ -101,17 +101,29 @@ export default async function LibraryPage() {
     );
   }
 
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? '';
-
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 px-6 py-12">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Library</h1>
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-          Pick a Drive folder to see its audio files.
+          Google Drive is connected.
         </p>
       </header>
-      <LibraryClient apiKey={apiKey} />
+      <div className="rounded-lg border border-neutral-200 p-4 text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">
+        Audio and conversations are organized by band now. Open a{' '}
+        <Link href="/bands" className="text-blue-600 underline dark:text-blue-400">
+          band
+        </Link>{' '}
+        to register audio (via the Drive picker) and open its conversations,
+        or jump to your{' '}
+        <Link
+          href="/library/annotated"
+          className="text-blue-600 underline dark:text-blue-400"
+        >
+          open conversations
+        </Link>
+        .
+      </div>
     </main>
   );
 }

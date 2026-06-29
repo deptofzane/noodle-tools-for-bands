@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { PickerButton, type PickedFile } from '../../PickerButton';
 import { useTrackPending } from '../../PendingActionProvider';
 
 interface Member {
@@ -16,6 +18,12 @@ interface BandDetail {
   myRole: 'owner' | 'member';
 }
 
+interface Conversation {
+  id: string;
+  audioFileName: string | null;
+  closed: boolean;
+}
+
 /**
  * Band detail: name, member list, and (for owners) add/remove controls.
  *
@@ -24,8 +32,15 @@ interface BandDetail {
  * Remove is offered only for non-owner members, which also keeps owners
  * (including the creator/self) from being removed through the UI.
  */
-export function BandDetailClient({ bandId }: { bandId: string }) {
+export function BandDetailClient({
+  bandId,
+  apiKey,
+}: {
+  bandId: string;
+  apiKey: string;
+}) {
   const [data, setData] = useState<BandDetail | null>(null);
+  const [conversations, setConversations] = useState<Conversation[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
@@ -33,12 +48,19 @@ export function BandDetailClient({ bandId }: { bandId: string }) {
 
   const load = useCallback(async () => {
     try {
-      const r = await fetch(`/api/bands/${bandId}`, { cache: 'no-store' });
-      if (!r.ok) {
-        const b = await r.json().catch(() => ({}));
-        throw new Error(b.message ?? b.error ?? `HTTP ${r.status}`);
+      const [detailRes, convRes] = await Promise.all([
+        fetch(`/api/bands/${bandId}`, { cache: 'no-store' }),
+        fetch(`/api/bands/${bandId}/conversations`, { cache: 'no-store' }),
+      ]);
+      if (!detailRes.ok) {
+        const b = await detailRes.json().catch(() => ({}));
+        throw new Error(b.message ?? b.error ?? `HTTP ${detailRes.status}`);
       }
-      setData((await r.json()) as BandDetail);
+      setData((await detailRes.json()) as BandDetail);
+      if (convRes.ok) {
+        const cd = (await convRes.json()) as { conversations: Conversation[] };
+        setConversations(cd.conversations);
+      }
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -48,6 +70,34 @@ export function BandDetailClient({ bandId }: { bandId: string }) {
   useEffect(() => {
     void trackPending(() => load());
   }, [load, trackPending]);
+
+  const handleRegister = useCallback(
+    async (files: PickedFile[]) => {
+      try {
+        await trackPending(async () => {
+          // Register each picked audio file as a conversation under the band.
+          for (const f of files) {
+            const r = await fetch(`/api/bands/${bandId}/conversations`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                driveAudioFileId: f.id,
+                audioFileName: f.name,
+              }),
+            });
+            if (!r.ok) {
+              const b = await r.json().catch(() => ({}));
+              throw new Error(b.message ?? `HTTP ${r.status}`);
+            }
+          }
+        });
+        await load();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      }
+    },
+    [bandId, load, trackPending],
+  );
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,6 +160,39 @@ export function BandDetailClient({ bandId }: { bandId: string }) {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-semibold tracking-tight">{data.band.name}</h1>
+
+      <section className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-medium">Audio</h2>
+          <PickerButton apiKey={apiKey} onPick={handleRegister} label="Add audio" />
+        </div>
+        {conversations && conversations.length === 0 && (
+          <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+            No audio yet. Use “Add audio” to register a Drive file.
+          </p>
+        )}
+        {conversations && conversations.length > 0 && (
+          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+            {conversations.map((c) => (
+              <li key={c.id}>
+                <Link
+                  href={`/notes/${c.id}`}
+                  className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                >
+                  <span className="truncate font-medium">
+                    {c.audioFileName ?? 'Untitled audio'}
+                  </span>
+                  {c.closed && (
+                    <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                      closed
+                    </span>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium">Members</h2>

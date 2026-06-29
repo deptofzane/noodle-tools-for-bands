@@ -18,8 +18,6 @@ export default async function AnnotatedPage() {
   if (session.error === 'RefreshAccessTokenError') redirect('/library');
   if (!hasAllDriveScopes(session.scopes)) redirect('/library');
 
-  const currentUserSub = session.user.sub;
-
   return (
     <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
       <header className="flex items-center gap-2 text-xs text-neutral-500">
@@ -47,7 +45,7 @@ export default async function AnnotatedPage() {
         </p>
       </div>
 
-      <AnnotatedList currentUserSub={currentUserSub} />
+      <AnnotatedList />
     </main>
   );
 }

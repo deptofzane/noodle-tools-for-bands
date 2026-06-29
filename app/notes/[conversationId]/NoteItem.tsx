@@ -2,43 +2,31 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { formatDuration } from '@/lib/audio';
-import type { ThreadedNote, ApiNote } from '@/lib/notes';
+import type { ThreadedNote, ApiNote } from '@/lib/db/notes';
 import { useTrackPending } from '../../PendingActionProvider';
 import { usePlayer } from './PlayerContext';
 import { NoteForm, type Mentionable } from './NoteForm';
 import { Linkify } from './Linkify';
 
 /**
- * One top-level note in the panel — header, body, replies, and the
- * action affordances (seek, reply, edit, delete).
- *
- * Edit/delete buttons are only shown for notes the requesting user
- * authored (`note.isMine`, set by the server). The API also enforces
- * this — the data layer only looks inside the user's own notes file
- * for mutations.
+ * One top-level note — header, body, replies, and actions (seek, reply,
+ * edit, delete, resolve, copy-link). Talks to the Postgres conversation
+ * API. Edit/delete are shown only for notes the user authored
+ * (`note.isMine`, set by the server, which also enforces it).
  */
 
 interface NoteItemProps {
   note: ThreadedNote;
-  fileId: string;
-  folderId: string;
+  conversationId: string;
   onMutated: () => void;
-  /**
-   * True when this thread is the deep-link target (`?thread=`). It gets
-   * force-expanded, scrolled into view, briefly highlighted, and the
-   * player seeks to its timestamp on mount.
-   */
   highlighted?: boolean;
-  /** Participants offered in reply `@`-mention autocomplete. */
   mentionables?: Mentionable[];
-  /** Participant labels, for highlighting `@mentions` in bodies. */
   mentionLabels?: string[];
 }
 
 export function NoteItem({
   note,
-  fileId,
-  folderId,
+  conversationId,
   onMutated,
   highlighted = false,
   mentionables = [],
@@ -50,50 +38,37 @@ export function NoteItem({
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [copied, setCopied] = useState(false);
-  // Temporary highlight ring for a deep-linked thread; fades on its own.
   const [showHighlight, setShowHighlight] = useState(highlighted);
-  // Per-thread collapse. Ephemeral — not persisted to Drive, not in
-  // localStorage. Resolved threads collapse on mount by default; the
-  // user can still expand them locally without flipping the resolved
-  // flag. Persistence of the collapsed state would also create a
-  // surprise interaction with collaborative edits: a thread you
-  // minimized could quietly grow new replies offscreen.
   const [isMinimized, setIsMinimized] = useState<boolean>(
-    // A deep-linked thread always opens expanded, even if resolved.
     Boolean(note.resolved) && !highlighted,
   );
   const [isResolving, setIsResolving] = useState(false);
 
   const seekToNote = () => player.seek(note.timestampMs / 1000);
 
-  // On mount as the deep-link target: scroll into view, seek the player
-  // to the thread's timestamp, then let the highlight fade.
+  const replyCount = note.replies.length;
+  const replyLabel = `${replyCount} ${replyCount === 1 ? 'reply' : 'replies'}`;
+  const isResolved = Boolean(note.resolved);
+
   useEffect(() => {
     if (!highlighted) return;
     liRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     player.seek(note.timestampMs / 1000);
     const t = setTimeout(() => setShowHighlight(false), 3000);
     return () => clearTimeout(t);
-    // Run once when this becomes the highlighted thread.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlighted]);
 
   const handleCopyLink = async () => {
-    const url = `${window.location.origin}/notes/${fileId}?folder=${folderId}&thread=${note.id}`;
+    const url = `${window.location.origin}/notes/${conversationId}?thread=${note.id}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Clipboard API unavailable (e.g., insecure context) — fall back
-      // to a prompt so the user can copy manually.
       window.prompt('Copy link to this thread:', url);
     }
   };
-
-  const replyCount = note.replies.length;
-  const replyLabel = `${replyCount} ${replyCount === 1 ? 'reply' : 'replies'}`;
-  const isResolved = Boolean(note.resolved);
 
   const handleToggleResolved = async () => {
     if (isResolving) return;
@@ -101,7 +76,7 @@ export function NoteItem({
     try {
       await trackPending(async () => {
         const res = await fetch(
-          `/api/files/${fileId}/notes/${note.id}?folder=${folderId}`,
+          `/api/conversations/${conversationId}/notes/${note.id}`,
           {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -128,7 +103,7 @@ export function NoteItem({
   const handleEdit = async (body: string) => {
     await trackPending(async () => {
       const res = await fetch(
-        `/api/files/${fileId}/notes/${note.id}?folder=${folderId}`,
+        `/api/conversations/${conversationId}/notes/${note.id}`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -145,23 +120,20 @@ export function NoteItem({
   };
 
   const handleDelete = async () => {
-    if (!confirm('Delete this note? Your replies will be removed too.')) return;
+    if (!confirm('Delete this note? Its replies will be removed too.')) return;
     const res = await trackPending(() =>
-      fetch(`/api/files/${fileId}/notes/${note.id}?folder=${folderId}`, {
+      fetch(`/api/conversations/${conversationId}/notes/${note.id}`, {
         method: 'DELETE',
       }),
     );
-    if (res.ok || res.status === 204) {
-      onMutated();
-    } else {
-      alert('Failed to delete note.');
-    }
+    if (res.ok || res.status === 204) onMutated();
+    else alert('Failed to delete note.');
   };
 
   const handleReply = async (body: string, mentions: string[]) => {
     await trackPending(async () => {
       const res = await fetch(
-        `/api/files/${fileId}/notes/${note.id}/replies?folder=${folderId}`,
+        `/api/conversations/${conversationId}/notes/${note.id}/replies`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -313,8 +285,7 @@ export function NoteItem({
                 <ReplyItem
                   key={reply.id}
                   reply={reply}
-                  fileId={fileId}
-                  folderId={folderId}
+                  conversationId={conversationId}
                   onMutated={onMutated}
                   mentionLabels={mentionLabels}
                 />
@@ -329,14 +300,12 @@ export function NoteItem({
 
 function ReplyItem({
   reply,
-  fileId,
-  folderId,
+  conversationId,
   onMutated,
   mentionLabels = [],
 }: {
   reply: ThreadedNote;
-  fileId: string;
-  folderId: string;
+  conversationId: string;
   onMutated: () => void;
   mentionLabels?: string[];
 }) {
@@ -344,7 +313,7 @@ function ReplyItem({
 
   const handleEdit = async (body: string) => {
     const res = await fetch(
-      `/api/files/${fileId}/notes/${reply.id}?folder=${folderId}`,
+      `/api/conversations/${conversationId}/notes/${reply.id}`,
       {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -362,7 +331,7 @@ function ReplyItem({
   const handleDelete = async () => {
     if (!confirm('Delete this reply?')) return;
     const res = await fetch(
-      `/api/files/${fileId}/notes/${reply.id}?folder=${folderId}`,
+      `/api/conversations/${conversationId}/notes/${reply.id}`,
       { method: 'DELETE' },
     );
     if (res.ok || res.status === 204) onMutated();
@@ -411,15 +380,11 @@ function ReplyItem({
   );
 }
 
-function AuthorTag({
-  note,
-}: {
-  note: ApiNote;
-}) {
+function AuthorTag({ note }: { note: ApiNote }) {
   const displayName = note.author?.name ?? note.author?.email ?? 'Someone';
   return (
     <span
-      className='text-xs text-neutral-600 dark:text-neutral-400'
+      className="text-xs text-neutral-600 dark:text-neutral-400"
       title={note.author?.email ?? ''}
     >
       {displayName}

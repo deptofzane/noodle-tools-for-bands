@@ -9,24 +9,16 @@ import {
 } from 'react';
 
 /**
- * Shared inline form used for: creating a top-level note, replying to a
- * note, and editing your own note/reply.
- *
- * Differences between those flows live in props (header, placeholder,
- * submit label) — the form itself just owns the textarea state and
- * submit/cancel handling.
- *
- * Cmd/Ctrl + Enter submits.
+ * Shared inline form for creating a note, replying, and editing.
  *
  * @-mentions: when `mentionables` is provided, typing `@` opens an
- * autocomplete of conversation participants. Picking one inserts
- * `@Display Name ` into the body and records the participant's `sub`.
- * On submit, only mentions whose `@label` text is still present in the
- * body are passed up (so deleting the text removes the mention).
+ * autocomplete of band members. Picking one inserts `@Display Name `
+ * and records the member's user id. On submit only mentions whose
+ * `@label` text is still present in the body are emitted.
  */
 
 export interface Mentionable {
-  sub: string;
+  id: string; // user id
   name?: string | null;
   email?: string | null;
 }
@@ -54,7 +46,6 @@ export function NoteForm({
   onSubmit: (body: string, mentions: string[]) => Promise<void> | void;
   onCancel?: () => void;
   autoFocus?: boolean;
-  /** Participants offered in the `@` autocomplete. Empty = no mentions. */
   mentionables?: Mentionable[];
 }) {
   const [body, setBody] = useState(initialBody);
@@ -62,15 +53,13 @@ export function NoteForm({
   const [error, setError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Mentions the user has picked from the menu: { sub, label }. Resolved
-  // against the body text at submit time.
-  const pickedRef = useRef<Array<{ sub: string; label: string }>>([]);
+  // Mentions the user picked: { id, label }. Resolved against the body
+  // text at submit time.
+  const pickedRef = useRef<Array<{ id: string; label: string }>>([]);
 
-  // Autocomplete menu state.
   const [menuOpen, setMenuOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
-  // Index of the '@' that started the current query, for replacement.
   const atIndexRef = useRef<number | null>(null);
 
   const matches = useMemo(() => {
@@ -93,8 +82,6 @@ export function NoteForm({
     atIndexRef.current = null;
   };
 
-  // Recompute the autocomplete state from the text immediately left of
-  // the cursor. Triggers when that text ends in `@word` (no spaces).
   const syncMenu = (value: string, cursor: number) => {
     if (mentionables.length === 0) return;
     const upto = value.slice(0, cursor);
@@ -125,9 +112,8 @@ export function NoteForm({
     const insert = `@${label} `;
     const next = before + insert + after;
     setBody(next);
-    pickedRef.current.push({ sub: m.sub, label });
+    pickedRef.current.push({ id: m.id, label });
     closeMenu();
-    // Restore focus + place the cursor right after the inserted mention.
     requestAnimationFrame(() => {
       el.focus();
       const pos = before.length + insert.length;
@@ -136,11 +122,11 @@ export function NoteForm({
   };
 
   const resolveMentions = (text: string): string[] => {
-    const subs = new Set<string>();
-    for (const { sub, label } of pickedRef.current) {
-      if (text.includes(`@${label}`)) subs.add(sub);
+    const ids = new Set<string>();
+    for (const { id, label } of pickedRef.current) {
+      if (text.includes(`@${label}`)) ids.add(id);
     }
-    return [...subs];
+    return [...ids];
   };
 
   const submit = async () => {
@@ -165,8 +151,6 @@ export function NoteForm({
   };
 
   const handleKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    // While the mention menu is open, arrow/enter/tab/escape drive it
-    // instead of the form.
     if (menuOpen && matches.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -209,10 +193,7 @@ export function NoteForm({
           value={body}
           onChange={(e) => handleChange(e.target.value, e.target.selectionStart)}
           onKeyDown={handleKey}
-          onBlur={() => {
-            // Delay so a click on a menu item registers before close.
-            setTimeout(closeMenu, 120);
-          }}
+          onBlur={() => setTimeout(closeMenu, 120)}
           placeholder={placeholder}
           autoFocus={autoFocus}
           rows={3}
@@ -221,11 +202,9 @@ export function NoteForm({
         {menuOpen && matches.length > 0 && (
           <ul className="absolute left-2 right-2 top-full z-10 mt-1 max-h-48 overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-sm shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
             {matches.map((m, i) => (
-              <li key={m.sub}>
+              <li key={m.id}>
                 <button
                   type="button"
-                  // onMouseDown (not onClick) so it fires before the
-                  // textarea's blur closes the menu.
                   onMouseDown={(e) => {
                     e.preventDefault();
                     selectMention(m);
@@ -239,9 +218,7 @@ export function NoteForm({
                 >
                   <span className="font-medium">{mentionLabel(m)}</span>
                   {m.email && m.email !== mentionLabel(m) && (
-                    <span className="text-[11px] text-neutral-500">
-                      {m.email}
-                    </span>
+                    <span className="text-[11px] text-neutral-500">{m.email}</span>
                   )}
                 </button>
               </li>
@@ -249,9 +226,7 @@ export function NoteForm({
           </ul>
         )}
       </div>
-      {error && (
-        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       <div className="flex items-center justify-between gap-2">
         <span className="text-[10px] text-neutral-500">⌘ Enter to submit</span>
         <div className="flex gap-2">
