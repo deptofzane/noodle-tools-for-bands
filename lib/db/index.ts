@@ -11,3 +11,12 @@ const pool =
 if (process.env.NODE_ENV !== 'production') globalForDb.__pool = pool;
 
 export const db = drizzle(pool, { schema });
+
+/**
+ * The drizzle DB handle OR a transaction handle. Lets shared helpers
+ * (recordActivity, mention inserts, etc.) run either standalone or
+ * inside a `db.transaction(...)` callback.
+ */
+export type DbExecutor =
+  | typeof db
+  | Parameters<Parameters<(typeof db)['transaction']>[0]>[0];
