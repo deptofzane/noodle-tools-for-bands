@@ -373,7 +373,18 @@ function ReplyItem({
   mentionLabels?: string[];
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const showToast = useToast();
+
+  useEffect(() => {
+    if (!confirmDeleteOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !deleting) setConfirmDeleteOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [confirmDeleteOpen, deleting]);
 
   const handleEdit = async (body: string) => {
     const res = await fetch(
@@ -393,13 +404,19 @@ function ReplyItem({
   };
 
   const handleDelete = async () => {
-    if (!confirm('Delete this reply?')) return;
-    const res = await fetch(
-      `/api/conversations/${conversationId}/notes/${reply.id}`,
-      { method: 'DELETE' },
-    );
-    if (res.ok || res.status === 204) onMutated();
-    else showToast('Failed to delete reply.');
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(
+        `/api/conversations/${conversationId}/notes/${reply.id}`,
+        { method: 'DELETE' },
+      );
+      if (res.ok || res.status === 204) onMutated();
+      else showToast('Failed to delete reply.');
+    } finally {
+      setDeleting(false);
+      setConfirmDeleteOpen(false);
+    }
   };
 
   return (
@@ -433,11 +450,53 @@ function ReplyItem({
           <span aria-hidden="true">·</span>
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={() => setConfirmDeleteOpen(true)}
             className="hover:text-red-600 dark:hover:text-red-400"
           >
             Delete
           </button>
+        </div>
+      )}
+
+      {confirmDeleteOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-reply-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => {
+            if (!deleting) setConfirmDeleteOpen(false);
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-5 shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="delete-reply-title" className="text-base font-semibold">
+              Delete reply?
+            </h2>
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+              This can’t be undone.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteOpen(false)}
+                disabled={deleting}
+                className="rounded-md px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
+              >
+                {deleting ? 'Deleting…' : 'Delete reply'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </li>
