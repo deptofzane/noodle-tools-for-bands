@@ -186,9 +186,13 @@ revoking Drive access immediately cuts off playback for that user.
 
 ## Deployment
 
-The plan targets Vercel; anything that runs Node + Next.js 15 works.
-This section walks through Vercel; the alternative-host notes at the
-end apply to Render, Railway, Fly, etc.
+> **Run on a long-lived Node server — not serverless.** Conversations
+> live in Postgres, and the app holds a persistent Postgres `LISTEN`
+> connection plus serves SSE for real-time note updates. Those need a
+> process that stays up, so Vercel/Lambda-style serverless is **not**
+> supported. Use Railway, Render, Fly, or any host that runs
+> `pnpm start` on Node 20+. A `Dockerfile` is included and works on all
+> of them.
 
 ### 1. Production Google Cloud setup
 
@@ -212,75 +216,80 @@ brand verification). This can take weeks; plan accordingly. Until
 verified, you can keep the app in Testing mode and add test users
 manually.
 
-### 2. Vercel
+### 2. Provision Postgres
 
-Import the repo into Vercel. Framework auto-detects as Next.js. Set
-the **Root Directory** to `sidestage-next` if the repo root isn't
-that folder.
+Create a managed Postgres 18 instance (your host's add-on, Neon,
+Supabase, etc.). Grab its connection string for `DATABASE_URL` and set
+`DATABASE_SSL=true` (managed Postgres requires TLS). If the provider
+uses an internal/self-signed cert and you get a cert error, also set
+`DATABASE_SSL_REJECT_UNAUTHORIZED=false`.
 
-**Environment variables** (Project → Settings → Environment Variables):
+Migrations are applied by a release/start step (below) via
+`pnpm db:migrate:deploy`, which uses the drizzle-orm runtime migrator —
+no `drizzle-kit` needed in production.
 
-| Variable                     | Value                                             | Env(s)              |
-| ---------------------------- | ------------------------------------------------- | ------------------- |
-| `AUTH_SECRET`                | `openssl rand -base64 32` (fresh per environment) | Production, Preview |
-| `AUTH_GOOGLE_ID`             | OAuth client ID                                   | Production, Preview |
-| `AUTH_GOOGLE_SECRET`         | OAuth client secret                               | Production, Preview |
-| `AUTH_TRUST_HOST`            | `true`                                            | Production, Preview |
-| `NEXT_PUBLIC_GOOGLE_API_KEY` | Picker API key                                    | Production, Preview |
+### 3. Deploy to a long-lived Node host
 
-`AUTH_URL` is not needed on Vercel — Auth.js v5 derives it from
-`VERCEL_URL`.
+**Environment variables:**
 
-**Preview deployments.** Each preview gets a generated URL like
-`audio-notes-abc123.vercel.app`. For OAuth to work on previews, add
-that pattern as an authorized redirect URI in Google Cloud, or
-restrict OAuth to production only and skip auth on previews. Most
-real projects ship a wildcard pattern.
+| Variable                            | Value                                                  |
+| ----------------------------------- | ------------------------------------------------------ |
+| `AUTH_SECRET`                       | `openssl rand -base64 32` (fresh per environment)      |
+| `AUTH_GOOGLE_ID`                    | OAuth client ID                                         |
+| `AUTH_GOOGLE_SECRET`                | OAuth client secret                                    |
+| `AUTH_TRUST_HOST`                   | `true`                                                 |
+| `AUTH_URL`                          | Public origin, e.g. `https://<your-domain>`            |
+| `NEXT_PUBLIC_GOOGLE_API_KEY`        | Picker API key                                         |
+| `DATABASE_URL`                      | Postgres connection string                             |
+| `DATABASE_SSL`                      | `true` (managed Postgres)                              |
+| `GOOGLE_SERVICE_ACCOUNT_KEY`        | _(optional)_ service-account JSON for shared audio     |
 
-**Function configuration.** The two long-running routes already declare
-their own `maxDuration = 300` (5 minutes):
+`AUTH_URL` matters here (unlike Vercel, there's no `VERCEL_URL` to
+derive it from). `GOOGLE_SERVICE_ACCOUNT_KEY` is optional — without it,
+audio streams with each user's personal Drive token (a band member not
+shared on a file can't play it); with it, band membership alone grants
+playback. See `.env.example` for details on each.
 
-- `app/api/drive/changes/route.ts` — SSE long-poll
-- `app/api/drive/file/[fileId]/stream/route.ts` — audio Range proxy
+**Commands:**
 
-On Vercel's Hobby tier, the cap is 60s regardless of declaration — the
-notes panel will reconnect to SSE every minute, which works but is
-noisier than Pro. On Pro / Fluid Compute the declared 300s applies.
+- **Build:** `pnpm install --frozen-lockfile && pnpm build`
+- **Release (migrate):** `pnpm db:migrate:deploy`
+- **Start:** `pnpm start` (Next honors the host's `PORT`)
 
-**Deploy.** Push to `main` (or trigger via the dashboard). After deploy,
-verify:
+**Docker.** The included `Dockerfile` runs migrations then starts the
+server in one container — point Railway/Render/Fly at it, or use your
+host's native Next.js buildpack with the commands above. For
+multi-instance deploys, run `db:migrate:deploy` as a one-off release
+step rather than in the start command, so instances don't race.
+
+**Reverse proxy / SSE.** Make sure the proxy doesn't buffer or idle-out
+the SSE route (`/api/conversations/[id]/events`): allow long-lived
+responses and disable response buffering (e.g. nginx
+`proxy_buffering off;`). The client reconnects automatically and a 30s
+poll backstops missed events, but buffering delays real-time updates.
+
+**Verify after deploy:**
 
 - `https://<your-domain>/api/health` returns `{ ok: true, version: "..." }`
-- Sign-in works end-to-end
-- The Picker opens (if it errors "API key not valid," the HTTP referrer
-  restriction usually needs the production domain added)
-- Playback works (you may need to grant the `drive.readonly` scope on
-  first prod login — the app surfaces a "Connect Drive" CTA)
-
-### 3. Other Node hosts
-
-The app is a stock Next.js 15 App Router project. Any host that runs
-`pnpm build && pnpm start` on Node 20+ works (Render, Railway, Fly,
-self-hosted). The two host-specific concerns:
-
-- **Env vars.** Same list as the Vercel table above. Set `AUTH_URL` to
-  the public origin when the host doesn't populate a `VERCEL_URL`-like
-  hint, and keep `AUTH_TRUST_HOST=true`.
-- **Long-running routes.** Make sure your host's request timeout is at
-  least as long as the `maxDuration` declarations (300s). Behind a
-  reverse proxy, set proxy read timeout to match and disable response
-  buffering on the SSE route (we already set `X-Accel-Buffering: no`
-  for nginx). Otherwise SSE events are held back in chunks.
+- Sign-in works; the "Connect Drive" CTA grants Drive scopes on first login
+- Create a band, register audio via the Picker, open the conversation,
+  add a note — and watch it appear in a second browser within a beat (SSE)
 
 ### 4. Operational notes
 
-**Drive quotas.** Per-user quota is ~1000 requests / 100s. The SSE
-endpoint hits Drive ~30 times/minute per connected client. Open
-Conversations and the per-folder activity rollup are heavier (one
-list + N reads) — they're not polled, so they cost one round of calls
-per page navigation. If you start seeing 429s, the `googleapis` Drive
-client we instantiate in `lib/drive.ts` already has built-in
-exponential backoff for 429 / 5xx.
+**Postgres connections.** The app keeps a pooled connection set
+(`max: 10`) for queries plus **one** dedicated connection for the
+LISTEN/NOTIFY hub (shared across all SSE clients, see `lib/db/notify.ts`).
+Size your Postgres `max_connections` for the pool × instances + one
+listener each. Use your provider's pooled endpoint if connection limits
+are tight.
+
+**Drive usage.** Drive is now only touched for audio (the streaming
+proxy + the Picker) — conversation data is all Postgres, so the old
+per-note Drive quota pressure is gone. The streaming proxy uses the
+service account when configured, else the user's token; the
+`googleapis` client in `lib/drive.ts` retries 429/5xx with backoff and
+is tuned against "Premature close" socket errors.
 
 **Health check.** `/api/health` returns `{ ok: true, version }`. It
 does no Drive calls and no auth check, so it's safe to point a

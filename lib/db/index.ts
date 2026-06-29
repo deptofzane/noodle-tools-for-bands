@@ -1,12 +1,17 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './schema';
+import { pgSslConfig } from './ssl';
 
 const globalForDb = globalThis as unknown as { __pool?: Pool };
 
 const pool =
   globalForDb.__pool ??
-  new Pool({ connectionString: process.env.DATABASE_URL, max: 10 });
+  new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 10,
+    ssl: pgSslConfig(),
+  });
 
 if (process.env.NODE_ENV !== 'production') globalForDb.__pool = pool;
 

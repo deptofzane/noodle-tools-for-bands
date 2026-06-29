@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { Client } from 'pg';
+import { pgSslConfig } from './ssl';
 
 /**
  * Postgres LISTEN/NOTIFY fan-out hub.
@@ -39,7 +40,10 @@ class NotifyHub {
     if (this.client) return;
     if (this.connecting) return this.connecting;
     this.connecting = (async () => {
-      const client = new Client({ connectionString: process.env.DATABASE_URL });
+      const client = new Client({
+        connectionString: process.env.DATABASE_URL,
+        ssl: pgSslConfig(),
+      });
       client.on('notification', (msg) => {
         if (msg.channel === CONVERSATION_CHANNEL && msg.payload) {
           this.emitter.emit(msg.payload);
