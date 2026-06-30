@@ -30,7 +30,7 @@ Highlights:
 
 - Node.js 20 or later
 - pnpm (`npm install -g pnpm`)
-- Postgres 18 (local Docker is easiest; see
+- Postgres 17 (local Docker is easiest; see
   `docs/postgres-phase-1-setup.md`)
 - A Google account for the OAuth client and for testing
 
@@ -76,12 +76,12 @@ Make sure **Google Picker API** is enabled in APIs & Services → Library.
 
 ### 3. Start Postgres
 
-Local dev uses Postgres 18; Docker is the quickest:
+Local dev uses Postgres 17; Docker is the quickest:
 
 ```bash
 docker run --name sidestage-pg \
   -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=sidestage \
-  -p 5432:5432 -v sidestage-pg-data:/var/lib/postgresql/data -d postgres:18
+  -p 5432:5432 -v sidestage-pg-data:/var/lib/postgresql/data -d postgres:17
 ```
 
 (See `docs/postgres-phase-1-setup.md` for native/alternative setups.)
@@ -263,7 +263,7 @@ manually.
 
 ### 2. Provision Postgres
 
-Create a managed Postgres 18 instance (your host's add-on, Neon,
+Create a managed Postgres 17 instance (your host's add-on, Neon,
 Supabase, etc.). Grab its connection string for `DATABASE_URL` and set
 `DATABASE_SSL=true` (managed Postgres requires TLS). If the provider
 uses an internal/self-signed cert and you get a cert error, also set

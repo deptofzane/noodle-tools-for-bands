@@ -7,7 +7,7 @@ prove the toolchain end-to-end — the full schema is Phase 2.
 Stack decisions: **Next.js + Drizzle + Postgres on a long-lived Node server**
 (not serverless). See the project memory `postgres-migration` for the full plan.
 
-## Step 1 — Run a local Postgres 18
+## Step 1 — Run a local Postgres 17
 
 Docker (most reproducible):
 
@@ -15,11 +15,11 @@ Docker (most reproducible):
 docker run --name sidestage-pg \
   -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=sidestage \
-  -p 5432:5432 -d postgres:18
+  -p 5432:5432 -d postgres:17
 ```
 
-Alternatives: `brew install postgresql@18 && brew services start postgresql@18`,
-or Postgres.app with the PG 18 server selected.
+Alternatives: `brew install postgresql@17 && brew services start postgresql@17`,
+or Postgres.app with the PG 17 server selected.
 
 If a container from an earlier attempt is holding the name/port, remove it first:
 
@@ -27,8 +27,8 @@ If a container from an earlier attempt is holding the name/port, remove it first
 docker rm -f sidestage-pg
 ```
 
-Note: a Postgres 18 data directory isn't readable by older server binaries, so
-once you initialize on 18, stay on 18 locally.
+Note: a Postgres 17 data directory isn't readable by older server binaries, so
+once you initialize on 17, stay on 17 locally.
 
 ## Step 2 — Add the connection string
 
