@@ -29,6 +29,7 @@ class NotifyHub {
   private emitter = new EventEmitter();
   private client: Client | null = null;
   private connecting: Promise<void> | null = null;
+  private closed = false;
 
   constructor() {
     // Many conversations × many tabs → unbounded distinct listeners.
@@ -67,12 +68,28 @@ class NotifyHub {
 
   private handleDrop() {
     this.client = null;
+    if (this.closed) return;
     // Reconnect shortly; subscribers persist on the emitter across drops.
     setTimeout(() => {
+      if (this.closed) return;
       this.ensureListening().catch((err) =>
         console.error('[notify] reconnect failed', err),
       );
     }, 1000);
+  }
+
+  /** Shut the listener down (no reconnect). For scripts/tests teardown. */
+  async close(): Promise<void> {
+    this.closed = true;
+    const c = this.client;
+    this.client = null;
+    if (c) {
+      try {
+        await c.end();
+      } catch {
+        // ignore
+      }
+    }
   }
 
   /** Subscribe to changes for one conversation. Returns an unsubscribe fn. */
@@ -89,4 +106,12 @@ export function getNotifyHub(): NotifyHub {
     globalForNotify.__notifyHub = new NotifyHub();
   }
   return globalForNotify.__notifyHub;
+}
+
+/** Tear down the listener connection so a script/test process can exit. */
+export async function closeNotifyHub(): Promise<void> {
+  if (globalForNotify.__notifyHub) {
+    await globalForNotify.__notifyHub.close();
+    delete globalForNotify.__notifyHub;
+  }
 }

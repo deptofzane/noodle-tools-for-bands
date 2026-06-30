@@ -25,3 +25,13 @@ export const db = drizzle(pool, { schema });
 export type DbExecutor =
   | typeof db
   | Parameters<Parameters<(typeof db)['transaction']>[0]>[0];
+
+/**
+ * Close the connection pool. App code never calls this (the server is
+ * long-lived); it exists so one-off scripts and the integration tests can
+ * let their process exit instead of hanging on open connections.
+ */
+export async function closeDb(): Promise<void> {
+  await pool.end();
+  if (globalForDb.__pool === pool) delete globalForDb.__pool;
+}
