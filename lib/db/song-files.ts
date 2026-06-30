@@ -22,6 +22,8 @@ export interface SongFileMeta {
   fileName: string;
   mimeType: string;
   sizeBytes: number;
+  /** ISO timestamp of the last write — a stable cache-bust token. */
+  updatedAt: string;
 }
 
 /** Metadata only (no bytes) — cheap; used to set up Range responses. */
@@ -34,13 +36,15 @@ export async function getSongFileMeta(
       fileName: songFiles.fileName,
       mimeType: songFiles.mimeType,
       sizeBytes: songFiles.sizeBytes,
+      updatedAt: songFiles.updatedAt,
     })
     .from(songFiles)
     .where(
       and(eq(songFiles.conversationId, conversationId), eq(songFiles.kind, kind)),
     )
     .limit(1);
-  return row ?? null;
+  if (!row) return null;
+  return { ...row, updatedAt: row.updatedAt.toISOString() };
 }
 
 export async function hasSongFile(
@@ -50,7 +54,7 @@ export async function hasSongFile(
   return (await getSongFileMeta(conversationId, kind)) !== null;
 }
 
-/** Insert or replace the file for a (conversation, kind). */
+/** Insert or replace the file for a (conversation, kind). Returns its meta. */
 export async function putSongFile(input: {
   conversationId: string;
   kind: SongFileKind;
@@ -58,7 +62,8 @@ export async function putSongFile(input: {
   fileName: string;
   mimeType: string;
   driveFileId?: string | null;
-}): Promise<void> {
+}): Promise<SongFileMeta> {
+  const now = new Date();
   const values = {
     conversationId: input.conversationId,
     kind: input.kind,
@@ -68,7 +73,7 @@ export async function putSongFile(input: {
     sizeBytes: input.data.length,
     driveFileId: input.driveFileId ?? null,
   };
-  await db
+  const [row] = await db
     .insert(songFiles)
     .values(values)
     .onConflictDoUpdate({
@@ -79,9 +84,16 @@ export async function putSongFile(input: {
         mimeType: values.mimeType,
         sizeBytes: values.sizeBytes,
         driveFileId: values.driveFileId,
-        updatedAt: new Date(),
+        updatedAt: now,
       },
+    })
+    .returning({
+      fileName: songFiles.fileName,
+      mimeType: songFiles.mimeType,
+      sizeBytes: songFiles.sizeBytes,
+      updatedAt: songFiles.updatedAt,
     });
+  return { ...row!, updatedAt: row!.updatedAt.toISOString() };
 }
 
 /**

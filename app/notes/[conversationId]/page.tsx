@@ -53,7 +53,7 @@ export default async function NotesPage({
   const fileName = conversation.audioFileName ?? audio?.fileName ?? 'audio';
   const mimeType = audio?.mimeType ?? 'audio/mpeg';
   const sheetMusic = sheet
-    ? { fileName: sheet.fileName, mimeType: sheet.mimeType }
+    ? { fileName: sheet.fileName, mimeType: sheet.mimeType, updatedAt: sheet.updatedAt }
     : null;
 
   return (

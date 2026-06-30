@@ -53,6 +53,9 @@ export async function GET(
     'Accept-Ranges': 'bytes',
     'Cache-Control': 'private, max-age=300',
     'Content-Disposition': `inline; filename="${sanitizeFilename(meta.fileName)}"`,
+    // Don't let the browser re-interpret the bytes as a different type
+    // (e.g. a .txt sniffed as HTML) — these are embedded same-origin.
+    'X-Content-Type-Options': 'nosniff',
   };
 
   const rangeHeader = req.headers.get('range');
@@ -123,11 +126,29 @@ export async function POST(
     );
   }
 
-  const data = Buffer.from(await file.arrayBuffer());
   const fileName = file.name || 'sheet-music';
-  const mimeType = file.type || 'application/octet-stream';
-  await putSongFile({ conversationId, kind: 'sheet_music', data, fileName, mimeType });
-  return Response.json({ sheetMusic: { fileName, mimeType } }, { status: 201 });
+  // Allowlist the content type — `accept` on the input is only a hint,
+  // and serving arbitrary user files inline (HTML/SVG) is an XSS vector.
+  const mimeType = normalizeSheetMime(file.type, fileName);
+  if (!mimeType) {
+    return Response.json(
+      {
+        error: 'unsupported_type',
+        message: 'Allowed: PDF, plain text/markdown, or a PNG/JPEG/GIF/WEBP image.',
+      },
+      { status: 415 },
+    );
+  }
+
+  const data = Buffer.from(await file.arrayBuffer());
+  const meta = await putSongFile({
+    conversationId,
+    kind: 'sheet_music',
+    data,
+    fileName,
+    mimeType,
+  });
+  return Response.json({ sheetMusic: meta }, { status: 201 });
 }
 
 export async function DELETE(
@@ -188,4 +209,47 @@ function resolveContentType(mime: string, name: string | null): string {
 /** Strip characters that would break the Content-Disposition header. */
 function sanitizeFilename(name: string): string {
   return name.replace(/["\\\r\n]/g, '_');
+}
+
+/**
+ * Resolve an uploaded sheet-music file to an allowed MIME type, or null
+ * to reject it. Only types safe to embed inline are permitted — notably
+ * NOT text/html or image/svg+xml, which can execute scripts same-origin.
+ * Falls back to the filename extension when the browser-supplied type is
+ * missing or generic.
+ */
+const ALLOWED_SHEET_MIMES = new Set([
+  'application/pdf',
+  'text/plain',
+  'text/markdown',
+  'text/csv',
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+]);
+const EXT_TO_MIME: Record<string, string> = {
+  pdf: 'application/pdf',
+  txt: 'text/plain',
+  md: 'text/markdown',
+  markdown: 'text/markdown',
+  csv: 'text/csv',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+};
+
+function normalizeSheetMime(rawMime: string, fileName: string): string | null {
+  const mime = (rawMime || '').toLowerCase().split(';')[0]!.trim();
+  const ext = fileName.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1];
+
+  // Hard rejects (scriptable inline).
+  if (mime === 'text/html' || ext === 'html' || ext === 'htm') return null;
+  if (mime === 'image/svg+xml' || ext === 'svg') return null;
+
+  if (ALLOWED_SHEET_MIMES.has(mime)) return mime;
+  if (ext && EXT_TO_MIME[ext]) return EXT_TO_MIME[ext];
+  return null;
 }

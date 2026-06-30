@@ -47,7 +47,13 @@ export default async function EditSongPage({
         initialBandId={conversation.bandId}
         bands={bands.map((b) => ({ id: b.id, name: b.name }))}
         sheetMusic={
-          sheet ? { fileName: sheet.fileName, mimeType: sheet.mimeType } : null
+          sheet
+            ? {
+                fileName: sheet.fileName,
+                mimeType: sheet.mimeType,
+                updatedAt: sheet.updatedAt,
+              }
+            : null
         }
       />
     </main>

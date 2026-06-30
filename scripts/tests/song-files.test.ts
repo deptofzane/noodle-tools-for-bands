@@ -26,7 +26,7 @@ test('song-files: bytea round-trip, range slices, upsert, cascade', async () => 
     const conv = await findOrCreateConversation(band.id, 'driveSF', 'Song.mp3');
 
     const data = Buffer.from(Array.from({ length: 1024 }, (_, i) => i % 256));
-    await putSongFile({
+    const putMeta = await putSongFile({
       conversationId: conv.id,
       kind: 'audio',
       data,
@@ -34,11 +34,13 @@ test('song-files: bytea round-trip, range slices, upsert, cascade', async () => 
       mimeType: 'audio/mpeg',
       driveFileId: 'driveSF',
     });
+    assert.ok(typeof putMeta.updatedAt === 'string', 'putSongFile returns meta with updatedAt');
 
     assert.ok(await hasSongFile(conv.id, 'audio'), 'hasSongFile true');
     const meta = await getSongFileMeta(conv.id, 'audio');
     assert.equal(meta?.sizeBytes, 1024, 'size 1024');
     assert.equal(meta?.mimeType, 'audio/mpeg', 'mime stored');
+    assert.ok(typeof meta?.updatedAt === 'string', 'meta includes updatedAt');
 
     const full = await readSongFileRange(conv.id, 'audio', 0, 1024);
     assert.ok(full && full.equals(data), 'full read round-trips');
