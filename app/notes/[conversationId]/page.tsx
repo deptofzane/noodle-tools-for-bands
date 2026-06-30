@@ -46,7 +46,7 @@ export default async function NotesPage({
     getSongFileMeta(conversationId, 'audio'),
     getSongFileMeta(conversationId, 'sheet_music'),
   ]);
-  const fileName = audio?.fileName ?? conversation.audioFileName ?? 'audio';
+  const fileName = conversation.audioFileName ?? audio?.fileName ?? 'audio';
   const mimeType = audio?.mimeType ?? 'audio/mpeg';
   const sheetMusic = sheet
     ? { fileName: sheet.fileName, mimeType: sheet.mimeType }
@@ -54,12 +54,18 @@ export default async function NotesPage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-4 px-6 py-4">
-      <header className="flex items-center gap-2 text-xs text-neutral-500">
+      <header className="flex items-center justify-between gap-2 text-xs text-neutral-500">
         <Link
           href="/open-conversations"
           className="hover:text-neutral-900 dark:hover:text-neutral-100"
         >
           ← Open Conversations
+        </Link>
+        <Link
+          href={`/notes/${conversationId}/edit`}
+          className="hover:text-neutral-900 dark:hover:text-neutral-100"
+        >
+          Edit song
         </Link>
       </header>
 

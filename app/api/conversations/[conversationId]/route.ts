@@ -1,18 +1,29 @@
 import { NextResponse } from 'next/server';
 import { getCurrentDbUser } from '@/lib/current-user';
-import { getConversationMembership, setConversationClosed } from '@/lib/db/conversations';
+import {
+  ConversationConflictError,
+  deleteConversation,
+  getConversationMembership,
+  moveConversation,
+  renameConversation,
+  setConversationClosed,
+} from '@/lib/db/conversations';
 import { getConversationActivity } from '@/lib/db/activity';
 import { loadNotes } from '@/lib/db/notes';
-import { listMembers } from '@/lib/db/bands';
+import { getMembership, listMembers } from '@/lib/db/bands';
 
 /**
- * GET   /api/conversations/[conversationId]
- *   → { conversation, closed, notes (threaded), activity, myRole }
+ * GET    /api/conversations/[conversationId]
+ *   → { conversation, closed, notes (threaded), activity, members, myRole }
  *
- * PATCH /api/conversations/[conversationId]
- *   Body: { closed: boolean } → open/close the conversation.
+ * PATCH  /api/conversations/[conversationId]
+ *   Body may include any of: { closed?, name?, bandId? } — open/close,
+ *   rename the song, or move it to another band you belong to.
  *
- * Both require membership in the conversation's owning band.
+ * DELETE /api/conversations/[conversationId]
+ *   → delete the song (cascades notes, mentions, activity, files).
+ *
+ * All require membership in the conversation's owning band.
  */
 export async function GET(
   _req: Request,
@@ -53,12 +64,56 @@ export async function PATCH(
   if (!membership) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
   const body = await req.json().catch(() => null);
-  if (typeof body?.closed !== 'boolean')
-    return NextResponse.json(
-      { error: 'bad_request', message: '`closed` must be a boolean.' },
-      { status: 400 },
-    );
+  if (!body || typeof body !== 'object')
+    return NextResponse.json({ error: 'bad_body' }, { status: 400 });
 
-  const result = await setConversationClosed(conversationId, user.id, body.closed);
-  return NextResponse.json(result);
+  let conversation = membership.conversation;
+
+  if (typeof body.name === 'string') {
+    const name = body.name.trim();
+    if (!name || name.length > 255)
+      return NextResponse.json(
+        { error: 'bad_name', message: 'Name must be 1–255 characters.' },
+        { status: 400 },
+      );
+    conversation = await renameConversation(conversationId, name);
+  }
+
+  if (typeof body.bandId === 'string' && body.bandId !== conversation.bandId) {
+    // You can only move a song to a band you belong to.
+    if (!(await getMembership(user.id, body.bandId)))
+      return NextResponse.json(
+        { error: 'forbidden', message: 'You’re not a member of that band.' },
+        { status: 403 },
+      );
+    try {
+      conversation = await moveConversation(conversationId, body.bandId);
+    } catch (err) {
+      if (err instanceof ConversationConflictError)
+        return NextResponse.json({ error: 'conflict', message: err.message }, { status: 409 });
+      throw err;
+    }
+  }
+
+  if (typeof body.closed === 'boolean') {
+    await setConversationClosed(conversationId, user.id, body.closed);
+    conversation = { ...conversation, closed: body.closed };
+  }
+
+  return NextResponse.json({ conversation });
+}
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ conversationId: string }> },
+) {
+  const user = await getCurrentDbUser();
+  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const { conversationId } = await params;
+
+  if (!(await getConversationMembership(user.id, conversationId)))
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+
+  await deleteConversation(conversationId);
+  return new NextResponse(null, { status: 204 });
 }

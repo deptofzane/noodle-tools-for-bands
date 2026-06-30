@@ -151,3 +151,65 @@ export async function setConversationClosed(
     return { closed };
   });
 }
+
+export class ConversationConflictError extends Error {
+  constructor(message = 'That band already has this song.') {
+    super(message);
+    this.name = 'ConversationConflictError';
+  }
+}
+
+/** Rename a song (the conversation's display name). */
+export async function renameConversation(
+  conversationId: string,
+  name: string,
+): Promise<Conversation> {
+  const [row] = await db
+    .update(conversations)
+    .set({ audioFileName: name })
+    .where(eq(conversations.id, conversationId))
+    .returning();
+  return row!;
+}
+
+/**
+ * Move a song to a different band. Throws ConversationConflictError if
+ * the target band already has a conversation for the same audio file
+ * (the (band, drive_audio_file_id) unique constraint).
+ */
+export async function moveConversation(
+  conversationId: string,
+  bandId: string,
+): Promise<Conversation> {
+  try {
+    const [row] = await db
+      .update(conversations)
+      .set({ bandId })
+      .where(eq(conversations.id, conversationId))
+      .returning();
+    return row!;
+  } catch (err) {
+    // Postgres unique_violation. drizzle wraps the driver error, so the
+    // code may live on the error or its `.cause`.
+    if (pgErrorCode(err) === '23505') throw new ConversationConflictError();
+    throw err;
+  }
+}
+
+/** Extract a Postgres error code from a (possibly drizzle-wrapped) error. */
+function pgErrorCode(err: unknown): string | undefined {
+  if (typeof err !== 'object' || err === null) return undefined;
+  const e = err as { code?: unknown; cause?: unknown };
+  if (typeof e.code === 'string') return e.code;
+  if (e.cause && typeof e.cause === 'object') {
+    const code = (e.cause as { code?: unknown }).code;
+    if (typeof code === 'string') return code;
+  }
+  return undefined;
+}
+
+/** Delete a song and everything it owns (notes, mentions, activity,
+ * read state, files) via FK cascade. */
+export async function deleteConversation(conversationId: string): Promise<void> {
+  await db.delete(conversations).where(eq(conversations.id, conversationId));
+}
