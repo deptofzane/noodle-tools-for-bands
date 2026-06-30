@@ -24,6 +24,7 @@ export function SheetMusic({
 }) {
   const [meta, setMeta] = useState<SheetMusicMeta | null>(initial);
   const [busy, setBusy] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const trackPending = useTrackPending();
   const showToast = useToast();
@@ -77,48 +78,66 @@ export function SheetMusic({
   return (
     <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-medium">Sheet music</h2>
-        {meta && (
+        <span className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsMinimized((v) => !v)}
+            aria-label={isMinimized ? 'Expand sheet music' : 'Minimize sheet music'}
+            aria-expanded={!isMinimized}
+            title={isMinimized ? 'Expand sheet music' : 'Minimize sheet music'}
+            className="-mr-1 px-1 text-sm leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+          >
+            <span aria-hidden="true">{isMinimized ? '▸' : '▾'}</span>
+          </button>
+          <h2 className="text-sm font-medium">Sheet music</h2>
+          {isMinimized && meta && (
+            <span className="truncate text-xs text-neutral-500">
+              <span aria-hidden="true">·</span> {meta.fileName}
+            </span>
+          )}
+        </span>
+        {meta && !isMinimized && (
           <button
             type="button"
             onClick={handleRemove}
             disabled={busy}
-            className="text-xs text-neutral-500 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
+            className="shrink-0 text-xs text-neutral-500 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
           >
             Remove
           </button>
         )}
       </div>
 
-      {meta ? (
-        <div className="flex items-center justify-between gap-3 text-sm">
-          <a
-            href={viewUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="truncate text-blue-600 underline hover:text-blue-800 dark:text-blue-400"
-          >
-            {meta.fileName}
-          </a>
+      {!isMinimized &&
+        (meta ? (
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <a
+              href={viewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="truncate text-blue-600 underline hover:text-blue-800 dark:text-blue-400"
+            >
+              {meta.fileName}
+            </a>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={busy}
+              className="shrink-0 rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+            >
+              {busy ? 'Uploading…' : 'Replace'}
+            </button>
+          </div>
+        ) : (
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={busy}
-            className="shrink-0 rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+            className="rounded-md border border-dashed border-neutral-300 px-3 py-2 text-left text-sm text-neutral-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-blue-500 dark:hover:bg-blue-950 dark:hover:text-blue-300"
           >
-            {busy ? 'Uploading…' : 'Replace'}
+            {busy ? 'Uploading…' : '+ Add sheet music (PDF, text, image)'}
           </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={busy}
-          className="rounded-md border border-dashed border-neutral-300 px-3 py-2 text-left text-sm text-neutral-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-blue-500 dark:hover:bg-blue-950 dark:hover:text-blue-300"
-        >
-          {busy ? 'Uploading…' : '+ Add sheet music (PDF, text, image)'}
-        </button>
-      )}
+        ))}
 
       <input
         ref={inputRef}
