@@ -18,14 +18,12 @@ import { PlayerProvider, type PlayerControls } from './PlayerContext';
  */
 export function NotesView({
   conversationId,
-  fileId,
   fileName,
   mimeType,
   currentUserId,
   initialThreadId = null,
 }: {
   conversationId: string;
-  fileId: string;
   fileName: string;
   mimeType: string;
   currentUserId: string;
@@ -45,7 +43,9 @@ export function NotesView({
     <PlayerProvider value={controls}>
       <div className="flex flex-col gap-6">
         <AudioPlayer
-          fileId={fileId}
+          src={`/api/conversations/${conversationId}/audio?name=${encodeURIComponent(
+            fileName,
+          )}`}
           fileName={fileName}
           mimeType={mimeType}
           externalEngineRef={engineRef}

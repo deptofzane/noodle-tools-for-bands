@@ -15,6 +15,13 @@
       "when": 1782752701233,
       "tag": "0001_goofy_lyja",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782841087676,
+      "tag": "0002_friendly_mac_gargan",
+      "breakpoints": true
     }
   ]
 }

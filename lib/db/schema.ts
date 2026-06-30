@@ -10,8 +10,16 @@ import {
   primaryKey,
   index,
   uniqueIndex,
+  customType,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
+
+/** Raw binary column (Postgres `bytea`), surfaced as a Node Buffer. */
+const bytea = customType<{ data: Buffer }>({
+  dataType() {
+    return 'bytea';
+  },
+});
 
 // ── Enums ────────────────────────────────────────────────────────────
 export const bandRole = pgEnum('band_role', ['owner', 'member']);
@@ -181,4 +189,38 @@ export const conversationReads = pgTable(
     lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.conversationId] })],
+);
+
+// ── Song files (binary, stored in Postgres) ──────────────────────────
+// The audio (and, later, sheet music) for a song/conversation, owned by
+// us rather than referenced in Drive. One row per (conversation, kind).
+export const songFileKind = pgEnum('song_file_kind', ['audio', 'sheet_music']);
+
+export const songFiles = pgTable(
+  'song_files',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => conversations.id, { onDelete: 'cascade' }),
+    kind: songFileKind('kind').notNull(),
+    data: bytea('data').notNull(),
+    fileName: text('file_name').notNull(),
+    mimeType: text('mime_type').notNull(),
+    sizeBytes: integer('size_bytes').notNull(),
+    // Provenance: the Drive file this was imported from, if any.
+    driveFileId: text('drive_file_id'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('song_files_conversation_kind_unique').on(
+      t.conversationId,
+      t.kind,
+    ),
+  ],
 );

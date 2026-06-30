@@ -1,24 +1,23 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { auth } from '@/auth';
-import { hasAllDriveScopes } from '@/lib/google';
-import { getDriveClient } from '@/lib/drive';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getConversationMembership } from '@/lib/db/conversations';
+import { getSongFileMeta } from '@/lib/db/song-files';
 import { NotesView } from './NotesView';
 
 /**
  * Notes page (Postgres conversations).
  *
  * Server component:
- *   1. Verifies session + Drive scopes (audio still streams from Drive)
- *   2. Resolves the conversation by id and checks band membership
- *   3. Best-effort fetches the audio file's name + mimeType from Drive
- *      (via the user's personal token) for the player
- *   4. Renders <NotesView>, which wires the player + notes panel
+ *   1. Verifies the session and resolves the conversation by id, checking
+ *      band membership.
+ *   2. Reads the stored audio's name + MIME from Postgres for the player.
+ *   3. Renders <NotesView>, which wires the player + notes panel.
  *
- * Audio bytes stream through `/api/drive/file/[fileId]/stream`; notes
- * flow through `/api/conversations/[conversationId]/*`.
+ * Audio streams from `/api/conversations/[id]/audio` (Postgres); notes
+ * flow through `/api/conversations/[conversationId]/*`. No Drive scopes
+ * are needed here — audio is owned by us now.
  */
 export default async function NotesPage({
   params,
@@ -29,9 +28,6 @@ export default async function NotesPage({
 }) {
   const session = await auth();
   if (!session?.user) return null;
-  if (session.error === 'RefreshAccessTokenError') redirect('/library');
-  if (!hasAllDriveScopes(session.scopes)) redirect('/library');
-  if (!session.accessToken) redirect('/login');
 
   const { conversationId } = await params;
   const { thread: threadQuery } = await searchParams;
@@ -43,21 +39,11 @@ export default async function NotesPage({
   if (!membership) notFound();
   const conversation = membership.conversation;
 
-  // Audio metadata for the player. Best-effort — fall back to the stored
-  // name and a generic audio MIME if the Drive lookup fails.
-  let fileName = conversation.audioFileName ?? 'audio';
-  let mimeType = 'audio/mpeg';
-  try {
-    const drive = getDriveClient(session.accessToken);
-    const res = await drive.files.get({
-      fileId: conversation.driveAudioFileId,
-      fields: 'name, mimeType',
-    });
-    if (res.data.name) fileName = res.data.name;
-    if (res.data.mimeType) mimeType = res.data.mimeType;
-  } catch (err) {
-    console.error('[notes] audio metadata fetch failed', err);
-  }
+  // Player metadata from the stored audio file, falling back to the
+  // conversation's name if the audio hasn't been imported yet.
+  const audio = await getSongFileMeta(conversationId, 'audio');
+  const fileName = audio?.fileName ?? conversation.audioFileName ?? 'audio';
+  const mimeType = audio?.mimeType ?? 'audio/mpeg';
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-4 px-6 py-4">
@@ -72,7 +58,6 @@ export default async function NotesPage({
 
       <NotesView
         conversationId={conversationId}
-        fileId={conversation.driveAudioFileId}
         fileName={fileName}
         mimeType={mimeType}
         currentUserId={user.id}

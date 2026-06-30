@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getDriveClient } from '@/lib/drive';
-import { shareFileWithServiceAccount } from '@/lib/drive-service';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import {
   findOrCreateConversation,
   listBandConversations,
 } from '@/lib/db/conversations';
+import { hasSongFile, putSongFile } from '@/lib/db/song-files';
+
+// Cap imported audio to keep a single bytea row sane.
+const MAX_AUDIO_BYTES = 100 * 1024 * 1024; // 100 MB
 
 /**
  * GET  /api/bands/[bandId]/conversations
@@ -58,17 +61,57 @@ export async function POST(
     audioFileName,
   );
 
-  // Best-effort: share the file with the service account so every band
-  // member can stream it regardless of their personal Drive access. Uses
-  // the registrant's token (they can access the Picker-opened file). A
-  // no-op when no service account is configured; failures fall back to
-  // personal-token streaming.
-  const session = await auth();
-  if (session?.accessToken) {
-    await shareFileWithServiceAccount(
-      getDriveClient(session.accessToken),
-      driveAudioFileId,
-    );
+  // Import the audio into Postgres (once). Uses the registrant's token —
+  // they just opened the file via the Picker, so they can read it. After
+  // this the file is owned by us; playback no longer touches Drive.
+  // Re-registering an existing song with no stored audio backfills it.
+  if (!(await hasSongFile(conversation.id, 'audio'))) {
+    const session = await auth();
+    if (!session?.accessToken) {
+      return NextResponse.json(
+        { error: 'no_token', message: 'Drive access is required to import audio.' },
+        { status: 401 },
+      );
+    }
+    try {
+      const drive = getDriveClient(session.accessToken);
+      const metaRes = await drive.files.get({
+        fileId: driveAudioFileId,
+        fields: 'name, mimeType, size',
+      });
+      const declaredSize = Number(metaRes.data.size ?? 0);
+      if (declaredSize && declaredSize > MAX_AUDIO_BYTES) {
+        return NextResponse.json(
+          { error: 'file_too_large', message: 'Audio exceeds the 100 MB limit.' },
+          { status: 413 },
+        );
+      }
+      const mediaRes = await drive.files.get(
+        { fileId: driveAudioFileId, alt: 'media' },
+        { responseType: 'arraybuffer' },
+      );
+      const data = Buffer.from(mediaRes.data as ArrayBuffer);
+      if (data.length > MAX_AUDIO_BYTES) {
+        return NextResponse.json(
+          { error: 'file_too_large', message: 'Audio exceeds the 100 MB limit.' },
+          { status: 413 },
+        );
+      }
+      await putSongFile({
+        conversationId: conversation.id,
+        kind: 'audio',
+        data,
+        fileName: metaRes.data.name ?? audioFileName ?? 'audio',
+        mimeType: metaRes.data.mimeType ?? 'application/octet-stream',
+        driveFileId: driveAudioFileId,
+      });
+    } catch (err) {
+      console.error('[conversations] audio import failed', err);
+      return NextResponse.json(
+        { error: 'import_failed', message: 'Could not import the audio from Drive.' },
+        { status: 502 },
+      );
+    }
   }
 
   return NextResponse.json({ conversation }, { status: 201 });

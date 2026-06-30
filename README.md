@@ -9,7 +9,8 @@ for audio streaming.
 
 Originally all state lived in Drive JSON files; conversation storage has
 since been migrated to Postgres, with **bands** (in-app groups) owning
-audio and conversations. Drive now holds only the audio.
+audio and conversations. Registered audio is imported into Postgres, so
+Drive is now just the import source (the Picker).
 
 Highlights:
 
@@ -22,8 +23,8 @@ Highlights:
   LISTEN/NOTIFY → SSE
 - Open Conversations / History with server-computed New / Mentioned
   badges; closed-conversation flow; activity log
-- Howler.js playback through a Range-forwarding stream proxy; optional
-  service-account streaming so any band member can play band audio
+- Audio imported from Drive and stored in Postgres (`bytea`); Howler.js
+  playback over a Range-capable serve route — no Drive in the play path
 - Dark/light theme, global header, toasts, confirmation modals
 
 ## Prerequisites
@@ -52,10 +53,10 @@ key is required by the Google Picker).
 User type **External**. The two scopes the app requests at runtime are
 `https://www.googleapis.com/auth/drive.file` ("files this app creates")
 and `https://www.googleapis.com/auth/drive.readonly` ("see all your
-Drive files"): `drive.readonly` lets the Picker browse and the proxy
-stream audio, and `drive.file` lets the app manage sharing on the audio
-files you register (e.g. sharing them with the service account). While
-the app is unverified, add your test Google accounts under "Test users."
+Drive files"): `drive.readonly` lets the Picker browse and the app
+download the audio you register, and `drive.file` grants per-file access
+to files you open with the app. While the app is unverified, add your
+test Google accounts under "Test users."
 
 **OAuth client ID.** APIs & Services → Credentials → Create credentials → OAuth client ID,
 application type **Web application**. For local dev set:
@@ -159,14 +160,14 @@ refetches on change, with a 30s poll as a backstop.
 the user upsert). Keeping DB and `googleapis` imports out of
 `auth.config.ts` is what keeps them out of the Edge bundle.
 
-**Streaming proxy.** `/api/drive/file/[fileId]/stream` forwards Range
-headers to Drive and proxies the bytes back. Authorization is enforced in
-our DB by band membership (`userCanAccessAudio`) — **not** by Drive, since
-the service account can read any file shared with it. It streams via a
-service account when `GOOGLE_SERVICE_ACCOUNT_KEY` is set (so any band
-member can play, regardless of personal Drive sharing), falling back to
-the user's own token otherwise. Audio is shared with the service account
-when a user registers it under a band.
+**Audio is owned by us.** When a user registers a song, the audio is
+downloaded from Drive (once, with the registrant's token) and stored in
+Postgres as `bytea` (`song_files`, behind the small storage interface in
+`lib/db/song-files.ts`). Playback streams from
+`/api/conversations/[id]/audio` with Range support — the byte slice is
+extracted in Postgres via `substr`, so we don't load whole files into the
+app. Authorization is band membership, the same as everywhere else; Drive
+is no longer in the playback path (it's just the import source + Picker).
 
 > The held `LISTEN` connection + SSE mean the app must run on a
 > **long-lived Node server**, not serverless. See [Deployment](#deployment).
@@ -287,13 +288,9 @@ no `drizzle-kit` needed in production.
 | `NEXT_PUBLIC_GOOGLE_API_KEY`        | Picker API key                                         |
 | `DATABASE_URL`                      | Postgres connection string                             |
 | `DATABASE_SSL`                      | `true` (managed Postgres)                              |
-| `GOOGLE_SERVICE_ACCOUNT_KEY`        | _(optional)_ service-account JSON for shared audio     |
 
-`AUTH_URL` matters here (unlike Vercel, there's no `VERCEL_URL` to
-derive it from). `GOOGLE_SERVICE_ACCOUNT_KEY` is optional — without it,
-audio streams with each user's personal Drive token (a band member not
-shared on a file can't play it); with it, band membership alone grants
-playback. See `.env.example` for details on each.
+`AUTH_URL` matters here (unlike Vercel, there's no `VERCEL_URL` to derive
+it from). See `.env.example` for details on each.
 
 **Commands:**
 
@@ -329,12 +326,16 @@ Size your Postgres `max_connections` for the pool × instances + one
 listener each. Use your provider's pooled endpoint if connection limits
 are tight.
 
-**Drive usage.** Drive is now only touched for audio (the streaming
-proxy + the Picker) — conversation data is all Postgres, so the old
-per-note Drive quota pressure is gone. The streaming proxy uses the
-service account when configured, else the user's token; the
-`googleapis` client in `lib/drive.ts` retries 429/5xx with backoff and
-is tuned against "Premature close" socket errors.
+**Drive usage.** Drive is touched only at registration time — to download
+the audio once (it then lives in Postgres) — and by the Picker. Playback
+and all conversation data are Postgres, so the old per-note Drive quota
+pressure is gone. The `googleapis` client in `lib/drive.ts` retries
+429/5xx with backoff and is tuned against "Premature close" socket errors.
+
+**Audio storage size.** Audio lives in `song_files` as `bytea`, so the DB
+grows with the library and is included in `pg_dump`. Imports are capped at
+100 MB/file. If the library gets large, the `lib/db/song-files.ts`
+interface is the seam to swap in object storage.
 
 **Health check.** `/api/health` returns `{ ok: true, version }`. It
 does no Drive calls and no auth check, so it's safe to point a

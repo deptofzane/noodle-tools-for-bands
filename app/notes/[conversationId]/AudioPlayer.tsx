@@ -16,7 +16,8 @@ import {
 import { useTrackBoolean } from '../../PendingActionProvider';
 
 type AudioPlayerProps = {
-  fileId: string;
+  /** URL the audio streams from (Range-capable). */
+  src: string;
   fileName: string;
   mimeType: string;
   /**
@@ -41,7 +42,7 @@ type AudioPlayerProps = {
  * timestamp and read the current time when composing.
  */
 export function AudioPlayer({
-  fileId,
+  src,
   fileName,
   mimeType,
   externalEngineRef,
@@ -78,12 +79,10 @@ export function AudioPlayer({
     setCurrentTime(0);
 
     const engine = createAudioEngine({
-      // `name` is a hint to the streaming proxy: when Drive returns a
-      // generic Content-Type (commonly `application/octet-stream` for
-      // files whose metadata was lost), the proxy derives the real
-      // `audio/*` type from the filename. Firefox mobile is strict
-      // about that header, so this avoids playback failures there.
-      url: `/api/drive/file/${fileId}/stream?name=${encodeURIComponent(fileName)}`,
+      // `src` carries a `?name=` hint so the serve route can recover a
+      // concrete `audio/*` Content-Type when the stored MIME is generic
+      // (Firefox mobile is strict about that header).
+      url: src,
       mimeType,
       fileName,
       onReady: (dur) => {
@@ -136,7 +135,7 @@ export function AudioPlayer({
       window.removeEventListener('pagehide', handlePageHide);
       teardown();
     };
-  }, [fileId, fileName, mimeType, externalEngineRef]);
+  }, [src, fileName, mimeType, externalEngineRef]);
 
   // Tick the current-time display while playing.
   //
