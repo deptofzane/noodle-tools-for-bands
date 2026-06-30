@@ -4,23 +4,34 @@ Built as an experiment to gain experience working with Claude Code
 
 Timestamped, collaborative notes on Google Drive audio files. Built with
 Next.js (App Router, TypeScript, Tailwind), Auth.js v5 for Google sign-in,
-and the Google Drive API for both audio streaming and notes storage.
-There is no database — every piece of persistent state lives in Drive.
+Postgres (Drizzle ORM) for conversation data, and the Google Drive API
+for audio streaming.
 
-All six phases of the build plan are implemented:
+Originally all state lived in Drive JSON files; conversation storage has
+since been migrated to Postgres, with **bands** (in-app groups) owning
+audio and conversations. Drive now holds only the audio.
 
-- Auth.js v5 + Google OAuth with JWT cookies (no DB sessions)
-- Google Picker for folder selection, server-side audio listing
-- Howler.js playback fed by a Range-forwarding stream proxy
-- Per-user notes JSON files in a `<basename>.notes/` subfolder per audio
-- Threaded notes UI with replies, edit/delete, and live cross-user updates via Drive Changes SSE
-- IndexedDB cache, Open Conversations / History views, closed-conversation flow,
-  cross-user activity tracking, dark/light theme, global header
+Highlights:
+
+- Auth.js v5 + Google OAuth with JWT cookies (no DB sessions); users are
+  upserted to Postgres on sign-in
+- **Bands**: create a band, add members by email, register Drive audio
+  via the Google Picker. Band membership is the access boundary.
+- Threaded notes with @-mentions, replies, edit/delete, resolve, and
+  thread deep-links; live cross-user updates via Postgres
+  LISTEN/NOTIFY → SSE
+- Open Conversations / History with server-computed New / Mentioned
+  badges; closed-conversation flow; activity log
+- Howler.js playback through a Range-forwarding stream proxy; optional
+  service-account streaming so any band member can play band audio
+- Dark/light theme, global header, toasts, confirmation modals
 
 ## Prerequisites
 
 - Node.js 20 or later
 - pnpm (`npm install -g pnpm`)
+- Postgres 18 (local Docker is easiest; see
+  `docs/postgres-phase-1-setup.md`)
 - A Google account for the OAuth client and for testing
 
 ## Local setup
@@ -41,10 +52,10 @@ key is required by the Google Picker).
 User type **External**. The two scopes the app requests at runtime are
 `https://www.googleapis.com/auth/drive.file` ("files this app creates")
 and `https://www.googleapis.com/auth/drive.readonly` ("see all your
-Drive files") — both are needed because the app reads audio from
-folders other users own and writes its own notes JSON files. While
-the app is unverified, add your test Google accounts under "Test
-users."
+Drive files"): `drive.readonly` lets the Picker browse and the proxy
+stream audio, and `drive.file` lets the app manage sharing on the audio
+files you register (e.g. sharing them with the service account). While
+the app is unverified, add your test Google accounts under "Test users."
 
 **OAuth client ID.** APIs & Services → Credentials → Create credentials → OAuth client ID,
 application type **Web application**. For local dev set:
@@ -63,77 +74,102 @@ Restrict it:
 
 Make sure **Google Picker API** is enabled in APIs & Services → Library.
 
-### 3. Configure environment
+### 3. Start Postgres
+
+Local dev uses Postgres 18; Docker is the quickest:
+
+```bash
+docker run --name sidestage-pg \
+  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=sidestage \
+  -p 5432:5432 -v sidestage-pg-data:/var/lib/postgresql/data -d postgres:18
+```
+
+(See `docs/postgres-phase-1-setup.md` for native/alternative setups.)
+
+### 4. Configure environment
 
 ```bash
 cp .env.example .env.local
 ```
 
-Fill in:
+Fill in (`.env.example` has the full annotated list):
 
 ```ini
 AUTH_SECRET=<openssl rand -base64 32>
 AUTH_GOOGLE_ID=<OAuth client ID>
 AUTH_GOOGLE_SECRET=<OAuth client secret>
 NEXT_PUBLIC_GOOGLE_API_KEY=<API key>
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/sidestage
+# DATABASE_SSL stays unset/false locally — only managed Postgres needs it.
 ```
 
-### 4. Run
+Then apply the schema:
+
+```bash
+pnpm db:migrate
+```
+
+### 5. Run
 
 ```bash
 pnpm dev
 ```
 
 Open <http://localhost:3000>. You'll be bounced to `/login`, sign in
-with Google, then land on **Open Conversations**. From there:
+with Google (granting Drive access on first run), then land on **Open
+Conversations**. From there:
 
-- **Library** → pick a Drive folder and see its audio files
-- Click any audio file → playback + the notes panel
-- **Open Conversations** → your active discussions across all folders
+- **Bands** → create a band, add members by email, and **Add audio**
+  (Google Picker) to register Drive files as conversations
+- Open a conversation → playback + the threaded notes panel
+- **Open Conversations** → active conversations across your bands, with
+  New / Mentioned badges
 - **History** → conversations you've marked closed
 - **Account** → sign out, theme toggle, session debug
 
 ## Architecture at a glance
 
-**No database.** Every conversation lives in Drive next to its audio:
+**Postgres for conversations, Drive for audio.** Bands, membership,
+conversations, threaded notes, mentions, activity, and per-user read
+state all live in Postgres via Drizzle (`lib/db/schema.ts`). Drive holds
+only the audio files — everything else moved off Drive.
 
-```
-shared-folder/
-├── recording.mp3
-└── recording.notes/
-    ├── user-<aliceSub>.json   # canonical per-user notes
-    ├── user-<bobSub>.json
-    └── _activity.json         # denormalized cross-user activity log
-```
+**Bands are the access boundary.** A band groups users; conversations
+and audio are owned by a band. You can read/write a conversation iff
+you're a member of its band (`getConversationMembership` /
+`assertConversationMember`, joining through `band_members`). Owners
+manage members and can delete the band; members can leave. The whole
+data-access layer (`lib/db/*`) takes the band check as a precondition.
 
-Each user only writes to their own `user-<sub>.json` file, so there are
-no cross-user races on the same blob. The `_activity.json` is a shared,
-best-effort read cache used by the Open Conversations / History views
-to show who touched a conversation last (and when), without N+1
-fetches across every user's file.
+**Identity.** Auth stays JWT-cookie based (no DB sessions). On sign-in,
+`auth.ts`'s `events.signIn` upserts a `users` row keyed by Google `sub`;
+everything else references the internal user id (`lib/current-user.ts`
+maps session → DB user).
 
-A conversation is "closed" when the subfolder is renamed
-`recording.notes.closed/`. Closed conversations are hidden from Open
-Conversations, surface in History, and auto-reopen if someone writes a
-new note.
+**Real-time.** Mutations emit `pg_notify('conversation_activity', <id>)`
+inside their transaction, so it fires exactly on commit. One
+process-wide `LISTEN` connection (`lib/db/notify.ts`) fans notifications
+out in-memory to per-conversation SSE subscribers at
+`/api/conversations/[id]/events` — so N open pages cost one Postgres
+connection, not N. The notes panel subscribes via `EventSource` and
+refetches on change, with a 30s poll as a backstop.
 
-**Real-time.** The notes panel opens a Server-Sent Events stream at
-`/api/drive/changes` that long-polls the Drive Changes API every ~2s,
-filtered to events that touch the watched folder or subfolder. The
-client also falls back to 30s polling and hydrates instantly from an
-IndexedDB cache.
+**Auth.js v5 split.** `auth.config.ts` is the Edge-safe slice imported by
+`middleware.ts`; `auth.ts` is the Node-only full config (token refresh +
+the user upsert). Keeping DB and `googleapis` imports out of
+`auth.config.ts` is what keeps them out of the Edge bundle.
 
-**Auth.js v5 split.** `auth.config.ts` is the Edge-safe slice imported
-by `middleware.ts`. `auth.ts` is the Node-only full config with the
-`jwt` callback that refreshes the Google access token ~60s before
-expiry and stamps `error: 'RefreshAccessTokenError'` on the JWT if the
-refresh fails. The UI catches that and prompts re-auth.
+**Streaming proxy.** `/api/drive/file/[fileId]/stream` forwards Range
+headers to Drive and proxies the bytes back. Authorization is enforced in
+our DB by band membership (`userCanAccessAudio`) — **not** by Drive, since
+the service account can read any file shared with it. It streams via a
+service account when `GOOGLE_SERVICE_ACCOUNT_KEY` is set (so any band
+member can play, regardless of personal Drive sharing), falling back to
+the user's own token otherwise. Audio is shared with the service account
+when a user registers it under a band.
 
-**Streaming proxy.** Drive's media-download endpoint requires an OAuth
-bearer token, which we can't put in an `<audio src>`. The proxy at
-`/api/drive/file/[fileId]/stream` forwards Range headers to Drive and
-proxies the response back. Each user streams with their own token, so
-revoking Drive access immediately cuts off playback for that user.
+> The held `LISTEN` connection + SSE mean the app must run on a
+> **long-lived Node server**, not serverless. See [Deployment](#deployment).
 
 ## File layout
 
@@ -141,45 +177,54 @@ revoking Drive access immediately cuts off playback for that user.
 .
 ├── app/
 │   ├── api/
-│   │   ├── auth/[...nextauth]/route.ts                     # Auth.js handler mount
+│   │   ├── auth/[...nextauth]/route.ts          # Auth.js handler mount
+│   │   ├── bands/
+│   │   │   ├── route.ts                         # GET my bands, POST create
+│   │   │   └── [bandId]/
+│   │   │       ├── route.ts                     # GET detail, DELETE (owner)
+│   │   │       ├── leave/route.ts               # POST leave (member)
+│   │   │       ├── members/route.ts             # POST add member (owner)
+│   │   │       ├── members/[userId]/route.ts    # DELETE member (owner)
+│   │   │       └── conversations/route.ts       # GET list, POST register audio
+│   │   ├── conversations/
+│   │   │   ├── annotated/route.ts               # Open Conversations / History list
+│   │   │   └── [conversationId]/
+│   │   │       ├── route.ts                     # GET load (notes+activity), PATCH closed
+│   │   │       ├── read/route.ts                # POST mark seen (clears badges)
+│   │   │       ├── events/route.ts              # SSE — LISTEN/NOTIFY stream
+│   │   │       └── notes/…                       # POST note, PATCH/DELETE, replies
 │   │   ├── drive/
-│   │   │   ├── changes/route.ts                            # SSE — Drive Changes long-poll
-│   │   │   ├── file/[fileId]/stream/route.ts               # Range-forwarding audio proxy
-│   │   │   ├── folder/[folderId]/activity/route.ts         # Per-folder activity rollup
-│   │   │   ├── folder/[folderId]/audio/route.ts            # Lists audio in a folder
-│   │   │   └── token/route.ts                              # Short-lived token for the Picker
-│   │   ├── files/[fileId]/notes/
-│   │   │   ├── route.ts                                    # GET notes, POST note, PATCH closed state
-│   │   │   ├── [noteId]/route.ts                           # PATCH / DELETE one note
-│   │   │   └── [noteId]/replies/route.ts                   # POST reply
-│   │   ├── notes/annotated/route.ts                        # Open Conversations / History list
-│   │   └── health/route.ts                                 # Smoke test
-│   ├── account/page.tsx                                    # Sign-out + theme toggle
-│   ├── library/
-│   │   ├── page.tsx
-│   │   ├── LibraryClient.tsx                               # Picker + audio list + lazy activity
-│   │   ├── annotated/                                      # "Open Conversations" view
-│   │   └── history/                                        # Closed-only view
-│   ├── login/page.tsx
-│   ├── notes/[fileId]/                                     # Player + threaded notes panel
-│   ├── Header.tsx                                          # Global nav
-│   ├── ThemeToggle.tsx
-│   ├── globals.css
-│   ├── layout.tsx
-│   └── page.tsx                                            # Redirects to Open Conversations
+│   │   │   ├── file/[fileId]/stream/route.ts    # Range-forwarding audio proxy
+│   │   │   └── token/route.ts                   # Short-lived token for the Picker
+│   │   └── health/route.ts                      # Smoke test
+│   ├── bands/                                    # Bands list + detail (members, audio)
+│   ├── open-conversations/                       # Active conversations + badges
+│   ├── history/                                  # Closed-only view
+│   ├── notes/[conversationId]/                    # Player + threaded notes panel
+│   ├── library/page.tsx                          # Drive-connect gate + landing
+│   ├── account/page.tsx, login/page.tsx
+│   ├── ConfirmModal.tsx, ToastProvider.tsx,
+│   │   PendingActionProvider.tsx, PickerButton.tsx  # Shared client UI
+│   └── Header.tsx, ThemeToggle.tsx, layout.tsx, page.tsx
 ├── lib/
-│   ├── activity.ts                                         # _activity.json schema + read/write
-│   ├── audio.ts                                            # Howler wrapper
-│   ├── drive.ts                                            # Node-only Drive client (gaxios retry)
-│   ├── google.ts                                           # Edge-safe scopes + token refresh
-│   ├── notes-cache.ts                                      # IndexedDB cache
-│   └── notes.ts                                            # Notes data layer
-├── types/next-auth.d.ts                                    # Session/JWT augmentation
-├── auth.config.ts                                          # Edge-safe Auth.js config
-├── auth.ts                                                 # Full Auth.js config (Node)
-├── middleware.ts                                           # Routes auth gate
-├── next.config.ts                                          # serverExternalPackages: ['googleapis']
-├── tailwind.config.ts                                      # darkMode: 'class'
+│   ├── db/
+│   │   ├── schema.ts                             # Drizzle schema (tables + enums)
+│   │   ├── index.ts                              # Pooled client (+ SSL, DbExecutor)
+│   │   ├── users.ts, bands.ts, conversations.ts,
+│   │   │   notes.ts, activity.ts, listing.ts     # Data access (band-gated)
+│   │   ├── notify.ts                             # LISTEN/NOTIFY fan-out hub
+│   │   └── ssl.ts                                # Postgres SSL config from env
+│   ├── current-user.ts                           # session sub → DB user
+│   ├── drive.ts                                  # Node Drive client (gaxios retry/agent)
+│   ├── drive-service.ts                          # Service-account Drive client
+│   ├── audio.ts                                  # Howler wrapper
+│   └── google.ts                                 # Edge-safe scopes + token refresh
+├── drizzle/                                       # Generated SQL migrations
+├── scripts/                                       # db-check + migrate.mjs (deploy)
+├── auth.config.ts                                 # Edge-safe Auth.js config
+├── auth.ts                                        # Full Auth.js config (Node) + user upsert
+├── middleware.ts                                  # Routes auth gate
+├── Dockerfile, drizzle.config.ts, next.config.ts
 ├── .env.example
 └── package.json
 ```
