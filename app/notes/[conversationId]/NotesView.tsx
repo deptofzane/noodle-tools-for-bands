@@ -5,6 +5,7 @@ import type { AudioEngine } from '@/lib/audio';
 import { AudioPlayer } from './AudioPlayer';
 import { NotesPanel } from './NotesPanel';
 import { PlayerProvider, type PlayerControls } from './PlayerContext';
+import { SheetMusic, type SheetMusicMeta } from './SheetMusic';
 
 /**
  * Top-level client wrapper for the notes page.
@@ -22,12 +23,14 @@ export function NotesView({
   mimeType,
   currentUserId,
   initialThreadId = null,
+  sheetMusic = null,
 }: {
   conversationId: string;
   fileName: string;
   mimeType: string;
   currentUserId: string;
   initialThreadId?: string | null;
+  sheetMusic?: SheetMusicMeta | null;
 }) {
   const engineRef = useRef<AudioEngine | null>(null);
 
@@ -43,13 +46,15 @@ export function NotesView({
     <PlayerProvider value={controls}>
       <div className="flex flex-col gap-6">
         <AudioPlayer
-          src={`/api/conversations/${conversationId}/audio?name=${encodeURIComponent(
+          src={`/api/conversations/${conversationId}/files/audio?name=${encodeURIComponent(
             fileName,
           )}`}
           fileName={fileName}
           mimeType={mimeType}
           externalEngineRef={engineRef}
         />
+
+        <SheetMusic conversationId={conversationId} initial={sheetMusic} />
         <NotesPanel
           conversationId={conversationId}
           currentUserId={currentUserId}

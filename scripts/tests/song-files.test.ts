@@ -66,6 +66,25 @@ test('song-files: bytea round-trip, range slices, upsert, cascade', async () => 
       'single row per (conversation, kind)',
     );
 
+    // sheet music coexists with audio (one row per kind)
+    await putSongFile({
+      conversationId: conv.id,
+      kind: 'sheet_music',
+      data: Buffer.from('%PDF-1.4 fake', 'utf8'),
+      fileName: 'score.pdf',
+      mimeType: 'application/pdf',
+    });
+    assert.ok(await hasSongFile(conv.id, 'sheet_music'), 'sheet music stored');
+    assert.ok(await hasSongFile(conv.id, 'audio'), 'audio still present alongside sheet music');
+    assert.equal(
+      (await db.select().from(songFiles).where(eq(songFiles.conversationId, conv.id))).length,
+      2,
+      'two rows: one audio + one sheet music',
+    );
+    await deleteSongFile(conv.id, 'sheet_music');
+    assert.ok(!(await hasSongFile(conv.id, 'sheet_music')), 'sheet music removed');
+    assert.ok(await hasSongFile(conv.id, 'audio'), 'removing sheet music leaves audio');
+
     await deleteSongFile(conv.id, 'audio');
     assert.ok(!(await hasSongFile(conv.id, 'audio')), 'deleted');
 

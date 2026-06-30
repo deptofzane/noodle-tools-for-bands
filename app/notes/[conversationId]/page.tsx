@@ -40,10 +40,17 @@ export default async function NotesPage({
   const conversation = membership.conversation;
 
   // Player metadata from the stored audio file, falling back to the
-  // conversation's name if the audio hasn't been imported yet.
-  const audio = await getSongFileMeta(conversationId, 'audio');
+  // conversation's name if the audio hasn't been imported yet. Sheet
+  // music meta (if any) seeds the SheetMusic panel.
+  const [audio, sheet] = await Promise.all([
+    getSongFileMeta(conversationId, 'audio'),
+    getSongFileMeta(conversationId, 'sheet_music'),
+  ]);
   const fileName = audio?.fileName ?? conversation.audioFileName ?? 'audio';
   const mimeType = audio?.mimeType ?? 'audio/mpeg';
+  const sheetMusic = sheet
+    ? { fileName: sheet.fileName, mimeType: sheet.mimeType }
+    : null;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-4 px-6 py-4">
@@ -62,6 +69,7 @@ export default async function NotesPage({
         mimeType={mimeType}
         currentUserId={user.id}
         initialThreadId={threadQuery ?? null}
+        sheetMusic={sheetMusic}
       />
     </main>
   );
