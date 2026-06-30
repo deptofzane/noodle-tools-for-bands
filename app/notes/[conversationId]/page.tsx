@@ -4,7 +4,10 @@ import { auth } from '@/auth';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getConversationMembership } from '@/lib/db/conversations';
 import { getSongFileMeta } from '@/lib/db/song-files';
-import { NotesView } from './NotesView';
+import { PlayerProvider } from './PlayerContext';
+import { AudioPlayer } from './AudioPlayer';
+import { SheetMusic } from './SheetMusic';
+import { NotesPanel } from './NotesPanel';
 
 /**
  * Notes page (Postgres conversations).
@@ -13,7 +16,8 @@ import { NotesView } from './NotesView';
  *   1. Verifies the session and resolves the conversation by id, checking
  *      band membership.
  *   2. Reads the stored audio's name + MIME from Postgres for the player.
- *   3. Renders <NotesView>, which wires the player + notes panel.
+ *   3. Renders the player, sheet music, and notes panel as siblings
+ *      under <PlayerProvider> (which owns the shared audio engine).
  *
  * Audio streams from `/api/conversations/[id]/audio` (Postgres); notes
  * flow through `/api/conversations/[conversationId]/*`. No Drive scopes
@@ -69,14 +73,23 @@ export default async function NotesPage({
         </Link>
       </header>
 
-      <NotesView
-        conversationId={conversationId}
-        fileName={fileName}
-        mimeType={mimeType}
-        currentUserId={user.id}
-        initialThreadId={threadQuery ?? null}
-        sheetMusic={sheetMusic}
-      />
+      <PlayerProvider>
+        <div className="flex flex-col gap-6">
+          <AudioPlayer
+            src={`/api/conversations/${conversationId}/files/audio?name=${encodeURIComponent(
+              fileName,
+            )}`}
+            fileName={fileName}
+            mimeType={mimeType}
+          />
+          <SheetMusic conversationId={conversationId} initial={sheetMusic} />
+          <NotesPanel
+            conversationId={conversationId}
+            currentUserId={user.id}
+            initialThreadId={threadQuery ?? null}
+          />
+        </div>
+      </PlayerProvider>
     </main>
   );
 }

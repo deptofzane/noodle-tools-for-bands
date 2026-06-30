@@ -1,27 +1,59 @@
 'use client';
 
-import { createContext, useContext } from 'react';
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
+import type { AudioEngine } from '@/lib/audio';
 
 /**
  * Player context.
  *
- * Bridges the AudioPlayer (which owns the Howler instance) and the
- * NotesPanel (which needs to seek the player on note click, and read
- * the current time when composing a new note).
+ * Owns the shared Howler engine ref and bridges the song-page components:
+ * the AudioPlayer registers its engine via `setEngine`, and the NotesPanel
+ * seeks the player on a note click / reads the current time when composing.
  *
- * Intentionally imperative — `seek()` and `getCurrentTime()` go
- * straight to the engine via a ref. We don't expose `isPlaying` or
- * `currentTime` as reactive values here because the notes UI doesn't
- * need to re-render in step with playback; only the player does.
+ * Keeping the engine here (rather than in a parent that renders all the
+ * children) lets the player, sheet music, and notes panel be rendered as
+ * independent siblings.
+ *
+ * Intentionally imperative — `seek()` and `getCurrentTime()` go straight
+ * to the engine via the ref. We don't expose reactive `isPlaying` /
+ * `currentTime`; the notes UI doesn't need to re-render in step with
+ * playback, only the player does.
  */
 export interface PlayerControls {
   seek: (seconds: number) => void;
   getCurrentTime: () => number;
+  /** AudioPlayer registers its engine here (and clears it on teardown). */
+  setEngine: (engine: AudioEngine | null) => void;
 }
 
 const PlayerContext = createContext<PlayerControls | null>(null);
 
-export const PlayerProvider = PlayerContext.Provider;
+export function PlayerProvider({ children }: { children: ReactNode }) {
+  const engineRef = useRef<AudioEngine | null>(null);
+
+  // Stable identity (empty deps) — the methods read the ref's current
+  // value on each call.
+  const controls = useMemo<PlayerControls>(
+    () => ({
+      seek: (seconds) => engineRef.current?.seek(seconds),
+      getCurrentTime: () => engineRef.current?.getCurrentTime() ?? 0,
+      setEngine: (engine) => {
+        engineRef.current = engine;
+      },
+    }),
+    [],
+  );
+
+  return (
+    <PlayerContext.Provider value={controls}>{children}</PlayerContext.Provider>
+  );
+}
 
 export function usePlayer(): PlayerControls {
   const ctx = useContext(PlayerContext);

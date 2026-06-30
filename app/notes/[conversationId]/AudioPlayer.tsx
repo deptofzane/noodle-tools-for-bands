@@ -6,27 +6,16 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type MutableRefObject,
 } from 'react';
-import {
-  createAudioEngine,
-  formatDuration,
-  type AudioEngine,
-} from '@/lib/audio';
+import { createAudioEngine, formatDuration, type AudioEngine } from '@/lib/audio';
 import { useTrackBoolean } from '../../PendingActionProvider';
+import { usePlayer } from './PlayerContext';
 
 type AudioPlayerProps = {
   /** URL the audio streams from (Range-capable). */
   src: string;
   fileName: string;
   mimeType: string;
-  /**
-   * Optional external ref. When provided, the player mirrors its
-   * internal `AudioEngine` into this ref for the duration of the
-   * mount. The notes panel uses this (via `PlayerContext`) to call
-   * `seek()` and `getCurrentTime()` imperatively.
-   */
-  externalEngineRef?: MutableRefObject<AudioEngine | null>;
 };
 
 /**
@@ -41,12 +30,8 @@ type AudioPlayerProps = {
  * exposed through that ref so the notes panel can seek to a note's
  * timestamp and read the current time when composing.
  */
-export function AudioPlayer({
-  src,
-  fileName,
-  mimeType,
-  externalEngineRef,
-}: AudioPlayerProps) {
+export function AudioPlayer({ src, fileName, mimeType }: AudioPlayerProps) {
+  const { setEngine } = usePlayer();
   const engineRef = useRef<AudioEngine | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -110,19 +95,19 @@ export function AudioPlayer({
       onSeek: (sec) => setCurrentTime(sec),
     });
     engineRef.current = engine;
-    if (externalEngineRef) externalEngineRef.current = engine;
+    setEngine(engine); // share with the notes panel via PlayerContext
 
     let destroyed = false;
     const teardown = () => {
       if (destroyed) return;
       destroyed = true;
       engine.destroy();
-      // Guarded ref clears: by the time a pagehide-triggered teardown
-      // runs, React may have already remounted the component with a
-      // new engine. Don't null out a ref that points at someone else.
-      if (engineRef.current === engine) engineRef.current = null;
-      if (externalEngineRef && externalEngineRef.current === engine) {
-        externalEngineRef.current = null;
+      // Guarded clear: by the time a pagehide-triggered teardown runs,
+      // React may have already remounted with a new engine. Don't null
+      // out a ref/context that points at someone else.
+      if (engineRef.current === engine) {
+        engineRef.current = null;
+        setEngine(null);
       }
     };
 
@@ -135,7 +120,7 @@ export function AudioPlayer({
       window.removeEventListener('pagehide', handlePageHide);
       teardown();
     };
-  }, [src, fileName, mimeType, externalEngineRef]);
+  }, [src, fileName, mimeType, setEngine]);
 
   // Tick the current-time display while playing.
   //
