@@ -117,7 +117,7 @@ export default async function LibraryPage() {
         to register audio (via the Drive picker) and open its conversations,
         or jump to your{' '}
         <Link
-          href="/library/annotated"
+          href="/open-conversations"
           className="text-blue-600 underline dark:text-blue-400"
         >
           open conversations

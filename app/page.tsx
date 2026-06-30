@@ -5,12 +5,12 @@ import { redirect } from 'next/navigation';
  *
  * Signed-in users land here from the post-sign-in default redirect
  * (when no `callbackUrl` was supplied) or from any old bookmark and
- * are sent straight to `/library/annotated`. Signed-out users are
+ * are sent straight to `/open-conversations`. Signed-out users are
  * intercepted earlier by middleware and routed to `/login`.
  *
  * The identity card + sign-out button that used to live here moved
  * to `/account`.
  */
 export default function Home() {
-  redirect('/library/annotated');
+  redirect('/open-conversations');
 }

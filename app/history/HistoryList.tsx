@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useTrackPending } from '../../PendingActionProvider';
+import { useTrackPending } from '../PendingActionProvider';
 
 /**
  * History list — closed conversations only.

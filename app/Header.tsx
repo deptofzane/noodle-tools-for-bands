@@ -9,18 +9,16 @@ import { usePendingCount } from './PendingActionProvider';
  * conditionally from `app/layout.tsx` so it stays off the `/login`
  * page.
  *
- * Active-tab matching is intentionally exact: `/library` is the
- * Picker page; `/library/annotated` and `/library/history` get their
- * own dedicated highlight. Routes outside this nav (notably
- * `/notes/[fileId]`) leave the header un-highlighted, which is the
- * least-wrong choice — none of these links is a precise "parent" of
- * that route.
+ * Active-tab matching is intentionally exact: `/bands`,
+ * `/open-conversations`, and `/history` each get their own dedicated
+ * highlight. Routes outside this nav (notably `/notes/[conversationId]`)
+ * leave the header un-highlighted, which is the least-wrong choice —
+ * none of these links is a precise "parent" of that route.
  */
 const NAV_LINKS = [
-  { href: '/library', label: 'Library' },
   { href: '/bands', label: 'Bands' },
-  { href: '/library/annotated', label: 'Open Conversations' },
-  { href: '/library/history', label: 'History' },
+  { href: '/open-conversations', label: 'Open Conversations' },
+  { href: '/history', label: 'History' },
   { href: '/account', label: 'Account' },
 ] as const;
 

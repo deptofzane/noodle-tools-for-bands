@@ -25,7 +25,7 @@ export default async function LoginPage({
           action={async () => {
             'use server';
             await signIn('google', {
-              redirectTo: callbackUrl ?? '/library/annotated',
+              redirectTo: callbackUrl ?? '/open-conversations',
             });
           }}
           className="mt-6"
