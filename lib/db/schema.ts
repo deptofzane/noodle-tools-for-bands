@@ -10,16 +10,8 @@ import {
   primaryKey,
   index,
   uniqueIndex,
-  customType,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
-
-/** Raw binary column (Postgres `bytea`), surfaced as a Node Buffer. */
-const bytea = customType<{ data: Buffer }>({
-  dataType() {
-    return 'bytea';
-  },
-});
 
 // ── Enums ────────────────────────────────────────────────────────────
 export const bandRole = pgEnum('band_role', ['owner', 'member']);
@@ -204,11 +196,8 @@ export const songFiles = pgTable(
       .notNull()
       .references(() => conversations.id, { onDelete: 'cascade' }),
     kind: songFileKind('kind').notNull(),
-    // Bytes live in object storage (S3/R2), addressed by storageKey. The
-    // legacy `data` bytea column is kept nullable through the backfill and
-    // dropped afterward.
+    // Bytes live in object storage (S3/R2), addressed by storageKey.
     storageKey: text('storage_key'),
-    data: bytea('data'),
     fileName: text('file_name').notNull(),
     mimeType: text('mime_type').notNull(),
     sizeBytes: integer('size_bytes').notNull(),

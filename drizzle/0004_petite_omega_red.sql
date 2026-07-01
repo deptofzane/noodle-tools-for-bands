@@ -1,0 +1,1 @@
+ALTER TABLE "song_files" DROP COLUMN "data";

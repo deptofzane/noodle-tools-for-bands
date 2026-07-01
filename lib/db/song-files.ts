@@ -97,7 +97,6 @@ export async function putSongFile(input: {
       conversationId: input.conversationId,
       kind: input.kind,
       storageKey: key,
-      data: null,
       fileName: input.fileName,
       mimeType: input.mimeType,
       sizeBytes: input.data.length,
@@ -107,7 +106,6 @@ export async function putSongFile(input: {
       target: [songFiles.conversationId, songFiles.kind],
       set: {
         storageKey: key,
-        data: null,
         fileName: input.fileName,
         mimeType: input.mimeType,
         sizeBytes: input.data.length,
