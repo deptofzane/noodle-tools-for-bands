@@ -56,11 +56,14 @@ export function PickerButton({
   onPick,
   label = 'Add audio',
   disabled = false,
+  multiple = true,
 }: {
   apiKey: string;
   onPick: (files: PickedFile[]) => void;
   label?: string;
   disabled?: boolean;
+  /** Allow selecting more than one file. */
+  multiple?: boolean;
 }) {
   const [pickerReady, setPickerReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -125,9 +128,13 @@ export function PickerButton({
       .setIncludeFolders(false)
       .setSelectFolderEnabled(false);
 
-    const picker = new w.google.picker.PickerBuilder()
-      .addView(view)
-      .enableFeature(w.google.picker.Feature.MULTISELECT_ENABLED)
+    let builder = new w.google.picker.PickerBuilder().addView(view);
+    if (multiple) {
+      builder = builder.enableFeature(
+        w.google.picker.Feature.MULTISELECT_ENABLED,
+      );
+    }
+    const picker = builder
       .setOAuthToken(accessToken)
       .setDeveloperKey(apiKey)
       .setCallback((data) => {
@@ -142,7 +149,7 @@ export function PickerButton({
       .build();
 
     picker.setVisible(true);
-  }, [apiKey, onPick]);
+  }, [apiKey, onPick, multiple]);
 
   return (
     <div className="flex flex-col gap-1">

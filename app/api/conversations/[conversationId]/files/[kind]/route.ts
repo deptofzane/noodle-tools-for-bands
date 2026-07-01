@@ -1,4 +1,6 @@
 import { Readable } from 'node:stream';
+import { auth } from '@/auth';
+import { getDriveClient } from '@/lib/drive';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getConversationMembership } from '@/lib/db/conversations';
 import {
@@ -104,6 +106,75 @@ export async function POST(
   }
   if (!(await getConversationMembership(user.id, conversationId))) {
     return Response.json({ error: 'forbidden' }, { status: 403 });
+  }
+
+  // Import from Google Drive: JSON { driveFileId } → download with the
+  // user's token and store, mirroring the audio-registration import.
+  if ((req.headers.get('content-type') ?? '').includes('application/json')) {
+    const body = await req.json().catch(() => null);
+    const driveFileId =
+      typeof body?.driveFileId === 'string' ? body.driveFileId.trim() : '';
+    if (!driveFileId) {
+      return Response.json({ error: 'bad_request' }, { status: 400 });
+    }
+    const session = await auth();
+    if (!session?.accessToken) {
+      return Response.json(
+        { error: 'no_token', message: 'Connect Google Drive to import from it.' },
+        { status: 401 },
+      );
+    }
+    try {
+      const drive = getDriveClient(session.accessToken);
+      const metaRes = await drive.files.get({
+        fileId: driveFileId,
+        fields: 'name, mimeType, size',
+      });
+      const fileName = metaRes.data.name ?? 'sheet-music';
+      const mimeType = normalizeSheetMime(metaRes.data.mimeType ?? '', fileName);
+      if (!mimeType) {
+        return Response.json(
+          {
+            error: 'unsupported_type',
+            message: 'Allowed: PDF, plain text/markdown, or a PNG/JPEG/GIF/WEBP image.',
+          },
+          { status: 415 },
+        );
+      }
+      const declaredSize = Number(metaRes.data.size ?? 0);
+      if (declaredSize && declaredSize > MAX_SHEET_BYTES) {
+        return Response.json(
+          { error: 'file_too_large', message: 'Sheet music exceeds the 25 MB limit.' },
+          { status: 413 },
+        );
+      }
+      const mediaRes = await drive.files.get(
+        { fileId: driveFileId, alt: 'media' },
+        { responseType: 'arraybuffer' },
+      );
+      const data = Buffer.from(mediaRes.data as ArrayBuffer);
+      if (data.length > MAX_SHEET_BYTES) {
+        return Response.json(
+          { error: 'file_too_large', message: 'Sheet music exceeds the 25 MB limit.' },
+          { status: 413 },
+        );
+      }
+      const stored = await putSongFile({
+        conversationId,
+        kind: 'sheet_music',
+        data,
+        fileName,
+        mimeType,
+        driveFileId,
+      });
+      return Response.json({ sheetMusic: stored }, { status: 201 });
+    } catch (err) {
+      console.error('[files] sheet-music Drive import failed', err);
+      return Response.json(
+        { error: 'import_failed', message: 'Could not import the file from Drive.' },
+        { status: 502 },
+      );
+    }
   }
 
   const form = await req.formData().catch(() => null);
