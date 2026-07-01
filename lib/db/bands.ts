@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from './index';
 import { bands, bandMembers, users } from './schema';
+import { deleteObjects, storageKeysForBand } from './song-files';
 
 export type Band = typeof bands.$inferSelect;
 export type BandRole = 'owner' | 'member';
@@ -91,5 +92,8 @@ export async function removeMember(bandId: string, userId: string) {
  * and read state. Irreversible.
  */
 export async function deleteBand(bandId: string): Promise<void> {
+  // Collect object-storage keys before the cascade removes the file rows.
+  const keys = await storageKeysForBand(bandId);
   await db.delete(bands).where(eq(bands.id, bandId));
+  await deleteObjects(keys);
 }

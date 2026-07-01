@@ -9,7 +9,8 @@ for audio streaming.
 
 Originally all state lived in Drive JSON files; conversation storage has
 since been migrated to Postgres, with **bands** (in-app groups) owning
-audio and conversations. Registered audio is imported into Postgres, so
+audio and conversations. Registered audio + sheet music are imported into
+S3-compatible object storage (Cloudflare R2 in prod, MinIO in dev), so
 Drive is now just the import source (the Picker).
 
 Highlights:
@@ -23,8 +24,9 @@ Highlights:
   LISTEN/NOTIFY → SSE
 - Open Conversations / History with server-computed New / Mentioned
   badges; closed-conversation flow; activity log
-- Audio imported from Drive and stored in Postgres (`bytea`); Howler.js
-  playback over a Range-capable serve route — no Drive in the play path
+- Audio imported from Drive into S3-compatible object storage (Cloudflare
+  R2 in prod, MinIO in dev); Howler.js playback over a Range-capable serve
+  route — no Drive in the play path
 - Dark/light theme, global header, toasts, confirmation modals
 
 ## Prerequisites
@@ -87,13 +89,24 @@ docker run --name sidestage-pg \
 
 (See `docs/postgres-phase-1-setup.md` for native/alternative setups.)
 
-### 4. Configure environment
+### 4. Start object storage (MinIO)
+
+Song files (audio + sheet music) live in S3-compatible object storage.
+Locally, run MinIO (production uses Cloudflare R2):
+
+```bash
+docker run -d --name sidestage-minio -p 9000:9000 -p 9001:9001 \
+  -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
+  -v sidestage-minio-data:/data minio/minio server /data --console-address ":9001"
+```
+
+### 5. Configure environment
 
 ```bash
 cp .env.example .env.local
 ```
 
-Fill in (`.env.example` has the full annotated list):
+Fill in:
 
 ```ini
 AUTH_SECRET=<openssl rand -base64 32>
@@ -102,15 +115,24 @@ AUTH_GOOGLE_SECRET=<OAuth client secret>
 NEXT_PUBLIC_GOOGLE_API_KEY=<API key>
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/sidestage
 # DATABASE_SSL stays unset/false locally — only managed Postgres needs it.
+# Object storage — local MinIO (for R2: S3_ENDPOINT=https://<acct>.r2.cloudflarestorage.com,
+# creds = an R2 API token, S3_FORCE_PATH_STYLE can be false).
+S3_ENDPOINT=http://localhost:9000
+S3_REGION=auto
+S3_BUCKET=sidestage
+S3_ACCESS_KEY_ID=minioadmin
+S3_SECRET_ACCESS_KEY=minioadmin
+S3_FORCE_PATH_STYLE=true
 ```
 
-Then apply the schema:
+Then apply the schema and create the bucket:
 
 ```bash
 pnpm db:migrate
+pnpm s3:init
 ```
 
-### 5. Run
+### 6. Run
 
 ```bash
 pnpm dev
@@ -160,14 +182,22 @@ refetches on change, with a 30s poll as a backstop.
 the user upsert). Keeping DB and `googleapis` imports out of
 `auth.config.ts` is what keeps them out of the Edge bundle.
 
-**Audio is owned by us.** When a user registers a song, the audio is
-downloaded from Drive (once, with the registrant's token) and stored in
-Postgres as `bytea` (`song_files`, behind the small storage interface in
-`lib/db/song-files.ts`). Playback streams from
-`/api/conversations/[id]/audio` with Range support — the byte slice is
-extracted in Postgres via `substr`, so we don't load whole files into the
-app. Authorization is band membership, the same as everywhere else; Drive
-is no longer in the playback path (it's just the import source + Picker).
+**Audio (and sheet music) is owned by us.** When a user registers a song,
+the audio is downloaded from Drive (once, with the registrant's token) and
+stored in **S3-compatible object storage** — Cloudflare R2 in production,
+MinIO locally. Postgres keeps only the metadata + object key
+(`song_files`), so the database stays small no matter how big the library
+gets. The bytes live behind the small storage interface in
+`lib/db/song-files.ts` (`lib/storage/s3.ts` is the client). Playback and
+sheet-music view stream from `/api/conversations/[id]/files/[kind]`, which
+checks band membership, then proxies the object store's Range response
+(the store computes the range). Drive is no longer in the playback path —
+it's just the import source + Picker.
+
+Object deletes aren't transactional with the DB, so song/band deletes
+collect the keys and best-effort delete the objects after the cascade;
+`scripts/r2-sweep.mjs` reclaims any leaked objects. `scripts/r2-backfill.mjs`
+migrated the earlier `bytea` blobs into the bucket.
 
 > The held `LISTEN` connection + SSE mean the app must run on a
 > **long-lived Node server**, not serverless. See [Deployment](#deployment).
@@ -288,9 +318,14 @@ no `drizzle-kit` needed in production.
 | `NEXT_PUBLIC_GOOGLE_API_KEY`        | Picker API key                                         |
 | `DATABASE_URL`                      | Postgres connection string                             |
 | `DATABASE_SSL`                      | `true` (managed Postgres)                              |
+| `S3_ENDPOINT`                       | `https://<accountid>.r2.cloudflarestorage.com`         |
+| `S3_REGION`                         | `auto` (R2)                                            |
+| `S3_BUCKET`                         | bucket name                                            |
+| `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | R2 API token                                   |
 
 `AUTH_URL` matters here (unlike Vercel, there's no `VERCEL_URL` to derive
-it from). See `.env.example` for details on each.
+it from). The `S3_*` vars point at your R2 bucket (song audio + sheet
+music); leave `S3_FORCE_PATH_STYLE` unset for R2.
 
 **Commands:**
 
@@ -327,15 +362,17 @@ listener each. Use your provider's pooled endpoint if connection limits
 are tight.
 
 **Drive usage.** Drive is touched only at registration time — to download
-the audio once (it then lives in Postgres) — and by the Picker. Playback
-and all conversation data are Postgres, so the old per-note Drive quota
-pressure is gone. The `googleapis` client in `lib/drive.ts` retries
+the audio once (it then lives in object storage) — and by the Picker.
+Playback and all conversation data don't touch Drive, so the old per-note
+quota pressure is gone. The `googleapis` client in `lib/drive.ts` retries
 429/5xx with backoff and is tuned against "Premature close" socket errors.
 
-**Audio storage size.** Audio lives in `song_files` as `bytea`, so the DB
-grows with the library and is included in `pg_dump`. Imports are capped at
-100 MB/file. If the library gets large, the `lib/db/song-files.ts`
-interface is the seam to swap in object storage.
+**Object storage.** Song files live in the bucket (`lib/storage/s3.ts`),
+so the database stays small regardless of library size. Playback streams
+via the app (proxying R2's Range response); R2's zero egress keeps that
+cheap. Deletes are best-effort against the bucket — run `pnpm r2:sweep`
+(or `node scripts/r2-sweep.mjs` in prod) periodically to reclaim any
+orphaned objects. Audio imports are capped at 100 MB, sheet music at 25 MB.
 
 **Health check.** `/api/health` returns `{ ok: true, version }`. It
 does no Drive calls and no auth check, so it's safe to point a

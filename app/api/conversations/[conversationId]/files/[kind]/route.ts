@@ -1,10 +1,11 @@
+import { Readable } from 'node:stream';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getConversationMembership } from '@/lib/db/conversations';
 import {
   deleteSongFile,
   getSongFileMeta,
   putSongFile,
-  readSongFileRange,
+  streamSongFile,
   type SongFileKind,
 } from '@/lib/db/song-files';
 
@@ -45,53 +46,47 @@ export async function GET(
   const meta = await getSongFileMeta(conversationId, kind);
   if (!meta) return new Response('not_found', { status: 404 });
 
-  const total = meta.sizeBytes;
   const nameHint = new URL(req.url).searchParams.get('name');
   const contentType = resolveContentType(meta.mimeType, nameHint ?? meta.fileName);
-  const baseHeaders: Record<string, string> = {
+  const rangeHeader = req.headers.get('range') ?? undefined;
+
+  let result;
+  try {
+    result = await streamSongFile(conversationId, kind, rangeHeader);
+  } catch (err) {
+    // Range the store can't satisfy → 416; anything else → 502.
+    if (isRangeError(err)) {
+      return new Response('range_not_satisfiable', {
+        status: 416,
+        headers: { 'Content-Range': `bytes */${meta.sizeBytes}` },
+      });
+    }
+    console.error('[files] stream failed', err);
+    return new Response('storage_error', { status: 502 });
+  }
+  if (!result) return new Response('not_found', { status: 404 });
+
+  const headers: Record<string, string> = {
     'Content-Type': contentType,
     'Accept-Ranges': 'bytes',
     'Cache-Control': 'private, max-age=300',
     'Content-Disposition': `inline; filename="${sanitizeFilename(meta.fileName)}"`,
-    // Don't let the browser re-interpret the bytes as a different type
-    // (e.g. a .txt sniffed as HTML) — these are embedded same-origin.
+    // Don't let the browser re-interpret the bytes (e.g. a .txt sniffed as
+    // HTML) — these are embedded same-origin.
     'X-Content-Type-Options': 'nosniff',
   };
+  if (result.contentLength != null)
+    headers['Content-Length'] = String(result.contentLength);
+  if (result.contentRange) headers['Content-Range'] = result.contentRange;
 
-  const rangeHeader = req.headers.get('range');
-  if (rangeHeader) {
-    const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader.trim());
-    if (match) {
-      let start = match[1] ? parseInt(match[1], 10) : 0;
-      let end = match[2] ? parseInt(match[2], 10) : total - 1;
-      if (!Number.isFinite(start)) start = 0;
-      if (!Number.isFinite(end) || end >= total) end = total - 1;
-      if (start > end || start >= total) {
-        return new Response('range_not_satisfiable', {
-          status: 416,
-          headers: { 'Content-Range': `bytes */${total}` },
-        });
-      }
-      const length = end - start + 1;
-      const chunk = await readSongFileRange(conversationId, kind, start, length);
-      if (!chunk) return new Response('not_found', { status: 404 });
-      return new Response(new Uint8Array(chunk), {
-        status: 206,
-        headers: {
-          ...baseHeaders,
-          'Content-Length': String(chunk.length),
-          'Content-Range': `bytes ${start}-${end}/${total}`,
-        },
-      });
-    }
-  }
+  const webStream = Readable.toWeb(result.body) as ReadableStream<Uint8Array>;
+  return new Response(webStream, { status: result.status, headers });
+}
 
-  const chunk = await readSongFileRange(conversationId, kind, 0, total);
-  if (!chunk) return new Response('not_found', { status: 404 });
-  return new Response(new Uint8Array(chunk), {
-    status: 200,
-    headers: { ...baseHeaders, 'Content-Length': String(total) },
-  });
+function isRangeError(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null) return false;
+  const e = err as { name?: string; $metadata?: { httpStatusCode?: number } };
+  return e.name === 'InvalidRange' || e.$metadata?.httpStatusCode === 416;
 }
 
 export async function POST(

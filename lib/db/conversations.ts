@@ -2,6 +2,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { db, type DbExecutor } from './index';
 import { bandMembers, conversations } from './schema';
 import { recordActivity } from './activity';
+import { deleteObjects, storageKeysForConversation } from './song-files';
 
 /**
  * Conversation lifecycle + membership (Postgres).
@@ -208,8 +209,13 @@ function pgErrorCode(err: unknown): string | undefined {
   return undefined;
 }
 
-/** Delete a song and everything it owns (notes, mentions, activity,
- * read state, files) via FK cascade. */
+/**
+ * Delete a song and everything it owns (notes, mentions, activity, read
+ * state, file rows) via FK cascade. FK cascade can't reach object storage,
+ * so we collect the object keys first and best-effort delete them after.
+ */
 export async function deleteConversation(conversationId: string): Promise<void> {
+  const keys = await storageKeysForConversation(conversationId);
   await db.delete(conversations).where(eq(conversations.id, conversationId));
+  await deleteObjects(keys);
 }

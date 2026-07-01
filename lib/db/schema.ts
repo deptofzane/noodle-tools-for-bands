@@ -204,7 +204,11 @@ export const songFiles = pgTable(
       .notNull()
       .references(() => conversations.id, { onDelete: 'cascade' }),
     kind: songFileKind('kind').notNull(),
-    data: bytea('data').notNull(),
+    // Bytes live in object storage (S3/R2), addressed by storageKey. The
+    // legacy `data` bytea column is kept nullable through the backfill and
+    // dropped afterward.
+    storageKey: text('storage_key'),
+    data: bytea('data'),
     fileName: text('file_name').notNull(),
     mimeType: text('mime_type').notNull(),
     sizeBytes: integer('size_bytes').notNull(),
