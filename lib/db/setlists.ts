@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from './index';
 import { conversations, setlists, setlistSongs } from './schema';
 
@@ -80,6 +80,34 @@ export async function getSetlist(
     .orderBy(setlistSongs.position);
 
   return { id: row.id, bandId: row.bandId, name: row.name, songs };
+}
+
+/**
+ * Persist a new song order for a setlist. `conversationIds` must be a
+ * permutation of the setlist's current songs (validated by the caller);
+ * each row's position is set to its index, and the setlist is touched.
+ */
+export async function setSetlistOrder(
+  setlistId: string,
+  conversationIds: string[],
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    for (let i = 0; i < conversationIds.length; i++) {
+      await tx
+        .update(setlistSongs)
+        .set({ position: i })
+        .where(
+          and(
+            eq(setlistSongs.setlistId, setlistId),
+            eq(setlistSongs.conversationId, conversationIds[i]!),
+          ),
+        );
+    }
+    await tx
+      .update(setlists)
+      .set({ updatedAt: new Date() })
+      .where(eq(setlists.id, setlistId));
+  });
 }
 
 /** Setlists in a band (newest first), each with its ordered songs. */
