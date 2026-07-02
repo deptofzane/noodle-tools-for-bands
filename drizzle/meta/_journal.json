@@ -43,6 +43,13 @@
       "when": 1783030819274,
       "tag": "0005_minor_rattler",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783033812656,
+      "tag": "0006_married_gorgon",
+      "breakpoints": true
     }
   ]
 }

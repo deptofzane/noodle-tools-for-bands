@@ -31,6 +31,13 @@ interface Conversation {
   updatedAt: string;
 }
 
+interface Setlist {
+  id: string;
+  name: string;
+  updatedAt: string;
+  songs: { conversationId: string; audioFileName: string | null }[];
+}
+
 /**
  * Band detail: name, read-only member list, and the audio library
  * (add from Drive or a local file). Owners get an "Edit band" link to
@@ -47,6 +54,7 @@ export function BandDetailClient({
   const [conversations, setConversations] = useState<Conversation[] | null>(
     null,
   );
+  const [setlists, setSetlists] = useState<Setlist[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -62,9 +70,10 @@ export function BandDetailClient({
 
   const load = useCallback(async () => {
     try {
-      const [detailRes, convRes] = await Promise.all([
+      const [detailRes, convRes, setlistRes] = await Promise.all([
         fetch(`/api/bands/${bandId}`, { cache: 'no-store' }),
         fetch(`/api/bands/${bandId}/conversations`, { cache: 'no-store' }),
+        fetch(`/api/bands/${bandId}/setlists`, { cache: 'no-store' }),
       ]);
       if (!detailRes.ok) {
         const b = await detailRes.json().catch(() => ({}));
@@ -74,6 +83,10 @@ export function BandDetailClient({
       if (convRes.ok) {
         const cd = (await convRes.json()) as { conversations: Conversation[] };
         setConversations(cd.conversations);
+      }
+      if (setlistRes.ok) {
+        const sd = (await setlistRes.json()) as { setlists: Setlist[] };
+        setSetlists(sd.setlists);
       }
       setError(null);
     } catch (e) {
@@ -305,14 +318,22 @@ export function BandDetailClient({
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-sm font-medium">Audio</h2>
-          <button
-            type="button"
-            onClick={() => setChooseOpen(true)}
-            disabled={audioBusy}
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
-          >
-            {audioBusy ? 'Adding…' : 'Add audio'}
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/bands/${bandId}/setlists/new`}
+              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+            >
+              Create setlist
+            </Link>
+            <button
+              type="button"
+              onClick={() => setChooseOpen(true)}
+              disabled={audioBusy}
+              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+            >
+              {audioBusy ? 'Adding…' : 'Add audio'}
+            </button>
+          </div>
         </div>
         {activeSongs && activeSongs.length === 0 && (
           <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
@@ -391,6 +412,37 @@ export function BandDetailClient({
           </div>
         )}
       </section>
+
+      {setlists.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-medium">Setlists</h2>
+          <ul className="flex flex-col gap-2">
+            {setlists.map((sl) => (
+              <li
+                key={sl.id}
+                className="rounded-lg border border-neutral-200 px-4 py-3 dark:border-neutral-800"
+              >
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="truncate font-medium">{sl.name}</span>
+                  <span className="shrink-0 text-xs text-neutral-500">
+                    {sl.songs.length}{' '}
+                    {sl.songs.length === 1 ? 'song' : 'songs'}
+                  </span>
+                </div>
+                {sl.songs.length > 0 && (
+                  <ol className="mt-1 list-decimal pl-5 text-sm text-neutral-600 dark:text-neutral-400">
+                    {sl.songs.map((s) => (
+                      <li key={s.conversationId} className="truncate">
+                        {s.audioFileName ?? 'Untitled audio'}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {archivedSongs.length > 0 && (
         <section className="flex flex-col gap-2">

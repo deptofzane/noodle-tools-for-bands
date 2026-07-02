@@ -219,3 +219,46 @@ export const songFiles = pgTable(
     ),
   ],
 );
+
+// ── Setlists ─────────────────────────────────────────────────────────
+// A named, ordered list of a band's songs. Any band member can create or
+// edit one. Membership in the owning band is the access scope.
+export const setlists = pgTable(
+  'setlists',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    bandId: uuid('band_id')
+      .notNull()
+      .references(() => bands.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index('setlists_band_idx').on(t.bandId)],
+);
+
+// Songs in a setlist, ordered by `position`. A conversation appears at
+// most once per setlist.
+export const setlistSongs = pgTable(
+  'setlist_songs',
+  {
+    setlistId: uuid('setlist_id')
+      .notNull()
+      .references(() => setlists.id, { onDelete: 'cascade' }),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => conversations.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.setlistId, t.conversationId] }),
+    index('setlist_songs_setlist_idx').on(t.setlistId),
+  ],
+);
