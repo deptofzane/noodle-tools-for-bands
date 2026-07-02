@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ConfirmModal } from '../../ConfirmModal';
@@ -43,7 +43,9 @@ export function BandDetailClient({
   apiKey: string;
 }) {
   const [data, setData] = useState<BandDetail | null>(null);
-  const [conversations, setConversations] = useState<Conversation[] | null>(null);
+  const [conversations, setConversations] = useState<Conversation[] | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
@@ -51,6 +53,9 @@ export function BandDetailClient({
   const [leaving, setLeaving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [chooseOpen, setChooseOpen] = useState(false);
+  const [audioBusy, setAudioBusy] = useState(false);
+  const audioInputRef = useRef<HTMLInputElement>(null);
   const trackPending = useTrackPending();
   const router = useRouter();
   const showToast = useToast();
@@ -107,6 +112,41 @@ export function BandDetailClient({
     },
     [bandId, load, trackPending, showToast],
   );
+
+  const handleLocalAudio = async (file: File) => {
+    if (audioBusy) return;
+    setAudioBusy(true);
+    try {
+      await trackPending(async () => {
+        const form = new FormData();
+        form.append('file', file);
+        const r = await fetch(`/api/bands/${bandId}/conversations`, {
+          method: 'POST',
+          body: form,
+        });
+        if (!r.ok) {
+          const b = await r.json().catch(() => ({}));
+          throw new Error(b.message ?? `HTTP ${r.status}`);
+        }
+      });
+      await load();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setAudioBusy(false);
+      if (audioInputRef.current) audioInputRef.current.value = '';
+    }
+  };
+
+  // Close the source-choice modal on Escape.
+  useEffect(() => {
+    if (!chooseOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !audioBusy) setChooseOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [chooseOpen, audioBusy]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -211,58 +251,10 @@ export function BandDetailClient({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">{data.band.name}</h1>
-        {isOwner ? (
-          <button
-            type="button"
-            onClick={() => setDeleteOpen(true)}
-            className="shrink-0 rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
-          >
-            Delete band
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setLeaveOpen(true)}
-            className="shrink-0 rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
-          >
-            Leave band
-          </button>
-        )}
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {data.band.name}
+        </h1>
       </div>
-
-      <section className="flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-medium">Audio</h2>
-          <PickerButton apiKey={apiKey} onPick={handleRegister} label="Add audio" />
-        </div>
-        {conversations && conversations.length === 0 && (
-          <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
-            No audio yet. Use “Add audio” to register a Drive file.
-          </p>
-        )}
-        {conversations && conversations.length > 0 && (
-          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-            {conversations.map((c) => (
-              <li key={c.id}>
-                <Link
-                  href={`/notes/${c.id}`}
-                  className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
-                >
-                  <span className="truncate font-medium">
-                    {c.audioFileName ?? 'Untitled audio'}
-                  </span>
-                  {c.closed && (
-                    <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                      closed
-                    </span>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium">Members</h2>
@@ -299,30 +291,153 @@ export function BandDetailClient({
             </li>
           ))}
         </ul>
+        {isOwner && (
+          <form onSubmit={handleAdd} className="flex flex-col gap-1">
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Add member by email"
+                className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+              />
+              <button
+                type="submit"
+                disabled={!email.trim() || busy}
+                className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+              >
+                {busy ? 'Adding…' : 'Add'}
+              </button>
+            </div>
+            <p className="text-[11px] text-neutral-500">
+              They must have signed in to the app at least once.
+            </p>
+          </form>
+        )}
       </section>
 
-      {isOwner && (
-        <form onSubmit={handleAdd} className="flex flex-col gap-1">
-          <div className="flex gap-2">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Add member by email"
-              className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
-            />
-            <button
-              type="submit"
-              disabled={!email.trim() || busy}
-              className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
-            >
-              {busy ? 'Adding…' : 'Add'}
-            </button>
-          </div>
-          <p className="text-[11px] text-neutral-500">
-            They must have signed in to the app at least once.
+      <section className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-medium">Audio</h2>
+          <button
+            type="button"
+            onClick={() => setChooseOpen(true)}
+            disabled={audioBusy}
+            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+          >
+            {audioBusy ? 'Adding…' : 'Add audio'}
+          </button>
+        </div>
+        {conversations && conversations.length === 0 && (
+          <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+            No audio yet. Use “Add audio” to add from Drive or your device.
           </p>
-        </form>
+        )}
+        {conversations && conversations.length > 0 && (
+          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+            {conversations.map((c) => (
+              <li key={c.id}>
+                <Link
+                  href={`/notes/${c.id}`}
+                  className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                >
+                  <span className="truncate font-medium">
+                    {c.audioFileName ?? 'Untitled audio'}
+                  </span>
+                  {c.closed && (
+                    <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                      closed
+                    </span>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <input
+          ref={audioInputRef}
+          type="file"
+          accept="audio/*,.mp3,.m4a,.wav,.ogg,.oga,.opus,.webm,.flac,.aac"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void handleLocalAudio(file);
+          }}
+        />
+
+        {chooseOpen && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="audio-source-title"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+            onClick={() => {
+              if (!audioBusy) setChooseOpen(false);
+            }}
+          >
+            <div
+              className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-5 shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 id="audio-source-title" className="text-base font-semibold">
+                Add audio
+              </h2>
+              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+                Choose one or more files from Google Drive, or upload one from
+                this device.
+              </p>
+              <div className="mt-4 flex flex-col gap-2">
+                <PickerButton
+                  apiKey={apiKey}
+                  label="Choose from Google Drive"
+                  onPick={(files) => {
+                    setChooseOpen(false);
+                    void handleRegister(files);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setChooseOpen(false);
+                    audioInputRef.current?.click();
+                  }}
+                  className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                >
+                  Upload a local file
+                </button>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setChooseOpen(false)}
+                  disabled={audioBusy}
+                  className="rounded-md px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {isOwner ? (
+        <button
+          type="button"
+          onClick={() => setDeleteOpen(true)}
+          className="shrink-0 rounded-md border border-red-300 px-3 py-1.5 mt-3 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+        >
+          Delete band
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setLeaveOpen(true)}
+          className="shrink-0 rounded-md border border-neutral-300 px-3 py-1.5 mt-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+        >
+          Leave band
+        </button>
       )}
 
       <ConfirmModal
