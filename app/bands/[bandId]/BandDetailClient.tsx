@@ -27,6 +27,7 @@ interface Conversation {
   id: string;
   audioFileName: string | null;
   closed: boolean;
+  archived: boolean;
   updatedAt: string;
 }
 
@@ -201,6 +202,36 @@ export function BandDetailClient({
   }
 
   const isOwner = data.myRole === 'owner';
+  const activeSongs = conversations?.filter((c) => !c.archived) ?? null;
+  const archivedSongs = conversations?.filter((c) => c.archived) ?? [];
+
+  const renderSongRow = (c: Conversation) => (
+    <li
+      key={c.id}
+      className="flex items-center gap-2 pr-4 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+    >
+      <Link href={`/notes/${c.id}`} className="min-w-0 flex-1 px-4 py-3 text-sm">
+        <div className="flex items-center gap-2">
+          <span className="truncate font-medium">
+            {c.audioFileName ?? 'Untitled audio'}
+          </span>
+          {c.closed && (
+            <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+              closed
+            </span>
+          )}
+        </div>
+        <div className="mt-0.5 text-xs text-neutral-500">
+          Updated {formatRelativeTime(c.updatedAt)}
+        </div>
+      </Link>
+      <ActionMenu label="Song actions" disabled={deleting}>
+        <ActionMenuItem destructive onClick={() => setDeleteTarget(c)}>
+          Delete
+        </ActionMenuItem>
+      </ActionMenu>
+    </li>
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -256,46 +287,14 @@ export function BandDetailClient({
             {audioBusy ? 'Adding…' : 'Add audio'}
           </button>
         </div>
-        {conversations && conversations.length === 0 && (
+        {activeSongs && activeSongs.length === 0 && (
           <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
             No audio yet. Use “Add audio” to add from Drive or your device.
           </p>
         )}
-        {conversations && conversations.length > 0 && (
+        {activeSongs && activeSongs.length > 0 && (
           <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-            {conversations.map((c) => (
-              <li
-                key={c.id}
-                className="flex items-center gap-2 pr-4 hover:bg-neutral-50 dark:hover:bg-neutral-900"
-              >
-                <Link
-                  href={`/notes/${c.id}`}
-                  className="min-w-0 flex-1 px-4 py-3 text-sm"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="truncate font-medium">
-                      {c.audioFileName ?? 'Untitled audio'}
-                    </span>
-                    {c.closed && (
-                      <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                        closed
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-0.5 text-xs text-neutral-500">
-                    Updated {formatRelativeTime(c.updatedAt)}
-                  </div>
-                </Link>
-                <ActionMenu label="Song actions" disabled={deleting}>
-                  <ActionMenuItem
-                    destructive
-                    onClick={() => setDeleteTarget(c)}
-                  >
-                    Delete
-                  </ActionMenuItem>
-                </ActionMenu>
-              </li>
-            ))}
+            {activeSongs.map(renderSongRow)}
           </ul>
         )}
 
@@ -365,6 +364,15 @@ export function BandDetailClient({
           </div>
         )}
       </section>
+
+      {archivedSongs.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-medium text-neutral-500">Archived Audio</h2>
+          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+            {archivedSongs.map(renderSongRow)}
+          </ul>
+        </section>
+      )}
 
       {!isOwner && (
         <button

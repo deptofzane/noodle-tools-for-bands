@@ -6,6 +6,7 @@ import {
   getConversationMembership,
   moveConversation,
   renameConversation,
+  setConversationArchived,
   setConversationClosed,
 } from '@/lib/db/conversations';
 import { getConversationActivity } from '@/lib/db/activity';
@@ -17,8 +18,8 @@ import { getMembership, listMembers } from '@/lib/db/bands';
  *   → { conversation, closed, notes (threaded), activity, members, myRole }
  *
  * PATCH  /api/conversations/[conversationId]
- *   Body may include any of: { closed?, name?, bandId? } — open/close,
- *   rename the song, or move it to another band you belong to.
+ *   Body may include any of: { closed?, name?, bandId?, archived? } —
+ *   open/close, rename, move to another band you belong to, or archive.
  *
  * DELETE /api/conversations/[conversationId]
  *   → delete the song (cascades notes, mentions, activity, files).
@@ -98,6 +99,10 @@ export async function PATCH(
   if (typeof body.closed === 'boolean') {
     await setConversationClosed(conversationId, user.id, body.closed);
     conversation = { ...conversation, closed: body.closed };
+  }
+
+  if (typeof body.archived === 'boolean') {
+    conversation = await setConversationArchived(conversationId, body.archived);
   }
 
   return NextResponse.json({ conversation });

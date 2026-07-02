@@ -160,6 +160,19 @@ export class ConversationConflictError extends Error {
   }
 }
 
+/** Archive or unarchive a song (moves it to a separate band list). */
+export async function setConversationArchived(
+  conversationId: string,
+  archived: boolean,
+): Promise<Conversation> {
+  const [row] = await db
+    .update(conversations)
+    .set({ archived })
+    .where(eq(conversations.id, conversationId))
+    .returning();
+  return row!;
+}
+
 /** Rename a song (the conversation's display name). */
 export async function renameConversation(
   conversationId: string,

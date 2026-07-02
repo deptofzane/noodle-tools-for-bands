@@ -45,6 +45,7 @@ export default async function EditSongPage({
         conversationId={conversationId}
         initialName={conversation.audioFileName ?? ''}
         initialBandId={conversation.bandId}
+        initialArchived={conversation.archived}
         bands={bands.map((b) => ({ id: b.id, name: b.name }))}
         sheetMusic={
           sheet

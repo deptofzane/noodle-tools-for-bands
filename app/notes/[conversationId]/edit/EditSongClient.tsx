@@ -21,12 +21,14 @@ export function EditSongClient({
   conversationId,
   initialName,
   initialBandId,
+  initialArchived,
   bands,
   sheetMusic,
 }: {
   conversationId: string;
   initialName: string;
   initialBandId: string;
+  initialArchived: boolean;
   bands: BandOption[];
   sheetMusic: SheetMusicMeta | null;
 }) {
@@ -38,6 +40,7 @@ export function EditSongClient({
   const [savedName, setSavedName] = useState(initialName);
   const [bandId, setBandId] = useState(initialBandId);
   const [savedBandId, setSavedBandId] = useState(initialBandId);
+  const [archived, setArchived] = useState(initialArchived);
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -80,6 +83,21 @@ export function EditSongClient({
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setBandId(savedBandId); // revert the select
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleToggleArchive = async () => {
+    if (busy) return;
+    const next = !archived;
+    setBusy(true);
+    try {
+      await trackPending(() => patch({ archived: next }));
+      setArchived(next);
+      showToast(next ? 'Song archived.' : 'Song unarchived.', 'success');
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
@@ -164,6 +182,26 @@ export function EditSongClient({
 
       {/* Sheet music (reuses the song-page panel) */}
       <SheetMusic conversationId={conversationId} initial={sheetMusic} />
+
+      {/* Archive */}
+      <section className="flex flex-col gap-2">
+        <h2 className="text-sm font-medium">Archive</h2>
+        <p className="text-[11px] text-neutral-500">
+          {archived
+            ? 'This song is archived — it appears under “Archived Audio” on the band page.'
+            : 'Archiving moves this song into a separate “Archived Audio” list on the band page. It keeps all of its notes and files.'}
+        </p>
+        <div>
+          <button
+            type="button"
+            onClick={handleToggleArchive}
+            disabled={busy}
+            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+          >
+            {archived ? 'Unarchive song' : 'Archive song'}
+          </button>
+        </div>
+      </section>
 
       {/* Danger zone */}
       <section className="flex flex-col gap-2 rounded-lg border border-red-200 p-4 dark:border-red-900">

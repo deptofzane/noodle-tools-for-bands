@@ -82,6 +82,8 @@ export const conversations = pgTable(
     driveAudioFileId: text('drive_audio_file_id').notNull(),
     audioFileName: text('audio_file_name'), // denormalized snapshot
     closed: boolean('closed').notNull().default(false),
+    // Archived songs stay in the band but move to a separate list.
+    archived: boolean('archived').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
