@@ -53,6 +53,10 @@ export async function listConversationsForUser(
       : filter === 'closed'
         ? eq(conversations.closed, true)
         : undefined;
+  // Archived songs drop out of the open list (they live under the band's
+  // "Archived Audio" section instead).
+  const archivedFilter =
+    filter === 'open' ? eq(conversations.archived, false) : undefined;
 
   // Base rows: conversations in the user's bands (+ my read marker).
   const base = await db
@@ -82,7 +86,7 @@ export async function listConversationsForUser(
         eq(conversationReads.userId, userId),
       ),
     )
-    .where(closedFilter)
+    .where(and(closedFilter, archivedFilter))
     .orderBy(desc(conversations.updatedAt));
 
   if (base.length === 0) return [];
