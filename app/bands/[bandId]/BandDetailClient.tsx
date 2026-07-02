@@ -50,6 +50,8 @@ export function BandDetailClient({
   const [leaving, setLeaving] = useState(false);
   const [chooseOpen, setChooseOpen] = useState(false);
   const [audioBusy, setAudioBusy] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const trackPending = useTrackPending();
   const router = useRouter();
@@ -163,6 +165,28 @@ export function BandDetailClient({
     }
   };
 
+  const handleDeleteSong = async () => {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    try {
+      await trackPending(async () => {
+        const r = await fetch(`/api/conversations/${deleteTarget.id}`, {
+          method: 'DELETE',
+        });
+        if (!r.ok && r.status !== 204) {
+          const b = await r.json().catch(() => ({}));
+          throw new Error(b.message ?? `HTTP ${r.status}`);
+        }
+      });
+      setDeleteTarget(null);
+      await load();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (error) {
     return (
       <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
@@ -239,27 +263,36 @@ export function BandDetailClient({
         {conversations && conversations.length > 0 && (
           <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
             {conversations.map((c) => (
-              <li key={c.id}>
+              <li
+                key={c.id}
+                className="flex items-center gap-2 pr-4 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+              >
                 <Link
                   href={`/notes/${c.id}`}
-                  className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                  className="min-w-0 flex-1 px-4 py-3 text-sm"
                 >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate font-medium">
-                        {c.audioFileName ?? 'Untitled audio'}
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-medium">
+                      {c.audioFileName ?? 'Untitled audio'}
+                    </span>
+                    {c.closed && (
+                      <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                        closed
                       </span>
-                      {c.closed && (
-                        <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                          closed
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-0.5 text-xs text-neutral-500">
-                      Updated {formatRelativeTime(c.updatedAt)}
-                    </div>
+                    )}
+                  </div>
+                  <div className="mt-0.5 text-xs text-neutral-500">
+                    Updated {formatRelativeTime(c.updatedAt)}
                   </div>
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(c)}
+                  disabled={deleting}
+                  className="shrink-0 text-xs text-neutral-500 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
+                >
+                  Delete
+                </button>
               </li>
             ))}
           </ul>
@@ -351,6 +384,17 @@ export function BandDetailClient({
         busy={leaving}
         onConfirm={handleLeave}
         onCancel={() => setLeaveOpen(false)}
+      />
+
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title={`Delete ${deleteTarget?.audioFileName ?? 'this song'}?`}
+        description="This permanently deletes the song and all of its notes, sheet music, and activity. This can’t be undone."
+        confirmLabel="Delete song"
+        busyLabel="Deleting…"
+        busy={deleting}
+        onConfirm={handleDeleteSong}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   );
