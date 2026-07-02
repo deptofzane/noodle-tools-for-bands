@@ -192,7 +192,6 @@ export function EditSongClient({
         confirmLabel="Delete song"
         busyLabel="Deleting…"
         busy={deleting}
-        confirmPhrase={savedName}
         onConfirm={handleDelete}
         onCancel={() => setDeleteOpen(false)}
       />
