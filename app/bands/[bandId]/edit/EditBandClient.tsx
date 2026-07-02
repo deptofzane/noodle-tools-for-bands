@@ -29,6 +29,8 @@ export function EditBandClient({ bandId }: { bandId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<Member | null>(null);
+  const [removing, setRemoving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const trackPending = useTrackPending();
@@ -79,21 +81,26 @@ export function EditBandClient({ bandId }: { bandId: string }) {
     }
   };
 
-  const handleRemove = async (userId: string) => {
-    if (!confirm('Remove this member?')) return;
+  const handleRemove = async () => {
+    if (!removeTarget || removing) return;
+    setRemoving(true);
     try {
       await trackPending(async () => {
-        const r = await fetch(`/api/bands/${bandId}/members/${userId}`, {
-          method: 'DELETE',
-        });
+        const r = await fetch(
+          `/api/bands/${bandId}/members/${removeTarget.userId}`,
+          { method: 'DELETE' },
+        );
         if (!r.ok) {
           const b = await r.json().catch(() => ({}));
           throw new Error(b.message ?? `HTTP ${r.status}`);
         }
       });
+      setRemoveTarget(null);
       await load();
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRemoving(false);
     }
   };
 
@@ -160,8 +167,9 @@ export function EditBandClient({ bandId }: { bandId: string }) {
                 {m.role === 'member' && (
                   <button
                     type="button"
-                    onClick={() => handleRemove(m.userId)}
-                    className="text-xs text-neutral-500 hover:text-red-600 dark:hover:text-red-400"
+                    onClick={() => setRemoveTarget(m)}
+                    disabled={removing}
+                    className="text-xs text-neutral-500 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
                   >
                     Remove
                   </button>
@@ -205,6 +213,19 @@ export function EditBandClient({ bandId }: { bandId: string }) {
           Delete band
         </button>
       </section>
+
+      <ConfirmModal
+        open={removeTarget !== null}
+        title="Remove member?"
+        description={`Remove ${
+          removeTarget?.name ?? removeTarget?.email ?? 'this member'
+        } from ${data.band.name}? They’ll lose access to its audio and conversations. You can add them back later.`}
+        confirmLabel="Remove member"
+        busyLabel="Removing…"
+        busy={removing}
+        onConfirm={handleRemove}
+        onCancel={() => setRemoveTarget(null)}
+      />
 
       <ConfirmModal
         open={deleteOpen}
