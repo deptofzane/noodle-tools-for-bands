@@ -54,6 +54,7 @@ export function BandDetailClient({
   const [audioBusy, setAudioBusy] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [archiving, setArchiving] = useState(false);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const trackPending = useTrackPending();
   const router = useRouter();
@@ -189,6 +190,29 @@ export function BandDetailClient({
     }
   };
 
+  const handleToggleArchive = async (c: Conversation) => {
+    if (archiving) return;
+    setArchiving(true);
+    try {
+      await trackPending(async () => {
+        const r = await fetch(`/api/conversations/${c.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ archived: !c.archived }),
+        });
+        if (!r.ok) {
+          const b = await r.json().catch(() => ({}));
+          throw new Error(b.message ?? `HTTP ${r.status}`);
+        }
+      });
+      await load();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setArchiving(false);
+    }
+  };
+
   if (error) {
     return (
       <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
@@ -225,7 +249,10 @@ export function BandDetailClient({
           Updated {formatRelativeTime(c.updatedAt)}
         </div>
       </Link>
-      <ActionMenu label="Song actions" disabled={deleting}>
+      <ActionMenu label="Song actions" disabled={deleting || archiving}>
+        <ActionMenuItem onClick={() => handleToggleArchive(c)}>
+          {c.archived ? 'Unarchive song' : 'Archive song'}
+        </ActionMenuItem>
         <ActionMenuItem destructive onClick={() => setDeleteTarget(c)}>
           Delete
         </ActionMenuItem>
