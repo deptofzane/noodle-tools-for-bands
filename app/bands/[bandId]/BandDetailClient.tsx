@@ -25,6 +25,7 @@ interface Conversation {
   id: string;
   audioFileName: string | null;
   closed: boolean;
+  updatedAt: string;
 }
 
 /**
@@ -242,14 +243,21 @@ export function BandDetailClient({
                   href={`/notes/${c.id}`}
                   className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
                 >
-                  <span className="truncate font-medium">
-                    {c.audioFileName ?? 'Untitled audio'}
-                  </span>
-                  {c.closed && (
-                    <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                      closed
-                    </span>
-                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate font-medium">
+                        {c.audioFileName ?? 'Untitled audio'}
+                      </span>
+                      {c.closed && (
+                        <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                          closed
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-0.5 text-xs text-neutral-500">
+                      Updated {formatRelativeTime(c.updatedAt)}
+                    </div>
+                  </div>
                 </Link>
               </li>
             ))}
@@ -345,4 +353,19 @@ export function BandDetailClient({
       />
     </div>
   );
+}
+
+/** Same relative-time formatting as the Open Conversations list. */
+function formatRelativeTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  const diffMs = Date.now() - date.getTime();
+  const minutes = Math.floor(diffMs / 60_000);
+  const hours = Math.floor(diffMs / 3_600_000);
+  const days = Math.floor(diffMs / 86_400_000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 30) return `${days}d ago`;
+  return date.toLocaleDateString();
 }
