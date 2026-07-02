@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTrackPending } from '../PendingActionProvider';
+import { actorLabel, formatRelativeTime } from '@/lib/format';
 
 /**
  * Open Conversations list (Postgres).
@@ -110,24 +111,4 @@ export function AnnotatedList() {
       ))}
     </ul>
   );
-}
-
-function actorLabel(by: { name?: string | null; email?: string | null }): string {
-  if (by.name) return by.name;
-  if (by.email) return by.email;
-  return 'someone';
-}
-
-function formatRelativeTime(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  const diffMs = Date.now() - date.getTime();
-  const minutes = Math.floor(diffMs / 60_000);
-  const hours = Math.floor(diffMs / 3_600_000);
-  const days = Math.floor(diffMs / 86_400_000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 30) return `${days}d ago`;
-  return date.toLocaleDateString();
 }

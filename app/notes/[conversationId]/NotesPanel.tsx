@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { formatDuration } from '@/lib/audio';
+import { actorLabel, formatRelativeTime } from '@/lib/format';
 import type { ThreadedNote } from '@/lib/db/notes';
 import type { ActivityKind, ConversationActivity } from '@/lib/db/activity';
 import { useTrackPending } from '../../PendingActionProvider';
@@ -401,16 +402,6 @@ function ActivityHeader({
   );
 }
 
-function actorLabel(
-  by: { id: string; name?: string | null; email?: string | null },
-  currentUserId: string,
-): string {
-  if (by.id === currentUserId) return 'you';
-  if (by.name) return by.name;
-  if (by.email) return by.email;
-  return 'someone';
-}
-
 function describeKind(kind: ActivityKind): string {
   switch (kind) {
     case 'note-created':
@@ -432,18 +423,4 @@ function describeKind(kind: ActivityKind): string {
     default:
       return kind satisfies never;
   }
-}
-
-function formatRelativeTime(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  const diffMs = Date.now() - date.getTime();
-  const minutes = Math.floor(diffMs / 60_000);
-  const hours = Math.floor(diffMs / 3_600_000);
-  const days = Math.floor(diffMs / 86_400_000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 30) return `${days}d ago`;
-  return date.toLocaleDateString();
 }
