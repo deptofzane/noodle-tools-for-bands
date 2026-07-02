@@ -418,26 +418,28 @@ export function BandDetailClient({
           <h2 className="text-sm font-medium">Setlists</h2>
           <ul className="flex flex-col gap-2">
             {setlists.map((sl) => (
-              <li
-                key={sl.id}
-                className="rounded-lg border border-neutral-200 px-4 py-3 dark:border-neutral-800"
-              >
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="truncate font-medium">{sl.name}</span>
-                  <span className="shrink-0 text-xs text-neutral-500">
-                    {sl.songs.length}{' '}
-                    {sl.songs.length === 1 ? 'song' : 'songs'}
-                  </span>
-                </div>
-                {sl.songs.length > 0 && (
-                  <ol className="mt-1 list-decimal pl-5 text-sm text-neutral-600 dark:text-neutral-400">
-                    {sl.songs.map((s) => (
-                      <li key={s.conversationId} className="truncate">
-                        {s.audioFileName ?? 'Untitled audio'}
-                      </li>
-                    ))}
-                  </ol>
-                )}
+              <li key={sl.id}>
+                <Link
+                  href={`/bands/${bandId}/setlists/${sl.id}`}
+                  className="block rounded-lg border border-neutral-200 px-4 py-3 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="truncate font-medium">{sl.name}</span>
+                    <span className="shrink-0 text-xs text-neutral-500">
+                      {sl.songs.length}{' '}
+                      {sl.songs.length === 1 ? 'song' : 'songs'}
+                    </span>
+                  </div>
+                  {sl.songs.length > 0 && (
+                    <ol className="mt-1 list-decimal pl-5 text-sm text-neutral-600 dark:text-neutral-400">
+                      {sl.songs.map((s) => (
+                        <li key={s.conversationId} className="truncate">
+                          {s.audioFileName ?? 'Untitled audio'}
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </Link>
               </li>
             ))}
           </ul>

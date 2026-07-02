@@ -22,6 +22,13 @@ export interface SetlistWithSongs {
   songs: SetlistSong[];
 }
 
+export interface SetlistDetail {
+  id: string;
+  bandId: string;
+  name: string;
+  songs: SetlistSong[];
+}
+
 /** Create a setlist and its ordered songs in one transaction. */
 export async function createSetlist(input: {
   bandId: string;
@@ -49,6 +56,30 @@ export async function createSetlist(input: {
     }
     return row!;
   });
+}
+
+/** A single setlist with its ordered songs, or null if it doesn't exist. */
+export async function getSetlist(
+  setlistId: string,
+): Promise<SetlistDetail | null> {
+  const [row] = await db
+    .select()
+    .from(setlists)
+    .where(eq(setlists.id, setlistId))
+    .limit(1);
+  if (!row) return null;
+
+  const songs = await db
+    .select({
+      conversationId: setlistSongs.conversationId,
+      audioFileName: conversations.audioFileName,
+    })
+    .from(setlistSongs)
+    .innerJoin(conversations, eq(conversations.id, setlistSongs.conversationId))
+    .where(eq(setlistSongs.setlistId, setlistId))
+    .orderBy(setlistSongs.position);
+
+  return { id: row.id, bandId: row.bandId, name: row.name, songs };
 }
 
 /** Setlists in a band (newest first), each with its ordered songs. */
