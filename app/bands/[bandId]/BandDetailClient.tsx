@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
 import { ConfirmModal } from '../../ConfirmModal';
 import { PickerButton, type PickedFile } from '../../PickerButton';
 import { useTrackPending } from '../../PendingActionProvider';
@@ -285,14 +286,14 @@ export function BandDetailClient({
                     Updated {formatRelativeTime(c.updatedAt)}
                   </div>
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => setDeleteTarget(c)}
-                  disabled={deleting}
-                  className="shrink-0 text-xs text-neutral-500 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
-                >
-                  Delete
-                </button>
+                <ActionMenu label="Song actions" disabled={deleting}>
+                  <ActionMenuItem
+                    destructive
+                    onClick={() => setDeleteTarget(c)}
+                  >
+                    Delete
+                  </ActionMenuItem>
+                </ActionMenu>
               </li>
             ))}
           </ul>
