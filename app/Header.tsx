@@ -9,7 +9,7 @@ import { usePendingCount } from './PendingActionProvider';
  * conditionally from `app/layout.tsx` so it stays off the `/login`
  * page.
  *
- * Active-tab matching is intentionally exact: `/bands`,
+ * Active-tab matching is intentionally exact: `/bands`, `/calendar`,
  * `/open-conversations`, and `/history` each get their own dedicated
  * highlight. Routes outside this nav (notably `/notes/[conversationId]`)
  * leave the header un-highlighted, which is the least-wrong choice —
@@ -17,6 +17,7 @@ import { usePendingCount } from './PendingActionProvider';
  */
 const NAV_LINKS = [
   { href: '/bands', label: 'Bands' },
+  { href: '/calendar', label: 'Calendar' },
   { href: '/open-conversations', label: 'Open Conversations' },
   { href: '/history', label: 'History' },
   { href: '/account', label: 'Account' },
