@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { db, type DbExecutor } from './index';
 import { bandMembers, conversations } from './schema';
 import { recordActivity } from './activity';
@@ -110,14 +110,18 @@ export async function listBandConversations(
     .orderBy(desc(conversations.updatedAt));
 }
 
-/** Bump a conversation's updated_at (its "last activity" sort key). */
+/**
+ * Bump a conversation's updated_at (its "last activity" sort key). Uses the
+ * DB clock (`now()`) so it stays comparable to `conversation_reads.lastSeenAt`
+ * and note/activity timestamps — no app-vs-Postgres clock skew in read state.
+ */
 export async function touchConversation(
   exec: DbExecutor,
   conversationId: string,
 ): Promise<void> {
   await exec
     .update(conversations)
-    .set({ updatedAt: new Date() })
+    .set({ updatedAt: sql`now()` })
     .where(eq(conversations.id, conversationId));
 }
 
@@ -141,7 +145,7 @@ export async function setConversationClosed(
 
     await tx
       .update(conversations)
-      .set({ closed, updatedAt: new Date() })
+      .set({ closed, updatedAt: sql`now()` })
       .where(eq(conversations.id, conversationId));
     await recordActivity(
       tx,

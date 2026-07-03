@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from './index';
 import {
   activityLog,
@@ -152,17 +152,24 @@ export async function listConversationsForUser(
   });
 }
 
-/** Mark a conversation seen for the user as of now (clears its badges). */
+/**
+ * Mark a conversation seen for the user as of now (clears its badges).
+ *
+ * Uses the DB clock (`now()`), not the app server's, so `lastSeenAt` is
+ * directly comparable to the DB-stamped activity/mention timestamps it's
+ * checked against in `listConversationsForUser`. Mixing an app-clock
+ * `new Date()` here with DB-clock `now()` there let clock skew between the
+ * app server and Postgres make just-read items wrongly (un)flag.
+ */
 export async function markConversationRead(
   userId: string,
   conversationId: string,
 ): Promise<void> {
-  const now = new Date();
   await db
     .insert(conversationReads)
-    .values({ userId, conversationId, lastSeenAt: now })
+    .values({ userId, conversationId, lastSeenAt: sql`now()` })
     .onConflictDoUpdate({
       target: [conversationReads.userId, conversationReads.conversationId],
-      set: { lastSeenAt: now },
+      set: { lastSeenAt: sql`now()` },
     });
 }
