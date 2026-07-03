@@ -1,6 +1,6 @@
-import { desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from './index';
-import { conversations, setlists, setlistSongs } from './schema';
+import { conversations, setlists, setlistSongs, songFiles } from './schema';
 
 /**
  * Setlists — named, ordered lists of a band's songs. Access is scoped to
@@ -13,6 +13,8 @@ export type Setlist = typeof setlists.$inferSelect;
 export interface SetlistSong {
   conversationId: string;
   audioFileName: string | null;
+  /** Audio duration in whole seconds; null if unknown. */
+  songLength: number | null;
 }
 
 export interface SetlistWithSongs {
@@ -73,9 +75,17 @@ export async function getSetlist(
     .select({
       conversationId: setlistSongs.conversationId,
       audioFileName: conversations.audioFileName,
+      songLength: songFiles.songLength,
     })
     .from(setlistSongs)
     .innerJoin(conversations, eq(conversations.id, setlistSongs.conversationId))
+    .leftJoin(
+      songFiles,
+      and(
+        eq(songFiles.conversationId, setlistSongs.conversationId),
+        eq(songFiles.kind, 'audio'),
+      ),
+    )
     .where(eq(setlistSongs.setlistId, setlistId))
     .orderBy(setlistSongs.position);
 
@@ -151,16 +161,28 @@ export async function listBandSetlists(
       setlistId: setlistSongs.setlistId,
       conversationId: setlistSongs.conversationId,
       audioFileName: conversations.audioFileName,
+      songLength: songFiles.songLength,
     })
     .from(setlistSongs)
     .innerJoin(conversations, eq(conversations.id, setlistSongs.conversationId))
+    .leftJoin(
+      songFiles,
+      and(
+        eq(songFiles.conversationId, setlistSongs.conversationId),
+        eq(songFiles.kind, 'audio'),
+      ),
+    )
     .where(inArray(setlistSongs.setlistId, ids))
     .orderBy(setlistSongs.position);
 
   const byList = new Map<string, SetlistSong[]>();
   for (const s of songs) {
     const arr = byList.get(s.setlistId) ?? [];
-    arr.push({ conversationId: s.conversationId, audioFileName: s.audioFileName });
+    arr.push({
+      conversationId: s.conversationId,
+      audioFileName: s.audioFileName,
+      songLength: s.songLength,
+    });
     byList.set(s.setlistId, arr);
   }
 

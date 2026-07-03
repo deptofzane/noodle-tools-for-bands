@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { getSetlist } from '@/lib/db/setlists';
+import { formatDuration } from '@/lib/format';
 
 /**
  * View a setlist: its name and songs in order. Server shell — the setlist
@@ -22,6 +23,14 @@ export default async function SetlistPage({
   if (!setlist || setlist.bandId !== bandId) notFound();
   if (!(await getMembership(user.id, bandId))) notFound();
 
+  const songCount = setlist.songs.length;
+  const totalSeconds = setlist.songs.reduce(
+    (sum, s) => sum + (s.songLength ?? 0),
+    0,
+  );
+  // Whether every song contributed a known length (else the total is partial).
+  const allKnown = setlist.songs.every((s) => s.songLength != null);
+
   return (
     <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
       <header className="flex items-center justify-between gap-2 text-xs text-neutral-500">
@@ -39,7 +48,21 @@ export default async function SetlistPage({
         </Link>
       </header>
 
-      <h1 className="text-2xl font-semibold tracking-tight">{setlist.name}</h1>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {setlist.name}
+        </h1>
+        <p className="text-sm text-neutral-500">
+          {songCount} {songCount === 1 ? 'song' : 'songs'}
+          {songCount > 0 && (
+            <>
+              {' · '}
+              {allKnown ? '' : '~'}
+              {formatDuration(totalSeconds)}
+            </>
+          )}
+        </p>
+      </div>
 
       {setlist.songs.length === 0 ? (
         <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">

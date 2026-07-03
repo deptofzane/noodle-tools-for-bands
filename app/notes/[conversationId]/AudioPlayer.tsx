@@ -7,7 +7,8 @@ import {
   useState,
   type ChangeEvent,
 } from 'react';
-import { createAudioEngine, formatDuration, type AudioEngine } from '@/lib/audio';
+import { createAudioEngine, type AudioEngine } from '@/lib/audio';
+import { formatDuration } from '@/lib/format';
 import { useTrackBoolean } from '../../PendingActionProvider';
 import { usePlayer } from './PlayerContext';
 

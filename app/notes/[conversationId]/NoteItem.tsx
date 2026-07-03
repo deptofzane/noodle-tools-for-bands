@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { formatDuration } from '@/lib/audio';
+import { formatDuration } from '@/lib/format';
 import type { ThreadedNote, ApiNote } from '@/lib/db/notes';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';

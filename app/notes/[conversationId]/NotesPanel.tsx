@@ -1,8 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { formatDuration } from '@/lib/audio';
-import { actorLabel, formatRelativeTime } from '@/lib/format';
+import { actorLabel, formatDuration, formatRelativeTime } from '@/lib/format';
 import type { ThreadedNote } from '@/lib/db/notes';
 import type { ActivityKind, ConversationActivity } from '@/lib/db/activity';
 import { useTrackPending } from '../../PendingActionProvider';
