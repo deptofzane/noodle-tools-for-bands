@@ -83,6 +83,31 @@ export async function getSetlist(
 }
 
 /**
+ * Append a song to a setlist (idempotent — a repeat is a no-op via the
+ * primary key). Position is one past the current max. Touches the setlist.
+ */
+export async function addSongToSetlist(
+  setlistId: string,
+  conversationId: string,
+): Promise<void> {
+  const rows = await db
+    .select({ position: setlistSongs.position })
+    .from(setlistSongs)
+    .where(eq(setlistSongs.setlistId, setlistId));
+  const nextPosition = rows.length
+    ? Math.max(...rows.map((r) => r.position)) + 1
+    : 0;
+  await db
+    .insert(setlistSongs)
+    .values({ setlistId, conversationId, position: nextPosition })
+    .onConflictDoNothing();
+  await db
+    .update(setlists)
+    .set({ updatedAt: new Date() })
+    .where(eq(setlists.id, setlistId));
+}
+
+/**
  * Persist a new song order for a setlist. `conversationIds` must be a
  * permutation of the setlist's current songs (validated by the caller);
  * each row's position is set to its index, and the setlist is touched.

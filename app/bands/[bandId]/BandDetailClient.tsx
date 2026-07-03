@@ -63,6 +63,11 @@ export function BandDetailClient({
   const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [addTarget, setAddTarget] = useState<Conversation | null>(null);
+  const [selectedSetlists, setSelectedSetlists] = useState<Set<string>>(
+    new Set(),
+  );
+  const [addingToSetlist, setAddingToSetlist] = useState(false);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const trackPending = useTrackPending();
   const router = useRouter();
@@ -226,6 +231,70 @@ export function BandDetailClient({
     }
   };
 
+  const openAddToSetlist = (c: Conversation) => {
+    setSelectedSetlists(new Set());
+    setAddTarget(c);
+  };
+
+  const closeAddToSetlist = () => {
+    if (addingToSetlist) return;
+    setAddTarget(null);
+  };
+
+  const toggleSetlist = (id: string) => {
+    setSelectedSetlists((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleAddToSetlists = async () => {
+    if (!addTarget || addingToSetlist || selectedSetlists.size === 0) return;
+    const song = addTarget;
+    const ids = [...selectedSetlists];
+    setAddingToSetlist(true);
+    try {
+      await trackPending(async () => {
+        const results = await Promise.all(
+          ids.map((sid) =>
+            fetch(`/api/bands/${bandId}/setlists/${sid}/songs`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ conversationId: song.id }),
+            }),
+          ),
+        );
+        const bad = results.find((r) => !r.ok);
+        if (bad) {
+          const b = await bad.json().catch(() => ({}));
+          throw new Error(b.message ?? `HTTP ${bad.status}`);
+        }
+      });
+      showToast(
+        `Added to ${ids.length} setlist${ids.length === 1 ? '' : 's'}.`,
+        'success',
+      );
+      setAddTarget(null);
+      await load();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setAddingToSetlist(false);
+    }
+  };
+
+  // Close the Add-to-setlist modal on Escape.
+  useEffect(() => {
+    if (!addTarget) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !addingToSetlist) setAddTarget(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [addTarget, addingToSetlist]);
+
   if (error) {
     return (
       <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
@@ -263,6 +332,9 @@ export function BandDetailClient({
         </div>
       </Link>
       <ActionMenu label="Song actions" disabled={deleting || archiving}>
+        <ActionMenuItem onClick={() => openAddToSetlist(c)}>
+          Add to setlist
+        </ActionMenuItem>
         <ActionMenuItem onClick={() => handleToggleArchive(c)}>
           {c.archived ? 'Unarchive song' : 'Archive song'}
         </ActionMenuItem>
@@ -486,6 +558,78 @@ export function BandDetailClient({
         onConfirm={handleDeleteSong}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      {addTarget && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-setlist-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={closeAddToSetlist}
+        >
+          <div
+            className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-5 shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="add-setlist-title" className="text-base font-semibold">
+              Add to setlist
+            </h2>
+            <p className="mt-1 truncate text-sm text-neutral-600 dark:text-neutral-400">
+              {addTarget.audioFileName ?? 'Untitled audio'}
+            </p>
+
+            {setlists.length === 0 ? (
+              <p className="mt-4 rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+                No setlists yet. Create one first.
+              </p>
+            ) : (
+              <ul className="mt-4 flex max-h-64 flex-col gap-1 overflow-auto">
+                {setlists.map((sl) => {
+                  const checked = selectedSetlists.has(sl.id);
+                  return (
+                    <li key={sl.id}>
+                      <label className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleSetlist(sl.id)}
+                          className="h-4 w-4"
+                        />
+                        <span className="min-w-0 flex-1 truncate font-medium">
+                          {sl.name}
+                        </span>
+                        <span className="shrink-0 text-xs text-neutral-500">
+                          {sl.songs.length}{' '}
+                          {sl.songs.length === 1 ? 'song' : 'songs'}
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeAddToSetlist}
+                disabled={addingToSetlist}
+                className="rounded-md px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddToSetlists}
+                disabled={addingToSetlist || selectedSetlists.size === 0}
+                className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+              >
+                {addingToSetlist ? 'Adding…' : 'Add to setlist'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
