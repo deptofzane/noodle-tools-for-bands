@@ -88,6 +88,14 @@ export default async function EventPage({
 
       {setlist && (
         <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+          {canManage && (
+            <Link
+              href={`/bands/${event.bandId}/setlists/${setlist.id}/edit`}
+              className="self-end text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+            >
+              Edit setlist
+            </Link>
+          )}
           <div className="flex items-baseline justify-between gap-2">
             <h2 className="text-sm font-medium">
               <Link
