@@ -3,7 +3,8 @@ import { notFound, redirect } from 'next/navigation';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { getEventForUser, listEventMembers } from '@/lib/db/events';
-import { formatDateLong, formatTime12h } from '@/lib/format';
+import { getSetlist } from '@/lib/db/setlists';
+import { formatDateLong, formatDuration, formatTime12h } from '@/lib/format';
 import { EventMembersClient } from './EventMembersClient';
 
 /**
@@ -22,11 +23,19 @@ export default async function EventPage({
   const event = await getEventForUser(user.id, eventId);
   if (!event) notFound();
 
-  const [members, bandMembership] = await Promise.all([
+  const [members, bandMembership, setlist] = await Promise.all([
     listEventMembers(eventId),
     getMembership(user.id, event.bandId),
+    event.setlistId ? getSetlist(event.setlistId) : Promise.resolve(null),
   ]);
   const canManage = bandMembership !== null;
+
+  const setlistTotal = setlist
+    ? setlist.songs.reduce((sum, s) => sum + (s.songLength ?? 0), 0)
+    : 0;
+  const setlistAllKnown = setlist
+    ? setlist.songs.every((s) => s.songLength != null)
+    : true;
 
   return (
     <main className="mx-auto flex h-max max-w-2xl flex-col gap-4 px-6 py-4">
@@ -67,17 +76,6 @@ export default async function EventPage({
             <span className="font-medium">Location:</span> {event.location}
           </div>
         )}
-        {event.setlistId && (
-          <div>
-            <span className="font-medium">Setlist:</span>{' '}
-            <Link
-              href={`/bands/${event.bandId}/setlists/${event.setlistId}`}
-              className="text-blue-600 hover:underline dark:text-blue-400"
-            >
-              {event.setlistName ?? 'View setlist'}
-            </Link>
-          </div>
-        )}
         {event.details && (
           <div className="flex flex-col gap-0.5">
             <span className="font-medium">Details:</span>
@@ -87,6 +85,43 @@ export default async function EventPage({
           </div>
         )}
       </section>
+
+      {setlist && (
+        <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="text-sm font-medium">
+              <Link
+                href={`/bands/${event.bandId}/setlists/${setlist.id}`}
+                className="hover:underline"
+              >
+                {setlist.name}
+              </Link>
+            </h2>
+            {setlist.songs.length > 0 && (
+              <span className="shrink-0 text-xs text-neutral-500">
+                {setlistAllKnown ? '' : '~'}
+                {formatDuration(setlistTotal)}
+              </span>
+            )}
+          </div>
+          {setlist.songs.length === 0 ? (
+            <p className="text-sm text-neutral-500">This setlist has no songs.</p>
+          ) : (
+            <ol className="flex list-decimal flex-col gap-1 pl-5 text-sm">
+              {setlist.songs.map((s) => (
+                <li key={s.conversationId}>
+                  {s.audioFileName ?? 'Untitled audio'}
+                  {s.songLength != null && (
+                    <span className="text-neutral-400">
+                      {` - ${formatDuration(s.songLength)}`}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+      )}
 
       <EventMembersClient
         eventId={eventId}
