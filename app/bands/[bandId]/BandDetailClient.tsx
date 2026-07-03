@@ -60,6 +60,10 @@ export function BandDetailClient({
   const [leaving, setLeaving] = useState(false);
   const [chooseOpen, setChooseOpen] = useState(false);
   const [audioBusy, setAudioBusy] = useState(false);
+  const [importProgress, setImportProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [archiving, setArchiving] = useState(false);
@@ -111,29 +115,36 @@ export function BandDetailClient({
       // summary. Sequential to avoid buffering several large downloads at once.
       let added = 0;
       let firstError: string | null = null;
-      await trackPending(async () => {
-        for (const f of files) {
-          try {
-            const r = await fetch(`/api/bands/${bandId}/conversations`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                driveAudioFileId: f.id,
-                audioFileName: f.name,
-              }),
-            });
-            if (!r.ok) {
-              const b = await r.json().catch(() => ({}));
-              throw new Error(b.message ?? `HTTP ${r.status}`);
-            }
-            added += 1;
-          } catch (e) {
-            if (!firstError) {
-              firstError = e instanceof Error ? e.message : String(e);
+      setImportProgress({ current: 1, total: files.length });
+      try {
+        await trackPending(async () => {
+          for (let i = 0; i < files.length; i++) {
+            const f = files[i]!;
+            setImportProgress({ current: i + 1, total: files.length });
+            try {
+              const r = await fetch(`/api/bands/${bandId}/conversations`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  driveAudioFileId: f.id,
+                  audioFileName: f.name,
+                }),
+              });
+              if (!r.ok) {
+                const b = await r.json().catch(() => ({}));
+                throw new Error(b.message ?? `HTTP ${r.status}`);
+              }
+              added += 1;
+            } catch (e) {
+              if (!firstError) {
+                firstError = e instanceof Error ? e.message : String(e);
+              }
             }
           }
-        }
-      });
+        });
+      } finally {
+        setImportProgress(null);
+      }
       await load();
 
       const failed = files.length - added;
@@ -406,7 +417,14 @@ export function BandDetailClient({
 
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-medium">Audio</h2>
+          <span className="flex min-w-0 items-center gap-2">
+            <h2 className="text-sm font-medium">Audio</h2>
+            {importProgress && (
+              <span className="truncate text-xs text-neutral-500">
+                Importing {importProgress.current} of {importProgress.total}…
+              </span>
+            )}
+          </span>
           <div className="flex items-center gap-2">
             <Link
               href={`/bands/${bandId}/setlists/new`}
@@ -417,10 +435,14 @@ export function BandDetailClient({
             <button
               type="button"
               onClick={() => setChooseOpen(true)}
-              disabled={audioBusy}
+              disabled={audioBusy || importProgress !== null}
               className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
             >
-              {audioBusy ? 'Adding…' : 'Add audio'}
+              {importProgress
+                ? 'Importing…'
+                : audioBusy
+                  ? 'Adding…'
+                  : 'Add audio'}
             </button>
           </div>
         </div>
