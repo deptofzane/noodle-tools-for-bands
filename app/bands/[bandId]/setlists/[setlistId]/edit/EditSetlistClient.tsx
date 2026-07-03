@@ -73,6 +73,10 @@ export function EditSetlistClient({
     });
   };
 
+  const handleRemove = (id: string) => {
+    setSongs((prev) => prev.filter((s) => s.conversationId !== id));
+  };
+
   const handleSave = async () => {
     if (!dirty || saving) return;
     setSaving(true);
@@ -121,12 +125,13 @@ export function EditSetlistClient({
 
       {songs.length === 0 ? (
         <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
-          This setlist has no songs to reorder.
+          No songs in this setlist. Save to keep it empty, or Cancel.
         </p>
       ) : (
         <>
           <p className="text-xs text-neutral-500">
-            Drag the handle to reorder, or focus it and use the arrow keys.
+            Drag the handle to reorder (or focus it and use the arrow keys);
+            remove a song with ✕.
           </p>
           <DndContext
             sensors={sensors}
@@ -144,6 +149,7 @@ export function EditSetlistClient({
                     id={s.conversationId}
                     index={i}
                     name={s.name}
+                    onRemove={() => handleRemove(s.conversationId)}
                   />
                 ))}
               </ul>
@@ -159,10 +165,12 @@ function SortableRow({
   id,
   index,
   name,
+  onRemove,
 }: {
   id: string;
   index: number;
   name: string;
+  onRemove: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
@@ -192,7 +200,15 @@ function SortableRow({
       <span className="w-5 shrink-0 text-right text-xs text-neutral-400">
         {index + 1}
       </span>
-      <span className="truncate font-medium">{name}</span>
+      <span className="min-w-0 flex-1 truncate font-medium">{name}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Remove ${name}`}
+        className="shrink-0 rounded px-1.5 text-neutral-400 hover:text-red-600 dark:hover:text-red-400"
+      >
+        <span aria-hidden="true">✕</span>
+      </button>
     </li>
   );
 }

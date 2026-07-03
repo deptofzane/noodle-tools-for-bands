@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, notInArray } from 'drizzle-orm';
 import { db } from './index';
 import { conversations, setlists, setlistSongs } from './schema';
 
@@ -108,15 +108,28 @@ export async function addSongToSetlist(
 }
 
 /**
- * Persist a new song order for a setlist. `conversationIds` must be a
- * permutation of the setlist's current songs (validated by the caller);
- * each row's position is set to its index, and the setlist is touched.
+ * Set a setlist's songs to exactly `conversationIds`, in order. Songs not
+ * in the list are removed; the rest are repositioned to their index. Must
+ * be a subset of the current songs (validated by the caller — this endpoint
+ * reorders/removes, it doesn't add). Runs in one transaction + touch.
  */
-export async function setSetlistOrder(
+export async function setSetlistSongs(
   setlistId: string,
   conversationIds: string[],
 ): Promise<void> {
   await db.transaction(async (tx) => {
+    // Drop any song no longer in the desired list.
+    await tx
+      .delete(setlistSongs)
+      .where(
+        conversationIds.length > 0
+          ? and(
+              eq(setlistSongs.setlistId, setlistId),
+              notInArray(setlistSongs.conversationId, conversationIds),
+            )
+          : eq(setlistSongs.setlistId, setlistId),
+      );
+    // Reposition the survivors.
     for (let i = 0; i < conversationIds.length; i++) {
       await tx
         .update(setlistSongs)

@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
-import { getSetlist, setSetlistOrder } from '@/lib/db/setlists';
+import { getSetlist, setSetlistSongs } from '@/lib/db/setlists';
 
 /**
  * PATCH /api/bands/[bandId]/setlists/[setlistId]
- *   Body: { conversationIds: string[] } — the setlist's songs in the new
- *   order. Must be a permutation of the current songs (reorder only).
+ *   Body: { conversationIds: string[] } — the setlist's songs in their new
+ *   order. Must be a subset of the current songs: this reorders and/or
+ *   removes (omitted songs are dropped), but doesn't add.
  *
  * Requires band membership; the setlist must belong to the band.
  */
@@ -29,18 +30,18 @@ export async function PATCH(
     ? body.conversationIds.filter((v: unknown): v is string => typeof v === 'string')
     : [];
 
-  // Reorder only: the submitted ids must be exactly the current songs.
-  const current = setlist.songs.map((s) => s.conversationId);
-  const sameSet =
-    submitted.length === current.length &&
-    new Set(submitted).size === current.length &&
-    submitted.every((id) => current.includes(id));
-  if (!sameSet)
+  // Reorder/remove only: every submitted id must be a current song, with
+  // no duplicates. Omitted songs are removed; new ids are rejected.
+  const current = new Set(setlist.songs.map((s) => s.conversationId));
+  const validSubset =
+    new Set(submitted).size === submitted.length &&
+    submitted.every((id) => current.has(id));
+  if (!validSubset)
     return NextResponse.json(
-      { error: 'bad_order', message: 'Must reorder the existing songs.' },
+      { error: 'bad_order', message: 'Can only reorder or remove existing songs.' },
       { status: 400 },
     );
 
-  await setSetlistOrder(setlistId, submitted);
+  await setSetlistSongs(setlistId, submitted);
   return NextResponse.json({ setlist: await getSetlist(setlistId) });
 }
