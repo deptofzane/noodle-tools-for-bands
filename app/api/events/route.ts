@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { createEvent, listEventsForUserInRange } from '@/lib/db/events';
+import { getSetlist } from '@/lib/db/setlists';
 
 /**
  * GET  /api/events?from=YYYY-MM-DD&to=YYYY-MM-DD
@@ -9,8 +10,9 @@ import { createEvent, listEventsForUserInRange } from '@/lib/db/events';
  *     with a date in the range.
  *
  * POST /api/events
- *   Body: { bandId, title, date, time?, location?, details? }
- *   → create an event owned by a band the user belongs to.
+ *   Body: { bandId, title, date, time?, location?, details?, setlistId? }
+ *   → create an event owned by a band the user belongs to. A setlistId, if
+ *     given, must belong to that band.
  */
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -68,6 +70,17 @@ export async function POST(req: Request) {
       { status: 403 },
     );
 
+  // A chosen setlist must belong to that band.
+  const setlistId = str(body?.setlistId);
+  if (setlistId) {
+    const setlist = await getSetlist(setlistId);
+    if (!setlist || setlist.bandId !== bandId)
+      return NextResponse.json(
+        { error: 'bad_setlist', message: 'That setlist isn’t in this band.' },
+        { status: 400 },
+      );
+  }
+
   const { id } = await createEvent({
     bandId,
     title,
@@ -75,6 +88,7 @@ export async function POST(req: Request) {
     time: str(body?.time),
     location: str(body?.location),
     details: str(body?.details),
+    setlistId,
     createdBy: user.id,
   });
   return NextResponse.json({ id }, { status: 201 });

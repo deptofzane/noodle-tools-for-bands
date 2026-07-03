@@ -56,6 +56,7 @@ export async function createEvent(input: {
   time: string | null;
   location: string | null;
   details: string | null;
+  setlistId: string | null;
   createdBy: string;
 }): Promise<{ id: string }> {
   const [row] = await db
@@ -67,6 +68,7 @@ export async function createEvent(input: {
       time: input.time,
       location: input.location,
       details: input.details,
+      setlistId: input.setlistId,
       createdBy: input.createdBy,
     })
     .returning({ id: events.id });

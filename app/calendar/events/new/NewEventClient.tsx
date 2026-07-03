@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
@@ -34,7 +34,32 @@ export function NewEventClient({
   const [time, setTime] = useState('');
   const [location, setLocation] = useState('');
   const [details, setDetails] = useState('');
+  const [setlistId, setSetlistId] = useState('');
+  const [setlists, setSetlists] = useState<BandOption[]>([]);
   const [busy, setBusy] = useState(false);
+
+  // Load the chosen band's setlists for the association picker; reset the
+  // selection whenever the band changes (setlists are per-band).
+  useEffect(() => {
+    if (!bandId) {
+      setSetlists([]);
+      return;
+    }
+    let cancelled = false;
+    setSetlistId('');
+    fetch(`/api/bands/${bandId}/setlists`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
+      .then((d: { setlists: BandOption[] }) => {
+        if (!cancelled)
+          setSetlists(d.setlists.map((s) => ({ id: s.id, name: s.name })));
+      })
+      .catch(() => {
+        if (!cancelled) setSetlists([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [bandId]);
 
   const canSave = Boolean(bandId && title.trim() && date && !busy);
 
@@ -53,6 +78,7 @@ export function NewEventClient({
             time,
             location,
             details,
+            setlistId,
           }),
         });
         if (!r.ok) {
@@ -165,6 +191,30 @@ export function NewEventClient({
           maxLength={255}
           className={field}
         />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="event-setlist" className="text-sm font-medium">
+          Setlist
+        </label>
+        <select
+          id="event-setlist"
+          value={setlistId}
+          onChange={(e) => setSetlistId(e.target.value)}
+          className={field}
+        >
+          <option value="">None</option>
+          {setlists.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        {setlists.length === 0 && (
+          <p className="text-[11px] text-neutral-500">
+            This band has no setlists yet.
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-1">
