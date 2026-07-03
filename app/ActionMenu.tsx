@@ -82,7 +82,7 @@ export function ActionMenuItem({
       onClick={onClick}
       className={`block w-full px-3 py-1.5 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 ${
         destructive
-          ? 'text-red-600 dark:text-red-400'
+          ? 'text-red-600 dark:text-red-400 pt-2 border-t border-gray-700'
           : 'text-neutral-700 dark:text-neutral-200'
       }`}
     >

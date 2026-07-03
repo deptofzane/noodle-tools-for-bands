@@ -78,6 +78,13 @@ export default async function SetlistPage({
               >
                 {s.audioFileName ?? 'Untitled audio'}
               </Link>
+              {s['songLength'] ? (
+                <span className="text-gray-400">
+                  {` - ${formatDuration(s['songLength'])}`}
+                </span>
+              ) : (
+                ''
+              )}
             </li>
           ))}
         </ol>
