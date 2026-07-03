@@ -57,6 +57,13 @@
       "when": 1783039974680,
       "tag": "0007_spotty_otto_octavius",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783098653827,
+      "tag": "0008_cheerful_wildside",
+      "breakpoints": true
     }
   ]
 }

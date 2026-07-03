@@ -5,6 +5,7 @@ import {
   text,
   integer,
   boolean,
+  date,
   timestamp,
   bigserial,
   primaryKey,
@@ -263,5 +264,57 @@ export const setlistSongs = pgTable(
   (t) => [
     primaryKey({ columns: [t.setlistId, t.conversationId] }),
     index('setlist_songs_setlist_idx').on(t.setlistId),
+  ],
+);
+
+// ── Events (calendar) ────────────────────────────────────────────────
+// A calendar event owned by a band (chosen at creation). Visible to the
+// band's members, plus any users explicitly added via `event_members`.
+export const events = pgTable(
+  'events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    bandId: uuid('band_id')
+      .notNull()
+      .references(() => bands.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    date: date('date', { mode: 'string' }).notNull(), // YYYY-MM-DD
+    time: text('time'), // HH:MM, optional
+    location: text('location'),
+    details: text('details'),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index('events_band_idx').on(t.bandId),
+    index('events_date_idx').on(t.date),
+  ],
+);
+
+// Extra attendees on an event, beyond the owning band's members. Added by
+// email, the same way band members are.
+export const eventMembers = pgTable(
+  'event_members',
+  {
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.eventId, t.userId] }),
+    index('event_members_user_idx').on(t.userId),
   ],
 );
