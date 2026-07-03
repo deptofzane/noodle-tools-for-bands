@@ -1,0 +1,1 @@
+ALTER TABLE "song_files" ADD COLUMN "song_length" integer;

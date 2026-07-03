@@ -28,8 +28,31 @@ export interface SongFileMeta {
   fileName: string;
   mimeType: string;
   sizeBytes: number;
+  /** Audio duration in whole seconds; null for non-audio / unknown. */
+  songLength: number | null;
   /** ISO timestamp of the last write — a stable cache-bust token. */
   updatedAt: string;
+}
+
+/**
+ * Parse an audio buffer's duration (whole seconds) via music-metadata.
+ * Best-effort — returns null on any failure so a bad/odd file never
+ * blocks the upload.
+ */
+async function parseAudioDurationSeconds(
+  data: Buffer,
+  mimeType: string,
+): Promise<number | null> {
+  try {
+    const { parseBuffer } = await import('music-metadata');
+    const meta = await parseBuffer(data, { mimeType });
+    const dur = meta.format.duration;
+    return typeof dur === 'number' && Number.isFinite(dur)
+      ? Math.round(dur)
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 async function getRow(conversationId: string, kind: SongFileKind) {
@@ -39,6 +62,7 @@ async function getRow(conversationId: string, kind: SongFileKind) {
       fileName: songFiles.fileName,
       mimeType: songFiles.mimeType,
       sizeBytes: songFiles.sizeBytes,
+      songLength: songFiles.songLength,
       updatedAt: songFiles.updatedAt,
     })
     .from(songFiles)
@@ -59,6 +83,7 @@ export async function getSongFileMeta(
     fileName: row.fileName,
     mimeType: row.mimeType,
     sizeBytes: row.sizeBytes,
+    songLength: row.songLength,
     updatedAt: row.updatedAt.toISOString(),
   };
 }
@@ -90,6 +115,12 @@ export async function putSongFile(input: {
     }),
   );
 
+  // Audio duration is derived automatically from the bytes on upload.
+  const songLength =
+    input.kind === 'audio'
+      ? await parseAudioDurationSeconds(input.data, input.mimeType)
+      : null;
+
   const now = new Date();
   const [row] = await db
     .insert(songFiles)
@@ -100,6 +131,7 @@ export async function putSongFile(input: {
       fileName: input.fileName,
       mimeType: input.mimeType,
       sizeBytes: input.data.length,
+      songLength,
       driveFileId: input.driveFileId ?? null,
     })
     .onConflictDoUpdate({
@@ -109,6 +141,7 @@ export async function putSongFile(input: {
         fileName: input.fileName,
         mimeType: input.mimeType,
         sizeBytes: input.data.length,
+        songLength,
         driveFileId: input.driveFileId ?? null,
         updatedAt: now,
       },
@@ -117,6 +150,7 @@ export async function putSongFile(input: {
       fileName: songFiles.fileName,
       mimeType: songFiles.mimeType,
       sizeBytes: songFiles.sizeBytes,
+      songLength: songFiles.songLength,
       updatedAt: songFiles.updatedAt,
     });
   return { ...row!, updatedAt: row!.updatedAt.toISOString() };

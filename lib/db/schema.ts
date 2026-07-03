@@ -203,6 +203,9 @@ export const songFiles = pgTable(
     fileName: text('file_name').notNull(),
     mimeType: text('mime_type').notNull(),
     sizeBytes: integer('size_bytes').notNull(),
+    // Audio duration in whole seconds, parsed on upload (null for
+    // non-audio or when it couldn't be determined).
+    songLength: integer('song_length'),
     // Provenance: the Drive file this was imported from, if any.
     driveFileId: text('drive_file_id'),
     createdAt: timestamp('created_at', { withTimezone: true })

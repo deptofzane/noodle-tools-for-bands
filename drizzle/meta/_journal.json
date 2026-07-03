@@ -50,6 +50,13 @@
       "when": 1783033812656,
       "tag": "0006_married_gorgon",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783039974680,
+      "tag": "0007_spotty_otto_octavius",
+      "breakpoints": true
     }
   ]
 }
