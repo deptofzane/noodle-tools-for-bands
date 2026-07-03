@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { PageHeader } from '../../../../PageHeader';
 import { notFound, redirect } from 'next/navigation';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
@@ -28,14 +28,7 @@ export default async function NewSetlistPage({
 
   return (
     <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
-      <header className="flex items-center gap-2 text-xs text-neutral-500">
-        <Link
-          href={`/bands/${bandId}`}
-          className="hover:text-neutral-900 dark:hover:text-neutral-100"
-        >
-          ← Back to band
-        </Link>
-      </header>
+      <PageHeader backHref={`/bands/${bandId}`} backLabel="Back to band" />
 
       <NewSetlistClient bandId={bandId} songs={songs} />
     </main>

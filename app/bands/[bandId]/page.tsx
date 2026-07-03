@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { PageHeader } from '../../PageHeader';
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { BandDetailClient } from './BandDetailClient';
@@ -22,14 +22,7 @@ export default async function BandDetailPage({
 
   return (
     <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
-      <header className="flex items-center gap-2 text-xs text-neutral-500">
-        <Link
-          href="/bands"
-          className="hover:text-neutral-900 dark:hover:text-neutral-100"
-        >
-          ← Bands
-        </Link>
-      </header>
+      <PageHeader backHref="/bands" backLabel="Bands" />
 
       <BandDetailClient bandId={bandId} apiKey={apiKey} />
     </main>

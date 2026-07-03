@@ -5,6 +5,7 @@ import { getMembership } from '@/lib/db/bands';
 import { getEventForUser, listEventMembers } from '@/lib/db/events';
 import { getSetlist } from '@/lib/db/setlists';
 import { formatDateLong, formatDuration, formatTime12h } from '@/lib/format';
+import { PageHeader } from '../../../PageHeader';
 import { EventMembersClient } from './EventMembersClient';
 
 /**
@@ -39,13 +40,7 @@ export default async function EventPage({
 
   return (
     <main className="mx-auto flex h-max max-w-2xl flex-col gap-4 px-6 py-4">
-      <header className="flex items-center justify-between gap-2 text-xs text-neutral-500">
-        <Link
-          href="/calendar"
-          className="hover:text-neutral-900 dark:hover:text-neutral-100"
-        >
-          ← Back to calendar
-        </Link>
+      <PageHeader backHref="/calendar" backLabel="Back to calendar">
         {canManage && (
           <Link
             href={`/calendar/events/${eventId}/edit`}
@@ -54,7 +49,7 @@ export default async function EventPage({
             Edit event
           </Link>
         )}
-      </header>
+      </PageHeader>
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{event.title}</h1>

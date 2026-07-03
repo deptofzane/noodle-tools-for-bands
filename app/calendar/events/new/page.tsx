@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { PageHeader } from '../../../PageHeader';
 import { redirect } from 'next/navigation';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { listMyBands } from '@/lib/db/bands';
@@ -24,14 +24,7 @@ export default async function NewEventPage({
 
   return (
     <main className="mx-auto flex h-max max-w-2xl flex-col gap-4 px-6 py-4">
-      <header className="flex items-center gap-2 text-xs text-neutral-500">
-        <Link
-          href="/calendar"
-          className="hover:text-neutral-900 dark:hover:text-neutral-100"
-        >
-          ← Back to calendar
-        </Link>
-      </header>
+      <PageHeader backHref="/calendar" backLabel="Back to calendar" />
 
       <NewEventClient
         bands={bands}

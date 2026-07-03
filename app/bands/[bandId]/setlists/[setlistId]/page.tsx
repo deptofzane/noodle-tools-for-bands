@@ -4,6 +4,7 @@ import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { getSetlist } from '@/lib/db/setlists';
 import { formatDuration } from '@/lib/format';
+import { PageHeader } from '../../../../PageHeader';
 
 /**
  * View a setlist: its name and songs in order. Server shell — the setlist
@@ -33,20 +34,14 @@ export default async function SetlistPage({
 
   return (
     <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
-      <header className="flex items-center justify-between gap-2 text-xs text-neutral-500">
-        <Link
-          href={`/bands/${bandId}`}
-          className="hover:text-neutral-900 dark:hover:text-neutral-100"
-        >
-          ← Back to band
-        </Link>
+      <PageHeader backHref={`/bands/${bandId}`} backLabel="Back to band">
         <Link
           href={`/bands/${bandId}/setlists/${setlistId}/edit`}
           className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
         >
           Edit setlist
         </Link>
-      </header>
+      </PageHeader>
 
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight">

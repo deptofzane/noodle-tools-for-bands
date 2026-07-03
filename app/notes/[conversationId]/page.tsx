@@ -8,6 +8,7 @@ import { PlayerProvider } from './PlayerContext';
 import { AudioPlayer } from './AudioPlayer';
 import { SheetMusic } from './SheetMusic';
 import { NotesPanel } from './NotesPanel';
+import { PageHeader } from '../../PageHeader';
 
 /**
  * Notes page (Postgres conversations).
@@ -58,20 +59,17 @@ export default async function NotesPage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-4 px-6 py-4">
-      <header className="flex items-center justify-between gap-2 text-xs text-neutral-500">
-        <Link
-          href={`/bands/${conversation.bandId}`}
-          className="hover:text-neutral-900 dark:hover:text-neutral-100"
-        >
-          ← Back to band
-        </Link>
+      <PageHeader
+        backHref={`/bands/${conversation.bandId}`}
+        backLabel="Back to band"
+      >
         <Link
           href={`/notes/${conversationId}/edit`}
           className="hover:text-neutral-900 dark:hover:text-neutral-100"
         >
           Edit song
         </Link>
-      </header>
+      </PageHeader>
 
       <PlayerProvider>
         <div className="flex flex-col gap-6">
