@@ -282,6 +282,11 @@ export const events = pgTable(
     time: text('time'), // HH:MM, optional
     location: text('location'),
     details: text('details'),
+    // Optional associated setlist (must belong to the same band). Cleared
+    // if that setlist is deleted.
+    setlistId: uuid('setlist_id').references(() => setlists.id, {
+      onDelete: 'set null',
+    }),
     createdBy: uuid('created_by')
       .notNull()
       .references(() => users.id),

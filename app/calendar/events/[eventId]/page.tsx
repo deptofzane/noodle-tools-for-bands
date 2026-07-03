@@ -30,13 +30,21 @@ export default async function EventPage({
 
   return (
     <main className="mx-auto flex h-max max-w-2xl flex-col gap-4 px-6 py-4">
-      <header className="flex items-center gap-2 text-xs text-neutral-500">
+      <header className="flex items-center justify-between gap-2 text-xs text-neutral-500">
         <Link
           href="/calendar"
           className="hover:text-neutral-900 dark:hover:text-neutral-100"
         >
           ← Back to calendar
         </Link>
+        {canManage && (
+          <Link
+            href={`/calendar/events/${eventId}/edit`}
+            className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+          >
+            Edit event
+          </Link>
+        )}
       </header>
 
       <div>
@@ -59,9 +67,20 @@ export default async function EventPage({
             <span className="font-medium">Location:</span> {event.location}
           </div>
         )}
+        {event.setlistId && (
+          <div>
+            <span className="font-medium">Setlist:</span>{' '}
+            <Link
+              href={`/bands/${event.bandId}/setlists/${event.setlistId}`}
+              className="text-blue-600 hover:underline dark:text-blue-400"
+            >
+              {event.setlistName ?? 'View setlist'}
+            </Link>
+          </div>
+        )}
         {event.details && (
           <div className="flex flex-col gap-0.5">
-            <span className="font-medium">Details</span>
+            <span className="font-medium">Details:</span>
             <p className="whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
               {event.details}
             </p>

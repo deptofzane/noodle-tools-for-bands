@@ -1,6 +1,13 @@
-import { and, asc, eq, gte, inArray, lte, or } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, lte, or, sql } from 'drizzle-orm';
 import { db } from './index';
-import { bandMembers, bands, eventMembers, events, users } from './schema';
+import {
+  bandMembers,
+  bands,
+  eventMembers,
+  events,
+  setlists,
+  users,
+} from './schema';
 
 /**
  * Calendar events (Postgres).
@@ -23,6 +30,8 @@ export interface EventListItem {
 
 export interface EventDetail extends EventListItem {
   details: string | null;
+  setlistId: string | null;
+  setlistName: string | null;
 }
 
 export interface EventMember {
@@ -120,15 +129,36 @@ export async function getEventForUser(
       time: events.time,
       location: events.location,
       details: events.details,
+      setlistId: events.setlistId,
+      setlistName: setlists.name,
     })
     .from(events)
     .innerJoin(bands, eq(bands.id, events.bandId))
+    .leftJoin(setlists, eq(setlists.id, events.setlistId))
     .where(eq(events.id, eventId))
     .limit(1);
   if (!row) return null;
 
   if (await canAccessEvent(userId, row.id, row.bandId)) return row;
   return null;
+}
+
+/** Update an event's fields (caller has validated band membership + setlist). */
+export async function updateEvent(
+  eventId: string,
+  fields: {
+    title: string;
+    date: string;
+    time: string | null;
+    location: string | null;
+    details: string | null;
+    setlistId: string | null;
+  },
+): Promise<void> {
+  await db
+    .update(events)
+    .set({ ...fields, updatedAt: sql`now()` })
+    .where(eq(events.id, eventId));
 }
 
 /** True if the user is in the event's owning band or is an added member. */

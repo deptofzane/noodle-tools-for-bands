@@ -144,6 +144,17 @@ export async function setSetlistSongs(
   });
 }
 
+/** Just the id + name of a band's setlists (newest first) — for pickers. */
+export async function listBandSetlistNames(
+  bandId: string,
+): Promise<{ id: string; name: string }[]> {
+  return db
+    .select({ id: setlists.id, name: setlists.name })
+    .from(setlists)
+    .where(eq(setlists.bandId, bandId))
+    .orderBy(desc(setlists.updatedAt));
+}
+
 /** Setlists in a band (newest first), each with its ordered songs. */
 export async function listBandSetlists(
   bandId: string,

@@ -1,0 +1,70 @@
+import { NextResponse } from 'next/server';
+import { getCurrentDbUser } from '@/lib/current-user';
+import { getMembership } from '@/lib/db/bands';
+import { getEventForUser, updateEvent } from '@/lib/db/events';
+import { getSetlist } from '@/lib/db/setlists';
+
+/**
+ * PATCH /api/events/[eventId]
+ *   Body: { title, date, time?, location?, details?, setlistId? }
+ *   → edit the event. Only members of the owning band. A setlistId, if
+ *     given, must belong to that band.
+ */
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ eventId: string }> },
+) {
+  const user = await getCurrentDbUser();
+  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const { eventId } = await params;
+
+  const event = await getEventForUser(user.id, eventId);
+  if (!event) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (!(await getMembership(user.id, event.bandId)))
+    return NextResponse.json(
+      { error: 'forbidden', message: 'Only band members can edit this event.' },
+      { status: 403 },
+    );
+
+  const body = await req.json().catch(() => null);
+  const title = typeof body?.title === 'string' ? body.title.trim() : '';
+  const date = typeof body?.date === 'string' ? body.date : '';
+  const str = (v: unknown) => {
+    const t = typeof v === 'string' ? v.trim() : '';
+    return t.length > 0 ? t : null;
+  };
+  const setlistId = str(body?.setlistId);
+
+  if (!title || title.length > 255)
+    return NextResponse.json(
+      { error: 'bad_title', message: 'Title must be 1–255 characters.' },
+      { status: 400 },
+    );
+  if (!DATE_RE.test(date))
+    return NextResponse.json(
+      { error: 'bad_date', message: 'A valid date is required.' },
+      { status: 400 },
+    );
+
+  // A chosen setlist must belong to this event's band.
+  if (setlistId) {
+    const setlist = await getSetlist(setlistId);
+    if (!setlist || setlist.bandId !== event.bandId)
+      return NextResponse.json(
+        { error: 'bad_setlist', message: 'That setlist isn’t in this band.' },
+        { status: 400 },
+      );
+  }
+
+  await updateEvent(eventId, {
+    title,
+    date,
+    time: str(body?.time),
+    location: str(body?.location),
+    details: str(body?.details),
+    setlistId,
+  });
+  return NextResponse.json({ ok: true });
+}
