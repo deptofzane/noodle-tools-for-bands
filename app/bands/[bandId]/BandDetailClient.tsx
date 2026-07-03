@@ -105,10 +105,15 @@ export function BandDetailClient({
 
   const handleRegister = useCallback(
     async (files: PickedFile[]) => {
-      try {
-        await trackPending(async () => {
-          // Register each picked audio file as a conversation under the band.
-          for (const f of files) {
+      if (files.length === 0) return;
+      // Register each picked audio file as a conversation. Import each one
+      // independently so a single bad file doesn't abort the rest; report a
+      // summary. Sequential to avoid buffering several large downloads at once.
+      let added = 0;
+      let firstError: string | null = null;
+      await trackPending(async () => {
+        for (const f of files) {
+          try {
             const r = await fetch(`/api/bands/${bandId}/conversations`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -121,11 +126,23 @@ export function BandDetailClient({
               const b = await r.json().catch(() => ({}));
               throw new Error(b.message ?? `HTTP ${r.status}`);
             }
+            added += 1;
+          } catch (e) {
+            if (!firstError) {
+              firstError = e instanceof Error ? e.message : String(e);
+            }
           }
-        });
-        await load();
-      } catch (e) {
-        showToast(e instanceof Error ? e.message : String(e));
+        }
+      });
+      await load();
+
+      const failed = files.length - added;
+      if (failed === 0) {
+        showToast(`Added ${added} song${added === 1 ? '' : 's'}.`, 'success');
+      } else if (added === 0) {
+        showToast(firstError ?? 'Could not add the songs.');
+      } else {
+        showToast(`Added ${added} of ${files.length}. ${failed} failed: ${firstError}`);
       }
     },
     [bandId, load, trackPending, showToast],
