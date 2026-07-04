@@ -72,6 +72,18 @@ export function BandDetailClient({
     new Set(),
   );
   const [addingToSetlist, setAddingToSetlist] = useState(false);
+  const [membersMinimized, setMembersMinimized] = useState(false);
+  const [minimizedSetlists, setMinimizedSetlists] = useState<Set<string>>(
+    new Set(),
+  );
+
+  const toggleSetlistMinimized = (id: string) =>
+    setMinimizedSetlists((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const audioInputRef = useRef<HTMLInputElement>(null);
   const trackPending = useTrackPending();
   const router = useRouter();
@@ -390,9 +402,28 @@ export function BandDetailClient({
       </div>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium">Members</h2>
-        <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-          {data.members.map((m) => (
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setMembersMinimized((v) => !v)}
+            aria-expanded={!membersMinimized}
+            aria-label={membersMinimized ? 'Expand members' : 'Minimize members'}
+            title={membersMinimized ? 'Expand members' : 'Minimize members'}
+            className="-mr-1 px-1 text-sm leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+          >
+            <span aria-hidden="true">{membersMinimized ? '▸' : '▾'}</span>
+          </button>
+          <h2 className="text-sm font-medium">Members</h2>
+          {membersMinimized && (
+            <span className="text-xs text-neutral-500">
+              <span aria-hidden="true">·</span> {data.members.length}{' '}
+              {data.members.length === 1 ? 'member' : 'members'}
+            </span>
+          )}
+        </div>
+        {!membersMinimized && (
+          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+            {data.members.map((m) => (
             <li
               key={m.userId}
               className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
@@ -412,7 +443,8 @@ export function BandDetailClient({
               </span>
             </li>
           ))}
-        </ul>
+          </ul>
+        )}
       </section>
 
       <section className="flex flex-col gap-2">
@@ -528,21 +560,39 @@ export function BandDetailClient({
         <section className="flex flex-col gap-2">
           <h2 className="text-sm font-medium">Setlists</h2>
           <ul className="flex flex-col gap-2">
-            {setlists.map((sl) => (
-              <li key={sl.id}>
-                <Link
-                  href={`/bands/${bandId}/setlists/${sl.id}`}
-                  className="block rounded-lg border border-neutral-200 px-4 py-3 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
+            {setlists.map((sl) => {
+              const collapsed = minimizedSetlists.has(sl.id);
+              return (
+                <li
+                  key={sl.id}
+                  className="rounded-lg border border-neutral-200 dark:border-neutral-800"
                 >
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="truncate font-medium">{sl.name}</span>
+                  <div className="flex items-center justify-between gap-2 px-4 py-3">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleSetlistMinimized(sl.id)}
+                        aria-expanded={!collapsed}
+                        aria-label={collapsed ? 'Expand setlist' : 'Minimize setlist'}
+                        title={collapsed ? 'Expand setlist' : 'Minimize setlist'}
+                        className="-mr-1 px-1 text-sm leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+                      >
+                        <span aria-hidden="true">{collapsed ? '▸' : '▾'}</span>
+                      </button>
+                      <Link
+                        href={`/bands/${bandId}/setlists/${sl.id}`}
+                        className="truncate font-medium hover:underline"
+                      >
+                        {sl.name}
+                      </Link>
+                    </span>
                     <span className="shrink-0 text-xs text-neutral-500">
                       {sl.songs.length}{' '}
                       {sl.songs.length === 1 ? 'song' : 'songs'}
                     </span>
                   </div>
-                  {sl.songs.length > 0 && (
-                    <ol className="mt-1 list-decimal pl-5 text-sm text-neutral-600 dark:text-neutral-400">
+                  {!collapsed && sl.songs.length > 0 && (
+                    <ol className="list-decimal px-4 pb-3 pl-9 text-sm text-neutral-600 dark:text-neutral-400">
                       {sl.songs.map((s) => (
                         <li key={s.conversationId} className="truncate">
                           {s.audioFileName ?? 'Untitled audio'}
@@ -550,9 +600,9 @@ export function BandDetailClient({
                       ))}
                     </ol>
                   )}
-                </Link>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
