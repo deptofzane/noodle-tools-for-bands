@@ -22,7 +22,7 @@ export default async function BandDetailPage({
 
   return (
     <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
-      <PageHeader backHref="/bands" backLabel="Bands" />
+      <PageHeader backHref="/bands" />
 
       <BandDetailClient bandId={bandId} apiKey={apiKey} />
     </main>

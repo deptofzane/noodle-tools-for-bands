@@ -29,10 +29,7 @@ export default async function EditEventPage({
 
   return (
     <main className="mx-auto flex h-max max-w-2xl flex-col gap-4 px-6 py-4">
-      <PageHeader
-        backHref={`/calendar/events/${eventId}`}
-        backLabel="Back to event"
-      />
+      <PageHeader backHref={`/calendar/events/${eventId}`} />
 
       <EditEventClient
         eventId={eventId}

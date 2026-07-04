@@ -34,7 +34,7 @@ export default async function SetlistPage({
 
   return (
     <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
-      <PageHeader backHref={`/bands/${bandId}`} backLabel="Back to band">
+      <PageHeader backHref={`/bands/${bandId}`}>
         <Link
           href={`/bands/${bandId}/setlists/${setlistId}/edit`}
           className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"

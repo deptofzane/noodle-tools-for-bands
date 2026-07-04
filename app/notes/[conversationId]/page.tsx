@@ -59,10 +59,7 @@ export default async function NotesPage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-4 px-6 py-4">
-      <PageHeader
-        backHref={`/bands/${conversation.bandId}`}
-        backLabel="Back to band"
-      >
+      <PageHeader backHref={`/bands/${conversation.bandId}`}>
         <Link
           href={`/notes/${conversationId}/edit`}
           className="hover:text-neutral-900 dark:hover:text-neutral-100"

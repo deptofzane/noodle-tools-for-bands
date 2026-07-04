@@ -28,7 +28,7 @@ export default async function NewSetlistPage({
 
   return (
     <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
-      <PageHeader backHref={`/bands/${bandId}`} backLabel="Back to band" />
+      <PageHeader backHref={`/bands/${bandId}`} />
 
       <NewSetlistClient bandId={bandId} songs={songs} />
     </main>

@@ -15,7 +15,7 @@ export default async function BandsPage() {
 
   return (
     <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
-      <PageHeader backHref="/library" backLabel="Library" />
+      <PageHeader backHref="/library" />
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Bands</h1>

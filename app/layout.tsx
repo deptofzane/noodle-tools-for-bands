@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { auth } from '@/auth';
 import { Header } from './Header';
+import { NavigationHistoryProvider } from './NavigationHistoryProvider';
 import { PendingActionProvider } from './PendingActionProvider';
 import { ToastProvider } from './ToastProvider';
 import './globals.css';
@@ -54,8 +55,10 @@ export default async function RootLayout({
       <body className="min-h-screen bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100">
         <PendingActionProvider>
           <ToastProvider>
-            {isSignedIn && <Header />}
-            {children}
+            <NavigationHistoryProvider>
+              {isSignedIn && <Header />}
+              {children}
+            </NavigationHistoryProvider>
           </ToastProvider>
         </PendingActionProvider>
       </body>
