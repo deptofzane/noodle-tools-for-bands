@@ -118,7 +118,7 @@ export function Header() {
             <div
               id="mobile-nav"
               role="menu"
-              className="absolute right-0 z-50 mt-2 flex min-w-48 flex-col gap-0.5 rounded-md border border-neutral-200 bg-white p-1 shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
+              className="absolute right-0 z-50 mt-2 flex min-w-56 flex-col gap-0.5 rounded-md border border-neutral-200 bg-white p-1.5 shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
             >
               {NAV_LINKS.map((link) => {
                 const isActive = pathname === link.href;
@@ -130,7 +130,7 @@ export function Header() {
                     aria-current={isActive ? 'page' : undefined}
                     onClick={() => setMenuOpen(false)}
                     className={
-                      'rounded px-3 py-2 text-sm ' +
+                      'rounded px-4 py-2.5 text-base ' +
                       (isActive
                         ? 'bg-neutral-100 font-medium text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
                         : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800')

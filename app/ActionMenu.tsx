@@ -56,7 +56,7 @@ export function ActionMenu({
         <div
           role="menu"
           onClick={() => setOpen(false)}
-          className="absolute right-0 z-10 mt-1 min-w-32 overflow-hidden rounded-md border border-neutral-200 bg-white py-1 shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
+          className="absolute right-0 z-10 mt-1 min-w-40 overflow-hidden rounded-md border border-neutral-200 bg-white py-1.5 shadow-lg sm:min-w-32 sm:py-1 dark:border-neutral-800 dark:bg-neutral-900"
         >
           {children}
         </div>
@@ -80,7 +80,7 @@ export function ActionMenuItem({
       type="button"
       role="menuitem"
       onClick={onClick}
-      className={`block w-full px-3 py-1.5 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 ${
+      className={`block w-full px-4 py-2 text-left text-base hover:bg-neutral-100 sm:px-3 sm:py-1.5 sm:text-sm dark:hover:bg-neutral-800 ${
         destructive
           ? 'text-red-600 dark:text-red-400 pt-2 border-t border-gray-700'
           : 'text-neutral-700 dark:text-neutral-200'
