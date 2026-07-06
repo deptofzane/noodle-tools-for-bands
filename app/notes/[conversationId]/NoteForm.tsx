@@ -210,7 +210,7 @@ export function NoteForm({
                     selectMention(m);
                   }}
                   className={
-                    'flex w-full flex-col items-start px-3 py-1.5 text-left ' +
+                    'flex w-full flex-col items-start px-4 py-3 md:py-1.5 md:px-3 text-left ' +
                     (i === activeIndex
                       ? 'bg-blue-50 dark:bg-blue-950'
                       : 'hover:bg-neutral-50 dark:hover:bg-neutral-800')
@@ -234,7 +234,7 @@ export function NoteForm({
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-md px-3 py-1.5 text-xs text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+              className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-xs text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
             >
               Cancel
             </button>
@@ -242,7 +242,7 @@ export function NoteForm({
           <button
             type="submit"
             disabled={!body.trim() || submitting}
-            className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+            className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50"
           >
             {submitting ? 'Saving…' : submitLabel}
           </button>

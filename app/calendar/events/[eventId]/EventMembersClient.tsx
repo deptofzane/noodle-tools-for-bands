@@ -101,7 +101,7 @@ export function EventMembersClient({
           {members.map((m) => (
             <li
               key={m.userId}
-              className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
+              className="flex items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm"
             >
               <div className="min-w-0">
                 <div className="truncate font-medium">

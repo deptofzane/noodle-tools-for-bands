@@ -169,44 +169,25 @@ export function NoteItem({
           : 'border-neutral-200 dark:border-neutral-800'
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0 sm:gap-2">
-          <span className="flex flex-row gap-2">
-            <button
-              type="button"
-              onClick={() => setIsMinimized((v) => !v)}
-              aria-label={isMinimized ? 'Expand thread' : 'Minimize thread'}
-              aria-expanded={!isMinimized}
-              title={isMinimized ? 'Expand thread' : 'Minimize thread'}
-              className="-mr-1 px-1 text-sm leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
-            >
-              <span aria-hidden="true">{isMinimized ? '▸' : '▾'}</span>
-            </button>
-            <AuthorTag note={note} />
-            {isResolved && (
-              <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                Resolved
-              </span>
-            )}
-          </span>
-          <span className="flex flex-row gap-2 py-2 justify-between">
-            {note.isMine && (
-              <button
-                type="button"
-                onClick={handleToggleResolved}
-                disabled={isResolving}
-                className="text-xs text-neutral-500 sm:hover:text-neutral-900 disabled:opacity-50 sm:dark:hover:text-neutral-100"
-              >
-                {isResolved ? 'Reopen thread' : 'Resolve thread'}
-              </button>
-            )}
-            {isMinimized && replyCount > 0 && (
-              <span className="text-xs text-neutral-500">
-                <span aria-hidden="true">·</span> {replyLabel}
-              </span>
-            )}
-          </span>
-        </div>
+      <div className="flex items-start justify-between gap-2 items-center">
+        <span className="flex flex-row gap-2 items-center">
+          <button
+            type="button"
+            onClick={() => setIsMinimized((v) => !v)}
+            aria-label={isMinimized ? 'Expand thread' : 'Minimize thread'}
+            aria-expanded={!isMinimized}
+            title={isMinimized ? 'Expand thread' : 'Minimize thread'}
+            className="-mr-1 px-2 py-2 text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+          >
+            <span aria-hidden="true">{isMinimized ? '▸' : '▾'}</span>
+          </button>
+          <AuthorTag note={note} />
+          {isResolved && (
+            <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+              Resolved
+            </span>
+          )}
+        </span>
         <button
           type="button"
           onClick={seekToNote}
@@ -215,6 +196,23 @@ export function NoteItem({
         >
           {formatDuration(note.timestampMs / 1000)}
         </button>
+      </div>
+      <div className="flex flex-row gap-2 py-2 justify-between">
+        {note.isMine && (
+          <button
+            type="button"
+            onClick={handleToggleResolved}
+            disabled={isResolving}
+            className="text-xs text-neutral-500 sm:hover:text-neutral-900 disabled:opacity-50 sm:dark:hover:text-neutral-100"
+          >
+            {isResolved ? 'Reopen thread' : 'Resolve thread'}
+          </button>
+        )}
+        {replyCount > 0 && (
+          <span className="text-xs text-neutral-500">
+            <span aria-hidden="true">·</span> {replyLabel}
+          </span>
+        )}
       </div>
 
       {!isMinimized && (
@@ -239,7 +237,7 @@ export function NoteItem({
               <button
                 type="button"
                 onClick={() => setIsReplying((v) => !v)}
-                className="hover:text-neutral-900 dark:hover:text-neutral-100"
+                className="hover:text-neutral-900 dark:hover:text-neutral-100 py-2 pr-2 md:p-0"
               >
                 Reply
               </button>
@@ -247,7 +245,7 @@ export function NoteItem({
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="hover:text-neutral-900 dark:hover:text-neutral-100"
+                className="hover:text-neutral-900 dark:hover:text-neutral-100 p-2 md:p-0"
                 title="Copy a link to this thread"
               >
                 {copied ? 'Link copied' : 'Copy link'}
@@ -258,7 +256,7 @@ export function NoteItem({
                   <button
                     type="button"
                     onClick={() => setIsEditing(true)}
-                    className="hover:text-neutral-900 dark:hover:text-neutral-100"
+                    className="hover:text-neutral-900 dark:hover:text-neutral-100 p-2 md:p-0"
                   >
                     Edit
                   </button>
@@ -266,14 +264,11 @@ export function NoteItem({
                   <button
                     type="button"
                     onClick={() => setConfirmDeleteOpen(true)}
-                    className="hover:text-red-600 dark:hover:text-red-400"
+                    className="hover:text-red-600 dark:hover:text-red-400 p-2 md:p-0"
                   >
                     Delete
                   </button>
                 </>
-              )}
-              {replyCount > 0 && (
-                <span className="ml-auto text-[11px]">{replyLabel}</span>
               )}
             </div>
           )}

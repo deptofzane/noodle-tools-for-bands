@@ -72,7 +72,7 @@ export function BandDetailClient({
     new Set(),
   );
   const [addingToSetlist, setAddingToSetlist] = useState(false);
-  const [membersMinimized, setMembersMinimized] = useState(false);
+  const [membersMinimized, setMembersMinimized] = useState(true);
   const [minimizedSetlists, setMinimizedSetlists] = useState<Set<string>>(
     new Set(),
   );
@@ -165,7 +165,9 @@ export function BandDetailClient({
       } else if (added === 0) {
         showToast(firstError ?? 'Could not add the songs.');
       } else {
-        showToast(`Added ${added} of ${files.length}. ${failed} failed: ${firstError}`);
+        showToast(
+          `Added ${added} of ${files.length}. ${failed} failed: ${firstError}`,
+        );
       }
     },
     [bandId, load, trackPending, showToast],
@@ -356,7 +358,10 @@ export function BandDetailClient({
       key={c.id}
       className="flex items-center gap-2 pr-4 hover:bg-neutral-50 dark:hover:bg-neutral-900"
     >
-      <Link href={`/notes/${c.id}`} className="min-w-0 flex-1 px-4 py-3 text-sm">
+      <Link
+        href={`/notes/${c.id}`}
+        className="min-w-0 flex-1 px-4 py-3 md:py-1.5 md:px-3 text-sm"
+      >
         <div className="flex items-center gap-2">
           <span className="truncate font-medium">
             {c.audioFileName ?? 'Untitled audio'}
@@ -387,19 +392,19 @@ export function BandDetailClient({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
+      <span className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">
           {data.band.name}
         </h1>
         {isOwner && (
           <Link
             href={`/bands/${bandId}/edit`}
-            className="shrink-0 rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+            className="shrink-0 rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
           >
             Edit band
           </Link>
         )}
-      </div>
+      </span>
 
       <section className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
@@ -407,9 +412,11 @@ export function BandDetailClient({
             type="button"
             onClick={() => setMembersMinimized((v) => !v)}
             aria-expanded={!membersMinimized}
-            aria-label={membersMinimized ? 'Expand members' : 'Minimize members'}
+            aria-label={
+              membersMinimized ? 'Expand members' : 'Minimize members'
+            }
             title={membersMinimized ? 'Expand members' : 'Minimize members'}
-            className="-mr-1 px-1 text-sm leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+            className="-mr-1 px-2 py-2 text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
           >
             <span aria-hidden="true">{membersMinimized ? '▸' : '▾'}</span>
           </button>
@@ -424,25 +431,25 @@ export function BandDetailClient({
         {!membersMinimized && (
           <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
             {data.members.map((m) => (
-            <li
-              key={m.userId}
-              className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
-            >
-              <div className="min-w-0">
-                <div className="truncate font-medium">
-                  {m.name ?? m.email ?? 'Unknown'}
-                </div>
-                {m.email && m.name && (
-                  <div className="truncate text-xs text-neutral-500">
-                    {m.email}
+              <li
+                key={m.userId}
+                className="flex items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm"
+              >
+                <div className="min-w-0">
+                  <div className="truncate font-medium">
+                    {m.name ?? m.email ?? 'Unknown'}
                   </div>
-                )}
-              </div>
-              <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-                {m.role}
-              </span>
-            </li>
-          ))}
+                  {m.email && m.name && (
+                    <div className="truncate text-xs text-neutral-500">
+                      {m.email}
+                    </div>
+                  )}
+                </div>
+                <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+                  {m.role}
+                </span>
+              </li>
+            ))}
           </ul>
         )}
       </section>
@@ -458,17 +465,11 @@ export function BandDetailClient({
             )}
           </span>
           <div className="flex items-center gap-2">
-            <Link
-              href={`/bands/${bandId}/setlists/new`}
-              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
-            >
-              Create setlist
-            </Link>
             <button
               type="button"
               onClick={() => setChooseOpen(true)}
               disabled={audioBusy || importProgress !== null}
-              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+              className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
             >
               {importProgress
                 ? 'Importing…'
@@ -536,7 +537,7 @@ export function BandDetailClient({
                     setChooseOpen(false);
                     audioInputRef.current?.click();
                   }}
-                  className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                  className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
                 >
                   Upload a local file
                 </button>
@@ -546,7 +547,7 @@ export function BandDetailClient({
                   type="button"
                   onClick={() => setChooseOpen(false)}
                   disabled={audioBusy}
-                  className="rounded-md px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                  className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
                 >
                   Cancel
                 </button>
@@ -558,35 +559,47 @@ export function BandDetailClient({
 
       {setlists.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-medium">Setlists</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-medium">Setlists</h2>
+            <Link
+              href={`/bands/${bandId}/setlists/new`}
+              className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+            >
+              Create setlist
+            </Link>
+          </div>
           <ul className="flex flex-col gap-2">
             {setlists.map((sl) => {
-              const collapsed = minimizedSetlists.has(sl.id);
+              const collapsed = !minimizedSetlists.has(sl.id);
               return (
                 <li
                   key={sl.id}
                   className="rounded-lg border border-neutral-200 dark:border-neutral-800"
                 >
-                  <div className="flex items-center justify-between gap-2 px-4 py-3">
+                  <div className="flex items-center justify-between gap-2 pr-1 py-0 md:px-4 md:py-3">
                     <span className="flex min-w-0 items-center gap-2">
                       <button
                         type="button"
                         onClick={() => toggleSetlistMinimized(sl.id)}
                         aria-expanded={!collapsed}
-                        aria-label={collapsed ? 'Expand setlist' : 'Minimize setlist'}
-                        title={collapsed ? 'Expand setlist' : 'Minimize setlist'}
-                        className="-mr-1 px-1 text-sm leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+                        aria-label={
+                          collapsed ? 'Expand setlist' : 'Minimize setlist'
+                        }
+                        title={
+                          collapsed ? 'Expand setlist' : 'Minimize setlist'
+                        }
+                        className="-mr-1 px-3 py-4 md:px-2 md:py-1 text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 px-4 py-3 md:py-1.5 md:px-3"
                       >
                         <span aria-hidden="true">{collapsed ? '▸' : '▾'}</span>
                       </button>
                       <Link
                         href={`/bands/${bandId}/setlists/${sl.id}`}
-                        className="truncate font-medium hover:underline"
+                        className="truncate font-medium text-sm hover:underline py-3 md:py-0"
                       >
                         {sl.name}
                       </Link>
                     </span>
-                    <span className="shrink-0 text-xs text-neutral-500">
+                    <span className="shrink-0 text-xs text-neutral-500 pr-3">
                       {sl.songs.length}{' '}
                       {sl.songs.length === 1 ? 'song' : 'songs'}
                     </span>
@@ -609,7 +622,9 @@ export function BandDetailClient({
 
       {archivedSongs.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-medium text-neutral-500">Archived Audio</h2>
+          <h2 className="text-sm font-medium text-neutral-500">
+            Archived Audio
+          </h2>
           <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
             {archivedSongs.map(renderSongRow)}
           </ul>
@@ -620,7 +635,7 @@ export function BandDetailClient({
         <button
           type="button"
           onClick={() => setLeaveOpen(true)}
-          className="shrink-0 rounded-md border border-neutral-300 px-3 py-1.5 mt-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+          className="shrink-0 rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 mt-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
         >
           Leave band
         </button>
@@ -703,7 +718,7 @@ export function BandDetailClient({
                 type="button"
                 onClick={closeAddToSetlist}
                 disabled={addingToSetlist}
-                className="rounded-md px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
               >
                 Cancel
               </button>
@@ -711,7 +726,7 @@ export function BandDetailClient({
                 type="button"
                 onClick={handleAddToSetlists}
                 disabled={addingToSetlist || selectedSetlists.size === 0}
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+                className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
               >
                 {addingToSetlist ? 'Adding…' : 'Add to setlist'}
               </button>

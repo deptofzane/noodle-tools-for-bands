@@ -155,7 +155,7 @@ export function SheetMusic({
   };
 
   return (
-    <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+    <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-4 py-2 dark:border-neutral-800">
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-2">
           <button
@@ -164,7 +164,7 @@ export function SheetMusic({
             aria-label={isMinimized ? 'Expand sheet music' : 'Minimize sheet music'}
             aria-expanded={!isMinimized}
             title={isMinimized ? 'Expand sheet music' : 'Minimize sheet music'}
-            className="-mr-1 px-1 text-sm leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+            className="-mr-1 px-2 py-2 text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
           >
             <span aria-hidden="true">{isMinimized ? '▸' : '▾'}</span>
           </button>
@@ -299,7 +299,7 @@ export function SheetMusic({
                   setChooseOpen(false);
                   inputRef.current?.click();
                 }}
-                className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
               >
                 Upload a local file
               </button>
@@ -309,7 +309,7 @@ export function SheetMusic({
                 type="button"
                 onClick={() => setChooseOpen(false)}
                 disabled={busy}
-                className="rounded-md px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
               >
                 Cancel
               </button>

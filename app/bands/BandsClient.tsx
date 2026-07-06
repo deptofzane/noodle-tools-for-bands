@@ -111,7 +111,7 @@ export function BandsClient() {
             <li key={band.id}>
               <Link
                 href={`/bands/${band.id}`}
-                className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                className="flex items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
               >
                 <span className="truncate font-medium">{band.name}</span>
                 <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">

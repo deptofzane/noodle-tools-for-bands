@@ -84,7 +84,7 @@ export function EditEventClient({
             type="button"
             onClick={handleSave}
             disabled={!canSave}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+            className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
           >
             {busy ? 'Saving…' : 'Save'}
           </button>

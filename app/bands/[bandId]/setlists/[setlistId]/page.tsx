@@ -37,7 +37,7 @@ export default async function SetlistPage({
       <PageHeader backHref={`/bands/${bandId}`}>
         <Link
           href={`/bands/${bandId}/setlists/${setlistId}/edit`}
-          className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+          className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
         >
           Edit setlist
         </Link>

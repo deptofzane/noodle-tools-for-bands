@@ -148,7 +148,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
           {data.members.map((m) => (
             <li
               key={m.userId}
-              className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
+              className="flex items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm"
             >
               <div className="min-w-0">
                 <div className="truncate font-medium">
@@ -208,7 +208,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
         <button
           type="button"
           onClick={() => setDeleteOpen(true)}
-          className="self-start rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+          className="self-start rounded-md border border-red-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
         >
           Delete band
         </button>
