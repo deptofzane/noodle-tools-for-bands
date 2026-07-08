@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useTrackPending } from '../PendingActionProvider';
-import { formatTime12h } from '@/lib/format';
+import { formatDateLong, formatTime12h } from '@/lib/format';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [
@@ -27,6 +26,8 @@ interface CalendarEvent {
   title: string;
   date: string; // YYYY-MM-DD
   time: string | null;
+  bandName: string;
+  location: string | null;
 }
 
 const pad = (n: number) => n.toString().padStart(2, '0');
@@ -34,10 +35,9 @@ const pad = (n: number) => n.toString().padStart(2, '0');
 /**
  * Month calendar. Navigable by month, today highlighted. Fetches the
  * visible month's events and renders them into the day cells; clicking a
- * day starts a new event on that date.
+ * day opens a summary of that day's shows across all the user's bands.
  */
 export function CalendarClient() {
-  const router = useRouter();
   const trackPending = useTrackPending();
   const today = new Date();
   const [view, setView] = useState({
@@ -47,6 +47,8 @@ export function CalendarClient() {
   const [eventsByDate, setEventsByDate] = useState<
     Record<string, CalendarEvent[]>
   >({});
+  // The day whose shows-summary is open (YYYY-MM-DD), or null.
+  const [summaryDate, setSummaryDate] = useState<string | null>(null);
 
   const startWeekday = new Date(view.year, view.month, 1).getDay();
   const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
@@ -82,6 +84,16 @@ export function CalendarClient() {
   useEffect(() => {
     void trackPending(() => load());
   }, [load, trackPending]);
+
+  // Close the day summary on Escape.
+  useEffect(() => {
+    if (!summaryDate) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSummaryDate(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [summaryDate]);
 
   const prevMonth = () =>
     setView((v) =>
@@ -155,10 +167,8 @@ export function CalendarClient() {
               <>
                 <button
                   type="button"
-                  onClick={() =>
-                    router.push(`/calendar/events/new?date=${dateStr(d)}`)
-                  }
-                  aria-label={`Add event on ${dateStr(d)}`}
+                  onClick={() => setSummaryDate(dateStr(d))}
+                  aria-label={`Shows on ${dateStr(d)}`}
                   className="self-start"
                 >
                   <span
@@ -179,8 +189,8 @@ export function CalendarClient() {
                       title={ev.title}
                       className="truncate rounded bg-cyan-50 px-1 py-0.5 text-[11px] text-cyan-800 hover:bg-cyan-100 dark:bg-cyan-950 dark:text-cyan-300 dark:hover:bg-cyan-900"
                     >
-                      {ev.time ? `${formatTime12h(ev.time)} ` : ''}
                       {ev.title}
+                      {ev.time ? `${formatTime12h(ev.time)} ` : ''}
                     </Link>
                   ))}
                 </div>
@@ -189,6 +199,69 @@ export function CalendarClient() {
           </div>
         ))}
       </div>
+
+      {summaryDate && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="day-summary-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setSummaryDate(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-5 shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="day-summary-title" className="text-base font-semibold">
+              {formatDateLong(summaryDate)}
+            </h2>
+            {(eventsByDate[summaryDate] ?? []).length === 0 ? (
+              <p className="mt-3 text-sm text-neutral-500">
+                No shows on this day.
+              </p>
+            ) : (
+              <ul className="mt-3 flex max-h-72 flex-col gap-1 overflow-auto">
+                {(eventsByDate[summaryDate] ?? []).map((ev) => (
+                  <li key={ev.id}>
+                    <Link
+                      href={`/calendar/events/${ev.id}`}
+                      className="block rounded-md border border-neutral-200 px-3 py-2 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
+                    >
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="truncate font-medium">{ev.title}</span>
+                        {ev.time && (
+                          <span className="shrink-0 text-xs text-neutral-500">
+                            {formatTime12h(ev.time)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="truncate text-xs text-neutral-500">
+                        {ev.bandName}
+                        {ev.location ? ` · ${ev.location}` : ''}
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="mt-4 flex items-center justify-between gap-2">
+              <Link
+                href={`/calendar/events/new?date=${summaryDate}`}
+                className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+              >
+                Add event
+              </Link>
+              <button
+                type="button"
+                onClick={() => setSummaryDate(null)}
+                className="rounded-md px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
