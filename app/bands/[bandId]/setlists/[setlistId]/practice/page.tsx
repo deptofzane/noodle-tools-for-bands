@@ -27,16 +27,20 @@ export default async function PracticeSetlistPage({
   const songs = await getSetlistPracticeSongs(setlistId);
 
   return (
-    <main className="main-container">
+    // <main className="main-container">
+    <main className="">
+      <div className="px-4 py-0">
       <PageHeader
         defaultHref={`/bands/${bandId}/setlists/${setlistId}`}
         defaultHrefName="Setlist"
       />
 
-      <div className="flex flex-col gap-1 pb-4">
+      </div>
+
+      {/* <div className="flex flex-col gap-1 pb-4">
         <h1 className="title-text">{setlist.name}</h1>
         <p className="text-sm text-neutral-500">Practice</p>
-      </div>
+      </div> */}
 
       <Practice songs={songs} />
     </main>

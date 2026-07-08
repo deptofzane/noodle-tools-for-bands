@@ -40,13 +40,15 @@ function previewKind(mime: string, fileName: string): PreviewKind {
 export function SheetMusic({
   conversationId,
   initial = null,
+  startClosed = true
 }: {
   conversationId: string;
   initial?: SheetMusicMeta | null;
+  startClosed?: boolean
 }) {
   const [meta, setMeta] = useState<SheetMusicMeta | null>(initial);
   const [busy, setBusy] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(true);
+  const [isMinimized, setIsMinimized] = useState(startClosed);
   const [textContent, setTextContent] = useState<string | null>(null);
   const [chooseOpen, setChooseOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);

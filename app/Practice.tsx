@@ -83,7 +83,7 @@ export function Practice({ songs }: { songs: PracticeSong[] }) {
       </div>
 
       <PlayerProvider key={song.conversationId}>
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col">
           <AudioPlayer
             src={src}
             fileName={song.title}
@@ -94,6 +94,7 @@ export function Practice({ songs }: { songs: PracticeSong[] }) {
             <SheetMusic
               conversationId={song.conversationId}
               initial={song.sheetMusic}
+              startClosed={false}
             />
           )}
         </div>

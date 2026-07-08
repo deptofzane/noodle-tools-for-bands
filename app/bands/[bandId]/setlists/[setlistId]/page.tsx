@@ -36,14 +36,6 @@ export default async function SetlistPage({
     <main className="main-container">
       <PageHeader defaultHref={`/bands/${bandId}`} defaultHrefName="Band" canGoBack={false}>
         <span className="flex items-center gap-3">
-          {songCount > 0 && (
-            <Link
-              href={`/bands/${bandId}/setlists/${setlistId}/practice`}
-              className="hover:text-neutral-900 dark:hover:text-neutral-100"
-            >
-              Practice
-            </Link>
-          )}
           <Link
             href={`/bands/${bandId}/setlists/${setlistId}/edit`}
             className="hover:text-neutral-900 dark:hover:text-neutral-100"
@@ -52,7 +44,7 @@ export default async function SetlistPage({
           </Link>
         </span>
       </PageHeader>
-
+    <span className="flex justify-between">
       <div className="flex flex-col gap-1">
         <h1 className="title-text">
           {setlist.name}
@@ -68,6 +60,15 @@ export default async function SetlistPage({
           )}
         </p>
       </div>
+          {songCount > 0 && (
+            <Link
+              href={`/bands/${bandId}/setlists/${setlistId}/practice`}
+              className="mt-2 rounded-md border h-12 border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+            >
+              Practice
+            </Link>
+          )}
+    </span>
 
       {setlist.songs.length === 0 ? (
         <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
