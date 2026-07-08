@@ -8,7 +8,12 @@ import { ConfirmModal } from '../../ConfirmModal';
 import { PickerButton, type PickedFile } from '../../PickerButton';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
-import { formatRelativeTime } from '@/lib/format';
+import {
+  formatDateLong,
+  formatDateShort,
+  formatRelativeTime,
+  formatTime12h,
+} from '@/lib/format';
 
 interface Member {
   userId: string;
@@ -38,6 +43,17 @@ interface Setlist {
   songs: { conversationId: string; audioFileName: string | null }[];
 }
 
+interface Show {
+  id: string;
+  title: string;
+  date: string;
+  time: string | null;
+  location: string | null;
+  details: string | null;
+  setlistId: string | null;
+  setlistName: string | null;
+}
+
 /**
  * Band detail: name, read-only member list, and the audio library
  * (add from Drive or a local file). Owners get an "Edit band" link to
@@ -55,6 +71,7 @@ export function BandDetailClient({
     null,
   );
   const [setlists, setSetlists] = useState<Setlist[]>([]);
+  const [shows, setShows] = useState<Show[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -76,9 +93,18 @@ export function BandDetailClient({
   const [minimizedSetlists, setMinimizedSetlists] = useState<Set<string>>(
     new Set(),
   );
+  // Shows start minimized: a show is expanded only while its id is in the set.
+  const [expandedShows, setExpandedShows] = useState<Set<string>>(new Set());
 
   const toggleSetlistMinimized = (id: string) =>
     setMinimizedSetlists((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const toggleShowExpanded = (id: string) =>
+    setExpandedShows((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -91,10 +117,11 @@ export function BandDetailClient({
 
   const load = useCallback(async () => {
     try {
-      const [detailRes, convRes, setlistRes] = await Promise.all([
+      const [detailRes, convRes, setlistRes, eventRes] = await Promise.all([
         fetch(`/api/bands/${bandId}`, { cache: 'no-store' }),
         fetch(`/api/bands/${bandId}/conversations`, { cache: 'no-store' }),
         fetch(`/api/bands/${bandId}/setlists`, { cache: 'no-store' }),
+        fetch(`/api/bands/${bandId}/events`, { cache: 'no-store' }),
       ]);
       if (!detailRes.ok) {
         const b = await detailRes.json().catch(() => ({}));
@@ -108,6 +135,10 @@ export function BandDetailClient({
       if (setlistRes.ok) {
         const sd = (await setlistRes.json()) as { setlists: Setlist[] };
         setSetlists(sd.setlists);
+      }
+      if (eventRes.ok) {
+        const ed = (await eventRes.json()) as { events: Show[] };
+        setShows(ed.events);
       }
       setError(null);
     } catch (e) {
@@ -393,7 +424,7 @@ export function BandDetailClient({
   return (
     <div className="flex flex-col gap-4">
       <span className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="title-text">
           {data.band.name}
         </h1>
         {isOwner && (
@@ -453,6 +484,88 @@ export function BandDetailClient({
           </ul>
         )}
       </section>
+
+      {shows.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-medium">Shows</h2>
+          <ul className="flex flex-col gap-2">
+            {shows.map((show) => {
+              const expanded = expandedShows.has(show.id);
+              return (
+                <li
+                  key={show.id}
+                  className="rounded-lg border border-neutral-200 dark:border-neutral-800"
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleShowExpanded(show.id)}
+                    aria-expanded={expanded}
+                    className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left md:px-3 md:py-1.5"
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span
+                        aria-hidden="true"
+                        className="text-sm leading-none text-neutral-400"
+                      >
+                        {expanded ? '▾' : '▸'}
+                      </span>
+                      <span className="truncate font-medium">{show.title}</span>
+                    </span>
+                    <span className="shrink-0 text-xs text-neutral-500">
+                      {formatDateShort(show.date)}
+                    </span>
+                  </button>
+                  {expanded && (
+                    <div className="flex flex-col gap-1 border-t border-neutral-200 px-4 py-3 text-sm md:px-3 dark:border-neutral-800">
+                      <div>
+                        <span className="font-medium">Date:</span>{' '}
+                        {formatDateLong(show.date)}
+                      </div>
+                      {show.time && (
+                        <div>
+                          <span className="font-medium">Time:</span>{' '}
+                          {formatTime12h(show.time)}
+                        </div>
+                      )}
+                      {show.location && (
+                        <div>
+                          <span className="font-medium">Location:</span>{' '}
+                          {show.location}
+                        </div>
+                      )}
+                      {show.setlistId && (
+                        <div>
+                          <span className="font-medium">Setlist:</span>{' '}
+                          <Link
+                            href={`/bands/${bandId}/setlists/${show.setlistId}`}
+                            className="text-blue-600 hover:underline dark:text-blue-400"
+                          >
+                            {show.setlistName ?? 'View setlist'}
+                          </Link>
+                        </div>
+                      )}
+                      {show.details && (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-medium">Details:</span>
+                          <p className="whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+                            {show.details}
+                          </p>
+                        </div>
+                      )}
+                      <Link
+                        href={`/calendar/events/${show.id}`}
+                        className="mt-1 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        View event →
+                      </Link>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">

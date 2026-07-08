@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, lte, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, lte, or, sql } from 'drizzle-orm';
 import { db } from './index';
 import {
   bandMembers,
@@ -26,6 +26,17 @@ export interface EventListItem {
   date: string; // YYYY-MM-DD
   time: string | null;
   location: string | null;
+}
+
+export interface BandEvent {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  time: string | null;
+  location: string | null;
+  details: string | null;
+  setlistId: string | null;
+  setlistName: string | null;
 }
 
 export interface EventDetail extends EventListItem {
@@ -114,6 +125,28 @@ export async function listEventsForUserInRange(
     .orderBy(asc(events.date), asc(events.time));
 
   return rows;
+}
+
+/**
+ * All of a band's events (its "shows"), newest date first, each with its
+ * associated setlist name if any. Caller gates on band membership.
+ */
+export async function listBandEvents(bandId: string): Promise<BandEvent[]> {
+  return db
+    .select({
+      id: events.id,
+      title: events.title,
+      date: events.date,
+      time: events.time,
+      location: events.location,
+      details: events.details,
+      setlistId: events.setlistId,
+      setlistName: setlists.name,
+    })
+    .from(events)
+    .leftJoin(setlists, eq(setlists.id, events.setlistId))
+    .where(eq(events.bandId, bandId))
+    .orderBy(desc(events.date), asc(events.time));
 }
 
 /** An event with access check, or null if it doesn't exist / isn't visible. */
