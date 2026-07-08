@@ -35,12 +35,22 @@ export default async function SetlistPage({
   return (
     <main className="main-container">
       <PageHeader defaultHref={`/bands/${bandId}`} defaultHrefName="Band" canGoBack={false}>
-        <Link
-          href={`/bands/${bandId}/setlists/${setlistId}/edit`}
-          className="hover:text-neutral-900 dark:hover:text-neutral-100"
-        >
-          Edit setlist
-        </Link>
+        <span className="flex items-center gap-3">
+          {songCount > 0 && (
+            <Link
+              href={`/bands/${bandId}/setlists/${setlistId}/practice`}
+              className="hover:text-neutral-900 dark:hover:text-neutral-100"
+            >
+              Practice
+            </Link>
+          )}
+          <Link
+            href={`/bands/${bandId}/setlists/${setlistId}/edit`}
+            className="hover:text-neutral-900 dark:hover:text-neutral-100"
+          >
+            Edit setlist
+          </Link>
+        </span>
       </PageHeader>
 
       <div className="flex flex-col gap-1">

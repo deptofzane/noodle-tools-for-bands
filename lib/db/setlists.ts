@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import { db } from './index';
 import { conversations, setlists, setlistSongs, songFiles } from './schema';
 
@@ -203,4 +203,67 @@ export async function listBandSetlists(
     updatedAt: l.updatedAt.toISOString(),
     songs: byList.get(l.id) ?? [],
   }));
+}
+
+export interface PracticeSong {
+  conversationId: string;
+  title: string;
+  mimeType: string;
+  sheetMusic: { fileName: string; mimeType: string; updatedAt: string } | null;
+}
+
+/**
+ * A setlist's songs, in order, enriched for the Practice view: each song's
+ * audio MIME type and its sheet-music metadata (if any). Two queries — the
+ * ordered songs, then a batched lookup of their audio/sheet file rows.
+ */
+export async function getSetlistPracticeSongs(
+  setlistId: string,
+): Promise<PracticeSong[]> {
+  const rows = await db
+    .select({
+      conversationId: setlistSongs.conversationId,
+      audioFileName: conversations.audioFileName,
+    })
+    .from(setlistSongs)
+    .innerJoin(conversations, eq(conversations.id, setlistSongs.conversationId))
+    .where(eq(setlistSongs.setlistId, setlistId))
+    .orderBy(asc(setlistSongs.position));
+  if (rows.length === 0) return [];
+
+  const ids = rows.map((r) => r.conversationId);
+  const files = await db
+    .select({
+      conversationId: songFiles.conversationId,
+      kind: songFiles.kind,
+      fileName: songFiles.fileName,
+      mimeType: songFiles.mimeType,
+      updatedAt: songFiles.updatedAt,
+    })
+    .from(songFiles)
+    .where(inArray(songFiles.conversationId, ids));
+
+  const audioByConv = new Map<string, (typeof files)[number]>();
+  const sheetByConv = new Map<string, (typeof files)[number]>();
+  for (const f of files) {
+    if (f.kind === 'audio') audioByConv.set(f.conversationId, f);
+    else if (f.kind === 'sheet_music') sheetByConv.set(f.conversationId, f);
+  }
+
+  return rows.map((r) => {
+    const audio = audioByConv.get(r.conversationId);
+    const sheet = sheetByConv.get(r.conversationId);
+    return {
+      conversationId: r.conversationId,
+      title: r.audioFileName ?? audio?.fileName ?? 'Untitled audio',
+      mimeType: audio?.mimeType ?? 'audio/mpeg',
+      sheetMusic: sheet
+        ? {
+            fileName: sheet.fileName,
+            mimeType: sheet.mimeType,
+            updatedAt: sheet.updatedAt.toISOString(),
+          }
+        : null,
+    };
+  });
 }
