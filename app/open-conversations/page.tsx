@@ -16,12 +16,12 @@ import { PageHeader } from '../PageHeader';
 export default async function AnnotatedPage() {
   const session = await auth();
   if (!session?.user) return null;
-  if (session.error === 'RefreshAccessTokenError') redirect('/library');
-  if (!hasAllDriveScopes(session.scopes)) redirect('/library');
+  if (session.error === 'RefreshAccessTokenError') redirect('/home');
+  if (!hasAllDriveScopes(session.scopes)) redirect('/home');
 
   return (
     <main className="mmain-container">
-      <PageHeader backHref="/library" />
+      <PageHeader backHref="/home" />
 
       <div className="mb-4">
         <h1 className="title-text">

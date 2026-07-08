@@ -15,7 +15,7 @@ export default async function BandDetailPage({
 }) {
   const session = await auth();
   if (!session?.user) return null;
-  if (session.error === 'RefreshAccessTokenError') redirect('/library');
+  if (session.error === 'RefreshAccessTokenError') redirect('/home');
 
   const { bandId } = await params;
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? '';

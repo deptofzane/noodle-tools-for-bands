@@ -11,11 +11,11 @@ import { BandsClient } from './BandsClient';
 export default async function BandsPage() {
   const session = await auth();
   if (!session?.user) return null;
-  if (session.error === 'RefreshAccessTokenError') redirect('/library');
+  if (session.error === 'RefreshAccessTokenError') redirect('/home');
 
   return (
     <main className="main-container">
-      <PageHeader backHref="/library" />
+      <PageHeader backHref="/home" />
 
       <div>
         <h1 className="title-text">Bands</h1>

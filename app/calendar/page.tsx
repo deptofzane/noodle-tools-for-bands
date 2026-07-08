@@ -10,11 +10,11 @@ import { CalendarClient } from './CalendarClient';
 export default async function CalendarPage() {
   const session = await auth();
   if (!session?.user) return null;
-  if (session.error === 'RefreshAccessTokenError') redirect('/library');
+  if (session.error === 'RefreshAccessTokenError') redirect('/home');
 
   return (
     <main className="main-container">
-      <PageHeader backHref="/library" />
+      <PageHeader backHref="/home" />
 
       <div className="pb-4">
         <h1 className="title-text">Calendar</h1>

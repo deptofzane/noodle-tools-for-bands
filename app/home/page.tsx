@@ -38,7 +38,7 @@ export default async function LibraryPage() {
         <form
           action={async () => {
             'use server';
-            await signIn('google', { redirectTo: '/library' });
+            await signIn('google', { redirectTo: '/home' });
           }}
         >
           <button
@@ -80,7 +80,7 @@ export default async function LibraryPage() {
             'use server';
             await signIn(
               'google',
-              { redirectTo: '/library' },
+              { redirectTo: '/home' },
               {
                 scope: ['openid', 'email', 'profile', ...REQUIRED_DRIVE_SCOPES].join(
                   ' ',
