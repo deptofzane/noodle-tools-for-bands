@@ -130,29 +130,53 @@ export async function POST(
         fileId: driveFileId,
         fields: 'name, mimeType, size',
       });
-      const fileName = metaRes.data.name ?? 'sheet-music';
-      const mimeType = normalizeSheetMime(metaRes.data.mimeType ?? '', fileName);
-      if (!mimeType) {
-        return Response.json(
-          {
-            error: 'unsupported_type',
-            message: 'Allowed: PDF, plain text/markdown, or a PNG/JPEG/GIF/WEBP image.',
-          },
-          { status: 415 },
+      const driveMime = metaRes.data.mimeType ?? '';
+      const driveName = metaRes.data.name ?? 'sheet-music';
+
+      let data: Buffer;
+      let fileName: string;
+      let mimeType: string;
+
+      if (driveMime === 'application/vnd.google-apps.document') {
+        // A native Google Doc has no binary to download — export it to PDF
+        // (which previews inline, unlike a .docx). Size isn't known until the
+        // export runs, so the cap is enforced afterward.
+        const exportRes = await drive.files.export(
+          { fileId: driveFileId, mimeType: 'application/pdf' },
+          { responseType: 'arraybuffer' },
         );
-      }
-      const declaredSize = Number(metaRes.data.size ?? 0);
-      if (declaredSize && declaredSize > MAX_SHEET_BYTES) {
-        return Response.json(
-          { error: 'file_too_large', message: 'Sheet music exceeds the 25 MB limit.' },
-          { status: 413 },
+        data = Buffer.from(exportRes.data as ArrayBuffer);
+        mimeType = 'application/pdf';
+        // Google Doc names carry no extension; land on a clean ".pdf" name.
+        fileName = `${driveName.replace(/\.(docx?|pdf)$/i, '')}.pdf`;
+      } else {
+        const normalized = normalizeSheetMime(driveMime, driveName);
+        if (!normalized) {
+          return Response.json(
+            {
+              error: 'unsupported_type',
+              message:
+                'Allowed: a Google Doc, PDF, plain text/markdown, or a PNG/JPEG/GIF/WEBP image.',
+            },
+            { status: 415 },
+          );
+        }
+        const declaredSize = Number(metaRes.data.size ?? 0);
+        if (declaredSize && declaredSize > MAX_SHEET_BYTES) {
+          return Response.json(
+            { error: 'file_too_large', message: 'Sheet music exceeds the 25 MB limit.' },
+            { status: 413 },
+          );
+        }
+        const mediaRes = await drive.files.get(
+          { fileId: driveFileId, alt: 'media' },
+          { responseType: 'arraybuffer' },
         );
+        data = Buffer.from(mediaRes.data as ArrayBuffer);
+        fileName = driveName;
+        mimeType = normalized;
       }
-      const mediaRes = await drive.files.get(
-        { fileId: driveFileId, alt: 'media' },
-        { responseType: 'arraybuffer' },
-      );
-      const data = Buffer.from(mediaRes.data as ArrayBuffer);
+
       if (data.length > MAX_SHEET_BYTES) {
         return Response.json(
           { error: 'file_too_large', message: 'Sheet music exceeds the 25 MB limit.' },
