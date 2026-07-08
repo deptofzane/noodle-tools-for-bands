@@ -21,11 +21,11 @@ export default async function HistoryPage() {
   if (!hasAllDriveScopes(session.scopes)) redirect('/library');
 
   return (
-    <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
+    <main className="main-container">
       <PageHeader backHref="/library" />
 
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">History</h1>
+      <div className="mb-4">
+        <h1 className="title-text">History</h1>
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
           Conversations you&apos;ve marked closed. Anything still active
           lives in{' '}

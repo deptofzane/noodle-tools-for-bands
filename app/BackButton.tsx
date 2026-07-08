@@ -16,7 +16,7 @@ export function BackButton({ fallbackHref }: { fallbackHref: string }) {
     <button
       type="button"
       onClick={() => (canGoBack() ? router.back() : router.push(fallbackHref))}
-      className="hover:text-neutral-900 dark:hover:text-neutral-100"
+      className="hover:text-neutral-900 dark:hover:text-neutral-100 py-4"
     >
       ← Back
     </button>

@@ -182,7 +182,7 @@ export function EditSetlistClient({
         </div>
       </header>
 
-      <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>
+      <h1 className="title-text">{name}</h1>
 
       {songs.length === 0 ? (
         <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">

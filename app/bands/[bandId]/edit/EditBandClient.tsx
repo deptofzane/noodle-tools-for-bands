@@ -138,7 +138,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold tracking-tight">
+      <h1 className="title-text">
         Edit {data.band.name}
       </h1>
 

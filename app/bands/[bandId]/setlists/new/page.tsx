@@ -27,7 +27,7 @@ export default async function NewSetlistPage({
     .map((c) => ({ id: c.id, name: c.audioFileName ?? 'Untitled audio' }));
 
   return (
-    <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
+    <main className="main-container">
       <PageHeader backHref={`/bands/${bandId}`} />
 
       <NewSetlistClient bandId={bandId} songs={songs} />

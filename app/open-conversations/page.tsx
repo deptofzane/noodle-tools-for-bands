@@ -20,11 +20,11 @@ export default async function AnnotatedPage() {
   if (!hasAllDriveScopes(session.scopes)) redirect('/library');
 
   return (
-    <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
+    <main className="mmain-container">
       <PageHeader backHref="/library" />
 
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+      <div className="mb-4">
+        <h1 className="title-text">
           Open conversations
         </h1>
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">

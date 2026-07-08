@@ -14,12 +14,12 @@ export default async function BandsPage() {
   if (session.error === 'RefreshAccessTokenError') redirect('/library');
 
   return (
-    <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
+    <main className="main-container">
       <PageHeader backHref="/library" />
 
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Bands</h1>
-        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+        <h1 className="title-text">Bands</h1>
+        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400 mb-2">
           Bands group people and own conversations. Anyone in a band can see
           its audio and notes.
         </p>

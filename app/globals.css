@@ -10,3 +10,11 @@ html,
 body {
   height: 100%;
 }
+
+.main-container {
+  @apply mx-auto flex h-max max-w-3xl flex-col px-6 pb-4
+}
+
+.title-text {
+  @apply text-2xl font-semibold tracking-tight
+}

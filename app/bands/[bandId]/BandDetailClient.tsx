@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
@@ -93,8 +93,8 @@ export function BandDetailClient({
   const [showsMinimized, setShowsMinimized] = useState(false);
   const [audioMinimized, setAudioMinimized] = useState(false);
   const [setlistsMinimized, setSetlistsMinimized] = useState(false);
-  const [pastShowsMinimized, setPastShowsMinimized] = useState(false);
-  const [archivedMinimized, setArchivedMinimized] = useState(false);
+  const [pastShowsMinimized, setPastShowsMinimized] = useState(true);
+  const [archivedMinimized, setArchivedMinimized] = useState(true);
   const [minimizedSetlists, setMinimizedSetlists] = useState<Set<string>>(
     new Set(),
   );
@@ -515,9 +515,7 @@ export function BandDetailClient({
   return (
     <div className="flex flex-col gap-4">
       <span className="flex items-center justify-between gap-2">
-        <h1 className="title-text">
-          {data.band.name}
-        </h1>
+        <h1 className="title-text">{data.band.name}</h1>
         {isOwner && (
           <Link
             href={`/bands/${bandId}/edit`}
@@ -534,8 +532,9 @@ export function BandDetailClient({
             minimized={membersMinimized}
             onToggle={() => setMembersMinimized((v) => !v)}
             label="Members"
-          />
-          <h2 className="text-sm font-medium">Members</h2>
+          >
+            <h2 className="text-sm font-medium">Members</h2>
+          </MinimizeToggle>
           {membersMinimized && (
             <span className="text-xs text-neutral-500">
               <span aria-hidden="true">·</span> {data.members.length}{' '}
@@ -576,8 +575,9 @@ export function BandDetailClient({
               minimized={showsMinimized}
               onToggle={() => setShowsMinimized((v) => !v)}
               label="Shows"
-            />
-            <h2 className="text-sm font-medium">Shows</h2>
+            >
+              <h2 className="text-sm font-medium">Shows</h2>
+            </MinimizeToggle>
           </div>
           {!showsMinimized && (
             <ul className="flex flex-col gap-2">
@@ -594,8 +594,9 @@ export function BandDetailClient({
               minimized={audioMinimized}
               onToggle={() => setAudioMinimized((v) => !v)}
               label="Audio"
-            />
-            <h2 className="text-sm font-medium">Audio</h2>
+            >
+              <h2 className="text-sm font-medium">Audio</h2>
+            </MinimizeToggle>
             {importProgress && (
               <span className="truncate text-xs text-neutral-500">
                 Importing {importProgress.current} of {importProgress.total}…
@@ -703,8 +704,9 @@ export function BandDetailClient({
                 minimized={setlistsMinimized}
                 onToggle={() => setSetlistsMinimized((v) => !v)}
                 label="Setlists"
-              />
-              <h2 className="text-sm font-medium">Setlists</h2>
+              >
+                <h2 className="text-sm font-medium">Setlists</h2>
+              </MinimizeToggle>
             </span>
             <Link
               href={`/bands/${bandId}/setlists/new`}
@@ -714,55 +716,57 @@ export function BandDetailClient({
             </Link>
           </div>
           {!setlistsMinimized && (
-          <ul className="flex flex-col gap-2">
-            {setlists.map((sl) => {
-              const collapsed = !minimizedSetlists.has(sl.id);
-              return (
-                <li
-                  key={sl.id}
-                  className="rounded-lg border border-neutral-200 dark:border-neutral-800"
-                >
-                  <div className="flex items-center justify-between gap-2 pr-1 py-0 md:px-4 md:py-3">
-                    <span className="flex min-w-0 items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => toggleSetlistMinimized(sl.id)}
-                        aria-expanded={!collapsed}
-                        aria-label={
-                          collapsed ? 'Expand setlist' : 'Minimize setlist'
-                        }
-                        title={
-                          collapsed ? 'Expand setlist' : 'Minimize setlist'
-                        }
-                        className="-mr-1 px-3 py-4 md:px-2 md:py-1 text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 px-4 py-3 md:py-1.5 md:px-3"
-                      >
-                        <span aria-hidden="true">{collapsed ? '▸' : '▾'}</span>
-                      </button>
-                      <Link
-                        href={`/bands/${bandId}/setlists/${sl.id}`}
-                        className="truncate font-medium text-sm hover:underline py-3 md:py-0"
-                      >
-                        {sl.name}
-                      </Link>
-                    </span>
-                    <span className="shrink-0 text-xs text-neutral-500 pr-3">
-                      {sl.songs.length}{' '}
-                      {sl.songs.length === 1 ? 'song' : 'songs'}
-                    </span>
-                  </div>
-                  {!collapsed && sl.songs.length > 0 && (
-                    <ol className="list-decimal px-4 pb-3 pl-9 text-sm text-neutral-600 dark:text-neutral-400">
-                      {sl.songs.map((s) => (
-                        <li key={s.conversationId} className="truncate">
-                          {s.audioFileName ?? 'Untitled audio'}
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+            <ul className="flex flex-col gap-2">
+              {setlists.map((sl) => {
+                const collapsed = !minimizedSetlists.has(sl.id);
+                return (
+                  <li
+                    key={sl.id}
+                    className="rounded-lg border border-neutral-200 dark:border-neutral-800"
+                  >
+                    <div className="flex items-center justify-between gap-2 pr-1 py-0 md:px-4 md:py-3">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleSetlistMinimized(sl.id)}
+                          aria-expanded={!collapsed}
+                          aria-label={
+                            collapsed ? 'Expand setlist' : 'Minimize setlist'
+                          }
+                          title={
+                            collapsed ? 'Expand setlist' : 'Minimize setlist'
+                          }
+                          className="-mr-1 px-3 py-4 md:px-2 md:py-1 text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 px-4 py-3 md:py-1.5 md:px-3"
+                        >
+                          <span aria-hidden="true">
+                            {collapsed ? '▸' : '▾'}
+                          </span>
+                        </button>
+                        <Link
+                          href={`/bands/${bandId}/setlists/${sl.id}`}
+                          className="truncate font-medium text-sm hover:underline py-3 md:py-0"
+                        >
+                          {sl.name}
+                        </Link>
+                      </span>
+                      <span className="shrink-0 text-xs text-neutral-500 pr-3">
+                        {sl.songs.length}{' '}
+                        {sl.songs.length === 1 ? 'song' : 'songs'}
+                      </span>
+                    </div>
+                    {!collapsed && sl.songs.length > 0 && (
+                      <ol className="list-decimal px-4 pb-3 pl-9 text-sm text-neutral-600 dark:text-neutral-400">
+                        {sl.songs.map((s) => (
+                          <li key={s.conversationId} className="truncate">
+                            {s.audioFileName ?? 'Untitled audio'}
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </section>
       )}
@@ -774,29 +778,29 @@ export function BandDetailClient({
               minimized={pastShowsMinimized}
               onToggle={() => setPastShowsMinimized((v) => !v)}
               label="Past shows"
-            />
-            <h2 className="text-sm font-medium text-neutral-500">Past shows</h2>
+            >
+              <h2 className="text-sm font-medium text-neutral-500">
+                Past shows
+              </h2>
+            </MinimizeToggle>
           </div>
           {!pastShowsMinimized && (
-            <ul className="flex flex-col gap-2">
-              {pastShows.map(renderShow)}
-            </ul>
+            <ul className="flex flex-col gap-2">{pastShows.map(renderShow)}</ul>
           )}
         </section>
       )}
 
       {archivedSongs.length > 0 && (
         <section className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <MinimizeToggle
-              minimized={archivedMinimized}
-              onToggle={() => setArchivedMinimized((v) => !v)}
-              label="Archived Audio"
-            />
+          <MinimizeToggle
+            minimized={archivedMinimized}
+            onToggle={() => setArchivedMinimized((v) => !v)}
+            label="Archived Audio"
+          >
             <h2 className="text-sm font-medium text-neutral-500">
               Archived Audio
             </h2>
-          </div>
+          </MinimizeToggle>
           {!archivedMinimized && (
             <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
               {archivedSongs.map(renderSongRow)}
@@ -917,10 +921,12 @@ function MinimizeToggle({
   minimized,
   onToggle,
   label,
+  children,
 }: {
   minimized: boolean;
   onToggle: () => void;
   label: string;
+  children?: ReactNode;
 }) {
   return (
     <button
@@ -929,9 +935,10 @@ function MinimizeToggle({
       aria-expanded={!minimized}
       aria-label={minimized ? `Expand ${label}` : `Minimize ${label}`}
       title={minimized ? `Expand ${label}` : `Minimize ${label}`}
-      className="-mr-1 px-2 py-2 text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+      className="-mr-1 px-2 py-2 text-xl leading-none flex items-center gap-2"
     >
-      <span aria-hidden="true">{minimized ? '▸' : '▾'}</span>
+      <span aria-hidden="true" className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200">{minimized ? '▸' : '▾'}</span>
+      {children}
     </button>
   );
 }

@@ -32,7 +32,7 @@ export default async function EditSetlistPage({
     }));
 
   return (
-    <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
+    <main className="main-container">
       <EditSetlistClient
         bandId={bandId}
         setlistId={setlistId}

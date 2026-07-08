@@ -24,7 +24,7 @@ export default async function EditBandPage({
   if (membership.role !== 'owner') redirect(`/bands/${bandId}`);
 
   return (
-    <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
+    <main className="main-container">
       <PageHeader backHref={`/bands/${bandId}`} />
 
       <EditBandClient bandId={bandId} />

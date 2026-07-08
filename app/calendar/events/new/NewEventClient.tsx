@@ -107,7 +107,7 @@ export function NewEventClient({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">New event</h1>
+        <h1 className="title-text">New event</h1>
         <button
           type="button"
           onClick={handleCreate}

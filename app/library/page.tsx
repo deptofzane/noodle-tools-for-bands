@@ -29,7 +29,7 @@ export default async function LibraryPage() {
   if (refreshError) {
     return (
       <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-center gap-4 px-6 py-16">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="title-text">
           Session expired
         </h1>
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -55,7 +55,7 @@ export default async function LibraryPage() {
   if (!driveConnected) {
     return (
       <main className="mx-auto flex max-w-xl flex-col justify-start gap-4 px-6 pt-6 sm:pt-20 h-max">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="title-text">
           Connect Google Drive
         </h1>
         <p className="text-base text-neutral-600 dark:text-neutral-300">
@@ -102,9 +102,9 @@ export default async function LibraryPage() {
   }
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-4 px-6 py-12">
+    <main className="mx-auto flex max-w-3xl flex-col gap-4 px-6 py-4">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Library</h1>
+        <h1 className="title-text">Library</h1>
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
           Google Drive is connected.
         </p>

@@ -13,11 +13,11 @@ export default async function CalendarPage() {
   if (session.error === 'RefreshAccessTokenError') redirect('/library');
 
   return (
-    <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
+    <main className="main-container">
       <PageHeader backHref="/library" />
 
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Calendar</h1>
+      <div className="pb-4">
+        <h1 className="title-text">Calendar</h1>
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
           Mark upcoming events for your bands.
         </p>

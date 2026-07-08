@@ -39,12 +39,12 @@ export default async function EventPage({
     : true;
 
   return (
-    <main className="mx-auto flex h-max max-w-2xl flex-col gap-4 px-6 py-4">
+    <main className="mx-auto flex h-max max-w-2xl flex-col px-6 pb-4">
       <PageHeader backHref="/calendar">
         {canManage && (
           <Link
             href={`/calendar/events/${eventId}/edit`}
-            className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+            className="hover:text-neutral-900 dark:hover:text-neutral-100"
             >
             {/* className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900" */}
             Edit event
@@ -52,12 +52,12 @@ export default async function EventPage({
         )}
       </PageHeader>
 
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{event.title}</h1>
+      <div className="pb-4">
+        <h1 className="title-text">{event.title}</h1>
         <p className="mt-1 text-sm text-neutral-500">{event.bandName}</p>
       </div>
 
-      <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4 text-sm dark:border-neutral-800">
+      <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4 text-sm dark:border-neutral-800 mb-4">
         <div>
           <span className="font-medium">Date:</span> {formatDateLong(event.date)}
         </div>
@@ -83,7 +83,7 @@ export default async function EventPage({
       </section>
 
       {setlist && (
-        <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-4 py-2 dark:border-neutral-800">
+        <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-4 py-2 dark:border-neutral-800 mb-4">
           {canManage && (
             <Link
               href={`/bands/${event.bandId}/setlists/${setlist.id}/edit`}

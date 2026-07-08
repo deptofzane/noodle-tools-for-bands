@@ -127,7 +127,7 @@ export function EditSongClient({
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Edit song</h1>
+      <h1 className="title-text">Edit song</h1>
 
       {/* Name */}
       <section className="flex flex-col gap-2">

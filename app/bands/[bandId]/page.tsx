@@ -21,7 +21,7 @@ export default async function BandDetailPage({
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? '';
 
   return (
-    <main className="mx-auto flex h-max max-w-3xl flex-col gap-4 px-6 py-4">
+    <main className="main-container">
       <PageHeader backHref="/bands" />
 
       <BandDetailClient bandId={bandId} apiKey={apiKey} />

@@ -16,7 +16,7 @@ export default async function LoginPage({
     <main className="flex flex-col min-h-screen items-center justify-center px-6">
       <h3 className="font-serif mb-2 text-4xl">side<span className="text-cyan-600">stage</span></h3>
       <div className="w-full max-w-sm rounded-lg border border-neutral-200 p-8 dark:border-neutral-800">
-        <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+        <h1 className="title-text">Sign in</h1>
         <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
           Use your Google account to access your audio files and notes.
         </p>

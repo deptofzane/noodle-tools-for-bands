@@ -16,7 +16,7 @@ export default async function AccountPage() {
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-12">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Account</h1>
+        <h1 className="title-text">Account</h1>
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
           Manage the Google account this app is connected to.
         </p>
