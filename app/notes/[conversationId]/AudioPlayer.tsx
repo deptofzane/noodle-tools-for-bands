@@ -17,7 +17,11 @@ type AudioPlayerProps = {
   src: string;
   fileName: string;
   mimeType: string;
+  /** Stick the player to the top of the viewport while scrolling. */
+  sticky?: boolean;
 };
+
+const SPEEDS = [0.5, 0.6, 0.7, 0.8, 0.9, 1] as const;
 
 /**
  * Client-side audio player.
@@ -31,7 +35,12 @@ type AudioPlayerProps = {
  * exposed through that ref so the notes panel can seek to a note's
  * timestamp and read the current time when composing.
  */
-export function AudioPlayer({ src, fileName, mimeType }: AudioPlayerProps) {
+export function AudioPlayer({
+  src,
+  fileName,
+  mimeType,
+  sticky = false,
+}: AudioPlayerProps) {
   const { setEngine } = usePlayer();
   const engineRef = useRef<AudioEngine | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -39,6 +48,7 @@ export function AudioPlayer({ src, fileName, mimeType }: AudioPlayerProps) {
   const [duration, setDuration] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rate, setRate] = useState(1);
 
   // Show the global pending indicator while the audio is loading. The
   // condition flips off as soon as Howler reports readiness or an
@@ -169,8 +179,27 @@ export function AudioPlayer({ src, fileName, mimeType }: AudioPlayerProps) {
     setCurrentTime(t);
   }, []);
 
+  const back10 = useCallback(() => {
+    const engine = engineRef.current;
+    if (!engine || !isReady) return;
+    const t = Math.max(0, engine.getCurrentTime() - 10);
+    engine.seek(t);
+    setCurrentTime(t);
+  }, [isReady]);
+
+  // Apply the selected speed — on change, and again after each (re)load,
+  // since a new engine starts at 1x.
+  useEffect(() => {
+    if (isReady) engineRef.current?.setRate(rate);
+  }, [isReady, rate]);
+
   return (
-    <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+    <div
+      className={
+        'rounded-lg border border-neutral-200 p-4 dark:border-neutral-800' +
+        (sticky ? ' sticky top-0 z-30 bg-white dark:bg-neutral-950' : '')
+      }
+    >
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="truncate text-sm font-medium">{fileName}</h2>
         <span className="shrink-0 font-mono text-xs tabular-nums text-neutral-500">
@@ -179,6 +208,16 @@ export function AudioPlayer({ src, fileName, mimeType }: AudioPlayerProps) {
       </div>
 
       <div className="mt-4 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={back10}
+          disabled={!isReady}
+          aria-label="Back 10 seconds"
+          title="Back 10 seconds"
+          className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+        >
+          <span aria-hidden="true">↺</span>10s
+        </button>
         <button
           type="button"
           onClick={togglePlay}
@@ -223,6 +262,21 @@ export function AudioPlayer({ src, fileName, mimeType }: AudioPlayerProps) {
           className="flex-1 accent-blue-600"
           aria-label="Seek"
         />
+
+        <select
+          value={rate}
+          onChange={(e) => setRate(parseFloat(e.target.value))}
+          disabled={!isReady}
+          aria-label="Playback speed"
+          title="Playback speed"
+          className="shrink-0 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900"
+        >
+          {SPEEDS.map((s) => (
+            <option key={s} value={s}>
+              {s === 1 ? '100%' : `${Math.round(s * 100)}%`}
+            </option>
+          ))}
+        </select>
       </div>
 
       {!isReady && !error && (

@@ -51,8 +51,8 @@ export function Practice({ songs }: { songs: PracticeSong[] }) {
     'shrink-0 rounded-md border border-neutral-300 px-3 py-2 text-lg leading-none font-medium hover:bg-neutral-50 disabled:opacity-40 dark:border-neutral-700 dark:hover:bg-neutral-900';
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2 px-2">
         <button
           type="button"
           onClick={() => setIndex((i) => Math.max(0, i - 1))}
@@ -88,6 +88,7 @@ export function Practice({ songs }: { songs: PracticeSong[] }) {
             src={src}
             fileName={song.title}
             mimeType={song.mimeType ?? 'audio/mpeg'}
+            sticky
           />
           {song.sheetMusic && (
             <SheetMusic

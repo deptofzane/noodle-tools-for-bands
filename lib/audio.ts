@@ -49,6 +49,8 @@ export type AudioEngine = {
   seek: (sec: number) => void;
   getCurrentTime: () => number;
   isPlaying: () => boolean;
+  /** Set playback speed (1 = normal). */
+  setRate: (rate: number) => void;
   destroy: () => void;
 };
 
@@ -109,6 +111,9 @@ export function createAudioEngine(opts: AudioEngineOptions): AudioEngine {
       return typeof t === 'number' && Number.isFinite(t) ? t : 0;
     },
     isPlaying: () => sound.playing(),
+    setRate: (rate: number) => {
+      sound.rate(rate);
+    },
     /**
      * Stop, then unload. The explicit `stop()` puts Howler's HTML5
      * audio element into a clean state before `unload()` returns it
