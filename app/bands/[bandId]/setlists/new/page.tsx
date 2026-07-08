@@ -28,7 +28,7 @@ export default async function NewSetlistPage({
 
   return (
     <main className="main-container">
-      <PageHeader backHref={`/bands/${bandId}`} />
+      <PageHeader defaultHref={`/bands/${bandId}`} />
 
       <NewSetlistClient bandId={bandId} songs={songs} />
     </main>

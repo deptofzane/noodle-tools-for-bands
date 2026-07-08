@@ -25,7 +25,7 @@ export default async function EditBandPage({
 
   return (
     <main className="main-container">
-      <PageHeader backHref={`/bands/${bandId}`} />
+      <PageHeader defaultHref={`/bands/${bandId}`} />
 
       <EditBandClient bandId={bandId} />
     </main>

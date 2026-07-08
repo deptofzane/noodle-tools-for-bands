@@ -21,6 +21,7 @@ import { usePendingCount } from './PendingActionProvider';
  * none of these links is a precise "parent" of that route.
  */
 const NAV_LINKS = [
+  { href: '/home', label: 'Home' },
   { href: '/bands', label: 'Bands' },
   { href: '/calendar', label: 'Calendar' },
   { href: '/open-conversations', label: 'Open Conversations' },
@@ -59,9 +60,11 @@ export function Header() {
     <header className="border-b border-neutral-200 dark:border-neutral-800">
       <nav className="mx-auto flex max-w-3xl flex-row items-center justify-between gap-1 px-3 py-3 sm:px-6">
         <span className="flex flex-row items-center gap-2">
-          <h3 className="mb-2 font-serif text-4xl">
-            side<span className="text-cyan-600">stage</span>
-          </h3>
+          <Link key="/home" href="/home">
+            <h3 className="mb-2 font-serif text-4xl">
+              side<span className="text-cyan-600">stage</span>
+            </h3>
+          </Link>
           {/*
             Reserve a fixed slot so layout doesn't shift when the
             spinner appears/disappears. The slot is always rendered;

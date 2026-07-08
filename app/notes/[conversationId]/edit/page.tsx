@@ -32,7 +32,7 @@ export default async function EditSongPage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col px-6 pb-4">
-      <PageHeader backHref={`/notes/${conversationId}`} />
+      <PageHeader defaultHref={`/notes/${conversationId}`} />
 
       <EditSongClient
         conversationId={conversationId}

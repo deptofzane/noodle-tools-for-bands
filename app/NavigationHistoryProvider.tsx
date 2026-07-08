@@ -39,9 +39,10 @@ export function NavigationHistoryProvider({ children }: { children: ReactNode })
     const stack = stackRef.current;
     const top = stack[stack.length - 1];
     if (!pathname || pathname === top) return; // initial mount / no change
+    console.log('stack.length', stack.length)
     if (pathname === stack[stack.length - 2]) {
       stack.pop(); // stepped back
-    } else {
+    } else if (!pathname.includes('edit')) { // stop edit pages from being included in stack
       stack.push(pathname); // moved forward
     }
   }, [pathname]);

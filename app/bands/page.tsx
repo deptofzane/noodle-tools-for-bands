@@ -15,7 +15,7 @@ export default async function BandsPage() {
 
   return (
     <main className="main-container">
-      <PageHeader backHref="/home" />
+      <PageHeader defaultHref="/home" />
 
       <div>
         <h1 className="title-text">Bands</h1>

@@ -20,8 +20,8 @@ export default async function AnnotatedPage() {
   if (!hasAllDriveScopes(session.scopes)) redirect('/home');
 
   return (
-    <main className="mmain-container">
-      <PageHeader backHref="/home" />
+    <main className="main-container">
+      <PageHeader defaultHref="/home" />
 
       <div className="mb-4">
         <h1 className="title-text">

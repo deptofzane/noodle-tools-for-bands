@@ -8,17 +8,29 @@ import { useCanGoBack } from './NavigationHistoryProvider';
  * there's in-app history; otherwise navigates to `fallbackHref` (so a fresh
  * load / deep link goes somewhere sensible instead of leaving the app).
  */
-export function BackButton({ fallbackHref }: { fallbackHref: string }) {
+export function BackButton({
+  defaultHref,
+  defaultHrefName,
+  canGoBack,
+}: {
+  defaultHref: string;
+  defaultHrefName?: string | null;
+  canGoBack: boolean;
+}) {
   const router = useRouter();
-  const canGoBack = useCanGoBack();
+  const checkUseCanGoBack = useCanGoBack();
 
   return (
     <button
       type="button"
-      onClick={() => (canGoBack() ? router.back() : router.push(fallbackHref))}
+      onClick={() =>
+        checkUseCanGoBack() && !!canGoBack
+          ? router.back()
+          : router.push(defaultHref)
+      }
       className="hover:text-neutral-900 dark:hover:text-neutral-100 py-4"
     >
-      ← Back
+      ← {!canGoBack && !!defaultHrefName ? defaultHrefName : 'Back'}
     </button>
   );
 }

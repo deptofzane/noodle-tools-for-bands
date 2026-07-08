@@ -169,7 +169,7 @@ export function CalendarClient() {
                   type="button"
                   onClick={() => setSummaryDate(dateStr(d))}
                   aria-label={`Shows on ${dateStr(d)}`}
-                  className="self-start"
+                  className="self-start w-full text-left pb-1"
                 >
                   <span
                     className={

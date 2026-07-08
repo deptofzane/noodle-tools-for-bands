@@ -14,7 +14,7 @@ export default async function CalendarPage() {
 
   return (
     <main className="main-container">
-      <PageHeader backHref="/home" />
+      <PageHeader defaultHref="/home" />
 
       <div className="pb-4">
         <h1 className="title-text">Calendar</h1>

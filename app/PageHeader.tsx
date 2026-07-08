@@ -6,20 +6,25 @@ import { BackButton } from './BackButton';
  * optional right-side action (passed as children). Shared across the section
  * pages so the back-nav lives in one place.
  *
- * `backHref` is the fallback destination used when there's no in-app history
+ * `defaultHref` is the fallback destination used when there's no in-app history
+ * or the default link when canGoBack is false
  * to go back to (fresh load / deep link).
  */
 export function PageHeader({
-  backHref,
+  defaultHref,
+  defaultHrefName,
+  canGoBack,
   children,
 }: {
-  backHref: string;
+  defaultHref: string;
+  defaultHrefName?: string;
+  canGoBack?: boolean;
   /** Optional right-side action (e.g. an "Edit …" link). */
   children?: ReactNode;
 }) {
   return (
     <header className="flex items-center justify-between gap-2 text-xs text-neutral-500">
-      <BackButton fallbackHref={backHref} />
+      <BackButton defaultHref={defaultHref} canGoBack={canGoBack ?? true} defaultHrefName={defaultHrefName ?? null}/>
       {children}
     </header>
   );

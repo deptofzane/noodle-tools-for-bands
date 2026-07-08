@@ -34,7 +34,7 @@ export default async function SetlistPage({
 
   return (
     <main className="main-container">
-      <PageHeader backHref={`/bands/${bandId}`}>
+      <PageHeader defaultHref={`/bands/${bandId}`} defaultHrefName="Band" canGoBack={false}>
         <Link
           href={`/bands/${bandId}/setlists/${setlistId}/edit`}
           className="hover:text-neutral-900 dark:hover:text-neutral-100"

@@ -22,7 +22,7 @@ export default async function BandDetailPage({
 
   return (
     <main className="main-container">
-      <PageHeader backHref="/bands" />
+      <PageHeader defaultHref="/bands" />
 
       <BandDetailClient bandId={bandId} apiKey={apiKey} />
     </main>

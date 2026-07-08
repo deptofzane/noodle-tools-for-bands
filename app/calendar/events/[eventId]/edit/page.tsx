@@ -29,7 +29,7 @@ export default async function EditEventPage({
 
   return (
     <main className="mx-auto flex h-max max-w-2xl flex-col px-6 pb-4">
-      <PageHeader backHref={`/calendar/events/${eventId}`} />
+      <PageHeader defaultHref={`/calendar/events/${eventId}`} />
 
       <EditEventClient
         eventId={eventId}

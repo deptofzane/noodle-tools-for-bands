@@ -24,7 +24,7 @@ export default async function NewEventPage({
 
   return (
     <main className="mx-auto flex h-max max-w-2xl flex-col px-6 pb-4">
-      <PageHeader backHref="/calendar" />
+      <PageHeader defaultHref="/calendar" />
 
       <NewEventClient
         bands={bands}

@@ -22,7 +22,7 @@ export default async function HistoryPage() {
 
   return (
     <main className="main-container">
-      <PageHeader backHref="/home" />
+      <PageHeader defaultHref="/home" />
 
       <div className="mb-4">
         <h1 className="title-text">History</h1>
