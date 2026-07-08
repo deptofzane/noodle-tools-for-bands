@@ -384,6 +384,92 @@ export function BandDetailClient({
   const activeSongs = conversations?.filter((c) => !c.archived) ?? null;
   const archivedSongs = conversations?.filter((c) => c.archived) ?? [];
 
+  // Split shows by today's local date. Upcoming soonest-first; past kept
+  // newest-first (the API order).
+  const todayStr = (() => {
+    const n = new Date();
+    const p = (x: number) => x.toString().padStart(2, '0');
+    return `${n.getFullYear()}-${p(n.getMonth() + 1)}-${p(n.getDate())}`;
+  })();
+  const upcomingShows = shows
+    .filter((s) => s.date >= todayStr)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const pastShows = shows.filter((s) => s.date < todayStr);
+
+  const renderShow = (show: Show) => {
+    const expanded = expandedShows.has(show.id);
+    return (
+      <li
+        key={show.id}
+        className="rounded-lg border border-neutral-200 dark:border-neutral-800"
+      >
+        <button
+          type="button"
+          onClick={() => toggleShowExpanded(show.id)}
+          aria-expanded={expanded}
+          className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left md:px-3 md:py-1.5"
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <span
+              aria-hidden="true"
+              className="text-sm leading-none text-neutral-400"
+            >
+              {expanded ? '▾' : '▸'}
+            </span>
+            <span className="truncate font-medium">{show.title}</span>
+          </span>
+          <span className="shrink-0 text-xs text-neutral-500">
+            {formatDateShort(show.date)}
+          </span>
+        </button>
+        {expanded && (
+          <div className="flex flex-col gap-1 border-t border-neutral-200 px-4 py-3 text-sm md:px-3 dark:border-neutral-800">
+            <div>
+              <span className="font-medium">Date:</span>{' '}
+              {formatDateLong(show.date)}
+            </div>
+            {show.time && (
+              <div>
+                <span className="font-medium">Time:</span>{' '}
+                {formatTime12h(show.time)}
+              </div>
+            )}
+            {show.location && (
+              <div>
+                <span className="font-medium">Location:</span> {show.location}
+              </div>
+            )}
+            {show.setlistId && (
+              <div>
+                <span className="font-medium">Setlist:</span>{' '}
+                <Link
+                  href={`/bands/${bandId}/setlists/${show.setlistId}`}
+                  className="text-blue-600 hover:underline dark:text-blue-400"
+                >
+                  {show.setlistName ?? 'View setlist'}
+                </Link>
+              </div>
+            )}
+            {show.details && (
+              <div className="flex flex-col gap-0.5">
+                <span className="font-medium">Details:</span>
+                <p className="whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+                  {show.details}
+                </p>
+              </div>
+            )}
+            <Link
+              href={`/calendar/events/${show.id}`}
+              className="mt-1 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+            >
+              View event →
+            </Link>
+          </div>
+        )}
+      </li>
+    );
+  };
+
   const renderSongRow = (c: Conversation) => (
     <li
       key={c.id}
@@ -485,85 +571,10 @@ export function BandDetailClient({
         )}
       </section>
 
-      {shows.length > 0 && (
+      {upcomingShows.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="text-sm font-medium">Shows</h2>
-          <ul className="flex flex-col gap-2">
-            {shows.map((show) => {
-              const expanded = expandedShows.has(show.id);
-              return (
-                <li
-                  key={show.id}
-                  className="rounded-lg border border-neutral-200 dark:border-neutral-800"
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleShowExpanded(show.id)}
-                    aria-expanded={expanded}
-                    className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left md:px-3 md:py-1.5"
-                  >
-                    <span className="flex min-w-0 items-center gap-2">
-                      <span
-                        aria-hidden="true"
-                        className="text-sm leading-none text-neutral-400"
-                      >
-                        {expanded ? '▾' : '▸'}
-                      </span>
-                      <span className="truncate font-medium">{show.title}</span>
-                    </span>
-                    <span className="shrink-0 text-xs text-neutral-500">
-                      {formatDateShort(show.date)}
-                    </span>
-                  </button>
-                  {expanded && (
-                    <div className="flex flex-col gap-1 border-t border-neutral-200 px-4 py-3 text-sm md:px-3 dark:border-neutral-800">
-                      <div>
-                        <span className="font-medium">Date:</span>{' '}
-                        {formatDateLong(show.date)}
-                      </div>
-                      {show.time && (
-                        <div>
-                          <span className="font-medium">Time:</span>{' '}
-                          {formatTime12h(show.time)}
-                        </div>
-                      )}
-                      {show.location && (
-                        <div>
-                          <span className="font-medium">Location:</span>{' '}
-                          {show.location}
-                        </div>
-                      )}
-                      {show.setlistId && (
-                        <div>
-                          <span className="font-medium">Setlist:</span>{' '}
-                          <Link
-                            href={`/bands/${bandId}/setlists/${show.setlistId}`}
-                            className="text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {show.setlistName ?? 'View setlist'}
-                          </Link>
-                        </div>
-                      )}
-                      {show.details && (
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-medium">Details:</span>
-                          <p className="whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
-                            {show.details}
-                          </p>
-                        </div>
-                      )}
-                      <Link
-                        href={`/calendar/events/${show.id}`}
-                        className="mt-1 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
-                      >
-                        View event →
-                      </Link>
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+          <ul className="flex flex-col gap-2">{upcomingShows.map(renderShow)}</ul>
         </section>
       )}
 
@@ -730,6 +741,13 @@ export function BandDetailClient({
               );
             })}
           </ul>
+        </section>
+      )}
+
+      {pastShows.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-medium text-neutral-500">Past shows</h2>
+          <ul className="flex flex-col gap-2">{pastShows.map(renderShow)}</ul>
         </section>
       )}
 
