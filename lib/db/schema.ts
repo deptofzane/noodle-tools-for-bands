@@ -28,15 +28,38 @@ export const activityKind = pgEnum('activity_kind', [
 ]);
 
 // ── Users ────────────────────────────────────────────────────────────
+// A user signs in with Google (google_sub set) and/or email+password
+// (password_hash set). email is the credential login key — unique, and
+// always stored lowercase by the app.
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
-  googleSub: text('google_sub').notNull().unique(),
-  email: text('email'),
+  googleSub: text('google_sub').unique(),
+  email: text('email').unique(),
+  passwordHash: text('password_hash'),
   name: text('name'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),
 });
+
+// Single-use, expiring password-reset tokens. Only the token's hash is
+// stored; the raw token lives only in the emailed link.
+export const passwordResetTokens = pgTable(
+  'password_reset_tokens',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull().unique(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index('password_reset_tokens_user_idx').on(t.userId)],
+);
 
 // ── Bands + membership ───────────────────────────────────────────────
 export const bands = pgTable('bands', {

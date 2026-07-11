@@ -1,7 +1,9 @@
 import NextAuth from 'next-auth';
+import Credentials from 'next-auth/providers/credentials';
 import authConfig from './auth.config';
 import { refreshGoogleAccessToken } from '@/lib/google';
-import { upsertUser } from '@/lib/db/users';
+import { getUserByEmail, upsertUser } from '@/lib/db/users';
+import { verifyPassword } from '@/lib/password';
 
 /**
  * Local typed view of the JWT payload's app-owned fields.
@@ -46,17 +48,52 @@ interface AppJWT {
  */
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  // Add the email/password provider on top of the Edge-safe Google config.
+  // It lives here (Node) — never in auth.config.ts — so middleware's Edge
+  // bundle doesn't pull in the DB / argon2.
+  providers: [
+    ...authConfig.providers,
+    Credentials({
+      credentials: { email: {}, password: {} },
+      async authorize(creds) {
+        const email = typeof creds?.email === 'string' ? creds.email : '';
+        const password =
+          typeof creds?.password === 'string' ? creds.password : '';
+        if (!email || !password) return null;
+        const user = await getUserByEmail(email);
+        if (!user?.passwordHash) return null;
+        if (!(await verifyPassword(user.passwordHash, password))) return null;
+        return { id: user.id, email: user.email, name: user.name };
+      },
+    }),
+  ],
   callbacks: {
-    async jwt({ token, account, profile }) {
+    async jwt({ token, account, profile, user }) {
       // Treat the token as our typed view for the rest of this function;
       // it's the same object, just with named fields.
       const t = token as typeof token & AppJWT;
 
-      // (1) Fresh sign-in or scope upgrade
+      // Email/password sign-in: the DB user id is the identity; no Google
+      // tokens. `user` is what the Credentials `authorize` returned.
+      if (account?.provider === 'credentials' && user) {
+        t.sub = user.id;
+        delete t.accessToken;
+        delete t.refreshToken;
+        delete t.accessTokenExpiresAt;
+        delete t.scopes;
+        delete t.error;
+        return t;
+      }
+
+      // (1) Fresh Google sign-in or scope upgrade — upsert the user and use
+      // its DB id as the identity so it matches credential users.
       if (account && profile) {
-        // Google's `profile.sub` is `string | null | undefined` per the
-        // Auth.js type; coerce null → undefined to match JWT's `sub`.
-        t.sub = profile.sub ?? undefined;
+        const dbUser = await upsertUser({
+          googleSub: profile.sub ?? '',
+          email: profile.email,
+          name: profile.name,
+        });
+        t.sub = dbUser.id;
         t.accessToken = account.access_token ?? undefined;
         // Google sometimes omits the refresh token on subsequent grants
         // (e.g., re-auth for additional scopes without `prompt=consent`).
@@ -107,17 +144,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // OAuth token. The refresh token is NEVER exposed here.
       session.accessToken = t.accessToken;
       return session;
-    },
-  },
-  events: {
-    async signIn({ profile }) {
-      // OAuth sign-in: persist/refresh the user row keyed by Google sub.
-      if (!profile?.sub) return;
-      await upsertUser({
-        googleSub: profile.sub,
-        email: profile.email,
-        name: profile.name,
-      });
     },
   },
 });

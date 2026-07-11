@@ -1,5 +1,6 @@
 import { auth, signIn } from '@/auth';
 import { redirect } from 'next/navigation';
+import { CredentialsForm } from './CredentialsForm';
 
 export default async function LoginPage({
   searchParams,
@@ -42,6 +43,14 @@ export default async function LoginPage({
           You&apos;ll be asked to share your name and email. Drive access is
           requested separately, only when you open a folder.
         </p>
+
+        <div className="my-6 flex items-center gap-3 text-xs text-neutral-400">
+          <span className="h-px flex-1 bg-neutral-200 dark:bg-neutral-800" />
+          or
+          <span className="h-px flex-1 bg-neutral-200 dark:bg-neutral-800" />
+        </div>
+
+        <CredentialsForm callbackUrl={callbackUrl ?? '/open-conversations'} />
       </div>
     </main>
   );

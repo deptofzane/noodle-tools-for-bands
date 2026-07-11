@@ -71,6 +71,13 @@
       "when": 1783114834194,
       "tag": "0009_bitter_marvel_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783792677622,
+      "tag": "0010_polite_karen_page",
+      "breakpoints": true
     }
   ]
 }

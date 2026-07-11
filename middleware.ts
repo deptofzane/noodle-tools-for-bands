@@ -11,14 +11,20 @@ import authConfig from './auth.config';
  * keeps webpack from throwing `UnhandledSchemeError: node:process`.
  *
  * Routing rules:
- *   - `/login` and `/api/health` are public
- *   - `/api/auth/*` (Auth.js's own handlers) are always allowed
+ *   - `/login`, `/signup`, `/forgot`, `/reset`, and `/api/health` are public
+ *   - `/api/auth/*` (Auth.js handlers + register/forgot/reset) are always allowed
  *   - Everything else requires a signed-in user; unauthenticated
  *     requests are redirected to `/login?callbackUrl=<original-path>`
  */
 const { auth } = NextAuth(authConfig);
 
-const PUBLIC_PATHS = new Set<string>(['/login', '/api/health']);
+const PUBLIC_PATHS = new Set<string>([
+  '/login',
+  '/signup',
+  '/forgot',
+  '/reset',
+  '/api/health',
+]);
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
