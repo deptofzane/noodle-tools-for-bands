@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
 import { ConfirmModal } from '../../ConfirmModal';
 import { PickerButton, type PickedFile } from '../../PickerButton';
+import { useCanUseDrive } from '../../DriveCapabilityProvider';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
 import {
@@ -119,6 +120,7 @@ export function BandDetailClient({
   const trackPending = useTrackPending();
   const router = useRouter();
   const showToast = useToast();
+  const canUseDrive = useCanUseDrive();
 
   const load = useCallback(async () => {
     try {
@@ -606,7 +608,11 @@ export function BandDetailClient({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setChooseOpen(true)}
+              onClick={() =>
+                canUseDrive
+                  ? setChooseOpen(true)
+                  : audioInputRef.current?.click()
+              }
               disabled={audioBusy || importProgress !== null}
               className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
             >
@@ -620,7 +626,8 @@ export function BandDetailClient({
         </div>
         {!audioMinimized && activeSongs && activeSongs.length === 0 && (
           <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
-            No audio yet. Use “Add audio” to add from Drive or your device.
+            No audio yet. Use “Add audio” to add{' '}
+            {canUseDrive ? 'from Drive or your device' : 'from your device'}.
           </p>
         )}
         {!audioMinimized && activeSongs && activeSongs.length > 0 && (
@@ -662,14 +669,16 @@ export function BandDetailClient({
                 this device.
               </p>
               <div className="mt-4 flex flex-col gap-2">
-                <PickerButton
-                  apiKey={apiKey}
-                  label="Choose from Google Drive"
-                  onPick={(files) => {
-                    setChooseOpen(false);
-                    void handleRegister(files);
-                  }}
-                />
+                {canUseDrive && (
+                  <PickerButton
+                    apiKey={apiKey}
+                    label="Choose from Google Drive"
+                    onPick={(files) => {
+                      setChooseOpen(false);
+                      void handleRegister(files);
+                    }}
+                  />
+                )}
                 <button
                   type="button"
                   onClick={() => {

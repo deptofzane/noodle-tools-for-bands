@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { auth } from '@/auth';
+import { hasAllDriveScopes } from '@/lib/google';
 import { Header } from './Header';
+import { DriveCapabilityProvider } from './DriveCapabilityProvider';
 import { NavigationHistoryProvider } from './NavigationHistoryProvider';
 import { PendingActionProvider } from './PendingActionProvider';
 import { ToastProvider } from './ToastProvider';
@@ -46,6 +48,10 @@ export default async function RootLayout({
 }) {
   const session = await auth();
   const isSignedIn = Boolean(session?.user);
+  const canUseDrive =
+    hasAllDriveScopes(session?.scopes) &&
+    Boolean(session?.accessToken) &&
+    session?.error !== 'RefreshAccessTokenError';
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -56,8 +62,10 @@ export default async function RootLayout({
         <PendingActionProvider>
           <ToastProvider>
             <NavigationHistoryProvider>
-              {isSignedIn && <Header />}
-              {children}
+              <DriveCapabilityProvider canUseDrive={canUseDrive}>
+                {isSignedIn && <Header />}
+                {children}
+              </DriveCapabilityProvider>
             </NavigationHistoryProvider>
           </ToastProvider>
         </PendingActionProvider>
