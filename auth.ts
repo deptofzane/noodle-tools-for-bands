@@ -4,6 +4,7 @@ import authConfig from './auth.config';
 import { refreshGoogleAccessToken } from '@/lib/google';
 import { getUserByEmail, upsertUser } from '@/lib/db/users';
 import { verifyPassword } from '@/lib/password';
+import { clientIp, rateLimit } from '@/lib/rate-limit';
 
 /**
  * Local typed view of the JWT payload's app-owned fields.
@@ -55,11 +56,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig.providers,
     Credentials({
       credentials: { email: {}, password: {} },
-      async authorize(creds) {
+      async authorize(creds, request) {
         const email = typeof creds?.email === 'string' ? creds.email : '';
         const password =
           typeof creds?.password === 'string' ? creds.password : '';
         if (!email || !password) return null;
+
+        // Throttle login attempts BEFORE the (deliberately expensive)
+        // argon2 verify — both to blunt password brute-forcing and to keep
+        // that from becoming a CPU-exhaustion vector. Keyed per-email
+        // (spray against one account) and per-IP (spray across accounts).
+        // An over-limit attempt looks like any failed login (returns null).
+        const ip = clientIp(request);
+        const perEmail = rateLimit(`login:email:${email.toLowerCase()}`, {
+          limit: 10,
+          windowMs: 10 * 60 * 1000,
+        });
+        const perIp = rateLimit(`login:ip:${ip}`, {
+          limit: 50,
+          windowMs: 10 * 60 * 1000,
+        });
+        if (!perEmail.allowed || !perIp.allowed) return null;
+
         const user = await getUserByEmail(email);
         if (!user?.passwordHash) return null;
         if (!(await verifyPassword(user.passwordHash, password))) return null;

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createCredentialUser, EmailTakenError } from '@/lib/db/users';
+import { clientIp, rateLimit } from '@/lib/rate-limit';
 
 /**
  * POST /api/auth/register  { email, password, name? }
@@ -12,6 +13,16 @@ export const runtime = 'nodejs';
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 export async function POST(req: Request) {
+  const limit = rateLimit(`register:${clientIp(req)}`, {
+    limit: 5,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!limit.allowed)
+    return NextResponse.json(
+      { error: 'rate_limited', message: 'Too many attempts. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } },
+    );
+
   const body = await req.json().catch(() => null);
   const email = typeof body?.email === 'string' ? body.email.trim() : '';
   const password = typeof body?.password === 'string' ? body.password : '';

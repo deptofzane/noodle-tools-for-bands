@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { setUserPassword } from '@/lib/db/users';
 import { consumeResetToken, deleteUserResetTokens } from '@/lib/db/reset-tokens';
+import { clientIp, rateLimit } from '@/lib/rate-limit';
 
 /**
  * POST /api/auth/reset  { token, password }
@@ -10,6 +11,18 @@ import { consumeResetToken, deleteUserResetTokens } from '@/lib/db/reset-tokens'
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
+  // Tokens are 256-bit random (guessing is infeasible), but cap attempts
+  // per IP anyway as defense-in-depth against scripted probing.
+  const limit = rateLimit(`reset:${clientIp(req)}`, {
+    limit: 10,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (!limit.allowed)
+    return NextResponse.json(
+      { error: 'rate_limited', message: 'Too many attempts. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } },
+    );
+
   const body = await req.json().catch(() => null);
   const token = typeof body?.token === 'string' ? body.token : '';
   const password = typeof body?.password === 'string' ? body.password : '';
