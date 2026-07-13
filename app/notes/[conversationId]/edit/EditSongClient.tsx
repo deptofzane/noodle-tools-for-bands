@@ -6,6 +6,7 @@ import { ConfirmModal } from '../../../ConfirmModal';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
 import { SheetMusic, type SheetMusicMeta } from '../SheetMusic';
+import { AudioVersions, type AudioVersionMeta } from './AudioVersions';
 
 interface BandOption {
   id: string;
@@ -23,6 +24,7 @@ export function EditSongClient({
   initialBandId,
   initialArchived,
   bands,
+  audioVersions,
   sheetMusic,
 }: {
   conversationId: string;
@@ -30,6 +32,7 @@ export function EditSongClient({
   initialBandId: string;
   initialArchived: boolean;
   bands: BandOption[];
+  audioVersions: AudioVersionMeta[];
   sheetMusic: SheetMusicMeta | null;
 }) {
   const router = useRouter();
@@ -179,6 +182,9 @@ export function EditSongClient({
           will see it.
         </p>
       </section>
+
+      {/* Audio versions */}
+      <AudioVersions conversationId={conversationId} initial={audioVersions} />
 
       {/* Sheet music (reuses the song-page panel) */}
       <SheetMusic conversationId={conversationId} initial={sheetMusic} />

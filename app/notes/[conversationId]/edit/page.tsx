@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { listMyBands } from '@/lib/db/bands';
 import { getConversationMembership } from '@/lib/db/conversations';
-import { getSongFileMeta } from '@/lib/db/song-files';
+import { getSongFileMeta, listAudioVersions } from '@/lib/db/song-files';
 import { EditSongClient } from './EditSongClient';
 
 /**
@@ -25,9 +25,10 @@ export default async function EditSongPage({
   if (!membership) notFound();
   const conversation = membership.conversation;
 
-  const [bands, sheet] = await Promise.all([
+  const [bands, sheet, audioVersions] = await Promise.all([
     listMyBands(user.id),
     getSongFileMeta(conversationId, 'sheet_music'),
+    listAudioVersions(conversationId),
   ]);
 
   return (
@@ -40,6 +41,7 @@ export default async function EditSongPage({
         initialBandId={conversation.bandId}
         initialArchived={conversation.archived}
         bands={bands.map((b) => ({ id: b.id, name: b.name }))}
+        audioVersions={audioVersions}
         sheetMusic={
           sheet
             ? {
