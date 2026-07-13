@@ -357,6 +357,31 @@ export async function setDefaultAudioVersion(
 }
 
 /**
+ * Set (or clear) an audio version's label. An empty/whitespace label is
+ * stored as null. Returns false if the version doesn't exist for this song.
+ */
+export async function setAudioVersionLabel(
+  conversationId: string,
+  versionId: string,
+  label: string | null,
+): Promise<boolean> {
+  if (!isUuid(versionId)) return false;
+  const trimmed = label?.trim() ? label.trim() : null;
+  const [row] = await db
+    .update(songFiles)
+    .set({ label: trimmed, updatedAt: new Date() })
+    .where(
+      and(
+        eq(songFiles.id, versionId),
+        eq(songFiles.conversationId, conversationId),
+        eq(songFiles.kind, 'audio'),
+      ),
+    )
+    .returning({ id: songFiles.id });
+  return Boolean(row);
+}
+
+/**
  * Delete one audio version. If it was the default and other versions
  * remain, the newest remaining version is promoted to default. Returns
  * null if the version doesn't exist for this song, otherwise the id of the

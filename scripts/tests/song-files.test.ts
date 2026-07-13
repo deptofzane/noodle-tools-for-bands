@@ -17,6 +17,7 @@ import {
   hasSongFile,
   listAudioVersions,
   putSheetMusic,
+  setAudioVersionLabel,
   setDefaultAudioVersion,
   streamAudioVersion,
   streamSongFile,
@@ -152,6 +153,21 @@ test('song-files: multiple audio versions, default invariant, set/delete', async
     assert.ok(bStream && (await streamToBuffer(bStream.body)).equals(Buffer.from('BBBBBB')), 'version bytes served');
     assert.ok(await getAudioVersionMeta(conv.id, b.id), 'version meta resolves');
     assert.equal(await getAudioVersionMeta(conv.id, 'nope'), null, 'unknown version → null');
+
+    // label set / clear
+    assert.ok(await setAudioVersionLabel(conv.id, b.id, '  Live 2024  '), 'set label succeeds');
+    assert.equal(
+      (await listAudioVersions(conv.id)).find((v) => v.id === b.id)?.label,
+      'Live 2024',
+      'label trimmed + stored',
+    );
+    assert.ok(await setAudioVersionLabel(conv.id, b.id, '   '), 'blank label succeeds');
+    assert.equal(
+      (await listAudioVersions(conv.id)).find((v) => v.id === b.id)?.label,
+      null,
+      'blank label clears to null',
+    );
+    assert.equal(await setAudioVersionLabel(conv.id, 'nope', 'x'), false, 'unknown version → false');
 
     // set default flips exactly one
     assert.ok(await setDefaultAudioVersion(conv.id, b.id), 'set default succeeds');
