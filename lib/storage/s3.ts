@@ -52,9 +52,21 @@ export function getS3Client(): S3Client {
   return cached;
 }
 
-/** Object key for a song file. One object per (conversation, kind). */
+/**
+ * Object key for a single-instance song file (currently sheet music):
+ * one object per (conversation, kind), overwritten in place on replace.
+ */
 export function songFileKey(conversationId: string, kind: string): string {
   return `conversations/${conversationId}/${kind}`;
+}
+
+/**
+ * Object key for one audio version. Audio can have many versions per
+ * conversation, so the key carries a per-file id (not the `kind`) to keep
+ * each version's bytes distinct.
+ */
+export function audioVersionKey(conversationId: string, fileId: string): string {
+  return `conversations/${conversationId}/audio/${fileId}`;
 }
 
 /** Destroy the cached client (closes keep-alive sockets) so scripts/tests exit. */

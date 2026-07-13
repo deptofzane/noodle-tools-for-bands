@@ -5,8 +5,10 @@ import { getCurrentDbUser } from '@/lib/current-user';
 import { getConversationMembership } from '@/lib/db/conversations';
 import {
   deleteSongFile,
+  getAudioVersionMeta,
   getSongFileMeta,
-  putSongFile,
+  putSheetMusic,
+  streamAudioVersion,
   streamSongFile,
   type SongFileKind,
 } from '@/lib/db/song-files';
@@ -45,7 +47,16 @@ export async function GET(
     return new Response('forbidden', { status: 403 });
   }
 
-  const meta = await getSongFileMeta(conversationId, kind);
+  // Audio can request a specific version via `?version=<id>`; without it we
+  // serve the song's default version (or the single sheet-music file).
+  const versionId =
+    kind === 'audio'
+      ? new URL(req.url).searchParams.get('version')
+      : null;
+
+  const meta = versionId
+    ? await getAudioVersionMeta(conversationId, versionId)
+    : await getSongFileMeta(conversationId, kind);
   if (!meta) return new Response('not_found', { status: 404 });
 
   const nameHint = new URL(req.url).searchParams.get('name');
@@ -54,7 +65,9 @@ export async function GET(
 
   let result;
   try {
-    result = await streamSongFile(conversationId, kind, rangeHeader);
+    result = versionId
+      ? await streamAudioVersion(conversationId, versionId, rangeHeader)
+      : await streamSongFile(conversationId, kind, rangeHeader);
   } catch (err) {
     // Range the store can't satisfy → 416; anything else → 502.
     if (isRangeError(err)) {
@@ -183,9 +196,8 @@ export async function POST(
           { status: 413 },
         );
       }
-      const stored = await putSongFile({
+      const stored = await putSheetMusic({
         conversationId,
-        kind: 'sheet_music',
         data,
         fileName,
         mimeType,
@@ -231,9 +243,8 @@ export async function POST(
   }
 
   const data = Buffer.from(await file.arrayBuffer());
-  const meta = await putSongFile({
+  const meta = await putSheetMusic({
     conversationId,
-    kind: 'sheet_music',
     data,
     fileName,
     mimeType,

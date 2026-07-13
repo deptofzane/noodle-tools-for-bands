@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   pgTable,
   pgEnum,
@@ -210,8 +211,11 @@ export const conversationReads = pgTable(
 );
 
 // ── Song files (binary, stored in Postgres) ──────────────────────────
-// The audio (and, later, sheet music) for a song/conversation, owned by
-// us rather than referenced in Drive. One row per (conversation, kind).
+// The audio and sheet music for a song/conversation, owned by us rather
+// than referenced in Drive. Sheet music is one row per conversation.
+// Audio supports multiple *versions* per conversation (e.g. studio, live,
+// acoustic); exactly one is flagged `isDefault` and is what the player
+// loads by default.
 export const songFileKind = pgEnum('song_file_kind', ['audio', 'sheet_music']);
 
 export const songFiles = pgTable(
@@ -230,6 +234,12 @@ export const songFiles = pgTable(
     // Audio duration in whole seconds, parsed on upload (null for
     // non-audio or when it couldn't be determined).
     songLength: integer('song_length'),
+    // The default audio version for a song — exactly one per conversation
+    // among its audio rows (enforced by a partial unique index below).
+    // Always false for sheet music.
+    isDefault: boolean('is_default').notNull().default(false),
+    // Optional human label for an audio version ("Live 2024", "Acoustic").
+    label: text('label'),
     // Provenance: the Drive file this was imported from, if any.
     driveFileId: text('drive_file_id'),
     createdAt: timestamp('created_at', { withTimezone: true })
@@ -240,10 +250,15 @@ export const songFiles = pgTable(
       .notNull(),
   },
   (t) => [
-    uniqueIndex('song_files_conversation_kind_unique').on(
-      t.conversationId,
-      t.kind,
-    ),
+    index('song_files_conversation_idx').on(t.conversationId),
+    // At most one sheet-music row per conversation.
+    uniqueIndex('song_files_conversation_sheet_unique')
+      .on(t.conversationId)
+      .where(sql`kind = 'sheet_music'`),
+    // At most one *default* audio version per conversation.
+    uniqueIndex('song_files_default_audio_unique')
+      .on(t.conversationId)
+      .where(sql`kind = 'audio' and is_default`),
   ],
 );
 

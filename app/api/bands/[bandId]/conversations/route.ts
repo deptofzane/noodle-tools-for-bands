@@ -9,40 +9,14 @@ import {
   findOrCreateConversation,
   listBandConversations,
 } from '@/lib/db/conversations';
-import { hasSongFile, putSongFile } from '@/lib/db/song-files';
-
-// Cap imported audio to keep object storage + a memory buffer sane.
-const MAX_AUDIO_BYTES = 100 * 1024 * 1024; // 100 MB
+import { addAudioVersion, hasSongFile } from '@/lib/db/song-files';
+import { MAX_AUDIO_BYTES, normalizeAudioMime } from '@/lib/audio-mime';
 
 // Local audio has no Drive id; mint a synthetic one so the conversation's
 // (band, drive_audio_file_id) key stays satisfied. Playback reads from
 // object storage, so nothing resolves this value against Drive.
 function localAudioId(): string {
   return `local-${randomUUID()}`;
-}
-
-/** Audio types we accept for local upload (extension fallback below). */
-const AUDIO_EXT_TO_MIME: Record<string, string> = {
-  mp3: 'audio/mpeg',
-  m4a: 'audio/mp4',
-  mp4: 'audio/mp4',
-  wav: 'audio/wav',
-  wave: 'audio/wav',
-  ogg: 'audio/ogg',
-  oga: 'audio/ogg',
-  opus: 'audio/opus',
-  webm: 'audio/webm',
-  flac: 'audio/flac',
-  aac: 'audio/aac',
-};
-
-/** Resolve a local upload to an audio MIME type, or null to reject it. */
-function normalizeAudioMime(rawMime: string, fileName: string): string | null {
-  const mime = (rawMime || '').toLowerCase().split(';')[0]!.trim();
-  if (mime.startsWith('audio/')) return mime;
-  const ext = fileName.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1];
-  if (ext && AUDIO_EXT_TO_MIME[ext]) return AUDIO_EXT_TO_MIME[ext];
-  return null;
 }
 
 /**
@@ -107,9 +81,8 @@ export async function POST(
     );
     try {
       const data = Buffer.from(await file.arrayBuffer());
-      await putSongFile({
+      await addAudioVersion({
         conversationId: conversation.id,
-        kind: 'audio',
         data,
         fileName,
         mimeType,
@@ -180,9 +153,8 @@ export async function POST(
           { status: 413 },
         );
       }
-      await putSongFile({
+      await addAudioVersion({
         conversationId: conversation.id,
-        kind: 'audio',
         data,
         fileName: metaRes.data.name ?? audioFileName ?? 'audio',
         mimeType: metaRes.data.mimeType ?? 'application/octet-stream',

@@ -15,7 +15,7 @@ import {
   renameConversation,
 } from '../../lib/db/conversations';
 import { createNote } from '../../lib/db/notes';
-import { putSongFile } from '../../lib/db/song-files';
+import { addAudioVersion } from '../../lib/db/song-files';
 
 after(closeDb);
 
@@ -50,9 +50,8 @@ test('song-edit: rename, move (+ conflict), delete cascade', async () => {
 
     // delete cascades notes + files
     await createNote(conv.id, owner.id, 0, 'a note', []);
-    await putSongFile({
+    await addAudioVersion({
       conversationId: conv.id,
-      kind: 'audio',
       data: Buffer.from('x'),
       fileName: 'a.mp3',
       mimeType: 'audio/mpeg',
