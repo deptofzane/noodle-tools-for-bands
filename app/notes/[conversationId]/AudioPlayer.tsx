@@ -12,6 +12,15 @@ import { formatDuration } from '@/lib/format';
 import { useTrackBoolean } from '../../PendingActionProvider';
 import { usePlayer } from './PlayerContext';
 
+/** One selectable audio version, for the in-player version switcher. */
+export type PlayerVersion = {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  label: string | null;
+  isDefault: boolean;
+};
+
 type AudioPlayerProps = {
   /** URL the audio streams from (Range-capable). */
   src: string;
@@ -19,9 +28,19 @@ type AudioPlayerProps = {
   mimeType: string;
   /** Stick the player to the top of the viewport while scrolling. */
   sticky?: boolean;
+  /**
+   * Optional multi-version support. When two or more versions are passed
+   * (along with `conversationId`), the options panel shows a version
+   * switcher and the player streams the selected version instead of `src`.
+   */
+  conversationId?: string;
+  versions?: PlayerVersion[];
 };
 
 const SPEEDS = [0.5, 0.6, 0.7, 0.8, 0.9, 1] as const;
+
+/** Remembers whether the playback-options panel is expanded, across pages. */
+const OPTIONS_OPEN_KEY = 'audioPlayer.optionsOpen';
 
 /**
  * Client-side audio player.
@@ -40,6 +59,8 @@ export function AudioPlayer({
   fileName,
   mimeType,
   sticky = false,
+  conversationId,
+  versions,
 }: AudioPlayerProps) {
   const { setEngine } = usePlayer();
   const engineRef = useRef<AudioEngine | null>(null);
@@ -49,6 +70,51 @@ export function AudioPlayer({
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rate, setRate] = useState(1);
+  const [optionsOpen, setOptionsOpen] = useState(false);
+
+  // Version switching. When versions are supplied, the player streams the
+  // selected one (defaulting to the version flagged `isDefault`); otherwise
+  // it falls back to the `src`/`fileName`/`mimeType` props.
+  const hasVersions = Boolean(conversationId && versions && versions.length > 0);
+  const [selectedVersionId, setSelectedVersionId] = useState(
+    () => versions?.find((v) => v.isDefault)?.id ?? versions?.[0]?.id ?? '',
+  );
+  const selectedVersion = hasVersions
+    ? (versions!.find((v) => v.id === selectedVersionId) ?? versions![0]!)
+    : null;
+
+  const effectiveSrc = selectedVersion
+    ? `/api/conversations/${conversationId}/files/audio?version=${
+        selectedVersion.id
+      }&name=${encodeURIComponent(selectedVersion.fileName)}`
+    : src;
+  const effectiveFileName = selectedVersion
+    ? selectedVersion.label || selectedVersion.fileName
+    : fileName;
+  const effectiveMimeType = selectedVersion ? selectedVersion.mimeType : mimeType;
+
+  // Hydrate the panel's open/closed state from localStorage after mount.
+  // Reading in a `useEffect` (rather than a lazy initializer) keeps the
+  // server-rendered markup deterministic, avoiding a hydration mismatch.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(OPTIONS_OPEN_KEY) === '1') setOptionsOpen(true);
+    } catch {
+      // localStorage may be unavailable (private mode / SSR); ignore.
+    }
+  }, []);
+
+  const toggleOptions = useCallback(() => {
+    setOptionsOpen((open) => {
+      const next = !open;
+      try {
+        localStorage.setItem(OPTIONS_OPEN_KEY, next ? '1' : '0');
+      } catch {
+        // Ignore persistence failures; state still updates in-memory.
+      }
+      return next;
+    });
+  }, []);
 
   // Show the global pending indicator while the audio is loading. The
   // condition flips off as soon as Howler reports readiness or an
@@ -73,14 +139,18 @@ export function AudioPlayer({
     setIsReady(false);
     setError(null);
     setCurrentTime(0);
+    // A source change (navigation OR a version switch) tears down the old
+    // engine and builds a fresh, paused one — reset play state so the
+    // toggle icon and the rAF tick loop don't chase a stale engine.
+    setIsPlaying(false);
 
     const engine = createAudioEngine({
       // `src` carries a `?name=` hint so the serve route can recover a
       // concrete `audio/*` Content-Type when the stored MIME is generic
       // (Firefox mobile is strict about that header).
-      url: src,
-      mimeType,
-      fileName,
+      url: effectiveSrc,
+      mimeType: effectiveMimeType,
+      fileName: effectiveFileName,
       onReady: (dur) => {
         setDuration(dur);
         setIsReady(true);
@@ -131,7 +201,7 @@ export function AudioPlayer({
       window.removeEventListener('pagehide', handlePageHide);
       teardown();
     };
-  }, [src, fileName, mimeType, setEngine]);
+  }, [effectiveSrc, effectiveFileName, effectiveMimeType, setEngine]);
 
   // Tick the current-time display while playing.
   //
@@ -187,6 +257,15 @@ export function AudioPlayer({
     setCurrentTime(t);
   }, [isReady]);
 
+  const forward10 = useCallback(() => {
+    const engine = engineRef.current;
+    if (!engine || !isReady) return;
+    const max = duration || engine.getCurrentTime() + 10;
+    const t = Math.min(max, engine.getCurrentTime() + 10);
+    engine.seek(t);
+    setCurrentTime(t);
+  }, [isReady, duration]);
+
   // Apply the selected speed — on change, and again after each (re)load,
   // since a new engine starts at 1x.
   useEffect(() => {
@@ -201,23 +280,13 @@ export function AudioPlayer({
       }
     >
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="truncate text-sm font-medium">{fileName}</h2>
+        <h2 className="truncate text-sm font-medium">{effectiveFileName}</h2>
         <span className="shrink-0 font-mono text-xs tabular-nums text-neutral-500">
           {formatDuration(currentTime)} / {formatDuration(duration)}
         </span>
       </div>
 
       <div className="mt-4 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={back10}
-          disabled={!isReady}
-          aria-label="Back 10 seconds"
-          title="Back 10 seconds"
-          className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
-        >
-          <span aria-hidden="true">↺</span>10s
-        </button>
         <button
           type="button"
           onClick={togglePlay}
@@ -263,21 +332,99 @@ export function AudioPlayer({
           aria-label="Seek"
         />
 
-        <select
-          value={rate}
-          onChange={(e) => setRate(parseFloat(e.target.value))}
-          disabled={!isReady}
-          aria-label="Playback speed"
-          title="Playback speed"
-          className="shrink-0 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900"
+        <button
+          type="button"
+          onClick={toggleOptions}
+          aria-expanded={optionsOpen}
+          aria-controls="audio-player-options"
+          aria-label="Playback options"
+          title="Playback options"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
         >
-          {SPEEDS.map((s) => (
-            <option key={s} value={s}>
-              {s === 1 ? '100%' : `${Math.round(s * 100)}%`}
-            </option>
-          ))}
-        </select>
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className={
+              'transition-transform' + (optionsOpen ? ' rotate-180' : '')
+            }
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
       </div>
+
+      {optionsOpen && (
+        <div
+          id="audio-player-options"
+          className="mt-3 flex flex-wrap items-center gap-3 border-t border-neutral-200 pt-3 dark:border-neutral-800"
+        >
+          <button
+            type="button"
+            onClick={back10}
+            disabled={!isReady}
+            aria-label="Back 10 seconds"
+            title="Back 10 seconds"
+            className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+          >
+            <span aria-hidden="true">↺</span>10s
+          </button>
+
+          <button
+            type="button"
+            onClick={forward10}
+            disabled={!isReady}
+            aria-label="Forward 10 seconds"
+            title="Forward 10 seconds"
+            className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+          >
+            10s<span aria-hidden="true">↻</span>
+          </button>
+
+          <label className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+            Speed
+            <select
+              value={rate}
+              onChange={(e) => setRate(parseFloat(e.target.value))}
+              disabled={!isReady}
+              aria-label="Playback speed"
+              title="Playback speed"
+              className="shrink-0 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900"
+            >
+              {SPEEDS.map((s) => (
+                <option key={s} value={s}>
+                  {s === 1 ? '100%' : `${Math.round(s * 100)}%`}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {hasVersions && versions!.length > 1 && (
+            <label className="flex min-w-0 items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+              Version
+              <select
+                value={selectedVersionId}
+                onChange={(e) => setSelectedVersionId(e.target.value)}
+                aria-label="Audio version"
+                title="Audio version"
+                className="min-w-0 max-w-[10rem] truncate rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+              >
+                {versions!.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {(v.label || v.fileName) + (v.isDefault ? ' (default)' : '')}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
+      )}
 
       {!isReady && !error && (
         <p className="mt-3 text-xs text-neutral-500">Loading audio…</p>

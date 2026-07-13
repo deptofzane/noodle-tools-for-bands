@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getConversationMembership } from '@/lib/db/conversations';
-import { getSongFileMeta } from '@/lib/db/song-files';
+import { getSongFileMeta, listAudioVersions } from '@/lib/db/song-files';
 import { PlayerProvider } from './PlayerContext';
 import { AudioPlayer } from './AudioPlayer';
 import { SheetMusic } from './SheetMusic';
@@ -47,9 +47,10 @@ export default async function NotesPage({
   // Player metadata from the stored audio file, falling back to the
   // conversation's name if the audio hasn't been imported yet. Sheet
   // music meta (if any) seeds the SheetMusic panel.
-  const [audio, sheet] = await Promise.all([
+  const [audio, sheet, audioVersions] = await Promise.all([
     getSongFileMeta(conversationId, 'audio'),
     getSongFileMeta(conversationId, 'sheet_music'),
+    listAudioVersions(conversationId),
   ]);
   const fileName = conversation.audioFileName ?? audio?.fileName ?? 'audio';
   const mimeType = audio?.mimeType ?? 'audio/mpeg';
@@ -76,6 +77,14 @@ export default async function NotesPage({
             )}`}
             fileName={fileName}
             mimeType={mimeType}
+            conversationId={conversationId}
+            versions={audioVersions.map((v) => ({
+              id: v.id,
+              fileName: v.fileName,
+              mimeType: v.mimeType,
+              label: v.label,
+              isDefault: v.isDefault,
+            }))}
           />
           <SheetMusic conversationId={conversationId} initial={sheetMusic} />
           <NotesPanel
