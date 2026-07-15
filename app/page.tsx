@@ -9,7 +9,7 @@ import { redirect } from 'next/navigation';
  * intercepted earlier by middleware and routed to `/login`.
  *
  * The identity card + sign-out button that used to live here moved
- * to `/account`.
+ * to the Settings page (`/settings`).
  */
 export default function Home() {
   redirect('/open-conversations');

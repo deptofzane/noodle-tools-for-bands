@@ -26,7 +26,7 @@ const NAV_LINKS = [
   { href: '/calendar', label: 'Calendar' },
   { href: '/open-conversations', label: 'Open Conversations' },
   { href: '/history', label: 'History' },
-  { href: '/account', label: 'Account' },
+  { href: '/settings', label: 'Settings' },
 ] as const;
 
 export function Header() {
