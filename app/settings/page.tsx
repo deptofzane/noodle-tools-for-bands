@@ -1,6 +1,8 @@
 import { auth, signOut } from '@/auth';
 import { redirect } from 'next/navigation';
+import { getMutedKinds } from '@/lib/db/notifications';
 import { ThemeToggle } from '../ThemeToggle';
+import { NotificationPreferences } from './NotificationPreferences';
 import { SettingsTabs, type SettingsTab } from './SettingsTabs';
 
 /**
@@ -16,6 +18,7 @@ export default async function SettingsPage({
   const session = await auth();
   if (!session?.user) redirect('/login');
   const { tab } = await searchParams;
+  const mutedKinds = await getMutedKinds(session.user.sub ?? '');
 
   const account = (
     <div className="flex flex-col gap-6">
@@ -84,6 +87,11 @@ export default async function SettingsPage({
 
   const tabs: SettingsTab[] = [
     { id: 'account', label: 'Account', content: account },
+    {
+      id: 'notifications',
+      label: 'Notifications',
+      content: <NotificationPreferences initialMuted={mutedKinds} />,
+    },
     { id: 'appearance', label: 'Appearance', content: appearance },
   ];
 

@@ -182,6 +182,20 @@ export const notificationReads = pgTable('notification_reads', {
   lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull(),
 });
 
+// Per-user muted notification kinds. Presence of a row means that kind is
+// muted for the user; the default (no rows) is "everything on". Applied as
+// a read-time filter on the feed + unread count.
+export const notificationMutes = pgTable(
+  'notification_mutes',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    kind: notificationKind('kind').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.kind] })],
+);
+
 // ── Band messages (general chat) ─────────────────────────────────────
 // A flat, band-wide message thread (not tied to a song). Any member can
 // post; authors (or band owners) can soft-delete. Ordered by createdAt.

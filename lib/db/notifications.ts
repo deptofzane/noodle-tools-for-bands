@@ -1,8 +1,9 @@
-import { and, desc, eq, gt, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, notInArray, sql } from 'drizzle-orm';
 import { db } from './index';
 import {
   bandMembers,
   bands,
+  notificationMutes,
   notificationReads,
   notifications,
   users,
@@ -22,6 +23,7 @@ import {
  * blocks the underlying action.
  */
 
+export const NOTIFICATION_KINDS = notifications.kind.enumValues;
 export type NotificationKind = (typeof notifications.kind.enumValues)[number];
 export type NotificationSubject =
   (typeof notifications.subjectType.enumValues)[number];
@@ -83,6 +85,40 @@ export async function notify(input: CreateNotificationInput): Promise<void> {
   }
 }
 
+/** Notification kinds the user has muted (default: none). */
+export async function getMutedKinds(
+  userId: string,
+): Promise<NotificationKind[]> {
+  const rows = await db
+    .select({ kind: notificationMutes.kind })
+    .from(notificationMutes)
+    .where(eq(notificationMutes.userId, userId));
+  return rows.map((r) => r.kind);
+}
+
+/** Mute or unmute a notification kind for the user. */
+export async function setKindMuted(
+  userId: string,
+  kind: NotificationKind,
+  muted: boolean,
+): Promise<void> {
+  if (muted) {
+    await db
+      .insert(notificationMutes)
+      .values({ userId, kind })
+      .onConflictDoNothing();
+  } else {
+    await db
+      .delete(notificationMutes)
+      .where(
+        and(
+          eq(notificationMutes.userId, userId),
+          eq(notificationMutes.kind, kind),
+        ),
+      );
+  }
+}
+
 async function getLastSeen(userId: string): Promise<Date> {
   const [row] = await db
     .select({ lastSeenAt: notificationReads.lastSeenAt })
@@ -101,7 +137,10 @@ export async function listNotifications(
   userId: string,
   limit = 30,
 ): Promise<NotificationDTO[]> {
-  const lastSeen = await getLastSeen(userId);
+  const [lastSeen, muted] = await Promise.all([
+    getLastSeen(userId),
+    getMutedKinds(userId),
+  ]);
   const rows = await db
     .select({
       id: notifications.id,
@@ -122,7 +161,12 @@ export async function listNotifications(
         eq(bandMembers.userId, userId),
       ),
     )
-    .where(sql`${notifications.actorId} <> ${userId}`)
+    .where(
+      and(
+        sql`${notifications.actorId} <> ${userId}`,
+        muted.length ? notInArray(notifications.kind, muted) : undefined,
+      ),
+    )
     .orderBy(desc(notifications.createdAt))
     .limit(Math.min(Math.max(limit, 1), 100));
 
@@ -137,7 +181,10 @@ export async function listNotifications(
 export async function getUnreadNotificationCount(
   userId: string,
 ): Promise<number> {
-  const lastSeen = await getLastSeen(userId);
+  const [lastSeen, muted] = await Promise.all([
+    getLastSeen(userId),
+    getMutedKinds(userId),
+  ]);
   const rows = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(notifications)
@@ -152,6 +199,7 @@ export async function getUnreadNotificationCount(
       and(
         sql`${notifications.actorId} <> ${userId}`,
         gt(notifications.createdAt, lastSeen),
+        muted.length ? notInArray(notifications.kind, muted) : undefined,
       ),
     );
   return rows[0]?.count ?? 0;

@@ -8,14 +8,64 @@ import { addMember, createBand, deleteBand } from '../../lib/db/bands';
 import { upsertUser } from '../../lib/db/users';
 import {
   createNotification,
+  getMutedKinds,
   getUnreadNotificationCount,
   listNotifications,
   markNotificationsRead,
+  setKindMuted,
 } from '../../lib/db/notifications';
 
 after(closeDb);
 
 const SUBS = ['NT_OWNER', 'NT_MEMBER', 'NT_OTHER'];
+
+test('notifications: muted kinds are excluded from feed + count', async () => {
+  let bandId: string | undefined;
+  try {
+    const owner = await upsertUser({ googleSub: 'NT_OWNER', email: 'nto@x.com', name: 'Owner' });
+    const member = await upsertUser({ googleSub: 'NT_MEMBER', email: 'ntm@x.com', name: 'Member' });
+    const band = await createBand(owner.id, 'NT Band');
+    bandId = band.id;
+    await addMember(band.id, member.id, 'member');
+
+    // Two kinds of activity by the owner → both visible to the member.
+    await createNotification({
+      bandId: band.id,
+      actorId: owner.id,
+      kind: 'chat-message',
+      subjectType: 'band',
+      subjectId: band.id,
+    });
+    await createNotification({
+      bandId: band.id,
+      actorId: owner.id,
+      kind: 'show-added',
+      subjectType: 'event',
+      subjectId: band.id,
+      subjectLabel: 'Gig',
+    });
+    assert.equal((await listNotifications(member.id)).length, 2, 'both visible by default');
+    assert.equal(await getUnreadNotificationCount(member.id), 2, 'both counted');
+    assert.deepEqual(await getMutedKinds(member.id), [], 'nothing muted by default');
+
+    // Mute chat-message for the member.
+    await setKindMuted(member.id, 'chat-message', true);
+    assert.deepEqual(await getMutedKinds(member.id), ['chat-message'], 'kind is muted');
+    const list = await listNotifications(member.id);
+    assert.equal(list.length, 1, 'muted kind dropped from feed');
+    assert.equal(list[0]!.kind, 'show-added', 'the surviving one');
+    assert.equal(await getUnreadNotificationCount(member.id), 1, 'muted kind not counted');
+
+    // Muting is idempotent; unmuting restores it.
+    await setKindMuted(member.id, 'chat-message', true);
+    assert.deepEqual(await getMutedKinds(member.id), ['chat-message'], 'still just one row');
+    await setKindMuted(member.id, 'chat-message', false);
+    assert.equal((await listNotifications(member.id)).length, 2, 'unmute restores the feed');
+  } finally {
+    if (bandId) await deleteBand(bandId);
+    await db.delete(users).where(inArray(users.googleSub, SUBS));
+  }
+});
 
 test('notifications: scope, actor exclusion, unread, mark-read', async () => {
   let bandId: string | undefined;
