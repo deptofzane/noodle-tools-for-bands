@@ -1,12 +1,7 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { NoteForm, type Mentionable } from '../../notes/[conversationId]/NoteForm';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
 import { formatRelativeTime } from '@/lib/format';
@@ -15,32 +10,70 @@ interface Message {
   id: string;
   body: string;
   createdAt: string;
+  editedAt: string | null;
   author: { id: string; name: string | null; email: string | null };
+  mentions: string[];
 }
 
 const POLL_INTERVAL_MS = 30_000;
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Highlight `@Name` tokens for known band members within a message body. */
+function renderBody(text: string, memberLabels: string[]): ReactNode {
+  const labels = memberLabels
+    .filter(Boolean)
+    .map(escapeRegExp)
+    .sort((a, b) => b.length - a.length);
+  if (labels.length === 0) return text;
+  const re = new RegExp(`@(?:${labels.join('|')})`, 'g');
+  const out: ReactNode[] = [];
+  let last = 0;
+  let key = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    out.push(
+      <span
+        key={key++}
+        className="rounded bg-blue-100 px-0.5 font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+      >
+        {m[0]}
+      </span>,
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+
 /**
- * Band-wide chat. Loads the latest page, streams new activity over SSE
- * (Postgres LISTEN/NOTIFY) with a periodic poll backstop, and lets members
- * post / delete messages. Deleting is offered for your own messages, plus
- * any message when you can moderate (band owner) — the API enforces it.
+ * Band-wide chat. Loads the latest page, refetches whenever `changeSignal`
+ * bumps (the parent owns the shared SSE stream) with a periodic poll
+ * backstop, and lets members post / edit / delete with @-mentions.
+ * Delete is offered for your own messages, plus any when you can moderate
+ * (band owner); the API enforces it either way.
  */
 export function BandChat({
   bandId,
   currentUserId,
   canModerate,
+  mentionables,
+  changeSignal,
 }: {
   bandId: string;
   currentUserId: string;
   canModerate: boolean;
+  mentionables: Mentionable[];
+  changeSignal: number;
 }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [body, setBody] = useState('');
-  const [sending, setSending] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const trackPending = useTrackPending();
   const showToast = useToast();
 
@@ -51,10 +84,11 @@ export function BandChat({
   const atBottomRef = useRef(true);
 
   const base = `/api/bands/${bandId}/messages`;
+  const memberLabels = mentionables.map((m) => m.name ?? m.email ?? '');
 
   // Refetch the latest page and merge: keep any older history already
-  // loaded, refresh the latest window (picking up new messages and dropping
-  // ones deleted within it).
+  // loaded, refresh the latest window (new messages + edits, and drop ones
+  // deleted within it).
   const fetchLatest = useCallback(async () => {
     const res = await fetch(base, { cache: 'no-store' });
     if (!res.ok) return;
@@ -65,8 +99,6 @@ export function BandChat({
       return [...kept, ...data.messages];
     });
     setLoaded((wasLoaded) => {
-      // hasMore is only authoritative for the very first load; later merges
-      // keep whatever pagination state older-loads established.
       if (!wasLoaded) setHasMore(data.hasMore);
       return true;
     });
@@ -95,71 +127,29 @@ export function BandChat({
     void trackPending(() => fetchLatest());
   }, [fetchLatest, trackPending]);
 
-  // Track whether we're pinned to the bottom before each render commits.
+  // Refetch when the parent signals band-chat activity (SSE) — skip the
+  // very first render (changeSignal 0), which the initial load covers.
+  const firstSignal = useRef(true);
+  useEffect(() => {
+    if (firstSignal.current) {
+      firstSignal.current = false;
+      return;
+    }
+    void fetchLatest();
+  }, [changeSignal, fetchLatest]);
+
   const onScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
-    atBottomRef.current =
-      el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+    atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
   };
 
   // Autoscroll to the newest message when pinned to the bottom.
   useEffect(() => {
-    if (atBottomRef.current) {
-      endRef.current?.scrollIntoView({ block: 'end' });
-    }
+    if (atBottomRef.current) endRef.current?.scrollIntoView({ block: 'end' });
   }, [messages]);
 
-  // Real-time via SSE, with backoff reconnect; the poll below is a backstop.
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
-      return;
-    }
-    let es: EventSource | null = null;
-    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-    let cancelled = false;
-    let backoffMs = 1000;
-    const MAX_BACKOFF_MS = 30_000;
-
-    const connect = () => {
-      if (cancelled) return;
-      try {
-        es = new EventSource(`${base}/events`);
-      } catch {
-        scheduleReconnect();
-        return;
-      }
-      es.addEventListener('open', () => {
-        backoffMs = 1000;
-      });
-      es.addEventListener('change', () => {
-        void fetchLatest();
-      });
-      es.addEventListener('error', () => {
-        es?.close();
-        es = null;
-        scheduleReconnect();
-      });
-    };
-
-    const scheduleReconnect = () => {
-      if (cancelled) return;
-      reconnectTimer = setTimeout(() => {
-        connect();
-        backoffMs = Math.min(backoffMs * 2, MAX_BACKOFF_MS);
-      }, backoffMs);
-    };
-
-    connect();
-    return () => {
-      cancelled = true;
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      es?.close();
-      es = null;
-    };
-  }, [base, fetchLatest]);
-
-  // Backstop poll — catches anything SSE missed on a transient disconnect.
+  // Backstop poll — catches anything the SSE feed missed.
   useEffect(() => {
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') void fetchLatest();
@@ -167,37 +157,37 @@ export function BandChat({
     return () => clearInterval(interval);
   }, [fetchLatest]);
 
-  const send = async () => {
-    const text = body.trim();
-    if (!text || sending) return;
-    setSending(true);
-    try {
-      await trackPending(async () => {
-        const res = await fetch(base, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ body: text }),
-        });
-        if (!res.ok) {
-          const b = await res.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${res.status}`);
-        }
-        setBody('');
-        atBottomRef.current = true; // sending jumps you to your message
-        await fetchLatest();
+  const send = async (body: string, mentions: string[]) => {
+    await trackPending(async () => {
+      const res = await fetch(base, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body, mentions }),
       });
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : String(e));
-    } finally {
-      setSending(false);
-    }
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        throw new Error(b.message ?? `HTTP ${res.status}`);
+      }
+      atBottomRef.current = true; // sending jumps you to your message
+      await fetchLatest();
+    });
   };
 
-  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      void send();
-    }
+  const saveEdit = async (id: string, body: string, mentions: string[]) => {
+    await trackPending(async () => {
+      const res = await fetch(`${base}/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body, mentions }),
+      });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        throw new Error(b.message ?? `HTTP ${res.status}`);
+      }
+      const data = (await res.json()) as { message: Message };
+      setMessages((prev) => prev.map((m) => (m.id === id ? data.message : m)));
+      setEditingId(null);
+    });
   };
 
   const remove = async (id: string) => {
@@ -241,31 +231,64 @@ export function BandChat({
 
         {messages.map((m) => {
           const mine = m.author.id === currentUserId;
+          const mentionsMe = m.mentions.includes(currentUserId);
+          if (editingId === m.id) {
+            return (
+              <div key={m.id} className="rounded-md bg-neutral-50 p-2 dark:bg-neutral-900">
+                <NoteForm
+                  initialBody={m.body}
+                  mentionables={mentionables}
+                  submitLabel="Save"
+                  placeholder="Edit your message…"
+                  onSubmit={(body, mentions) => saveEdit(m.id, body, mentions)}
+                  onCancel={() => setEditingId(null)}
+                />
+              </div>
+            );
+          }
           return (
-            <div key={m.id} className="group flex flex-col gap-0.5">
+            <div
+              key={m.id}
+              className={
+                'group flex flex-col gap-0.5 rounded-md px-2 py-1 ' +
+                (mentionsMe
+                  ? 'border-l-2 border-blue-500 bg-blue-50/50 dark:bg-blue-950/30'
+                  : '')
+              }
+            >
               <div className="flex items-baseline gap-2">
                 <span className="text-xs font-medium">
                   {m.author.name ?? m.author.email ?? 'Unknown'}
-                  {mine && (
-                    <span className="text-neutral-400"> (you)</span>
-                  )}
+                  {mine && <span className="text-neutral-400"> (you)</span>}
                 </span>
                 <span className="text-[11px] text-neutral-400">
                   {formatRelativeTime(m.createdAt)}
+                  {m.editedAt && <span title="Edited"> · edited</span>}
                 </span>
-                {(mine || canModerate) && (
-                  <button
-                    type="button"
-                    onClick={() => remove(m.id)}
-                    className="ml-auto text-[11px] text-neutral-400 opacity-0 transition hover:text-red-600 group-hover:opacity-100 focus:opacity-100 dark:hover:text-red-400"
-                    aria-label="Delete message"
-                  >
-                    Delete
-                  </button>
-                )}
+                <span className="ml-auto flex gap-2 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+                  {mine && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(m.id)}
+                      className="text-[11px] text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {(mine || canModerate) && (
+                    <button
+                      type="button"
+                      onClick={() => remove(m.id)}
+                      className="text-[11px] text-neutral-400 hover:text-red-600 dark:hover:text-red-400"
+                      aria-label="Delete message"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </span>
               </div>
               <p className="whitespace-pre-wrap break-words text-sm">
-                {m.body}
+                {renderBody(m.body, memberLabels)}
               </p>
             </div>
           );
@@ -273,25 +296,13 @@ export function BandChat({
         <div ref={endRef} />
       </div>
 
-      <div className="flex items-end gap-2">
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          onKeyDown={onKeyDown}
-          rows={2}
-          placeholder="Message your band…  (Enter to send, Shift+Enter for a new line)"
-          maxLength={4000}
-          className="flex-1 resize-none rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
-        />
-        <button
-          type="button"
-          onClick={send}
-          disabled={sending || !body.trim()}
-          className="shrink-0 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
-        >
-          {sending ? 'Sending…' : 'Send'}
-        </button>
-      </div>
+      <NoteForm
+        mentionables={mentionables}
+        submitLabel="Send"
+        placeholder="Message your band…  (@ to mention, ⌘/Ctrl+Enter to send)"
+        autoFocus={false}
+        onSubmit={send}
+      />
     </section>
   );
 }

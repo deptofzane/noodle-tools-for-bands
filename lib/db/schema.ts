@@ -146,9 +146,45 @@ export const bandMessages = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
+    // Set when the body is edited (null until then) so the UI can show
+    // "edited" without conflating it with the always-present updatedAt.
+    editedAt: timestamp('edited_at', { withTimezone: true }),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
   (t) => [index('band_messages_band_created_idx').on(t.bandId, t.createdAt)],
+);
+
+// @-mentions on a band message → the mentioned users (band members).
+export const bandMessageMentions = pgTable(
+  'band_message_mentions',
+  {
+    messageId: uuid('message_id')
+      .notNull()
+      .references(() => bandMessages.id, { onDelete: 'cascade' }),
+    mentionedUserId: uuid('mentioned_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.messageId, t.mentionedUserId] }),
+    index('band_message_mentions_user_idx').on(t.mentionedUserId),
+  ],
+);
+
+// Per-user read marker for a band's chat (drives the unread badge). One
+// row per (user, band); lastSeenAt is DB-clock stamped.
+export const bandChatReads = pgTable(
+  'band_chat_reads',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    bandId: uuid('band_id')
+      .notNull()
+      .references(() => bands.id, { onDelete: 'cascade' }),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.bandId] })],
 );
 
 // ── Notes (threaded) ─────────────────────────────────────────────────

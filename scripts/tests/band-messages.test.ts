@@ -9,7 +9,10 @@ import { upsertUser } from '../../lib/db/users';
 import {
   createBandMessage,
   deleteBandMessage,
+  editBandMessage,
+  getBandChatUnread,
   listBandMessages,
+  markBandChatRead,
 } from '../../lib/db/band-messages';
 import { closeNotifyHub } from '../../lib/db/notify';
 
@@ -87,6 +90,64 @@ test('band-messages: post, list, pagination, delete permissions', async () => {
     // Deleted messages drop out of the list.
     const remaining = await listBandMessages(band.id);
     assert.deepEqual(remaining.messages.map((m) => m.id), [m3.id], 'only the surviving message');
+  } finally {
+    if (bandId) await deleteBand(bandId);
+    await db.delete(users).where(inArray(users.googleSub, SUBS));
+  }
+});
+
+test('band-messages: mentions, editing, unread', async () => {
+  let bandId: string | undefined;
+  try {
+    const owner = await upsertUser({ googleSub: 'BM_OWNER', email: 'bmo@x.com', name: 'Owner' });
+    const member = await upsertUser({ googleSub: 'BM_MEMBER', email: 'bmm@x.com', name: 'Member' });
+    const outsider = await upsertUser({ googleSub: 'BM_OUTSIDER', email: 'bmx@x.com', name: 'Outsider' });
+    const band = await createBand(owner.id, 'BM Band');
+    bandId = band.id;
+    await addMember(band.id, member.id, 'member');
+
+    // Mentions are filtered to real band members.
+    const msg = await createBandMessage(band.id, member.id, 'hey @Owner and @Outsider', [
+      owner.id,
+      outsider.id,
+    ]);
+    assert.deepEqual(msg.mentions, [owner.id], 'only the member mention is kept');
+    assert.equal(msg.editedAt, null, 'not edited yet');
+    assert.deepEqual(
+      (await listBandMessages(band.id)).messages[0]?.mentions,
+      [owner.id],
+      'mentions come back in the list',
+    );
+
+    // Edit: author only; replaces body + mentions, stamps editedAt.
+    const edited = await editBandMessage(band.id, msg.id, member.id, 'actually @Owner', [owner.id]);
+    assert.ok(edited, 'author edit succeeds');
+    assert.equal(edited!.body, 'actually @Owner', 'body updated');
+    assert.ok(edited!.editedAt, 'editedAt stamped');
+    assert.equal(
+      await editBandMessage(band.id, msg.id, owner.id, 'nope', []),
+      null,
+      'non-author cannot edit',
+    );
+
+    // Unread: owner has one unread (from member), and is mentioned.
+    let unread = await getBandChatUnread(band.id, owner.id);
+    assert.equal(unread.count, 1, 'owner has one unread');
+    assert.equal(unread.mentioned, true, 'owner is mentioned');
+    // Author doesn't count their own message as unread.
+    assert.equal((await getBandChatUnread(band.id, member.id)).count, 0, 'own message not unread');
+
+    // Marking read clears it.
+    await markBandChatRead(band.id, owner.id);
+    unread = await getBandChatUnread(band.id, owner.id);
+    assert.equal(unread.count, 0, 'read clears count');
+    assert.equal(unread.mentioned, false, 'read clears mention flag');
+
+    // A new message after reading is unread again (but not the mention).
+    await createBandMessage(band.id, member.id, 'ping', []);
+    const after = await getBandChatUnread(band.id, owner.id);
+    assert.equal(after.count, 1, 'new message is unread');
+    assert.equal(after.mentioned, false, 'no new mention');
   } finally {
     if (bandId) await deleteBand(bandId);
     await db.delete(users).where(inArray(users.googleSub, SUBS));

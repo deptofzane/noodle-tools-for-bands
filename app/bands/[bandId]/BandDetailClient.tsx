@@ -105,6 +105,11 @@ export function BandDetailClient({
   // Shows start minimized: a show is expanded only while its id is in the set.
   const [expandedShows, setExpandedShows] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'overview' | 'chat'>('overview');
+  const [chatChange, setChatChange] = useState(0);
+  const [unread, setUnread] = useState<{ count: number; mentioned: boolean }>({
+    count: 0,
+    mentioned: false,
+  });
 
   const toggleSetlistMinimized = (id: string) =>
     setMinimizedSetlists((prev) => {
@@ -160,6 +165,74 @@ export function BandDetailClient({
   useEffect(() => {
     void trackPending(() => load());
   }, [load, trackPending]);
+
+  // Single SSE stream for band-chat activity, shared by the unread badge
+  // and the Chat tab (via the `chatChange` signal passed to BandChat), so
+  // the page holds one connection rather than one per consumer.
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
+      return;
+    }
+    let es: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+    let backoffMs = 1000;
+
+    const connect = () => {
+      if (cancelled) return;
+      try {
+        es = new EventSource(`/api/bands/${bandId}/messages/events`);
+      } catch {
+        scheduleReconnect();
+        return;
+      }
+      es.addEventListener('open', () => {
+        backoffMs = 1000;
+      });
+      es.addEventListener('change', () => setChatChange((c) => c + 1));
+      es.addEventListener('error', () => {
+        es?.close();
+        es = null;
+        scheduleReconnect();
+      });
+    };
+    const scheduleReconnect = () => {
+      if (cancelled) return;
+      reconnectTimer = setTimeout(() => {
+        connect();
+        backoffMs = Math.min(backoffMs * 2, 30_000);
+      }, backoffMs);
+    };
+
+    connect();
+    return () => {
+      cancelled = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      es?.close();
+    };
+  }, [bandId]);
+
+  const fetchUnread = useCallback(async () => {
+    const res = await fetch(`/api/bands/${bandId}/messages/unread`, {
+      cache: 'no-store',
+    });
+    if (res.ok) setUnread(await res.json());
+  }, [bandId]);
+
+  const markChatRead = useCallback(async () => {
+    setUnread({ count: 0, mentioned: false });
+    await fetch(`/api/bands/${bandId}/messages/read`, { method: 'POST' }).catch(
+      () => {},
+    );
+  }, [bandId]);
+
+  // Keep the badge current: when viewing Chat, keep it marked read; when
+  // elsewhere, refetch the unread count. Runs on mount, tab switches, and
+  // each chat-activity signal.
+  useEffect(() => {
+    if (activeTab === 'chat') void markChatRead();
+    else void fetchUnread();
+  }, [activeTab, chatChange, fetchUnread, markChatRead]);
 
   const handleRegister = useCallback(
     async (files: PickedFile[]) => {
@@ -546,13 +619,25 @@ export function BandDetailClient({
             aria-selected={activeTab === tab}
             onClick={() => setActiveTab(tab)}
             className={
-              '-mb-px border-b-2 px-3 py-2 text-sm font-medium capitalize transition ' +
+              '-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium capitalize transition ' +
               (activeTab === tab
                 ? 'border-blue-600 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200')
             }
           >
             {tab}
+            {tab === 'chat' && activeTab !== 'chat' && unread.count > 0 && (
+              <span
+                aria-label={`${unread.count} unread${unread.mentioned ? ', mentioned' : ''}`}
+                className={
+                  'inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white ' +
+                  (unread.mentioned ? 'bg-red-600' : 'bg-blue-600')
+                }
+              >
+                {unread.mentioned && <span aria-hidden="true">@</span>}
+                {unread.count}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -562,6 +647,12 @@ export function BandDetailClient({
           bandId={bandId}
           currentUserId={currentUserId}
           canModerate={isOwner}
+          changeSignal={chatChange}
+          mentionables={data.members.map((m) => ({
+            id: m.userId,
+            name: m.name,
+            email: m.email,
+          }))}
         />
       )}
 

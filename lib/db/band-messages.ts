@@ -1,6 +1,12 @@
-import { and, desc, eq, isNull, lt, sql } from 'drizzle-orm';
-import { db } from './index';
-import { bandMessages, users } from './schema';
+import { and, desc, eq, gt, inArray, isNull, lt, sql } from 'drizzle-orm';
+import { db, type DbExecutor } from './index';
+import {
+  bandChatReads,
+  bandMembers,
+  bandMessageMentions,
+  bandMessages,
+  users,
+} from './schema';
 import { BAND_CHANNEL } from './notify';
 
 /**
@@ -16,7 +22,9 @@ export interface BandMessageDTO {
   id: string;
   body: string;
   createdAt: string; // ISO 8601
+  editedAt: string | null;
   author: { id: string; name: string | null; email: string | null };
+  mentions: string[]; // mentioned user ids
 }
 
 const DEFAULT_LIMIT = 50;
@@ -26,6 +34,7 @@ const SELECT = {
   id: bandMessages.id,
   body: bandMessages.body,
   createdAt: bandMessages.createdAt,
+  editedAt: bandMessages.editedAt,
   authorId: users.id,
   authorName: users.name,
   authorEmail: users.email,
@@ -35,18 +44,60 @@ type Row = {
   id: string;
   body: string;
   createdAt: Date;
+  editedAt: Date | null;
   authorId: string;
   authorName: string | null;
   authorEmail: string | null;
 };
 
-function toDTO(r: Row): BandMessageDTO {
+function toDTO(r: Row, mentions: string[]): BandMessageDTO {
   return {
     id: r.id,
     body: r.body,
     createdAt: r.createdAt.toISOString(),
+    editedAt: r.editedAt ? r.editedAt.toISOString() : null,
     author: { id: r.authorId, name: r.authorName, email: r.authorEmail },
+    mentions,
   };
+}
+
+/** Mentioned user ids grouped by message id, for a batch of messages. */
+async function mentionsByMessage(
+  messageIds: string[],
+): Promise<Map<string, string[]>> {
+  const map = new Map<string, string[]>();
+  if (messageIds.length === 0) return map;
+  const rows = await db
+    .select({
+      messageId: bandMessageMentions.messageId,
+      userId: bandMessageMentions.mentionedUserId,
+    })
+    .from(bandMessageMentions)
+    .where(inArray(bandMessageMentions.messageId, messageIds));
+  for (const r of rows) {
+    const list = map.get(r.messageId);
+    if (list) list.push(r.userId);
+    else map.set(r.messageId, [r.userId]);
+  }
+  return map;
+}
+
+/** Restrict requested mention ids to actual current members of the band. */
+async function membersAmong(
+  bandId: string,
+  userIds: string[],
+): Promise<string[]> {
+  if (userIds.length === 0) return [];
+  const rows = await db
+    .select({ userId: bandMembers.userId })
+    .from(bandMembers)
+    .where(
+      and(
+        eq(bandMembers.bandId, bandId),
+        inArray(bandMembers.userId, userIds),
+      ),
+    );
+  return rows.map((r) => r.userId);
 }
 
 /**
@@ -79,8 +130,12 @@ export async function listBandMessages(
     .limit(limit + 1);
 
   const hasMore = rows.length > limit;
-  const page = hasMore ? rows.slice(0, limit) : rows;
-  return { messages: page.reverse().map(toDTO), hasMore };
+  const page = (hasMore ? rows.slice(0, limit) : rows).reverse();
+  const mentions = await mentionsByMessage(page.map((r) => r.id));
+  return {
+    messages: page.map((r) => toDTO(r, mentions.get(r.id) ?? [])),
+    hasMore,
+  };
 }
 
 async function getMessage(id: string): Promise<BandMessageDTO | null> {
@@ -90,25 +145,143 @@ async function getMessage(id: string): Promise<BandMessageDTO | null> {
     .innerJoin(users, eq(users.id, bandMessages.authorId))
     .where(eq(bandMessages.id, id))
     .limit(1);
-  return row ? toDTO(row) : null;
+  if (!row) return null;
+  const mentions = await mentionsByMessage([id]);
+  return toDTO(row, mentions.get(id) ?? []);
 }
 
-/** Post a message. Returns the stored message (with author info). */
+async function replaceMentions(
+  exec: DbExecutor,
+  messageId: string,
+  mentionUserIds: string[],
+): Promise<void> {
+  await exec
+    .delete(bandMessageMentions)
+    .where(eq(bandMessageMentions.messageId, messageId));
+  if (mentionUserIds.length === 0) return;
+  await exec
+    .insert(bandMessageMentions)
+    .values(mentionUserIds.map((mentionedUserId) => ({ messageId, mentionedUserId })))
+    .onConflictDoNothing();
+}
+
+/** Post a message. `mentionIds` are filtered to actual band members. */
 export async function createBandMessage(
   bandId: string,
   authorId: string,
   body: string,
+  mentionIds: string[] = [],
 ): Promise<BandMessageDTO> {
+  const validMentions = await membersAmong(bandId, mentionIds);
   const id = await db.transaction(async (tx) => {
     const [inserted] = await tx
       .insert(bandMessages)
       .values({ bandId, authorId, body })
       .returning({ id: bandMessages.id });
+    await replaceMentions(tx, inserted!.id, validMentions);
     await tx.execute(sql`select pg_notify(${BAND_CHANNEL}, ${bandId})`);
     return inserted!.id;
   });
-  // Re-read with the author join for a uniform DTO.
   return (await getMessage(id))!;
+}
+
+/**
+ * Edit a message's body (author only). Replaces its mentions and stamps
+ * `editedAt`. Returns the updated message, or null if it doesn't exist,
+ * is deleted, or isn't the caller's.
+ */
+export async function editBandMessage(
+  bandId: string,
+  messageId: string,
+  userId: string,
+  body: string,
+  mentionIds: string[] = [],
+): Promise<BandMessageDTO | null> {
+  if (!UUID_RE.test(messageId)) return null;
+  const validMentions = await membersAmong(bandId, mentionIds);
+  const ok = await db.transaction(async (tx) => {
+    const now = new Date();
+    const [row] = await tx
+      .update(bandMessages)
+      .set({ body, editedAt: now, updatedAt: now })
+      .where(
+        and(
+          eq(bandMessages.id, messageId),
+          eq(bandMessages.bandId, bandId),
+          eq(bandMessages.authorId, userId),
+          isNull(bandMessages.deletedAt),
+        ),
+      )
+      .returning({ id: bandMessages.id });
+    if (!row) return false;
+    await replaceMentions(tx, messageId, validMentions);
+    await tx.execute(sql`select pg_notify(${BAND_CHANNEL}, ${bandId})`);
+    return true;
+  });
+  return ok ? getMessage(messageId) : null;
+}
+
+export interface BandChatUnread {
+  count: number;
+  mentioned: boolean;
+}
+
+/**
+ * Unread summary for a user's view of a band's chat: how many messages
+ * (from others) arrived since they last read, and whether any of those
+ * mention them. Compared against the DB-clock `lastSeenAt`.
+ */
+export async function getBandChatUnread(
+  bandId: string,
+  userId: string,
+): Promise<BandChatUnread> {
+  const [seen] = await db
+    .select({ lastSeenAt: bandChatReads.lastSeenAt })
+    .from(bandChatReads)
+    .where(
+      and(eq(bandChatReads.userId, userId), eq(bandChatReads.bandId, bandId)),
+    )
+    .limit(1);
+  const lastSeen = seen?.lastSeenAt ?? new Date(0);
+
+  const unreadCondition = and(
+    eq(bandMessages.bandId, bandId),
+    isNull(bandMessages.deletedAt),
+    gt(bandMessages.createdAt, lastSeen),
+    sql`${bandMessages.authorId} <> ${userId}`,
+  );
+
+  const countRows = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(bandMessages)
+    .where(unreadCondition);
+  const count = countRows[0]?.count ?? 0;
+
+  const [mention] = await db
+    .select({ id: bandMessages.id })
+    .from(bandMessages)
+    .innerJoin(
+      bandMessageMentions,
+      eq(bandMessageMentions.messageId, bandMessages.id),
+    )
+    .where(and(unreadCondition, eq(bandMessageMentions.mentionedUserId, userId)))
+    .limit(1);
+
+  return { count, mentioned: Boolean(mention) };
+}
+
+/** Mark a band's chat read as of now (clears the unread badge). */
+export async function markBandChatRead(
+  bandId: string,
+  userId: string,
+): Promise<void> {
+  await db
+    .insert(bandChatReads)
+    .values({ userId, bandId, lastSeenAt: sql`now()` })
+    .onConflictDoUpdate({
+      target: [bandChatReads.userId, bandChatReads.bandId],
+      set: { lastSeenAt: sql`now()` },
+    });
 }
 
 /**
