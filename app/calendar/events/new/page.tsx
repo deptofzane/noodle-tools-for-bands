@@ -11,12 +11,12 @@ import { NewEventClient } from './NewEventClient';
 export default async function NewEventPage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; bandId?: string }>;
 }) {
   const user = await getCurrentDbUser();
   if (!user) redirect('/login');
 
-  const { date } = await searchParams;
+  const { date, bandId } = await searchParams;
   const bands = (await listMyBands(user.id)).map((b) => ({
     id: b.id,
     name: b.name,
@@ -29,6 +29,7 @@ export default async function NewEventPage({
       <NewEventClient
         bands={bands}
         defaultDate={typeof date === 'string' ? date : ''}
+        defaultBandId={typeof bandId === 'string' ? bandId : ''}
       />
     </main>
   );

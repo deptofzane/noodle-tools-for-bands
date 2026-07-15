@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
 import { ConfirmModal } from '../../ConfirmModal';
 import { PickerButton, type PickedFile } from '../../PickerButton';
+import { BandChat } from './BandChat';
 import { useCanUseDrive } from '../../DriveCapabilityProvider';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
@@ -63,9 +64,11 @@ interface Show {
 export function BandDetailClient({
   bandId,
   apiKey,
+  currentUserId,
 }: {
   bandId: string;
   apiKey: string;
+  currentUserId: string;
 }) {
   const [data, setData] = useState<BandDetail | null>(null);
   const [conversations, setConversations] = useState<Conversation[] | null>(
@@ -92,8 +95,8 @@ export function BandDetailClient({
   const [addingToSetlist, setAddingToSetlist] = useState(false);
   const [membersMinimized, setMembersMinimized] = useState(true);
   const [showsMinimized, setShowsMinimized] = useState(false);
-  const [audioMinimized, setAudioMinimized] = useState(false);
-  const [setlistsMinimized, setSetlistsMinimized] = useState(false);
+  const [audioMinimized, setAudioMinimized] = useState(true);
+  const [setlistsMinimized, setSetlistsMinimized] = useState(true);
   const [pastShowsMinimized, setPastShowsMinimized] = useState(true);
   const [archivedMinimized, setArchivedMinimized] = useState(true);
   const [minimizedSetlists, setMinimizedSetlists] = useState<Set<string>>(
@@ -101,6 +104,7 @@ export function BandDetailClient({
   );
   // Shows start minimized: a show is expanded only while its id is in the set.
   const [expandedShows, setExpandedShows] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<'overview' | 'chat'>('overview');
 
   const toggleSetlistMinimized = (id: string) =>
     setMinimizedSetlists((prev) => {
@@ -528,6 +532,41 @@ export function BandDetailClient({
         )}
       </span>
 
+      {/* Tabs */}
+      <div
+        role="tablist"
+        aria-label="Band sections"
+        className="flex gap-1 border-b border-neutral-200 dark:border-neutral-800"
+      >
+        {(['overview', 'chat'] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab}
+            onClick={() => setActiveTab(tab)}
+            className={
+              '-mb-px border-b-2 px-3 py-2 text-sm font-medium capitalize transition ' +
+              (activeTab === tab
+                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200')
+            }
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'chat' && (
+        <BandChat
+          bandId={bandId}
+          currentUserId={currentUserId}
+          canModerate={isOwner}
+        />
+      )}
+
+      {activeTab === 'overview' && (
+        <>
       <section className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <MinimizeToggle
@@ -570,9 +609,9 @@ export function BandDetailClient({
         )}
       </section>
 
-      {upcomingShows.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
+      <section className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="flex min-w-0 items-center gap-2">
             <MinimizeToggle
               minimized={showsMinimized}
               onToggle={() => setShowsMinimized((v) => !v)}
@@ -580,14 +619,25 @@ export function BandDetailClient({
             >
               <h2 className="text-sm font-medium">Shows</h2>
             </MinimizeToggle>
-          </div>
-          {!showsMinimized && (
+          </span>
+          <Link
+            href={`/calendar/events/new?bandId=${bandId}`}
+            className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+          >
+            Add show
+          </Link>
+        </div>
+        {!showsMinimized &&
+          (upcomingShows.length > 0 ? (
             <ul className="flex flex-col gap-2">
               {upcomingShows.map(renderShow)}
             </ul>
-          )}
-        </section>
-      )}
+          ) : (
+            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+              No upcoming shows. Use “Add show” to schedule one.
+            </p>
+          ))}
+      </section>
 
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
@@ -826,6 +876,8 @@ export function BandDetailClient({
         >
           Leave band
         </button>
+      )}
+        </>
       )}
 
       <ConfirmModal

@@ -19,12 +19,17 @@ export default async function BandDetailPage({
 
   const { bandId } = await params;
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? '';
+  const currentUserId = session.user.sub ?? '';
 
   return (
     <main className="main-container">
       <PageHeader defaultHref="/bands" />
 
-      <BandDetailClient bandId={bandId} apiKey={apiKey} />
+      <BandDetailClient
+        bandId={bandId}
+        apiKey={apiKey}
+        currentUserId={currentUserId}
+      />
     </main>
   );
 }

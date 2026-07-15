@@ -20,15 +20,24 @@ const field =
 export function NewEventClient({
   bands,
   defaultDate,
+  defaultBandId = '',
 }: {
   bands: BandOption[];
   defaultDate: string;
+  /** Pre-selected owning band (e.g. when arriving from a band page). */
+  defaultBandId?: string;
 }) {
   const router = useRouter();
   const trackPending = useTrackPending();
   const showToast = useToast();
 
-  const [bandId, setBandId] = useState(bands[0]?.id ?? '');
+  // Honor the pre-selected band only if the user is actually a member of it;
+  // otherwise fall back to their first band.
+  const initialBandId =
+    defaultBandId && bands.some((b) => b.id === defaultBandId)
+      ? defaultBandId
+      : (bands[0]?.id ?? '');
+  const [bandId, setBandId] = useState(initialBandId);
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(defaultDate);
   const [time, setTime] = useState('');
