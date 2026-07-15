@@ -63,23 +63,33 @@ export default async function LibraryPage() {
   // show them to everyone — including users who haven't connected Drive
   // (or don't use Google).
   const userId = session.user.sub ?? '';
-  // Shows in the next 7 days (server-local dates, YYYY-MM-DD).
-  const today = new Date();
-  const weekOut = new Date(today);
-  weekOut.setDate(weekOut.getDate() + 7);
-  const from = today.toLocaleDateString('en-CA');
-  const to = weekOut.toLocaleDateString('en-CA');
+  // Upcoming shows are windowed to "the next 7 days" in the *viewer's*
+  // timezone (done client-side in UpcomingShows). The server can't know the
+  // viewer's TZ, so it fetches a buffered range around its own date — wide
+  // enough (±1 day covers any TZ offset) that the client always has the
+  // rows it needs to filter down to the exact local window.
+  const serverToday = new Date().toLocaleDateString('en-CA');
+  const bufferFrom = new Date();
+  bufferFrom.setDate(bufferFrom.getDate() - 2);
+  const bufferTo = new Date();
+  bufferTo.setDate(bufferTo.getDate() + 9);
 
-  const [notifications, unreadCount, upcomingShows] = await Promise.all([
+  const [notifications, unreadCount, showsBuffer] = await Promise.all([
     listNotifications(userId),
     getUnreadNotificationCount(userId),
-    listEventsForUserInRange(userId, from, to),
+    listEventsForUserInRange(
+      userId,
+      bufferFrom.toLocaleDateString('en-CA'),
+      bufferTo.toLocaleDateString('en-CA'),
+    ),
   ]);
 
   if (!driveConnected) {
     return (
       <main className="mx-auto flex max-w-xl flex-col justify-start gap-4 px-6 pt-6 sm:pt-20 h-max">
-        {upcomingShows.length > 0 && <UpcomingShows shows={upcomingShows} />}
+        {showsBuffer.length > 0 && (
+          <UpcomingShows shows={showsBuffer} serverToday={serverToday} />
+        )}
         <NotificationList initial={notifications} initialUnread={unreadCount} />
         <h1 className="title-text">
           Connect Google Drive
@@ -136,7 +146,9 @@ export default async function LibraryPage() {
         </p>
       </header>
 
-      {upcomingShows.length > 0 && <UpcomingShows shows={upcomingShows} />}
+      {showsBuffer.length > 0 && (
+          <UpcomingShows shows={showsBuffer} serverToday={serverToday} />
+        )}
       <NotificationList initial={notifications} initialUnread={unreadCount} />
 
       <div className="rounded-lg border border-neutral-200 p-4 text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">

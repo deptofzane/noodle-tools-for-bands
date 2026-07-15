@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { formatDateShort, formatTime12h } from '@/lib/format';
 
@@ -14,13 +14,48 @@ export interface UpcomingShow {
   location: string | null;
 }
 
+/** Today's date, YYYY-MM-DD, in the browser's local timezone. */
+function localToday(): string {
+  return new Date().toLocaleDateString('en-CA');
+}
+
+/** Add `n` days to a YYYY-MM-DD date, staying in local time. */
+function addDays(ymd: string, n: number): string {
+  const [y, m, d] = ymd.split('-').map(Number);
+  const dt = new Date(y!, m! - 1, d!);
+  dt.setDate(dt.getDate() + n);
+  return dt.toLocaleDateString('en-CA');
+}
+
 /**
- * Collapsible list of shows happening in the next week, across the user's
- * bands. Rendered on Home only when there's at least one (the server omits
- * it otherwise). Starts expanded.
+ * Collapsible list of shows in the next 7 days, across the user's bands.
+ *
+ * The server passes a buffered set of rows plus its own date; we re-window
+ * to the next 7 days in the *viewer's* timezone. `today` is seeded from the
+ * server value so the server render and first client render match (no
+ * hydration mismatch), then corrected to the browser's local date on mount.
+ * Renders nothing once the local window is empty.
  */
-export function UpcomingShows({ shows }: { shows: UpcomingShow[] }) {
+export function UpcomingShows({
+  shows,
+  serverToday,
+}: {
+  shows: UpcomingShow[];
+  serverToday: string;
+}) {
   const [open, setOpen] = useState(true);
+  const [today, setToday] = useState(serverToday);
+
+  useEffect(() => {
+    const local = localToday();
+    if (local !== today) setToday(local);
+    // Only correcting to the browser's clock once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const weekOut = addDays(today, 7);
+  const visible = shows.filter((s) => s.date >= today && s.date <= weekOut);
+  if (visible.length === 0) return null;
 
   return (
     <section className="flex flex-col gap-2">
@@ -38,13 +73,13 @@ export function UpcomingShows({ shows }: { shows: UpcomingShow[] }) {
         </span>
         <h2 className="text-sm font-medium">Upcoming shows</h2>
         <span className="text-xs text-neutral-500">
-          <span aria-hidden="true">·</span> next 7 days · {shows.length}
+          <span aria-hidden="true">·</span> next 7 days · {visible.length}
         </span>
       </button>
 
       {open && (
         <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-          {shows.map((s) => (
+          {visible.map((s) => (
             <li key={s.id}>
               <Link
                 href={`/bands/${s.bandId}`}
