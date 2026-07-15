@@ -83,8 +83,8 @@ export function UpcomingShows({
           {visible.map((s) => (
             <li key={s.id} className="flex items-center gap-2 px-3 py-2.5">
               <Link
-                href={`/bands/${s.bandId}`}
-                className="-mx-1 flex min-w-0 flex-1 items-start justify-between gap-3 rounded px-1 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                href={`/calendar/events/${s.id}`}
+                className="-mx-1 flex min-w-0 flex-1 items-start justify-start gap-3 rounded px-1 hover:bg-neutral-50 dark:hover:bg-neutral-900"
               >
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate text-sm font-medium">{s.title}</span>
