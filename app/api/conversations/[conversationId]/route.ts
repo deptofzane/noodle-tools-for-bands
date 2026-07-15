@@ -12,6 +12,7 @@ import {
 import { getConversationActivity } from '@/lib/db/activity';
 import { loadNotes } from '@/lib/db/notes';
 import { getMembership, listMembers } from '@/lib/db/bands';
+import { notify } from '@/lib/db/notifications';
 
 /**
  * GET    /api/conversations/[conversationId]
@@ -69,6 +70,9 @@ export async function PATCH(
     return NextResponse.json({ error: 'bad_body' }, { status: 400 });
 
   let conversation = membership.conversation;
+  // Track whether a content edit (rename / move / archive) happened, so we
+  // notify once at the end — not for plain open/close toggles.
+  let edited = false;
 
   if (typeof body.name === 'string') {
     const name = body.name.trim();
@@ -78,6 +82,7 @@ export async function PATCH(
         { status: 400 },
       );
     conversation = await renameConversation(conversationId, name);
+    edited = true;
   }
 
   if (typeof body.bandId === 'string' && body.bandId !== conversation.bandId) {
@@ -89,6 +94,7 @@ export async function PATCH(
       );
     try {
       conversation = await moveConversation(conversationId, body.bandId);
+      edited = true;
     } catch (err) {
       if (err instanceof ConversationConflictError)
         return NextResponse.json({ error: 'conflict', message: err.message }, { status: 409 });
@@ -103,6 +109,18 @@ export async function PATCH(
 
   if (typeof body.archived === 'boolean') {
     conversation = await setConversationArchived(conversationId, body.archived);
+    edited = true;
+  }
+
+  if (edited) {
+    await notify({
+      bandId: conversation.bandId,
+      actorId: user.id,
+      kind: 'song-updated',
+      subjectType: 'conversation',
+      subjectId: conversationId,
+      subjectLabel: conversation.audioFileName,
+    });
   }
 
   return NextResponse.json({ conversation });

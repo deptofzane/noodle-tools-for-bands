@@ -65,10 +65,12 @@ export function BandDetailClient({
   bandId,
   apiKey,
   currentUserId,
+  initialTab = 'overview',
 }: {
   bandId: string;
   apiKey: string;
   currentUserId: string;
+  initialTab?: 'overview' | 'chat';
 }) {
   const [data, setData] = useState<BandDetail | null>(null);
   const [conversations, setConversations] = useState<Conversation[] | null>(
@@ -104,7 +106,7 @@ export function BandDetailClient({
   );
   // Shows start minimized: a show is expanded only while its id is in the set.
   const [expandedShows, setExpandedShows] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState<'overview' | 'chat'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'chat'>(initialTab);
   const [chatChange, setChatChange] = useState(0);
   const [unread, setUnread] = useState<{ count: number; mentioned: boolean }>({
     count: 0,

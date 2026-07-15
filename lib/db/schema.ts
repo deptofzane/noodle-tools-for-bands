@@ -126,6 +126,62 @@ export const conversations = pgTable(
   ],
 );
 
+// ── Notifications (Home activity feed) ───────────────────────────────
+// One row per noteworthy event, scoped to a band; recipients are that
+// band's members (resolved at query time via membership). The acting user
+// is recorded so they can be excluded from their own notifications.
+// Actor/band/subject labels are snapshotted so the feed still reads well
+// after the underlying row is renamed or deleted.
+export const notificationKind = pgEnum('notification_kind', [
+  'song-comment',
+  'chat-message',
+  'show-added',
+  'song-updated',
+  'show-updated',
+  'band-updated',
+]);
+
+// What a notification points at, for building its link.
+export const notificationSubject = pgEnum('notification_subject', [
+  'conversation',
+  'event',
+  'band',
+]);
+
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    bandId: uuid('band_id')
+      .notNull()
+      .references(() => bands.id, { onDelete: 'cascade' }),
+    actorId: uuid('actor_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    actorName: text('actor_name'),
+    bandName: text('band_name'),
+    kind: notificationKind('kind').notNull(),
+    subjectType: notificationSubject('subject_type').notNull(),
+    subjectId: uuid('subject_id'),
+    subjectLabel: text('subject_label'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index('notifications_band_created_idx').on(t.bandId, t.createdAt),
+    index('notifications_created_idx').on(t.createdAt),
+  ],
+);
+
+// Per-user "last seen" marker for the notification feed (one row per user).
+export const notificationReads = pgTable('notification_reads', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull(),
+});
+
 // ── Band messages (general chat) ─────────────────────────────────────
 // A flat, band-wide message thread (not tied to a song). Any member can
 // post; authors (or band owners) can soft-delete. Ordered by createdAt.

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getConversationMembership } from '@/lib/db/conversations';
 import { createReply, NoteNotFoundError, sanitizeMentionIds } from '@/lib/db/notes';
+import { notify } from '@/lib/db/notifications';
 
 /**
  * POST /api/conversations/[conversationId]/notes/[noteId]/replies
@@ -17,7 +18,8 @@ export async function POST(
   if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
   const { conversationId, noteId } = await params;
 
-  if (!(await getConversationMembership(user.id, conversationId)))
+  const membership = await getConversationMembership(user.id, conversationId);
+  if (!membership)
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
   const body = await req.json().catch(() => null);
@@ -34,6 +36,14 @@ export async function POST(
       text,
       sanitizeMentionIds(body?.mentions),
     );
+    await notify({
+      bandId: membership.conversation.bandId,
+      actorId: user.id,
+      kind: 'song-comment',
+      subjectType: 'conversation',
+      subjectId: conversationId,
+      subjectLabel: membership.conversation.audioFileName,
+    });
     return NextResponse.json({ note }, { status: 201 });
   } catch (err) {
     if (err instanceof NoteNotFoundError)

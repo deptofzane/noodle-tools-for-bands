@@ -3,6 +3,7 @@ import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { createEvent, listEventsForUserInRange } from '@/lib/db/events';
 import { getSetlist } from '@/lib/db/setlists';
+import { notify } from '@/lib/db/notifications';
 
 /**
  * GET  /api/events?from=YYYY-MM-DD&to=YYYY-MM-DD
@@ -90,6 +91,14 @@ export async function POST(req: Request) {
     details: str(body?.details),
     setlistId,
     createdBy: user.id,
+  });
+  await notify({
+    bandId,
+    actorId: user.id,
+    kind: 'show-added',
+    subjectType: 'event',
+    subjectId: id,
+    subjectLabel: title,
   });
   return NextResponse.json({ id }, { status: 201 });
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership, removeMember } from '@/lib/db/bands';
+import { notify } from '@/lib/db/notifications';
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ bandId: string; userId: string }> }) {
   const user = await getCurrentDbUser();
@@ -12,5 +13,12 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ band
   if (userId === user.id)
     return NextResponse.json({ error: 'cannot_remove_self', message: 'Owners can’t remove themselves here.' }, { status: 400 });
   await removeMember(bandId, userId);
+  await notify({
+    bandId,
+    actorId: user.id,
+    kind: 'band-updated',
+    subjectType: 'band',
+    subjectId: bandId,
+  });
   return NextResponse.json({ ok: true });
 }

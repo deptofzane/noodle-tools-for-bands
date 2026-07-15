@@ -10,14 +10,17 @@ import { BandDetailClient } from './BandDetailClient';
  */
 export default async function BandDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ bandId: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const session = await auth();
   if (!session?.user) return null;
   if (session.error === 'RefreshAccessTokenError') redirect('/home');
 
   const { bandId } = await params;
+  const { tab } = await searchParams;
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? '';
   const currentUserId = session.user.sub ?? '';
 
@@ -29,6 +32,7 @@ export default async function BandDetailPage({
         bandId={bandId}
         apiKey={apiKey}
         currentUserId={currentUserId}
+        initialTab={tab === 'chat' ? 'chat' : 'overview'}
       />
     </main>
   );

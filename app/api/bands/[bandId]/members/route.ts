@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { addMember, getMembership } from '@/lib/db/bands';
 import { getUserByEmail } from '@/lib/db/users';
+import { notify } from '@/lib/db/notifications';
 
 export async function POST(req: Request, { params }: { params: Promise<{ bandId: string }> }) {
   const user = await getCurrentDbUser();
@@ -24,5 +25,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ bandId:
     );
 
   await addMember(bandId, target.id, 'member');
+  await notify({
+    bandId,
+    actorId: user.id,
+    kind: 'band-updated',
+    subjectType: 'band',
+    subjectId: bandId,
+    subjectLabel: target.name ?? target.email,
+  });
   return NextResponse.json({ ok: true }, { status: 201 });
 }

@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import { auth, signIn } from '@/auth';
 import { REQUIRED_DRIVE_SCOPES, hasAllDriveScopes } from '@/lib/google';
+import {
+  getUnreadNotificationCount,
+  listNotifications,
+} from '@/lib/db/notifications';
+import { NotificationList } from './NotificationList';
 
 /**
  * The Library page.
@@ -101,6 +106,12 @@ export default async function LibraryPage() {
     );
   }
 
+  const userId = session.user.sub ?? '';
+  const [notifications, unreadCount] = await Promise.all([
+    listNotifications(userId),
+    getUnreadNotificationCount(userId),
+  ]);
+
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 px-6 py-4">
       <header>
@@ -109,6 +120,9 @@ export default async function LibraryPage() {
           Google Drive is connected.
         </p>
       </header>
+
+      <NotificationList initial={notifications} initialUnread={unreadCount} />
+
       <div className="rounded-lg border border-neutral-200 p-4 text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">
         Audio and conversations are organized by band now. Open a{' '}
         <Link href="/bands" className="text-blue-600 underline dark:text-blue-400">

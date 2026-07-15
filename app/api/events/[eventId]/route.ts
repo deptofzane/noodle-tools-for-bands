@@ -3,6 +3,7 @@ import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { getEventForUser, updateEvent } from '@/lib/db/events';
 import { getSetlist } from '@/lib/db/setlists';
+import { notify } from '@/lib/db/notifications';
 
 /**
  * PATCH /api/events/[eventId]
@@ -65,6 +66,14 @@ export async function PATCH(
     location: str(body?.location),
     details: str(body?.details),
     setlistId,
+  });
+  await notify({
+    bandId: event.bandId,
+    actorId: user.id,
+    kind: 'show-updated',
+    subjectType: 'event',
+    subjectId: eventId,
+    subjectLabel: title,
   });
   return NextResponse.json({ ok: true });
 }

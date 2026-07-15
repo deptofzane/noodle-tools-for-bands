@@ -3,6 +3,7 @@ import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { createBandMessage, listBandMessages } from '@/lib/db/band-messages';
 import { sanitizeMentionIds } from '@/lib/db/notes';
+import { notify } from '@/lib/db/notifications';
 
 /**
  * Band chat messages.
@@ -68,5 +69,12 @@ export async function POST(
 
   const mentions = sanitizeMentionIds(json?.mentions);
   const message = await createBandMessage(bandId, user.id, body, mentions);
+  await notify({
+    bandId,
+    actorId: user.id,
+    kind: 'chat-message',
+    subjectType: 'band',
+    subjectId: bandId,
+  });
   return NextResponse.json({ message }, { status: 201 });
 }
