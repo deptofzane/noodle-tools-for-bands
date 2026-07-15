@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { ConfirmModal } from '../../ConfirmModal';
 import { NoteForm, type Mentionable } from '../../notes/[conversationId]/NoteForm';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
@@ -74,6 +75,8 @@ export function BandChat({
   const [loaded, setLoaded] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Message | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const trackPending = useTrackPending();
   const showToast = useToast();
 
@@ -190,7 +193,10 @@ export function BandChat({
     });
   };
 
-  const remove = async (id: string) => {
+  const confirmDelete = async () => {
+    if (!deleteTarget || deleting) return;
+    const id = deleteTarget.id;
+    setDeleting(true);
     try {
       await trackPending(async () => {
         const res = await fetch(`${base}/${id}`, { method: 'DELETE' });
@@ -200,8 +206,11 @@ export function BandChat({
         }
         setMessages((prev) => prev.filter((m) => m.id !== id));
       });
+      setDeleteTarget(null);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -278,7 +287,7 @@ export function BandChat({
                   {(mine || canModerate) && (
                     <button
                       type="button"
-                      onClick={() => remove(m.id)}
+                      onClick={() => setDeleteTarget(m)}
                       className="text-[11px] text-neutral-400 hover:text-red-600 dark:hover:text-red-400"
                       aria-label="Delete message"
                     >
@@ -302,6 +311,17 @@ export function BandChat({
         placeholder="Message your band…  (@ to mention, ⌘/Ctrl+Enter to send)"
         autoFocus={false}
         onSubmit={send}
+      />
+
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Delete comment?"
+        description="Are you sure you want to delete this comment? This can’t be undone."
+        confirmLabel="Delete"
+        busyLabel="Deleting…"
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
     </section>
   );
