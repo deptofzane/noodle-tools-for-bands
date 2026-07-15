@@ -1,5 +1,6 @@
-import { auth, signOut } from '@/auth';
+import { auth, signIn, signOut } from '@/auth';
 import { redirect } from 'next/navigation';
+import { REQUIRED_DRIVE_SCOPES, hasAllDriveScopes } from '@/lib/google';
 import { getMutedKinds } from '@/lib/db/notifications';
 import { ThemeToggle } from '../ThemeToggle';
 import { NotificationPreferences } from './NotificationPreferences';
@@ -19,6 +20,9 @@ export default async function SettingsPage({
   if (!session?.user) redirect('/login');
   const { tab } = await searchParams;
   const mutedKinds = await getMutedKinds(session.user.sub ?? '');
+
+  const driveConnected = hasAllDriveScopes(session.scopes);
+  const refreshError = session.error === 'RefreshAccessTokenError';
 
   const account = (
     <div className="flex flex-col gap-6">
@@ -50,6 +54,72 @@ export default async function SettingsPage({
             Sign out
           </button>
         </form>
+      </div>
+
+      <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="font-medium">Google Drive</p>
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+              {refreshError
+                ? 'Your Google session expired — sign in again to keep importing from Drive.'
+                : driveConnected
+                  ? 'Connected. You can import audio and sheet music from Drive.'
+                  : 'Not connected. Connect Drive to import audio and sheet music from it.'}
+            </p>
+          </div>
+          {driveConnected && !refreshError && (
+            <span className="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-300">
+              Connected
+            </span>
+          )}
+        </div>
+
+        {refreshError ? (
+          <form
+            className="mt-3"
+            action={async () => {
+              'use server';
+              await signIn('google', { redirectTo: '/settings?tab=account' });
+            }}
+          >
+            <button
+              type="submit"
+              className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500"
+            >
+              Sign in again
+            </button>
+          </form>
+        ) : (
+          !driveConnected && (
+            <form
+              className="mt-3"
+              action={async () => {
+                'use server';
+                await signIn(
+                  'google',
+                  { redirectTo: '/settings?tab=account' },
+                  {
+                    scope: [
+                      'openid',
+                      'email',
+                      'profile',
+                      ...REQUIRED_DRIVE_SCOPES,
+                    ].join(' '),
+                    include_granted_scopes: 'true',
+                  },
+                );
+              }}
+            >
+              <button
+                type="submit"
+                className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500"
+              >
+                Connect Drive
+              </button>
+            </form>
+          )
+        )}
       </div>
 
       <details className="rounded-lg border border-neutral-200 p-4 text-xs dark:border-neutral-800">
