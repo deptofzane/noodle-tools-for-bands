@@ -57,9 +57,18 @@ export default async function LibraryPage() {
     );
   }
 
+  // The notification feed is independent of Drive, so show it to everyone
+  // — including users who haven't connected Drive (or don't use Google).
+  const userId = session.user.sub ?? '';
+  const [notifications, unreadCount] = await Promise.all([
+    listNotifications(userId),
+    getUnreadNotificationCount(userId),
+  ]);
+
   if (!driveConnected) {
     return (
       <main className="mx-auto flex max-w-xl flex-col justify-start gap-4 px-6 pt-6 sm:pt-20 h-max">
+        <NotificationList initial={notifications} initialUnread={unreadCount} />
         <h1 className="title-text">
           Connect Google Drive
         </h1>
@@ -105,12 +114,6 @@ export default async function LibraryPage() {
       </main>
     );
   }
-
-  const userId = session.user.sub ?? '';
-  const [notifications, unreadCount] = await Promise.all([
-    listNotifications(userId),
-    getUnreadNotificationCount(userId),
-  ]);
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 px-6 py-4">

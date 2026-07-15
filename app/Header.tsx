@@ -33,10 +33,44 @@ export function Header() {
   const pathname = usePathname();
   const pendingCount = usePendingCount();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close the mobile menu whenever the route changes.
   useEffect(() => setMenuOpen(false), [pathname]);
+
+  // Unread-notifications badge. Refetch on navigation and window focus,
+  // poll while visible, and clear instantly when the Home feed marks the
+  // notifications read (it dispatches `notifications:read`).
+  useEffect(() => {
+    let cancelled = false;
+    const fetchUnread = async () => {
+      try {
+        const res = await fetch('/api/notifications', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = (await res.json()) as { unreadCount?: number };
+        if (!cancelled) setUnread(data.unreadCount ?? 0);
+      } catch {
+        // ignore — the badge is best-effort
+      }
+    };
+    void fetchUnread();
+
+    const onFocus = () => void fetchUnread();
+    const onRead = () => setUnread(0);
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('notifications:read', onRead);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') void fetchUnread();
+    }, 60_000);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('notifications:read', onRead);
+      clearInterval(interval);
+    };
+  }, [pathname]);
 
   // While open, close on an outside click or Escape.
   useEffect(() => {
@@ -97,6 +131,7 @@ export function Header() {
                 className={navLinkClass(isActive)}
               >
                 {link.label}
+                {link.href === '/home' && <NavBadge count={unread} />}
               </Link>
             );
           })}
@@ -133,13 +168,14 @@ export function Header() {
                     aria-current={isActive ? 'page' : undefined}
                     onClick={() => setMenuOpen(false)}
                     className={
-                      'rounded px-4 py-3 text-base ' +
+                      'flex items-center rounded px-4 py-3 text-base ' +
                       (isActive
                         ? 'bg-neutral-100 font-medium text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
                         : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800')
                     }
                   >
                     {link.label}
+                    {link.href === '/home' && <NavBadge count={unread} />}
                   </Link>
                 );
               })}
@@ -148,6 +184,19 @@ export function Header() {
         </div>
       </nav>
     </header>
+  );
+}
+
+/** Unread-count pill shown next to the Home link. */
+function NavBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span
+      aria-label={`${count} unread notifications`}
+      className="ml-1.5 inline-flex min-w-[1.125rem] items-center justify-center rounded-full bg-blue-600 px-1 py-0.5 text-[10px] font-semibold leading-none text-white"
+    >
+      {count > 99 ? '99+' : count}
+    </span>
   );
 }
 

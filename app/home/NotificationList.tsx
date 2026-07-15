@@ -74,6 +74,8 @@ export function NotificationList({
   const [unread, setUnread] = useState(initialUnread);
 
   const markRead = useCallback(async () => {
+    // Let the nav badge clear immediately, before the request resolves.
+    window.dispatchEvent(new Event('notifications:read'));
     await fetch('/api/notifications/read', { method: 'POST' }).catch(() => {});
   }, []);
 
