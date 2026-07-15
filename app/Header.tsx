@@ -46,7 +46,7 @@ export function Header() {
     let cancelled = false;
     const fetchUnread = async () => {
       try {
-        const res = await fetch('/api/notifications', { cache: 'no-store' });
+        const res = await fetch('/api/notifications/unread', { cache: 'no-store' });
         if (!res.ok) return;
         const data = (await res.json()) as { unreadCount?: number };
         if (!cancelled) setUnread(data.unreadCount ?? 0);
