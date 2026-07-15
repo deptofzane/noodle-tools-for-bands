@@ -26,6 +26,7 @@ export interface EventListItem {
   date: string; // YYYY-MM-DD
   time: string | null;
   location: string | null;
+  setlistId: string | null;
 }
 
 export interface BandEvent {
@@ -110,6 +111,7 @@ export async function listEventsForUserInRange(
       date: events.date,
       time: events.time,
       location: events.location,
+      setlistId: events.setlistId,
     })
     .from(events)
     .innerJoin(bands, eq(bands.id, events.bandId))

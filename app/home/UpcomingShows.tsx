@@ -12,6 +12,7 @@ export interface UpcomingShow {
   date: string; // YYYY-MM-DD
   time: string | null;
   location: string | null;
+  setlistId: string | null;
 }
 
 /** Today's date, YYYY-MM-DD, in the browser's local timezone. */
@@ -80,10 +81,10 @@ export function UpcomingShows({
       {open && (
         <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
           {visible.map((s) => (
-            <li key={s.id}>
+            <li key={s.id} className="flex items-center gap-2 px-3 py-2.5">
               <Link
                 href={`/bands/${s.bandId}`}
-                className="flex items-start justify-between gap-3 px-3 py-2.5 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                className="-mx-1 flex min-w-0 flex-1 items-start justify-between gap-3 rounded px-1 hover:bg-neutral-50 dark:hover:bg-neutral-900"
               >
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate text-sm font-medium">{s.title}</span>
@@ -99,6 +100,15 @@ export function UpcomingShows({
                   {s.time && <span>{formatTime12h(s.time)}</span>}
                 </span>
               </Link>
+              {s.setlistId && (
+                <Link
+                  href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice`}
+                  title="Practice this show’s setlist"
+                  className="shrink-0 rounded-md border border-neutral-300 px-2.5 py-1 text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                >
+                  Practice
+                </Link>
+              )}
             </li>
           ))}
         </ul>
