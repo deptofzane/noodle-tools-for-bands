@@ -5,7 +5,9 @@ import {
   getUnreadNotificationCount,
   listNotifications,
 } from '@/lib/db/notifications';
+import { listEventsForUserInRange } from '@/lib/db/events';
 import { NotificationList } from './NotificationList';
+import { UpcomingShows } from './UpcomingShows';
 
 /**
  * The Library page.
@@ -57,17 +59,27 @@ export default async function LibraryPage() {
     );
   }
 
-  // The notification feed is independent of Drive, so show it to everyone
-  // — including users who haven't connected Drive (or don't use Google).
+  // The notification feed + upcoming shows are independent of Drive, so
+  // show them to everyone — including users who haven't connected Drive
+  // (or don't use Google).
   const userId = session.user.sub ?? '';
-  const [notifications, unreadCount] = await Promise.all([
+  // Shows in the next 7 days (server-local dates, YYYY-MM-DD).
+  const today = new Date();
+  const weekOut = new Date(today);
+  weekOut.setDate(weekOut.getDate() + 7);
+  const from = today.toLocaleDateString('en-CA');
+  const to = weekOut.toLocaleDateString('en-CA');
+
+  const [notifications, unreadCount, upcomingShows] = await Promise.all([
     listNotifications(userId),
     getUnreadNotificationCount(userId),
+    listEventsForUserInRange(userId, from, to),
   ]);
 
   if (!driveConnected) {
     return (
       <main className="mx-auto flex max-w-xl flex-col justify-start gap-4 px-6 pt-6 sm:pt-20 h-max">
+        {upcomingShows.length > 0 && <UpcomingShows shows={upcomingShows} />}
         <NotificationList initial={notifications} initialUnread={unreadCount} />
         <h1 className="title-text">
           Connect Google Drive
@@ -124,6 +136,7 @@ export default async function LibraryPage() {
         </p>
       </header>
 
+      {upcomingShows.length > 0 && <UpcomingShows shows={upcomingShows} />}
       <NotificationList initial={notifications} initialUnread={unreadCount} />
 
       <div className="rounded-lg border border-neutral-200 p-4 text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">
