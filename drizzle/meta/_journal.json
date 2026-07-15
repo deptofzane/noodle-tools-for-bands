@@ -85,6 +85,13 @@
       "when": 1783979448732,
       "tag": "0011_sticky_praxagora",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784149098908,
+      "tag": "0012_amazing_dragon_lord",
+      "breakpoints": true
     }
   ]
 }

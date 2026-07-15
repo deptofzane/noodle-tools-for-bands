@@ -24,6 +24,7 @@ import { pgSslConfig } from './ssl';
  */
 
 export const CONVERSATION_CHANNEL = 'conversation_activity';
+export const BAND_CHANNEL = 'band_activity';
 
 class NotifyHub {
   private emitter = new EventEmitter();
@@ -46,8 +47,13 @@ class NotifyHub {
         ssl: pgSslConfig(),
       });
       client.on('notification', (msg) => {
-        if (msg.channel === CONVERSATION_CHANNEL && msg.payload) {
+        if (!msg.payload) return;
+        // Namespace band events so a band id can never collide with a
+        // conversation id on the shared emitter.
+        if (msg.channel === CONVERSATION_CHANNEL) {
           this.emitter.emit(msg.payload);
+        } else if (msg.channel === BAND_CHANNEL) {
+          this.emitter.emit(`band:${msg.payload}`);
         }
       });
       client.on('error', (err) => {
@@ -57,6 +63,7 @@ class NotifyHub {
       client.on('end', () => this.handleDrop());
       await client.connect();
       await client.query(`LISTEN ${CONVERSATION_CHANNEL}`);
+      await client.query(`LISTEN ${BAND_CHANNEL}`);
       this.client = client;
     })();
     try {
@@ -96,6 +103,13 @@ class NotifyHub {
   subscribe(conversationId: string, onChange: () => void): () => void {
     this.emitter.on(conversationId, onChange);
     return () => this.emitter.off(conversationId, onChange);
+  }
+
+  /** Subscribe to a band's message activity. Returns an unsubscribe fn. */
+  subscribeBand(bandId: string, onChange: () => void): () => void {
+    const key = `band:${bandId}`;
+    this.emitter.on(key, onChange);
+    return () => this.emitter.off(key, onChange);
   }
 }
 

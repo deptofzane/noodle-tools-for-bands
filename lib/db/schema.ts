@@ -126,6 +126,31 @@ export const conversations = pgTable(
   ],
 );
 
+// ── Band messages (general chat) ─────────────────────────────────────
+// A flat, band-wide message thread (not tied to a song). Any member can
+// post; authors (or band owners) can soft-delete. Ordered by createdAt.
+export const bandMessages = pgTable(
+  'band_messages',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    bandId: uuid('band_id')
+      .notNull()
+      .references(() => bands.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id')
+      .notNull()
+      .references(() => users.id),
+    body: text('body').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (t) => [index('band_messages_band_created_idx').on(t.bandId, t.createdAt)],
+);
+
 // ── Notes (threaded) ─────────────────────────────────────────────────
 export const notes = pgTable(
   'notes',
