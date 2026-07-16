@@ -5,6 +5,7 @@ import {
   __resetRateLimitStore,
   clientIp,
   rateLimit,
+  rateLimitByIp,
 } from '../../lib/rate-limit';
 
 test('rate-limit: allows up to the limit, then blocks', () => {
@@ -51,5 +52,21 @@ test('clientIp: prefers first x-forwarded-for, falls back', () => {
   const real = new Request('http://x', { headers: { 'x-real-ip': '198.51.100.9' } });
   assert.equal(clientIp(real), '198.51.100.9');
 
-  assert.equal(clientIp(new Request('http://x')), 'unknown');
+  assert.equal(clientIp(new Request('http://x')), null);
+});
+
+test('rate-limit: per-IP fails open when the IP is unknown', () => {
+  __resetRateLimitStore();
+  const noIp = new Request('http://x');
+  const opts = { limit: 1, windowMs: 60_000 };
+  // With no IP header, requests must never be blocked (no shared bucket).
+  for (let i = 0; i < 5; i++) {
+    assert.equal(rateLimitByIp('t', noIp, opts).allowed, true, 'unknown IP not limited');
+  }
+  // With an IP header, the per-IP limit still applies.
+  const withIp = new Request('http://x', {
+    headers: { 'x-forwarded-for': '203.0.113.9' },
+  });
+  assert.equal(rateLimitByIp('t', withIp, opts).allowed, true, 'first allowed');
+  assert.equal(rateLimitByIp('t', withIp, opts).allowed, false, 'second blocked');
 });

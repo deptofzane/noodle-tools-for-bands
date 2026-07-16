@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { setUserPassword } from '@/lib/db/users';
 import { consumeResetToken, deleteUserResetTokens } from '@/lib/db/reset-tokens';
-import { clientIp, rateLimit } from '@/lib/rate-limit';
+import { rateLimitByIp } from '@/lib/rate-limit';
 
 /**
  * POST /api/auth/reset  { token, password }
@@ -13,7 +13,7 @@ export const runtime = 'nodejs';
 export async function POST(req: Request) {
   // Tokens are 256-bit random (guessing is infeasible), but cap attempts
   // per IP anyway as defense-in-depth against scripted probing.
-  const limit = rateLimit(`reset:${clientIp(req)}`, {
+  const limit = rateLimitByIp('reset', req, {
     limit: 10,
     windowMs: 15 * 60 * 1000,
   });

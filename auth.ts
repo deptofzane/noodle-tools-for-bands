@@ -11,7 +11,7 @@ import {
   linkGoogleAccount,
 } from '@/lib/db/accounts';
 import { verifyPassword } from '@/lib/password';
-import { clientIp, rateLimit } from '@/lib/rate-limit';
+import { rateLimit, rateLimitByIp } from '@/lib/rate-limit';
 import { LINK_COOKIE, verifyLinkToken } from '@/lib/link-token';
 
 /**
@@ -95,12 +95,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // that from becoming a CPU-exhaustion vector. Keyed per-email
         // (spray against one account) and per-IP (spray across accounts).
         // An over-limit attempt looks like any failed login (returns null).
-        const ip = clientIp(request);
         const perEmail = rateLimit(`login:email:${email.toLowerCase()}`, {
           limit: 10,
           windowMs: 10 * 60 * 1000,
         });
-        const perIp = rateLimit(`login:ip:${ip}`, {
+        const perIp = rateLimitByIp('login:ip', request, {
           limit: 50,
           windowMs: 10 * 60 * 1000,
         });

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createCredentialUser, EmailTakenError } from '@/lib/db/users';
-import { clientIp, rateLimit } from '@/lib/rate-limit';
+import { rateLimitByIp } from '@/lib/rate-limit';
 
 /**
  * POST /api/auth/register  { email, password, name? }
@@ -13,7 +13,7 @@ export const runtime = 'nodejs';
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 export async function POST(req: Request) {
-  const limit = rateLimit(`register:${clientIp(req)}`, {
+  const limit = rateLimitByIp('register', req, {
     limit: 5,
     windowMs: 10 * 60 * 1000,
   });

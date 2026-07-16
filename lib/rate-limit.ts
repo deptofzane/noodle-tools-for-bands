@@ -75,20 +75,49 @@ export function rateLimit(
 /**
  * Best-effort client IP for rate-limit keying. Behind Railway's proxy the
  * real client is the first entry of `x-forwarded-for`; fall back to
- * `x-real-ip`, then a constant bucket (so a missing header degrades to a
- * shared limit rather than no limit).
+ * `x-real-ip`. Returns null when no IP header is present.
  */
-export function clientIp(req: Request): string {
+export function clientIp(req: Request): string | null {
   const fwd = req.headers.get('x-forwarded-for');
   if (fwd) {
     const first = fwd.split(',')[0]?.trim();
     if (first) return first;
   }
-  return req.headers.get('x-real-ip')?.trim() || 'unknown';
+  return req.headers.get('x-real-ip')?.trim() || null;
+}
+
+let warnedNoIp = false;
+
+/**
+ * Per-IP rate limit that FAILS OPEN when the client IP can't be determined.
+ *
+ * If the proxy header is ever missing, every caller would otherwise collapse
+ * into one shared key and a single endpoint could be locked out app-wide.
+ * Failing open avoids that; the per-account / per-email limits (keyed on
+ * identity, not IP) remain the primary brute-force defense in that case.
+ * The missing header is logged once so a misconfig is visible.
+ */
+export function rateLimitByIp(
+  prefix: string,
+  req: Request,
+  opts: { limit: number; windowMs: number },
+): RateLimitResult {
+  const ip = clientIp(req);
+  if (!ip) {
+    if (!warnedNoIp) {
+      warnedNoIp = true;
+      console.warn(
+        '[rate-limit] no client IP header (x-forwarded-for / x-real-ip); per-IP limits are disabled for these requests',
+      );
+    }
+    return { allowed: true, remaining: Infinity, retryAfterSec: 0 };
+  }
+  return rateLimit(`${prefix}:${ip}`, opts);
 }
 
 /** Reset all state. Test-only. */
 export function __resetRateLimitStore(): void {
   buckets.clear();
   lastSweep = 0;
+  warnedNoIp = false;
 }

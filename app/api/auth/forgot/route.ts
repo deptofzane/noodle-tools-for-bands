@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getUserByEmail } from '@/lib/db/users';
 import { createResetToken } from '@/lib/db/reset-tokens';
 import { sendPasswordResetEmail } from '@/lib/email';
-import { clientIp, rateLimit } from '@/lib/rate-limit';
+import { rateLimit, rateLimitByIp } from '@/lib/rate-limit';
 
 /**
  * POST /api/auth/forgot  { email }
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   // Two independent limits, both enumeration-safe (the 429 depends only on
   // request rate, never on whether the account exists): per-IP blunts a
   // scripted flood; per-email stops one address's inbox from being bombed.
-  const perIp = rateLimit(`forgot:ip:${clientIp(req)}`, {
+  const perIp = rateLimitByIp('forgot:ip', req, {
     limit: 5,
     windowMs: WINDOW_MS,
   });
