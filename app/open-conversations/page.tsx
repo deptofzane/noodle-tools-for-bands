@@ -1,23 +1,21 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
-import { hasAllDriveScopes } from '@/lib/google';
 import { AnnotatedList } from './AnnotatedList';
 import { PageHeader } from '../PageHeader';
 
 /**
  * Annotated files page.
  *
- * Server shell — verifies auth and Drive scopes, then defers data
- * fetching to the `<AnnotatedList>` client component. This route is
- * heavier than other Drive endpoints (1 list + N file reads per
- * load), so we don't auto-poll it and we don't preload server-side.
+ * Server shell — verifies auth, then defers data fetching to the
+ * `<AnnotatedList>` client component. Conversations live in Postgres now,
+ * so this doesn't require Drive scopes. This route is heavier than most
+ * (1 list + N file reads per load), so we don't auto-poll or preload it.
  */
 export default async function AnnotatedPage() {
   const session = await auth();
   if (!session?.user) return null;
   if (session.error === 'RefreshAccessTokenError') redirect('/home');
-  if (!hasAllDriveScopes(session.scopes)) redirect('/home');
 
   return (
     <main className="main-container">
