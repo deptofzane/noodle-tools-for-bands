@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { PickerButton, type PickedFile } from '../../PickerButton';
+import { ConnectDriveButton } from '../../ConnectDriveButton';
 import { useCanUseDrive } from '../../DriveCapabilityProvider';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
@@ -60,8 +61,7 @@ export function SheetMusic({
 
   // Drive users get a source picker (Drive vs. local); everyone else
   // goes straight to the local file input.
-  const openChooser = () =>
-    canUseDrive ? setChooseOpen(true) : inputRef.current?.click();
+  const openChooser = () => setChooseOpen(true);
 
   const endpoint = `/api/conversations/${conversationId}/files/sheet_music`;
   const viewUrl = meta
@@ -289,19 +289,25 @@ export function SheetMusic({
               Add sheet music
             </h2>
             <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-              Choose a file from Google Drive or upload one from this device.
+              {canUseDrive
+                ? 'Choose a file from Google Drive or upload one from this device.'
+                : 'Sign in with Google to import from Drive, or upload one from this device.'}
             </p>
             <div className="mt-4 flex flex-col gap-2">
-              <PickerButton
-                apiKey={apiKey}
-                multiple={false}
-                label="Choose from Google Drive"
-                onPick={(files) => {
-                  setChooseOpen(false);
-                  const file = files[0];
-                  if (file) void handleDriveImport(file);
-                }}
-              />
+              {canUseDrive ? (
+                <PickerButton
+                  apiKey={apiKey}
+                  multiple={false}
+                  label="Choose from Google Drive"
+                  onPick={(files) => {
+                    setChooseOpen(false);
+                    const file = files[0];
+                    if (file) void handleDriveImport(file);
+                  }}
+                />
+              ) : (
+                <ConnectDriveButton label="Sign in with Google" />
+              )}
               <button
                 type="button"
                 onClick={() => {

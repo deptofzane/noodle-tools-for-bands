@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
 import { ConfirmModal } from '../../ConfirmModal';
 import { PickerButton, type PickedFile } from '../../PickerButton';
+import { ConnectDriveButton } from '../../ConnectDriveButton';
 import { BandChat } from './BandChat';
 import { useCanUseDrive } from '../../DriveCapabilityProvider';
 import { useTrackPending } from '../../PendingActionProvider';
@@ -751,11 +752,7 @@ export function BandDetailClient({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() =>
-                canUseDrive
-                  ? setChooseOpen(true)
-                  : audioInputRef.current?.click()
-              }
+              onClick={() => setChooseOpen(true)}
               disabled={audioBusy || importProgress !== null}
               className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
             >
@@ -808,11 +805,12 @@ export function BandDetailClient({
                 Add audio
               </h2>
               <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-                Choose one or more files from Google Drive, or upload one from
-                this device.
+                {canUseDrive
+                  ? 'Choose one or more files from Google Drive, or upload one from this device.'
+                  : 'Sign in with Google to import from Drive, or upload one from this device.'}
               </p>
               <div className="mt-4 flex flex-col gap-2">
-                {canUseDrive && (
+                {canUseDrive ? (
                   <PickerButton
                     apiKey={apiKey}
                     label="Choose from Google Drive"
@@ -821,6 +819,8 @@ export function BandDetailClient({
                       void handleRegister(files);
                     }}
                   />
+                ) : (
+                  <ConnectDriveButton label="Sign in with Google" />
                 )}
                 <button
                   type="button"
