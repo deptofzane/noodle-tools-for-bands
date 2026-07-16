@@ -3,7 +3,7 @@ import { after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { inArray } from 'drizzle-orm';
 import { closeDb, db } from '../../lib/db';
-import { users } from '../../lib/db/schema';
+import { accounts, users } from '../../lib/db/schema';
 import { createCredentialUser } from '../../lib/db/users';
 import {
   AlreadyLinkedError,
@@ -97,7 +97,20 @@ test('accounts: explicit link — reject conflicts, unlink lockout guard', async
     await assert.rejects(
       () => linkGoogleAccount(c2.id, 'ACC_G4', 'other@gmail.com'),
       AlreadyLinkedError,
-      'one Google account per user',
+      'one Google account per user (app-level)',
+    );
+    // And the DB enforces it too — a raw second insert is rejected with a
+    // unique violation (23505; drizzle wraps the pg error, so check .cause).
+    await assert.rejects(
+      () =>
+        db
+          .insert(accounts)
+          .values({ userId: c2.id, provider: 'google', providerAccountId: 'ACC_G5' }),
+      (err: unknown) => {
+        const e = err as { code?: string; cause?: { code?: string } };
+        return e?.code === '23505' || e?.cause?.code === '23505';
+      },
+      'db rejects a second Google account for the user',
     );
 
     // Unlink lockout: u1 has no password → refuse.

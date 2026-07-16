@@ -120,6 +120,13 @@
       "when": 1784222525395,
       "tag": "0016_misty_the_fallen",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1784225879407,
+      "tag": "0017_faulty_wolfsbane",
+      "breakpoints": true
     }
   ]
 }

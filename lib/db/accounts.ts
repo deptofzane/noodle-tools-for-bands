@@ -168,12 +168,30 @@ export async function linkGoogleAccount(
   if (current && current.providerAccountId !== sub) {
     throw new AlreadyLinkedError();
   }
-  await insertGoogleAccount(
-    db,
-    userId,
-    sub,
-    googleEmail ? normalizeEmail(googleEmail) : null,
-  );
+
+  // Plain insert (not onConflictDoNothing): the unique indexes on accounts
+  // are the real guardrail against a race between the checks above and this
+  // write. On a violation, re-resolve to the correct typed error.
+  try {
+    await db.insert(accounts).values({
+      userId,
+      provider: 'google',
+      providerAccountId: sub,
+      email: googleEmail ? normalizeEmail(googleEmail) : null,
+    });
+  } catch (err) {
+    if (!isUniqueViolation(err)) throw err;
+    const now = await getAccountByProvider('google', sub);
+    if (now && now.userId !== userId) throw new GoogleAccountConflictError();
+    if (now && now.userId === userId) return; // linked concurrently for us
+    throw new AlreadyLinkedError(); // user got a different Google account
+  }
+}
+
+/** True if the error is a Postgres unique-constraint violation (23505). */
+function isUniqueViolation(err: unknown): boolean {
+  const e = err as { code?: string; cause?: { code?: string } };
+  return e?.code === '23505' || e?.cause?.code === '23505';
 }
 
 export class LastSignInMethodError extends Error {

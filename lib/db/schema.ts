@@ -72,7 +72,10 @@ export const accounts = pgTable(
       t.provider,
       t.providerAccountId,
     ),
-    index('accounts_user_idx').on(t.userId),
+    // At most one account per (user, provider) — makes "one Google account
+    // per user" a DB invariant, not just an app-level check. Its leading
+    // `user_id` column also serves the per-user lookups.
+    uniqueIndex('accounts_user_provider_unique').on(t.userId, t.provider),
   ],
 );
 
