@@ -3,8 +3,11 @@
  * upload routes. Node-agnostic (pure string logic).
  */
 
-/** Cap imported/uploaded audio to keep object storage + a memory buffer sane. */
-export const MAX_AUDIO_BYTES = 100 * 1024 * 1024; // 100 MB
+/**
+ * Cap imported/uploaded audio. Uploads are buffered fully in memory before
+ * being stored, so this (with the upload concurrency limit) bounds peak RAM.
+ */
+export const MAX_AUDIO_BYTES = 50 * 1024 * 1024; // 50 MB
 
 /** Audio types we accept for local upload (extension fallback below). */
 const AUDIO_EXT_TO_MIME: Record<string, string> = {

@@ -11,6 +11,7 @@ import {
 } from '@/lib/db/conversations';
 import { addAudioVersion, hasSongFile } from '@/lib/db/song-files';
 import { MAX_AUDIO_BYTES, normalizeAudioMime } from '@/lib/audio-mime';
+import { uploadLimit } from '@/lib/upload-limit';
 
 // Local audio has no Drive id; mint a synthetic one so the conversation's
 // (band, drive_audio_file_id) key stays satisfied. Playback reads from
@@ -63,7 +64,7 @@ export async function POST(
       );
     if (file.size > MAX_AUDIO_BYTES)
       return NextResponse.json(
-        { error: 'file_too_large', message: 'Audio exceeds the 100 MB limit.' },
+        { error: 'file_too_large', message: 'Audio exceeds the 50 MB limit.' },
         { status: 413 },
       );
     const fileName = file.name || 'audio';
@@ -80,12 +81,14 @@ export async function POST(
       fileName,
     );
     try {
-      const data = Buffer.from(await file.arrayBuffer());
-      await addAudioVersion({
-        conversationId: conversation.id,
-        data,
-        fileName,
-        mimeType,
+      await uploadLimit.run(async () => {
+        const data = Buffer.from(await file.arrayBuffer());
+        await addAudioVersion({
+          conversationId: conversation.id,
+          data,
+          fileName,
+          mimeType,
+        });
       });
     } catch (err) {
       // No re-registration path for a synthetic id, so don't leave an
@@ -138,28 +141,32 @@ export async function POST(
       const declaredSize = Number(metaRes.data.size ?? 0);
       if (declaredSize && declaredSize > MAX_AUDIO_BYTES) {
         return NextResponse.json(
-          { error: 'file_too_large', message: 'Audio exceeds the 100 MB limit.' },
+          { error: 'file_too_large', message: 'Audio exceeds the 50 MB limit.' },
           { status: 413 },
         );
       }
-      const mediaRes = await drive.files.get(
-        { fileId: driveAudioFileId, alt: 'media' },
-        { responseType: 'arraybuffer' },
-      );
-      const data = Buffer.from(mediaRes.data as ArrayBuffer);
-      if (data.length > MAX_AUDIO_BYTES) {
-        return NextResponse.json(
-          { error: 'file_too_large', message: 'Audio exceeds the 100 MB limit.' },
-          { status: 413 },
+      const tooLarge = await uploadLimit.run(async () => {
+        const mediaRes = await drive.files.get(
+          { fileId: driveAudioFileId, alt: 'media' },
+          { responseType: 'arraybuffer' },
         );
-      }
-      await addAudioVersion({
-        conversationId: conversation.id,
-        data,
-        fileName: metaRes.data.name ?? audioFileName ?? 'audio',
-        mimeType: metaRes.data.mimeType ?? 'application/octet-stream',
-        driveFileId: driveAudioFileId,
+        const data = Buffer.from(mediaRes.data as ArrayBuffer);
+        if (data.length > MAX_AUDIO_BYTES) return true;
+        await addAudioVersion({
+          conversationId: conversation.id,
+          data,
+          fileName: metaRes.data.name ?? audioFileName ?? 'audio',
+          mimeType: metaRes.data.mimeType ?? 'application/octet-stream',
+          driveFileId: driveAudioFileId,
+        });
+        return false;
       });
+      if (tooLarge) {
+        return NextResponse.json(
+          { error: 'file_too_large', message: 'Audio exceeds the 50 MB limit.' },
+          { status: 413 },
+        );
+      }
     } catch (err) {
       console.error('[conversations] audio import failed', err);
       return NextResponse.json(

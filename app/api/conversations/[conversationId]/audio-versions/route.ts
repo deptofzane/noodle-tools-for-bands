@@ -5,6 +5,7 @@ import { getCurrentDbUser } from '@/lib/current-user';
 import { getConversationMembership } from '@/lib/db/conversations';
 import { addAudioVersion, listAudioVersions } from '@/lib/db/song-files';
 import { MAX_AUDIO_BYTES, normalizeAudioMime } from '@/lib/audio-mime';
+import { uploadLimit } from '@/lib/upload-limit';
 
 /**
  * Audio versions for a song (conversation).
@@ -70,30 +71,33 @@ export async function POST(
       const declaredSize = Number(metaRes.data.size ?? 0);
       if (declaredSize && declaredSize > MAX_AUDIO_BYTES) {
         return NextResponse.json(
-          { error: 'file_too_large', message: 'Audio exceeds the 100 MB limit.' },
+          { error: 'file_too_large', message: 'Audio exceeds the 50 MB limit.' },
           { status: 413 },
         );
       }
-      const mediaRes = await drive.files.get(
-        { fileId: driveFileId, alt: 'media' },
-        { responseType: 'arraybuffer' },
-      );
-      const data = Buffer.from(mediaRes.data as ArrayBuffer);
-      if (data.length > MAX_AUDIO_BYTES) {
-        return NextResponse.json(
-          { error: 'file_too_large', message: 'Audio exceeds the 100 MB limit.' },
-          { status: 413 },
+      const result = await uploadLimit.run(async () => {
+        const mediaRes = await drive.files.get(
+          { fileId: driveFileId, alt: 'media' },
+          { responseType: 'arraybuffer' },
         );
-      }
-      const version = await addAudioVersion({
-        conversationId,
-        data,
-        fileName: metaRes.data.name ?? 'audio',
-        mimeType: metaRes.data.mimeType ?? 'application/octet-stream',
-        label: label || null,
-        driveFileId,
+        const data = Buffer.from(mediaRes.data as ArrayBuffer);
+        if (data.length > MAX_AUDIO_BYTES) return null;
+        return addAudioVersion({
+          conversationId,
+          data,
+          fileName: metaRes.data.name ?? 'audio',
+          mimeType: metaRes.data.mimeType ?? 'application/octet-stream',
+          label: label || null,
+          driveFileId,
+        });
       });
-      return NextResponse.json({ version }, { status: 201 });
+      if (!result) {
+        return NextResponse.json(
+          { error: 'file_too_large', message: 'Audio exceeds the 50 MB limit.' },
+          { status: 413 },
+        );
+      }
+      return NextResponse.json({ version: result }, { status: 201 });
     } catch (err) {
       console.error('[audio-versions] Drive import failed', err);
       return NextResponse.json(
@@ -116,7 +120,7 @@ export async function POST(
   }
   if (file.size > MAX_AUDIO_BYTES) {
     return NextResponse.json(
-      { error: 'file_too_large', message: 'Audio exceeds the 100 MB limit.' },
+      { error: 'file_too_large', message: 'Audio exceeds the 50 MB limit.' },
       { status: 413 },
     );
   }
@@ -129,13 +133,15 @@ export async function POST(
     );
   }
   try {
-    const data = Buffer.from(await file.arrayBuffer());
-    const version = await addAudioVersion({
-      conversationId,
-      data,
-      fileName,
-      mimeType,
-      label: label || null,
+    const version = await uploadLimit.run(async () => {
+      const data = Buffer.from(await file.arrayBuffer());
+      return addAudioVersion({
+        conversationId,
+        data,
+        fileName,
+        mimeType,
+        label: label || null,
+      });
     });
     return NextResponse.json({ version }, { status: 201 });
   } catch (err) {

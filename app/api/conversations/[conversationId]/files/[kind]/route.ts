@@ -12,6 +12,7 @@ import {
   streamSongFile,
   type SongFileKind,
 } from '@/lib/db/song-files';
+import { uploadLimit } from '@/lib/upload-limit';
 
 /**
  * Song file endpoint, shared by every file kind (audio, sheet music).
@@ -137,8 +138,10 @@ export async function POST(
         { status: 401 },
       );
     }
+    const accessToken = session.accessToken;
     try {
-      const drive = getDriveClient(session.accessToken);
+      return await uploadLimit.run(async () => {
+      const drive = getDriveClient(accessToken);
       const metaRes = await drive.files.get({
         fileId: driveFileId,
         fields: 'name, mimeType, size',
@@ -204,6 +207,7 @@ export async function POST(
         driveFileId,
       });
       return Response.json({ sheetMusic: stored }, { status: 201 });
+      });
     } catch (err) {
       console.error('[files] sheet-music Drive import failed', err);
       return Response.json(
@@ -242,12 +246,9 @@ export async function POST(
     );
   }
 
-  const data = Buffer.from(await file.arrayBuffer());
-  const meta = await putSheetMusic({
-    conversationId,
-    data,
-    fileName,
-    mimeType,
+  const meta = await uploadLimit.run(async () => {
+    const data = Buffer.from(await file.arrayBuffer());
+    return putSheetMusic({ conversationId, data, fileName, mimeType });
   });
   return Response.json({ sheetMusic: meta }, { status: 201 });
 }
