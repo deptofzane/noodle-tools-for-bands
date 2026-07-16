@@ -23,16 +23,28 @@ import { CSS } from '@dnd-kit/utilities';
 import { useTrackPending } from '../../../../../PendingActionProvider';
 import { useToast } from '../../../../../ToastProvider';
 
-interface Song {
+/** A setlist entry: a song (conversationId) or a marker (set break / custom). */
+interface Item {
+  id: string;
+  conversationId: string | null;
+  name: string;
+}
+
+interface BandSong {
   conversationId: string;
   name: string;
 }
 
+const uid = () =>
+  typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `tmp-${Math.random().toString(36).slice(2)}`;
+
 /**
- * Edit a setlist's songs: add, remove, and reorder (drag-and-drop). All
- * edits are local until Save, which PATCHes the full song list; Cancel
- * discards them. Dragging works with pointer or keyboard (focus the handle,
- * Space to lift, arrows to move, Space to drop).
+ * Edit a setlist's items: add songs, set breaks, or custom markers; remove
+ * and reorder (drag-and-drop). All edits are local until Save, which PATCHes
+ * the full item list; Cancel discards them. Dragging works with pointer or
+ * keyboard (focus the handle, Space to lift, arrows to move, Space to drop).
  */
 export function EditSetlistClient({
   bandId,
@@ -44,19 +56,21 @@ export function EditSetlistClient({
   bandId: string;
   setlistId: string;
   name: string;
-  initialSongs: Song[];
+  initialSongs: Item[];
   /** All the band's unarchived songs — the pool to add from. */
-  bandSongs: Song[];
+  bandSongs: BandSong[];
 }) {
   const router = useRouter();
   const trackPending = useTrackPending();
   const showToast = useToast();
 
-  const [songs, setSongs] = useState<Song[]>(initialSongs);
+  const [items, setItems] = useState<Item[]>(initialSongs);
   const [saving, setSaving] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedToAdd, setSelectedToAdd] = useState<Set<string>>(new Set());
+  const [otherOpen, setOtherOpen] = useState(false);
+  const [otherName, setOtherName] = useState('');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -64,35 +78,50 @@ export function EditSetlistClient({
   );
 
   const viewHref = `/bands/${bandId}/setlists/${setlistId}`;
-  const initialOrder = initialSongs.map((s) => s.conversationId).join(',');
-  const currentOrder = songs.map((s) => s.conversationId).join(',');
-  const dirty = initialOrder !== currentOrder;
+  // Compare by content (song id or marker label), so add/remove/reorder/rename
+  // all count — but the row id (which changes on save) doesn't.
+  const serialize = (list: Item[]) =>
+    list.map((s) => s.conversationId ?? `marker:${s.name}`).join('|');
+  const dirty = serialize(initialSongs) !== serialize(items);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    setSongs((prev) => {
-      const from = prev.findIndex((s) => s.conversationId === active.id);
-      const to = prev.findIndex((s) => s.conversationId === over.id);
+    setItems((prev) => {
+      const from = prev.findIndex((s) => s.id === active.id);
+      const to = prev.findIndex((s) => s.id === over.id);
       if (from === -1 || to === -1) return prev;
       return arrayMove(prev, from, to);
     });
   };
 
   const handleRemove = (id: string) => {
-    setSongs((prev) => prev.filter((s) => s.conversationId !== id));
+    setItems((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  const addSetBreak = () =>
+    setItems((prev) => [...prev, { id: uid(), conversationId: null, name: 'Set break' }]);
+
+  const addOther = () => {
+    const label = otherName.trim();
+    if (!label) return;
+    setItems((prev) => [...prev, { id: uid(), conversationId: null, name: label }]);
+    setOtherName('');
+    setOtherOpen(false);
   };
 
   // Songs available to add: the band's songs not already in the setlist,
   // alphabetical, filtered by the search box.
   const candidates = useMemo(() => {
-    const inSetlist = new Set(songs.map((s) => s.conversationId));
+    const inSetlist = new Set(
+      items.filter((s) => s.conversationId).map((s) => s.conversationId),
+    );
     const q = search.trim().toLowerCase();
     return bandSongs
       .filter((s) => !inSetlist.has(s.conversationId))
       .filter((s) => !q || s.name.toLowerCase().includes(q))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [bandSongs, songs, search]);
+  }, [bandSongs, items, search]);
 
   const openAdd = () => {
     setSearch('');
@@ -111,23 +140,26 @@ export function EditSetlistClient({
 
   const handleAddSongs = () => {
     if (selectedToAdd.size === 0) return;
-    // Append the picks (alphabetical) to the end of the setlist.
     const picks = bandSongs
       .filter((s) => selectedToAdd.has(s.conversationId))
-      .sort((a, b) => a.name.localeCompare(b.name));
-    setSongs((prev) => [...prev, ...picks]);
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((s) => ({ id: uid(), conversationId: s.conversationId, name: s.name }));
+    setItems((prev) => [...prev, ...picks]);
     setAddOpen(false);
   };
 
-  // Close the Add-songs modal on Escape.
+  // Close the modals on Escape.
   useEffect(() => {
-    if (!addOpen) return;
+    if (!addOpen && !otherOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setAddOpen(false);
+      if (e.key === 'Escape') {
+        setAddOpen(false);
+        setOtherOpen(false);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [addOpen]);
+  }, [addOpen, otherOpen]);
 
   const handleSave = async () => {
     if (!dirty || saving) return;
@@ -138,7 +170,10 @@ export function EditSetlistClient({
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            conversationIds: songs.map((s) => s.conversationId),
+            items: items.map((s) => ({
+              conversationId: s.conversationId,
+              label: s.conversationId ? null : s.name,
+            })),
           }),
         });
         if (!r.ok) {
@@ -156,20 +191,37 @@ export function EditSetlistClient({
 
   return (
     <div className="flex flex-col gap-4 mt-2">
-      <header className="flex items-center justify-between gap-2">
+      <header className="flex flex-wrap items-center justify-between gap-2">
         <Link
           href={viewHref}
           className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
         >
           Cancel
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={openAdd}
             className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
           >
             Add songs
+          </button>
+          <button
+            type="button"
+            onClick={addSetBreak}
+            className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+          >
+            Add set break
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOtherName('');
+              setOtherOpen(true);
+            }}
+            className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+          >
+            Add other
           </button>
           <button
             type="button"
@@ -184,15 +236,16 @@ export function EditSetlistClient({
 
       <h1 className="title-text">{name}</h1>
 
-      {songs.length === 0 ? (
+      {items.length === 0 ? (
         <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
-          No songs in this setlist. Save to keep it empty, or Cancel.
+          Nothing in this setlist yet. Add songs, a set break, or something
+          custom.
         </p>
       ) : (
         <>
           <p className="text-xs text-neutral-500">
             Drag the handle to reorder (or focus it and use the arrow keys);
-            remove a song with ✕.
+            remove an item with ✕.
           </p>
           <DndContext
             sensors={sensors}
@@ -200,17 +253,17 @@ export function EditSetlistClient({
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={songs.map((s) => s.conversationId)}
+              items={items.map((s) => s.id)}
               strategy={verticalListSortingStrategy}
             >
               <ul className="flex flex-col gap-2">
-                {songs.map((s, i) => (
+                {items.map((s) => (
                   <SortableRow
-                    key={s.conversationId}
-                    id={s.conversationId}
-                    index={i}
+                    key={s.id}
+                    id={s.id}
                     name={s.name}
-                    onRemove={() => handleRemove(s.conversationId)}
+                    isMarker={!s.conversationId}
+                    onRemove={() => handleRemove(s.id)}
                   />
                 ))}
               </ul>
@@ -301,19 +354,69 @@ export function EditSetlistClient({
           </div>
         </div>
       )}
+
+      {otherOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-other-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setOtherOpen(false)}
+        >
+          <form
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              addOther();
+            }}
+            className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-5 shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
+          >
+            <h2 id="add-other-title" className="text-base font-semibold">
+              Add item
+            </h2>
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              A custom entry that isn’t a song (e.g. “Encore”, “Announcements”).
+            </p>
+            <input
+              value={otherName}
+              onChange={(e) => setOtherName(e.target.value)}
+              placeholder="Name"
+              autoFocus
+              maxLength={100}
+              className="mt-3 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setOtherOpen(false)}
+                className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!otherName.trim()}
+                className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+              >
+                Add
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
 
 function SortableRow({
   id,
-  index,
   name,
+  isMarker,
   onRemove,
 }: {
   id: string;
-  index: number;
   name: string;
+  isMarker: boolean;
   onRemove: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -328,9 +431,11 @@ function SortableRow({
     <li
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 rounded-lg border border-neutral-200 bg-white px-3 py-3 text-sm dark:border-neutral-800 dark:bg-neutral-900 ${
-        isDragging ? 'z-10 shadow-lg' : ''
-      }`}
+      className={`flex items-center gap-3 rounded-lg border px-3 py-3 text-sm ${
+        isMarker
+          ? 'border-dashed border-neutral-300 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900/50'
+          : 'border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900'
+      } ${isDragging ? 'z-10 shadow-lg' : ''}`}
     >
       <button
         type="button"
@@ -341,10 +446,15 @@ function SortableRow({
       >
         <span aria-hidden="true">⠿</span>
       </button>
-      <span className="w-5 shrink-0 text-right text-xs text-neutral-400">
-        {index + 1}
+      <span
+        className={`min-w-0 flex-1 truncate ${
+          isMarker
+            ? 'text-xs font-semibold uppercase tracking-wide text-neutral-500'
+            : 'font-medium'
+        }`}
+      >
+        {name}
       </span>
-      <span className="min-w-0 flex-1 truncate font-medium">{name}</span>
       <button
         type="button"
         onClick={onRemove}

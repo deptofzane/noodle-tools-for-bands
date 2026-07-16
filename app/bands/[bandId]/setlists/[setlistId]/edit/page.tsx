@@ -38,8 +38,9 @@ export default async function EditSetlistPage({
         setlistId={setlistId}
         name={setlist.name}
         initialSongs={setlist.songs.map((s) => ({
+          id: s.id,
           conversationId: s.conversationId,
-          name: s.audioFileName ?? 'Untitled audio',
+          name: s.name,
         }))}
         bandSongs={bandSongs}
       />

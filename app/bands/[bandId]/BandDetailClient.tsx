@@ -43,7 +43,7 @@ interface Setlist {
   id: string;
   name: string;
   updatedAt: string;
-  songs: { conversationId: string; audioFileName: string | null }[];
+  songs: { id: string; conversationId: string | null; name: string }[];
 }
 
 interface Show {
@@ -902,18 +902,25 @@ export function BandDetailClient({
                         </Link>
                       </span>
                       <span className="shrink-0 text-xs text-neutral-500 pr-3">
-                        {sl.songs.length}{' '}
-                        {sl.songs.length === 1 ? 'song' : 'songs'}
+                        {songCountLabel(sl.songs)}
                       </span>
                     </div>
                     {!collapsed && sl.songs.length > 0 && (
-                      <ol className="list-decimal px-4 pb-3 pl-9 text-sm text-neutral-600 dark:text-neutral-400">
+                      <ul className="flex flex-col gap-0.5 px-4 pb-3 text-sm text-neutral-600 dark:text-neutral-400">
                         {sl.songs.map((s) => (
-                          <li key={s.conversationId} className="truncate">
-                            {s.audioFileName ?? 'Untitled audio'}
+                          <li
+                            key={s.id}
+                            className={
+                              'truncate ' +
+                              (s.conversationId
+                                ? ''
+                                : 'text-xs font-semibold uppercase tracking-wide text-neutral-400')
+                            }
+                          >
+                            {s.name}
                           </li>
                         ))}
-                      </ol>
+                      </ul>
                     )}
                   </li>
                 );
@@ -1035,8 +1042,7 @@ export function BandDetailClient({
                           {sl.name}
                         </span>
                         <span className="shrink-0 text-xs text-neutral-500">
-                          {sl.songs.length}{' '}
-                          {sl.songs.length === 1 ? 'song' : 'songs'}
+                          {songCountLabel(sl.songs)}
                         </span>
                       </label>
                     </li>
@@ -1071,6 +1077,14 @@ export function BandDetailClient({
 }
 
 /** ▸/▾ toggle for collapsing a band-page section, matching the Members one. */
+/** "N songs" — counts actual songs, ignoring markers (set breaks etc.). */
+function songCountLabel(
+  songs: { conversationId: string | null }[],
+): string {
+  const n = songs.filter((s) => s.conversationId).length;
+  return `${n} ${n === 1 ? 'song' : 'songs'}`;
+}
+
 function MinimizeToggle({
   minimized,
   onToggle,

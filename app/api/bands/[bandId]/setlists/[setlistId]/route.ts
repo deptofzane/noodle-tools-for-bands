@@ -2,13 +2,21 @@ import { NextResponse } from 'next/server';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { listBandConversations } from '@/lib/db/conversations';
-import { getSetlist, setSetlistSongs } from '@/lib/db/setlists';
+import {
+  getSetlist,
+  setSetlistSongs,
+  type SetlistItemInput,
+} from '@/lib/db/setlists';
+
+const MAX_LABEL = 100;
 
 /**
  * PATCH /api/bands/[bandId]/setlists/[setlistId]
- *   Body: { conversationIds: string[] } — the setlist's songs in their new
- *   order. Sets the setlist to exactly these songs (add / remove / reorder).
- *   Every id must be a song in the band, with no duplicates.
+ *   Body: { items: Array<{ conversationId?: string|null, label?: string|null }> }
+ *   — the setlist's items in their new order (add / remove / reorder). An
+ *   item is a song (conversationId, must be a band song, no dups) or a
+ *   marker (label, e.g. a set break). Legacy `{ conversationIds }` is also
+ *   accepted.
  *
  * Requires band membership; the setlist must belong to the band.
  */
@@ -27,24 +35,39 @@ export async function PATCH(
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   const body = await req.json().catch(() => null);
-  const submitted: string[] = Array.isArray(body?.conversationIds)
-    ? body.conversationIds.filter((v: unknown): v is string => typeof v === 'string')
-    : [];
+  // Normalize to a raw item list, accepting the legacy conversationIds form.
+  const raw: unknown[] = Array.isArray(body?.items)
+    ? body.items
+    : Array.isArray(body?.conversationIds)
+      ? body.conversationIds.map((id: unknown) => ({ conversationId: id }))
+      : [];
 
-  // Every submitted id must be a song in this band, with no duplicates.
-  // (Songs can be added, removed, or reordered — but only band songs.)
   const bandSongs = new Set(
     (await listBandConversations(bandId)).map((c) => c.id),
   );
-  const valid =
-    new Set(submitted).size === submitted.length &&
-    submitted.every((id) => bandSongs.has(id));
-  if (!valid)
-    return NextResponse.json(
-      { error: 'bad_songs', message: 'Songs must belong to this band.' },
-      { status: 400 },
-    );
 
-  await setSetlistSongs(setlistId, submitted);
+  const items: SetlistItemInput[] = [];
+  const seenSongs = new Set<string>();
+  for (const entry of raw) {
+    const it = entry as { conversationId?: unknown; label?: unknown };
+    const cid = typeof it?.conversationId === 'string' ? it.conversationId : null;
+    if (cid) {
+      // Songs must belong to this band, with no duplicates.
+      if (!bandSongs.has(cid) || seenSongs.has(cid)) {
+        return NextResponse.json(
+          { error: 'bad_songs', message: 'Songs must belong to this band.' },
+          { status: 400 },
+        );
+      }
+      seenSongs.add(cid);
+      items.push({ conversationId: cid, label: null });
+    } else {
+      // Marker (set break / custom). Skip empty labels.
+      const label = typeof it?.label === 'string' ? it.label.trim() : '';
+      if (label) items.push({ conversationId: null, label: label.slice(0, MAX_LABEL) });
+    }
+  }
+
+  await setSetlistSongs(setlistId, items);
   return NextResponse.json({ setlist: await getSetlist(setlistId) });
 }

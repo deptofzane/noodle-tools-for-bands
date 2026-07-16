@@ -453,22 +453,31 @@ export const setlists = pgTable(
   (t) => [index('setlists_band_idx').on(t.bandId)],
 );
 
-// Songs in a setlist, ordered by `position`. A conversation appears at
-// most once per setlist.
+// Items in a setlist, ordered by `position`. An item is either a song
+// (conversationId set) or a free-standing marker like a set break or a
+// custom entry (conversationId null, `label` holds its name). A given song
+// appears at most once per setlist; markers can repeat.
 export const setlistSongs = pgTable(
   'setlist_songs',
   {
+    id: uuid('id').defaultRandom().primaryKey(),
     setlistId: uuid('setlist_id')
       .notNull()
       .references(() => setlists.id, { onDelete: 'cascade' }),
-    conversationId: uuid('conversation_id')
-      .notNull()
-      .references(() => conversations.id, { onDelete: 'cascade' }),
+    conversationId: uuid('conversation_id').references(
+      () => conversations.id,
+      { onDelete: 'cascade' },
+    ),
+    // Name for non-song items (set break / custom); null for songs.
+    label: text('label'),
     position: integer('position').notNull(),
   },
   (t) => [
-    primaryKey({ columns: [t.setlistId, t.conversationId] }),
     index('setlist_songs_setlist_idx').on(t.setlistId),
+    // A song appears at most once per setlist (markers are exempt).
+    uniqueIndex('setlist_songs_setlist_conversation_unique')
+      .on(t.setlistId, t.conversationId)
+      .where(sql`conversation_id is not null`),
   ],
 );
 

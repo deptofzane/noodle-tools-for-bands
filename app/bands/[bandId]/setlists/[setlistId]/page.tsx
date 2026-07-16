@@ -24,13 +24,48 @@ export default async function SetlistPage({
   if (!setlist || setlist.bandId !== bandId) notFound();
   if (!(await getMembership(user.id, bandId))) notFound();
 
-  const songCount = setlist.songs.length;
-  const totalSeconds = setlist.songs.reduce(
-    (sum, s) => sum + (s.songLength ?? 0),
-    0,
-  );
+  // Count / duration reflect actual songs, not markers (set breaks etc.).
+  const playable = setlist.songs.filter((s) => s.conversationId);
+  const songCount = playable.length;
+  const totalSeconds = playable.reduce((sum, s) => sum + (s.songLength ?? 0), 0);
   // Whether every song contributed a known length (else the total is partial).
-  const allKnown = setlist.songs.every((s) => s.songLength != null);
+  const allKnown = playable.every((s) => s.songLength != null);
+
+  // Render rows with manual song numbering so markers aren't numbered.
+  let songNo = 0;
+  const itemRows = setlist.songs.map((s) => {
+    if (s.conversationId) {
+      songNo += 1;
+      return (
+        <li key={s.id} className="flex items-baseline gap-3 text-sm">
+          <span className="w-5 shrink-0 text-right text-xs text-neutral-400">
+            {songNo}
+          </span>
+          <span className="min-w-0">
+            <Link
+              href={`/notes/${s.conversationId}`}
+              className="hover:underline"
+            >
+              {s.name}
+            </Link>
+            {s.songLength ? (
+              <span className="text-neutral-400">
+                {` - ${formatDuration(s.songLength)}`}
+              </span>
+            ) : null}
+          </span>
+        </li>
+      );
+    }
+    return (
+      <li key={s.id} className="flex items-baseline gap-3">
+        <span className="w-5 shrink-0" aria-hidden="true" />
+        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          {s.name}
+        </span>
+      </li>
+    );
+  });
 
   return (
     <main className="main-container">
@@ -75,25 +110,9 @@ export default async function SetlistPage({
           This setlist has no songs.
         </p>
       ) : (
-        <ol className="flex list-decimal flex-col gap-2 rounded-lg border border-neutral-200 py-3 pl-9 pr-4 dark:border-neutral-800">
-          {setlist.songs.map((s) => (
-            <li key={s.conversationId}>
-              <Link
-                href={`/notes/${s.conversationId}`}
-                className="text-sm hover:underline"
-              >
-                {s.audioFileName ?? 'Untitled audio'}
-              </Link>
-              {s['songLength'] ? (
-                <span className="text-gray-400">
-                  {` - ${formatDuration(s['songLength'])}`}
-                </span>
-              ) : (
-                ''
-              )}
-            </li>
-          ))}
-        </ol>
+        <ul className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-4 py-3 dark:border-neutral-800">
+          {itemRows}
+        </ul>
       )}
     </main>
   );

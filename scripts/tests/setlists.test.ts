@@ -13,6 +13,7 @@ import {
   getSetlist,
   getSetlistPracticeSongs,
   listBandSetlists,
+  setSetlistSongs,
 } from '../../lib/db/setlists';
 import { closeObjectStore } from '../../lib/storage/s3';
 
@@ -86,5 +87,73 @@ test('setlists: a multi-version song appears once (its default)', async () => {
   } finally {
     if (bandId) await deleteBand(bandId);
     await deleteUsersByGoogleSub(['SL_OWNER']);
+  }
+});
+
+test('setlists: markers (set break / custom) coexist with songs', async () => {
+  let bandId: string | undefined;
+  try {
+    const owner = await upsertUser({ googleSub: 'SL_MARK', email: 'slm@x.com', name: 'O' });
+    const band = await createBand(owner.id, 'SLM Band');
+    bandId = band.id;
+    const song = await findOrCreateConversation(band.id, 'driveSLM', 'Song.mp3');
+    await addAudioVersion({
+      conversationId: song.id,
+      ...streamOf(Buffer.from('AAAA')),
+      fileName: 'a.mp3',
+      mimeType: 'audio/mpeg',
+    });
+
+    const setlist = await createSetlist({
+      bandId: band.id,
+      createdBy: owner.id,
+      name: 'Set',
+      conversationIds: [song.id],
+    });
+
+    // A song, then two markers.
+    await setSetlistSongs(setlist.id, [
+      { conversationId: song.id, label: null },
+      { conversationId: null, label: 'Set break' },
+      { conversationId: null, label: 'Encore' },
+    ]);
+
+    const detail = await getSetlist(setlist.id);
+    assert.deepEqual(
+      detail?.songs.map((s) => s.name),
+      ['Song.mp3', 'Set break', 'Encore'],
+      'items in order, markers by label',
+    );
+    assert.equal(detail?.songs[0]?.conversationId, song.id, 'song keeps conversation');
+    assert.equal(detail?.songs[1]?.conversationId, null, 'marker has no conversation');
+
+    // Practice steps songs only — markers are skipped.
+    const practice = await getSetlistPracticeSongs(setlist.id);
+    assert.equal(practice.length, 1, 'only the song is playable');
+    assert.equal(practice[0]?.conversationId, song.id, 'the song');
+
+    // Markers with the same label can repeat.
+    await setSetlistSongs(setlist.id, [
+      { conversationId: null, label: 'Break' },
+      { conversationId: null, label: 'Break' },
+    ]);
+    assert.equal((await getSetlist(setlist.id))?.songs.length, 2, 'markers can repeat');
+
+    // A duplicate song is rejected by the partial unique index.
+    await assert.rejects(
+      () =>
+        setSetlistSongs(setlist.id, [
+          { conversationId: song.id, label: null },
+          { conversationId: song.id, label: null },
+        ]),
+      (err: unknown) => {
+        const e = err as { code?: string; cause?: { code?: string } };
+        return e?.code === '23505' || e?.cause?.code === '23505';
+      },
+      'a song appears at most once per setlist',
+    );
+  } finally {
+    if (bandId) await deleteBand(bandId);
+    await deleteUsersByGoogleSub(['SL_MARK']);
   }
 });

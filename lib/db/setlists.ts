@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 import { db } from './index';
 import { conversations, setlists, setlistSongs, songFiles } from './schema';
 
@@ -11,10 +11,24 @@ import { conversations, setlists, setlistSongs, songFiles } from './schema';
 export type Setlist = typeof setlists.$inferSelect;
 
 export interface SetlistSong {
-  conversationId: string;
-  audioFileName: string | null;
-  /** Audio duration in whole seconds; null if unknown. */
+  /** setlist_songs row id — stable identity, incl. for non-song markers. */
+  id: string;
+  /** Null for non-song items (set break / custom marker). */
+  conversationId: string | null;
+  /** Display name: the song's file name, or the marker's label. */
+  name: string;
+  /** Audio duration in whole seconds; null for markers / unknown. */
   songLength: number | null;
+}
+
+/** One item to persist: a song (conversationId) or a marker (label). */
+export interface SetlistItemInput {
+  conversationId: string | null;
+  label: string | null;
+}
+
+function resolveName(audioFileName: string | null, label: string | null): string {
+  return audioFileName ?? label ?? 'Untitled';
 }
 
 export interface SetlistWithSongs {
@@ -71,14 +85,17 @@ export async function getSetlist(
     .limit(1);
   if (!row) return null;
 
-  const songs = await db
+  const rows = await db
     .select({
+      id: setlistSongs.id,
       conversationId: setlistSongs.conversationId,
       audioFileName: conversations.audioFileName,
+      label: setlistSongs.label,
       songLength: songFiles.songLength,
     })
     .from(setlistSongs)
-    .innerJoin(conversations, eq(conversations.id, setlistSongs.conversationId))
+    // Left join: marker items have no conversation.
+    .leftJoin(conversations, eq(conversations.id, setlistSongs.conversationId))
     .leftJoin(
       songFiles,
       and(
@@ -92,6 +109,12 @@ export async function getSetlist(
     .where(eq(setlistSongs.setlistId, setlistId))
     .orderBy(setlistSongs.position);
 
+  const songs: SetlistSong[] = rows.map((r) => ({
+    id: r.id,
+    conversationId: r.conversationId,
+    name: resolveName(r.audioFileName, r.label),
+    songLength: r.songLength,
+  }));
   return { id: row.id, bandId: row.bandId, name: row.name, songs };
 }
 
@@ -121,21 +144,23 @@ export async function addSongToSetlist(
 }
 
 /**
- * Set a setlist's songs to exactly `conversationIds`, in that order —
- * adding, removing, and repositioning as needed. The caller validates the
- * ids belong to the band. Replaces the rows wholesale in one transaction.
+ * Set a setlist's items to exactly `items`, in that order — songs and/or
+ * markers (set break / custom). The caller validates that song ids belong
+ * to the band. Replaces the rows wholesale in one transaction.
  */
 export async function setSetlistSongs(
   setlistId: string,
-  conversationIds: string[],
+  items: SetlistItemInput[],
 ): Promise<void> {
   await db.transaction(async (tx) => {
     await tx.delete(setlistSongs).where(eq(setlistSongs.setlistId, setlistId));
-    if (conversationIds.length > 0) {
+    if (items.length > 0) {
       await tx.insert(setlistSongs).values(
-        conversationIds.map((conversationId, position) => ({
+        items.map((it, position) => ({
           setlistId,
-          conversationId,
+          conversationId: it.conversationId,
+          // Markers carry a label; songs never do.
+          label: it.conversationId ? null : it.label,
           position,
         })),
       );
@@ -170,15 +195,18 @@ export async function listBandSetlists(
   if (lists.length === 0) return [];
 
   const ids = lists.map((l) => l.id);
-  const songs = await db
+  const rows = await db
     .select({
       setlistId: setlistSongs.setlistId,
+      id: setlistSongs.id,
       conversationId: setlistSongs.conversationId,
       audioFileName: conversations.audioFileName,
+      label: setlistSongs.label,
       songLength: songFiles.songLength,
     })
     .from(setlistSongs)
-    .innerJoin(conversations, eq(conversations.id, setlistSongs.conversationId))
+    // Left join: marker items have no conversation.
+    .leftJoin(conversations, eq(conversations.id, setlistSongs.conversationId))
     .leftJoin(
       songFiles,
       and(
@@ -192,11 +220,12 @@ export async function listBandSetlists(
     .orderBy(setlistSongs.position);
 
   const byList = new Map<string, SetlistSong[]>();
-  for (const s of songs) {
+  for (const s of rows) {
     const arr = byList.get(s.setlistId) ?? [];
     arr.push({
+      id: s.id,
       conversationId: s.conversationId,
-      audioFileName: s.audioFileName,
+      name: resolveName(s.audioFileName, s.label),
       songLength: s.songLength,
     });
     byList.set(s.setlistId, arr);
@@ -225,15 +254,26 @@ export interface PracticeSong {
 export async function getSetlistPracticeSongs(
   setlistId: string,
 ): Promise<PracticeSong[]> {
-  const rows = await db
+  const rawRows = await db
     .select({
       conversationId: setlistSongs.conversationId,
       audioFileName: conversations.audioFileName,
     })
     .from(setlistSongs)
     .innerJoin(conversations, eq(conversations.id, setlistSongs.conversationId))
-    .where(eq(setlistSongs.setlistId, setlistId))
+    // Markers (no conversation) aren't playable — Practice steps songs only.
+    .where(
+      and(
+        eq(setlistSongs.setlistId, setlistId),
+        isNotNull(setlistSongs.conversationId),
+      ),
+    )
     .orderBy(asc(setlistSongs.position));
+  // The isNotNull filter guarantees a conversation id; narrow the type.
+  const rows = rawRows.filter(
+    (r): r is { conversationId: string; audioFileName: string | null } =>
+      r.conversationId !== null,
+  );
   if (rows.length === 0) return [];
 
   const ids = rows.map((r) => r.conversationId);

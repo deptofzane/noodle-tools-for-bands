@@ -31,12 +31,15 @@ export default async function EventPage({
   ]);
   const canManage = bandMembership !== null;
 
-  const setlistTotal = setlist
-    ? setlist.songs.reduce((sum, s) => sum + (s.songLength ?? 0), 0)
-    : 0;
-  const setlistAllKnown = setlist
-    ? setlist.songs.every((s) => s.songLength != null)
-    : true;
+  // Duration reflects actual songs, not markers (set breaks etc.).
+  const setlistPlayable = setlist
+    ? setlist.songs.filter((s) => s.conversationId)
+    : [];
+  const setlistTotal = setlistPlayable.reduce(
+    (sum, s) => sum + (s.songLength ?? 0),
+    0,
+  );
+  const setlistAllKnown = setlistPlayable.every((s) => s.songLength != null);
 
   return (
     <main className="mx-auto flex h-max max-w-2xl flex-col px-6 pb-4">
@@ -111,18 +114,27 @@ export default async function EventPage({
           {setlist.songs.length === 0 ? (
             <p className="text-sm text-neutral-500">This setlist has no songs.</p>
           ) : (
-            <ol className="flex list-decimal flex-col gap-1 pl-5 text-sm">
-              {setlist.songs.map((s) => (
-                <li key={s.conversationId}>
-                  {s.audioFileName ?? 'Untitled audio'}
-                  {s.songLength != null && (
-                    <span className="text-neutral-400">
-                      {` - ${formatDuration(s.songLength)}`}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ol>
+            <ul className="flex flex-col gap-1 text-sm">
+              {setlist.songs.map((s) =>
+                s.conversationId ? (
+                  <li key={s.id}>
+                    {s.name}
+                    {s.songLength != null && (
+                      <span className="text-neutral-400">
+                        {` - ${formatDuration(s.songLength)}`}
+                      </span>
+                    )}
+                  </li>
+                ) : (
+                  <li
+                    key={s.id}
+                    className="text-xs font-semibold uppercase tracking-wide text-neutral-500"
+                  >
+                    {s.name}
+                  </li>
+                ),
+              )}
+            </ul>
           )}
         </section>
       )}
