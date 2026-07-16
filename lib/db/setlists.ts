@@ -84,6 +84,9 @@ export async function getSetlist(
       and(
         eq(songFiles.conversationId, setlistSongs.conversationId),
         eq(songFiles.kind, 'audio'),
+        // Match only the default version, else a multi-version song would
+        // appear once per version.
+        eq(songFiles.isDefault, true),
       ),
     )
     .where(eq(setlistSongs.setlistId, setlistId))
@@ -181,6 +184,8 @@ export async function listBandSetlists(
       and(
         eq(songFiles.conversationId, setlistSongs.conversationId),
         eq(songFiles.kind, 'audio'),
+        // Default version only — otherwise a multi-version song duplicates.
+        eq(songFiles.isDefault, true),
       ),
     )
     .where(inArray(setlistSongs.setlistId, ids))
@@ -236,6 +241,7 @@ export async function getSetlistPracticeSongs(
     .select({
       conversationId: songFiles.conversationId,
       kind: songFiles.kind,
+      isDefault: songFiles.isDefault,
       fileName: songFiles.fileName,
       mimeType: songFiles.mimeType,
       updatedAt: songFiles.updatedAt,
@@ -246,7 +252,8 @@ export async function getSetlistPracticeSongs(
   const audioByConv = new Map<string, (typeof files)[number]>();
   const sheetByConv = new Map<string, (typeof files)[number]>();
   for (const f of files) {
-    if (f.kind === 'audio') audioByConv.set(f.conversationId, f);
+    // A song can have several audio versions; use the default one.
+    if (f.kind === 'audio' && f.isDefault) audioByConv.set(f.conversationId, f);
     else if (f.kind === 'sheet_music') sheetByConv.set(f.conversationId, f);
   }
 
