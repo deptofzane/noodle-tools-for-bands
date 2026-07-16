@@ -1,4 +1,5 @@
 import { Readable } from 'node:stream';
+import { fileToNodeStream, uploadLimit } from '@/lib/upload-limit';
 import { auth } from '@/auth';
 import { getDriveClient } from '@/lib/drive';
 import { getCurrentDbUser } from '@/lib/current-user';
@@ -12,7 +13,6 @@ import {
   streamSongFile,
   type SongFileKind,
 } from '@/lib/db/song-files';
-import { uploadLimit } from '@/lib/upload-limit';
 
 /**
  * Song file endpoint, shared by every file kind (audio, sheet music).
@@ -149,19 +149,28 @@ export async function POST(
       const driveMime = metaRes.data.mimeType ?? '';
       const driveName = metaRes.data.name ?? 'sheet-music';
 
-      let data: Buffer;
+      let body: Readable;
+      let sizeBytes: number;
       let fileName: string;
       let mimeType: string;
 
       if (driveMime === 'application/vnd.google-apps.document') {
         // A native Google Doc has no binary to download — export it to PDF
         // (which previews inline, unlike a .docx). Size isn't known until the
-        // export runs, so the cap is enforced afterward.
+        // export runs, so it's buffered (exports are small) then streamed.
         const exportRes = await drive.files.export(
           { fileId: driveFileId, mimeType: 'application/pdf' },
           { responseType: 'arraybuffer' },
         );
-        data = Buffer.from(exportRes.data as ArrayBuffer);
+        const buf = Buffer.from(exportRes.data as ArrayBuffer);
+        if (buf.length > MAX_SHEET_BYTES) {
+          return Response.json(
+            { error: 'file_too_large', message: 'Sheet music exceeds the 25 MB limit.' },
+            { status: 413 },
+          );
+        }
+        body = Readable.from(buf);
+        sizeBytes = buf.length;
         mimeType = 'application/pdf';
         // Google Doc names carry no extension; land on a clean ".pdf" name.
         fileName = `${driveName.replace(/\.(docx?|pdf)$/i, '')}.pdf`;
@@ -178,30 +187,32 @@ export async function POST(
           );
         }
         const declaredSize = Number(metaRes.data.size ?? 0);
-        if (declaredSize && declaredSize > MAX_SHEET_BYTES) {
+        if (declaredSize > MAX_SHEET_BYTES) {
           return Response.json(
             { error: 'file_too_large', message: 'Sheet music exceeds the 25 MB limit.' },
             { status: 413 },
           );
         }
+        if (!declaredSize) {
+          return Response.json(
+            { error: 'import_failed', message: 'Could not determine the file size.' },
+            { status: 502 },
+          );
+        }
         const mediaRes = await drive.files.get(
           { fileId: driveFileId, alt: 'media' },
-          { responseType: 'arraybuffer' },
+          { responseType: 'stream' },
         );
-        data = Buffer.from(mediaRes.data as ArrayBuffer);
+        body = mediaRes.data as unknown as Readable;
+        sizeBytes = declaredSize;
         fileName = driveName;
         mimeType = normalized;
       }
 
-      if (data.length > MAX_SHEET_BYTES) {
-        return Response.json(
-          { error: 'file_too_large', message: 'Sheet music exceeds the 25 MB limit.' },
-          { status: 413 },
-        );
-      }
       const stored = await putSheetMusic({
         conversationId,
-        data,
+        body,
+        sizeBytes,
         fileName,
         mimeType,
         driveFileId,
@@ -246,10 +257,15 @@ export async function POST(
     );
   }
 
-  const meta = await uploadLimit.run(async () => {
-    const data = Buffer.from(await file.arrayBuffer());
-    return putSheetMusic({ conversationId, data, fileName, mimeType });
-  });
+  const meta = await uploadLimit.run(() =>
+    putSheetMusic({
+      conversationId,
+      body: fileToNodeStream(file),
+      sizeBytes: file.size,
+      fileName,
+      mimeType,
+    }),
+  );
   return Response.json({ sheetMusic: meta }, { status: 201 });
 }
 

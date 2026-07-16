@@ -1,7 +1,7 @@
 import '../load-env';
 import { after, test } from 'node:test';
 import assert from 'node:assert/strict';
-import type { Readable } from 'node:stream';
+import { Readable } from 'node:stream';
 import { eq } from 'drizzle-orm';
 import { closeDb, db } from '../../lib/db';
 import { songFiles, users } from '../../lib/db/schema';
@@ -30,6 +30,9 @@ after(() => {
   return closeDb();
 });
 
+/** Adapt an in-memory buffer to the streaming put API. */
+const streamOf = (b: Buffer) => ({ body: Readable.from(b), sizeBytes: b.length });
+
 async function streamToBuffer(readable: Readable): Promise<Buffer> {
   const chunks: Buffer[] = [];
   for await (const c of readable) {
@@ -49,7 +52,7 @@ test('song-files: object-store round-trip, range, default audio, cascade', async
     const data = Buffer.from(Array.from({ length: 1024 }, (_, i) => i % 256));
     const v1 = await addAudioVersion({
       conversationId: conv.id,
-      data,
+      ...streamOf(data),
       fileName: 'Song.mp3',
       mimeType: 'audio/mpeg',
       driveFileId: 'driveSF',
@@ -79,14 +82,14 @@ test('song-files: object-store round-trip, range, default audio, cascade', async
     // sheet music coexists with (one) audio, one row per conversation
     await putSheetMusic({
       conversationId: conv.id,
-      data: Buffer.from('%PDF-1.4 fake', 'utf8'),
+      ...streamOf(Buffer.from('%PDF-1.4 fake', 'utf8')),
       fileName: 'score.pdf',
       mimeType: 'application/pdf',
     });
     // replacing sheet music overwrites in place (still one row)
     await putSheetMusic({
       conversationId: conv.id,
-      data: Buffer.from('%PDF-1.4 fake v2', 'utf8'),
+      ...streamOf(Buffer.from('%PDF-1.4 fake v2', 'utf8')),
       fileName: 'score2.pdf',
       mimeType: 'application/pdf',
     });
@@ -125,14 +128,14 @@ test('song-files: multiple audio versions, default invariant, set/delete', async
 
     const a = await addAudioVersion({
       conversationId: conv.id,
-      data: Buffer.from('AAAA'),
+      ...streamOf(Buffer.from('AAAA')),
       fileName: 'studio.mp3',
       mimeType: 'audio/mpeg',
       label: 'Studio',
     });
     const b = await addAudioVersion({
       conversationId: conv.id,
-      data: Buffer.from('BBBBBB'),
+      ...streamOf(Buffer.from('BBBBBB')),
       fileName: 'live.mp3',
       mimeType: 'audio/mpeg',
       label: 'Live',

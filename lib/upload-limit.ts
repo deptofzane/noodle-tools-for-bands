@@ -9,8 +9,17 @@
  * so dev hot-reload doesn't spawn duplicates).
  */
 
+import { Readable } from 'node:stream';
+
 interface Semaphore {
   run<T>(fn: () => Promise<T>): Promise<T>;
+}
+
+/** A multipart-upload `File` as a Node Readable, for streaming to storage. */
+export function fileToNodeStream(file: File): Readable {
+  return Readable.fromWeb(
+    file.stream() as Parameters<typeof Readable.fromWeb>[0],
+  );
 }
 
 function createSemaphore(max: number): Semaphore {

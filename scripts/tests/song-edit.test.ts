@@ -1,6 +1,7 @@
 import '../load-env';
 import { after, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { Readable } from 'node:stream';
 import { eq } from 'drizzle-orm';
 import { closeDb, db } from '../../lib/db';
 import { bands, conversations, notes, users } from '../../lib/db/schema';
@@ -53,7 +54,8 @@ test('song-edit: rename, move (+ conflict), delete cascade', async () => {
     await createNote(conv.id, owner.id, 0, 'a note', []);
     await addAudioVersion({
       conversationId: conv.id,
-      data: Buffer.from('x'),
+      body: Readable.from(Buffer.from('x')),
+      sizeBytes: 1,
       fileName: 'a.mp3',
       mimeType: 'audio/mpeg',
     });

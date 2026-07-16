@@ -49,18 +49,64 @@ export interface SongFileMeta {
   updatedAt: string;
 }
 
+/** Stream a body straight to object storage without buffering it in memory.
+ * `contentLength` is required (S3 streams a body of known length); callers
+ * always know it (`file.size` locally, Drive's declared size). */
+async function putObjectStream(
+  key: string,
+  body: Readable,
+  contentType: string,
+  contentLength: number,
+): Promise<void> {
+  await getS3Client().send(
+    new PutObjectCommand({
+      Bucket: getBucket(),
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+      ContentLength: contentLength,
+    }),
+  );
+}
+
+// How many leading bytes to pull back for the duration probe.
+const DURATION_PROBE_BYTES = 1024 * 1024; // 1 MB
+
+async function readUpTo(body: Readable, max: number): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  let total = 0;
+  for await (const c of body) {
+    const b = Buffer.isBuffer(c) ? c : Buffer.from(c as Uint8Array);
+    chunks.push(b);
+    total += b.length;
+    if (total >= max) break;
+  }
+  body.destroy();
+  return Buffer.concat(chunks);
+}
+
 /**
- * Parse an audio buffer's duration (whole seconds) via music-metadata.
- * Best-effort — returns null on any failure so a bad/odd file never
- * blocks the upload.
+ * Best-effort audio duration WITHOUT holding the whole file in memory: read
+ * just the leading bytes back from storage and parse them, passing the real
+ * total size as a hint. That's enough for header/size-based formats (MP3,
+ * fast-start MP4); anything it can't determine returns null (as before).
  */
-async function parseAudioDurationSeconds(
-  data: Buffer,
+async function probeAudioDuration(
+  key: string,
   mimeType: string,
+  sizeBytes: number,
 ): Promise<number | null> {
   try {
+    const res = await getS3Client().send(
+      new GetObjectCommand({
+        Bucket: getBucket(),
+        Key: key,
+        Range: `bytes=0-${DURATION_PROBE_BYTES - 1}`,
+      }),
+    );
+    const head = await readUpTo(res.Body as Readable, DURATION_PROBE_BYTES);
     const { parseBuffer } = await import('music-metadata');
-    const meta = await parseBuffer(data, { mimeType });
+    const meta = await parseBuffer(head, { mimeType, size: sizeBytes });
     const dur = meta.format.duration;
     return typeof dur === 'number' && Number.isFinite(dur)
       ? Math.round(dur)
@@ -137,28 +183,21 @@ const META_COLUMNS = {
  */
 export async function putSheetMusic(input: {
   conversationId: string;
-  data: Buffer;
+  body: Readable;
+  sizeBytes: number;
   fileName: string;
   mimeType: string;
   driveFileId?: string | null;
 }): Promise<SongFileMeta> {
   const key = songFileKey(input.conversationId, 'sheet_music');
-  await getS3Client().send(
-    new PutObjectCommand({
-      Bucket: getBucket(),
-      Key: key,
-      Body: input.data,
-      ContentType: input.mimeType,
-      ContentLength: input.data.length,
-    }),
-  );
+  await putObjectStream(key, input.body, input.mimeType, input.sizeBytes);
 
   const now = new Date();
   const values = {
     storageKey: key,
     fileName: input.fileName,
     mimeType: input.mimeType,
-    sizeBytes: input.data.length,
+    sizeBytes: input.sizeBytes,
     songLength: null,
     driveFileId: input.driveFileId ?? null,
     updatedAt: now,
@@ -206,23 +245,18 @@ export interface AudioVersion {
  */
 export async function addAudioVersion(input: {
   conversationId: string;
-  data: Buffer;
+  body: Readable;
+  sizeBytes: number;
   fileName: string;
   mimeType: string;
   label?: string | null;
   driveFileId?: string | null;
 }): Promise<AudioVersion> {
   const key = audioVersionKey(input.conversationId, randomUUID());
-  await getS3Client().send(
-    new PutObjectCommand({
-      Bucket: getBucket(),
-      Key: key,
-      Body: input.data,
-      ContentType: input.mimeType,
-      ContentLength: input.data.length,
-    }),
-  );
-  const songLength = await parseAudioDurationSeconds(input.data, input.mimeType);
+  await putObjectStream(key, input.body, input.mimeType, input.sizeBytes);
+  // Duration is derived after the fact from the stored object's header, so
+  // we never hold the whole file in memory.
+  const songLength = await probeAudioDuration(key, input.mimeType, input.sizeBytes);
 
   const row = await db.transaction(async (tx) => {
     const existing = await tx
@@ -246,7 +280,7 @@ export async function addAudioVersion(input: {
         storageKey: key,
         fileName: input.fileName,
         mimeType: input.mimeType,
-        sizeBytes: input.data.length,
+        sizeBytes: input.sizeBytes,
         songLength,
         isDefault,
         label: input.label ?? null,
