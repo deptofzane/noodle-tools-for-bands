@@ -53,6 +53,8 @@ export function SheetMusic({
   const [isMinimized, setIsMinimized] = useState(startClosed);
   const [textContent, setTextContent] = useState<string | null>(null);
   const [chooseOpen, setChooseOpen] = useState(false);
+  const [pasteMode, setPasteMode] = useState(false);
+  const [pasteText, setPasteText] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const trackPending = useTrackPending();
   const showToast = useToast();
@@ -62,6 +64,25 @@ export function SheetMusic({
   // Drive users get a source picker (Drive vs. local); everyone else
   // goes straight to the local file input.
   const openChooser = () => setChooseOpen(true);
+
+  const closeChooser = () => {
+    if (busy) return;
+    setChooseOpen(false);
+    setPasteMode(false);
+    setPasteText('');
+  };
+
+  // Save pasted text/markdown by turning it into a file and reusing the
+  // local-upload path (the server allowlists text/markdown).
+  const savePaste = async () => {
+    const text = pasteText;
+    if (!text.trim() || busy) return;
+    const file = new File([text], 'sheet-music.md', { type: 'text/markdown' });
+    setChooseOpen(false);
+    setPasteMode(false);
+    setPasteText('');
+    await handleFile(file);
+  };
 
   const endpoint = `/api/conversations/${conversationId}/files/sheet_music`;
   const viewUrl = meta
@@ -277,58 +298,106 @@ export function SheetMusic({
           aria-modal="true"
           aria-labelledby="sheet-source-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => {
-            if (!busy) setChooseOpen(false);
-          }}
+          onClick={closeChooser}
         >
           <div
-            className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-5 shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
+            className={
+              'w-full rounded-lg border border-neutral-200 bg-white p-5 shadow-xl dark:border-neutral-800 dark:bg-neutral-900 ' +
+              (pasteMode ? 'max-w-lg' : 'max-w-sm')
+            }
             onClick={(e) => e.stopPropagation()}
           >
             <h2 id="sheet-source-title" className="text-base font-semibold">
               Add sheet music
             </h2>
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-              {canUseDrive
-                ? 'Choose a file from Google Drive or upload one from this device.'
-                : 'Sign in with Google to import from Drive, or upload one from this device.'}
-            </p>
-            <div className="mt-4 flex flex-col gap-2">
-              {canUseDrive ? (
-                <PickerButton
-                  apiKey={apiKey}
-                  multiple={false}
-                  label="Choose from Google Drive"
-                  onPick={(files) => {
-                    setChooseOpen(false);
-                    const file = files[0];
-                    if (file) void handleDriveImport(file);
-                  }}
+
+            {pasteMode ? (
+              <>
+                <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+                  Paste text or Markdown to save as sheet music.
+                </p>
+                <textarea
+                  value={pasteText}
+                  onChange={(e) => setPasteText(e.target.value)}
+                  rows={12}
+                  autoFocus
+                  placeholder="Paste lyrics, chords, or Markdown…"
+                  className="mt-3 w-full resize-y rounded-md border border-neutral-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
                 />
-              ) : (
-                <ConnectDriveButton label="Sign in with Google" />
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  setChooseOpen(false);
-                  inputRef.current?.click();
-                }}
-                className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
-              >
-                Upload a local file
-              </button>
-            </div>
-            <div className="mt-4 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setChooseOpen(false)}
-                disabled={busy}
-                className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
-              >
-                Cancel
-              </button>
-            </div>
+                <div className="mt-4 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPasteMode(false);
+                      setPasteText('');
+                    }}
+                    disabled={busy}
+                    className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void savePaste()}
+                    disabled={busy || !pasteText.trim()}
+                    className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+                  >
+                    {busy ? 'Saving…' : 'Save'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+                  {canUseDrive
+                    ? 'Choose a file from Google Drive, upload one from this device, or paste text.'
+                    : 'Sign in with Google to import from Drive, upload from this device, or paste text.'}
+                </p>
+                <div className="mt-4 flex flex-col gap-2">
+                  {canUseDrive ? (
+                    <PickerButton
+                      apiKey={apiKey}
+                      multiple={false}
+                      label="Choose from Google Drive"
+                      onPick={(files) => {
+                        setChooseOpen(false);
+                        const file = files[0];
+                        if (file) void handleDriveImport(file);
+                      }}
+                    />
+                  ) : (
+                    <ConnectDriveButton label="Sign in with Google" />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setChooseOpen(false);
+                      inputRef.current?.click();
+                    }}
+                    className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                  >
+                    Upload a local file
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPasteMode(true)}
+                    className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                  >
+                    Paste text or Markdown
+                  </button>
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={closeChooser}
+                    disabled={busy}
+                    className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
