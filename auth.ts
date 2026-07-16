@@ -14,10 +14,21 @@ import { verifyPassword } from '@/lib/password';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { LINK_COOKIE, verifyLinkToken } from '@/lib/link-token';
 
-/** Read the signed "link to this user" intent from the request cookie. */
-async function readLinkUid(): Promise<string | null> {
+/**
+ * Read AND clear the one-shot "link to this user" cookie. Clearing it on
+ * the first Google sign-in (any outcome) closes the window where a stale
+ * cookie could attach a *later*, unrelated Google login to the wrong user.
+ */
+async function consumeLinkUid(): Promise<string | null> {
   try {
-    return verifyLinkToken((await cookies()).get(LINK_COOKIE)?.value);
+    const store = await cookies();
+    const uid = verifyLinkToken(store.get(LINK_COOKIE)?.value);
+    try {
+      store.delete(LINK_COOKIE);
+    } catch {
+      // best-effort; the cookie is also short-lived
+    }
+    return uid;
   } catch {
     return null;
   }
@@ -109,8 +120,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     // Returning a string redirects there with a message the UI reads.
     async signIn({ account, profile }) {
       if (account?.provider !== 'google') return true;
-      const linkUid = await readLinkUid();
+      // Consume the link cookie up front (one-shot), so it can't linger and
+      // hijack a future sign-in. When absent, this is a normal login.
+      const linkUid = await consumeLinkUid();
       if (!linkUid) return true;
+
       const sub = profile?.sub ?? '';
       const existing = await getAccountByProvider('google', sub);
       if (existing && existing.userId !== linkUid) {
@@ -119,6 +133,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const current = await getUserAccount(linkUid, 'google');
       if (current && current.providerAccountId !== sub) {
         return '/settings?tab=account&link=exists';
+      }
+
+      // Link here. The jwt callback's normal Google resolution then maps
+      // this account to `linkUid`, so the user stays signed in as themselves
+      // — no cross-callback cookie handoff needed.
+      try {
+        await linkGoogleAccount(linkUid, sub, profile?.email ?? null);
+      } catch {
+        // Any conflict was caught by the checks above; a rare race here is
+        // safe to ignore (the account simply won't be linked this time).
       }
       return true;
     },
@@ -140,37 +164,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return t;
       }
 
-      // (1) Fresh Google sign-in or scope upgrade. Two cases:
-      //   - Linking: a signed-in user connected Google via Settings (the
-      //     start route set the link cookie). Attach the account to *that*
-      //     user and keep their identity — the Google email may differ.
-      //   - Normal login: resolve or create the user for this Google sub.
+      // (1) Fresh Google sign-in or scope upgrade. Resolve the user for this
+      // Google account. If a link was just performed in the `signIn`
+      // callback, that account now maps to the linking user, so this
+      // naturally keeps them signed in as themselves.
       if (account && profile) {
-        const sub = profile.sub ?? '';
-        const linkUid = await readLinkUid();
-        let userId: string;
-        if (linkUid) {
-          try {
-            await linkGoogleAccount(linkUid, sub, profile.email ?? null);
-          } catch {
-            // Conflicts were already handled by the signIn callback's
-            // redirect; if one slips through, don't switch accounts.
-          }
-          try {
-            (await cookies()).delete(LINK_COOKIE);
-          } catch {
-            // best-effort; the cookie is short-lived anyway
-          }
-          userId = linkUid;
-        } else {
-          const dbUser = await findOrCreateGoogleUser({
-            sub,
-            email: profile.email,
-            name: profile.name,
-          });
-          userId = dbUser.id;
-        }
-        t.sub = userId;
+        const dbUser = await findOrCreateGoogleUser({
+          sub: profile.sub ?? '',
+          email: profile.email,
+          name: profile.name,
+        });
+        t.sub = dbUser.id;
         t.accessToken = account.access_token ?? undefined;
         // Google sometimes omits the refresh token on subsequent grants
         // (e.g., re-auth for additional scopes without `prompt=consent`).

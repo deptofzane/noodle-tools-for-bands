@@ -33,7 +33,9 @@ export async function startGoogleConnect(formData: FormData): Promise<void> {
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     path: '/',
-    maxAge: 600,
+    // Only needs to survive the OAuth roundtrip; kept short so an abandoned
+    // flow can't leave a usable link cookie lying around.
+    maxAge: 120,
   });
 
   await signIn(

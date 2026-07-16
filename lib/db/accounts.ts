@@ -70,11 +70,14 @@ export async function findOrCreateGoogleUser(input: {
 
   const existing = await getAccountByProvider('google', input.sub);
   if (existing) {
+    // Already linked — just return the user. We deliberately DON'T update
+    // `name` here: a Google login must not overwrite a name the user set
+    // (or wipe it to null when Google omits `name` on a later grant).
     const [user] = await db
-      .update(users)
-      .set({ name: input.name ?? null })
+      .select()
+      .from(users)
       .where(eq(users.id, existing.userId))
-      .returning();
+      .limit(1);
     return user!;
   }
 
