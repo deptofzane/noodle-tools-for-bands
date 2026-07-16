@@ -29,12 +29,13 @@ export const activityKind = pgEnum('activity_kind', [
 ]);
 
 // ── Users ────────────────────────────────────────────────────────────
-// A user signs in with Google (google_sub set) and/or email+password
-// (password_hash set). email is the credential login key — unique, and
-// always stored lowercase by the app.
+// A user has an email/password credential (password_hash set) and/or one
+// or more linked OAuth accounts (see `accounts`). `email` is the credential
+// login key — unique, always stored lowercase. Linked OAuth identities
+// live in `accounts`, not here, so a user can connect a Google account
+// whose email differs from their login email.
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
-  googleSub: text('google_sub').unique(),
   email: text('email').unique(),
   passwordHash: text('password_hash'),
   name: text('name'),
@@ -42,6 +43,38 @@ export const users = pgTable('users', {
     .defaultNow()
     .notNull(),
 });
+
+// ── Linked OAuth accounts ────────────────────────────────────────────
+// One row per (provider, external account) linked to a user. Source of
+// truth for OAuth sign-in identity, so a user can have multiple providers
+// and the provider's email can differ from their login email.
+export const authProvider = pgEnum('auth_provider', ['google']);
+
+export const accounts = pgTable(
+  'accounts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    provider: authProvider('provider').notNull(),
+    // The provider's stable account id (for Google, the `sub`).
+    providerAccountId: text('provider_account_id').notNull(),
+    // The provider account's email (informational; may differ from login).
+    email: text('email'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    // One external account maps to at most one user.
+    uniqueIndex('accounts_provider_account_unique').on(
+      t.provider,
+      t.providerAccountId,
+    ),
+    index('accounts_user_idx').on(t.userId),
+  ],
+);
 
 // Single-use, expiring password-reset tokens. Only the token's hash is
 // stored; the raw token lives only in the emailed link.

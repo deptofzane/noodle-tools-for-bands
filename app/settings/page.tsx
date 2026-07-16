@@ -1,31 +1,70 @@
-import { auth, signIn, signOut } from '@/auth';
+import { auth, signOut } from '@/auth';
 import { redirect } from 'next/navigation';
-import { REQUIRED_DRIVE_SCOPES, hasAllDriveScopes } from '@/lib/google';
+import { getCurrentDbUser } from '@/lib/current-user';
+import { getUserAccount } from '@/lib/db/accounts';
+import { hasAllDriveScopes } from '@/lib/google';
 import { getMutedKinds } from '@/lib/db/notifications';
+import { startGoogleConnect, disconnectGoogle } from '../account-actions';
 import { ThemeToggle } from '../ThemeToggle';
 import { NotificationPreferences } from './NotificationPreferences';
 import { SettingsTabs, type SettingsTab } from './SettingsTabs';
 
+const LINK_MESSAGES: Record<string, { text: string; tone: 'ok' | 'error' }> = {
+  conflict: {
+    text: 'That Google account is already linked to a different account.',
+    tone: 'error',
+  },
+  exists: {
+    text: 'You already have a different Google account linked — disconnect it first.',
+    tone: 'error',
+  },
+  needs_password: {
+    text: 'Set a password first so you can still sign in, then disconnect Google.',
+    tone: 'error',
+  },
+  disconnected: { text: 'Google account disconnected.', tone: 'ok' },
+};
+
 /**
- * Settings page — tabbed. "Account" holds the identity card, sign-out, and
- * session details (formerly the standalone /account page); "Appearance"
- * holds the theme toggle. Deep-linkable via `?tab=`.
+ * Settings page — tabbed. "Account" holds identity, the linked Google
+ * account (connect/disconnect, Drive status), and session details;
+ * "Notifications" and "Appearance" hold their preferences. Deep-linkable
+ * via `?tab=`; account-link outcomes arrive via `?link=`.
  */
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; link?: string }>;
 }) {
   const session = await auth();
   if (!session?.user) redirect('/login');
-  const { tab } = await searchParams;
-  const mutedKinds = await getMutedKinds(session.user.sub ?? '');
+  const { tab, link } = await searchParams;
 
+  const dbUser = await getCurrentDbUser();
+  const [mutedKinds, googleAccount] = await Promise.all([
+    getMutedKinds(session.user.sub ?? ''),
+    dbUser ? getUserAccount(dbUser.id, 'google') : Promise.resolve(null),
+  ]);
+  const hasPassword = Boolean(dbUser?.passwordHash);
   const driveConnected = hasAllDriveScopes(session.scopes);
   const refreshError = session.error === 'RefreshAccessTokenError';
+  const banner = link ? LINK_MESSAGES[link] : undefined;
 
   const account = (
     <div className="flex flex-col gap-6">
+      {banner && (
+        <p
+          className={
+            'rounded-md border px-3 py-2 text-sm ' +
+            (banner.tone === 'ok'
+              ? 'border-green-300 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200'
+              : 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200')
+          }
+        >
+          {banner.text}
+        </p>
+      )}
+
       <div className="flex items-center gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
         {session.user.image && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -56,69 +95,74 @@ export default async function SettingsPage({
         </form>
       </div>
 
+      {/* Google account (may differ from the login email) */}
       <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <p className="font-medium">Google Drive</p>
+            <p className="font-medium">Google account</p>
             <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-              {refreshError
-                ? 'Your Google session expired — sign in again to keep importing from Drive.'
-                : driveConnected
-                  ? 'Connected. You can import audio and sheet music from Drive.'
-                  : 'Not connected. Connect Drive to import audio and sheet music from it.'}
+              {googleAccount
+                ? `Connected as ${googleAccount.email ?? 'your Google account'}. Used to import audio and sheet music from Drive.`
+                : 'Connect a Google account to import audio and sheet music from Drive. It doesn’t need to match your login email.'}
             </p>
           </div>
-          {driveConnected && !refreshError && (
+          {googleAccount && driveConnected && !refreshError && (
             <span className="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-300">
-              Connected
+              Drive connected
             </span>
           )}
         </div>
 
-        {refreshError ? (
-          <form
-            className="mt-3"
-            action={async () => {
-              'use server';
-              await signIn('google', { redirectTo: '/settings?tab=account' });
-            }}
-          >
-            <button
-              type="submit"
-              className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500"
-            >
-              Sign in again
-            </button>
-          </form>
-        ) : (
-          !driveConnected && (
-            <form
-              className="mt-3"
-              action={async () => {
-                'use server';
-                await signIn(
-                  'google',
-                  { redirectTo: '/settings?tab=account' },
-                  {
-                    scope: [
-                      'openid',
-                      'email',
-                      'profile',
-                      ...REQUIRED_DRIVE_SCOPES,
-                    ].join(' '),
-                    include_granted_scopes: 'true',
-                  },
-                );
-              }}
-            >
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {!googleAccount ? (
+            <form action={startGoogleConnect}>
+              <input type="hidden" name="next" value="/settings?tab=account" />
               <button
                 type="submit"
                 className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500"
               >
-                Connect Drive
+                Connect Google
               </button>
             </form>
-          )
+          ) : (
+            <>
+              {(refreshError || !driveConnected) && (
+                <form action={startGoogleConnect}>
+                  <input
+                    type="hidden"
+                    name="next"
+                    value="/settings?tab=account"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500"
+                  >
+                    {refreshError ? 'Reconnect Google' : 'Enable Drive access'}
+                  </button>
+                </form>
+              )}
+              <form action={disconnectGoogle}>
+                <button
+                  type="submit"
+                  disabled={!hasPassword}
+                  title={
+                    hasPassword
+                      ? undefined
+                      : 'Set a password first so you can still sign in.'
+                  }
+                  className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                >
+                  Disconnect
+                </button>
+              </form>
+            </>
+          )}
+        </div>
+        {googleAccount && !hasPassword && (
+          <p className="mt-2 text-[11px] text-neutral-500">
+            Set a password (via “Forgot password”) before disconnecting, so you
+            don’t lose access.
+          </p>
         )}
       </div>
 

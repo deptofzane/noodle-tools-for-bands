@@ -6,6 +6,7 @@ import { closeDb, db } from '../../lib/db';
 import { users } from '../../lib/db/schema';
 import { addMember, createBand, deleteBand } from '../../lib/db/bands';
 import { upsertUser } from '../../lib/db/users';
+import { deleteUsersByGoogleSub } from '../../lib/db/accounts';
 import {
   createBandMessage,
   deleteBandMessage,
@@ -92,7 +93,7 @@ test('band-messages: post, list, pagination, delete permissions', async () => {
     assert.deepEqual(remaining.messages.map((m) => m.id), [m3.id], 'only the surviving message');
   } finally {
     if (bandId) await deleteBand(bandId);
-    await db.delete(users).where(inArray(users.googleSub, SUBS));
+    await deleteUsersByGoogleSub(SUBS);
   }
 });
 
@@ -150,7 +151,7 @@ test('band-messages: mentions, editing, unread', async () => {
     assert.equal(after.mentioned, false, 'no new mention');
   } finally {
     if (bandId) await deleteBand(bandId);
-    await db.delete(users).where(inArray(users.googleSub, SUBS));
+    await deleteUsersByGoogleSub(SUBS);
   }
 });
 
@@ -173,6 +174,6 @@ test('band-messages: scoped to their band', async () => {
   } finally {
     if (bandA) await deleteBand(bandA);
     if (bandB) await deleteBand(bandB);
-    await db.delete(users).where(eq(users.googleSub, 'BM_OWNER'));
+    await deleteUsersByGoogleSub(['BM_OWNER']);
   }
 });

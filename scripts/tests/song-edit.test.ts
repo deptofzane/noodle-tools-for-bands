@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { closeDb, db } from '../../lib/db';
 import { bands, conversations, notes, users } from '../../lib/db/schema';
 import { upsertUser } from '../../lib/db/users';
+import { deleteUsersByGoogleSub } from '../../lib/db/accounts';
 import { createBand } from '../../lib/db/bands';
 import {
   ConversationConflictError,
@@ -65,6 +66,6 @@ test('song-edit: rename, move (+ conflict), delete cascade', async () => {
     );
   } finally {
     for (const id of bandIds) await db.delete(bands).where(eq(bands.id, id));
-    await db.delete(users).where(eq(users.googleSub, 'E_OWNER'));
+    await deleteUsersByGoogleSub(['E_OWNER']);
   }
 });

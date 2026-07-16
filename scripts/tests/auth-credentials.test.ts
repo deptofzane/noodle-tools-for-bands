@@ -24,14 +24,13 @@ async function cleanup() {
 test('auth: credential user create, verify, dedupe, reset tokens', async () => {
   await cleanup();
   try {
-    // Create — stores a hash, no google_sub, email lowercased.
+    // Create — stores a hash, email lowercased.
     const user = await createCredentialUser({
       email: 'Cred-A@Test.local', // mixed case → normalized
       password: 'correct horse battery',
       name: 'A',
     });
     assert.equal(user.email, 'cred-a@test.local', 'email normalized');
-    assert.equal(user.googleSub, null, 'no google sub');
     assert.ok(user.passwordHash, 'password hashed');
 
     // Verify: right vs wrong password.

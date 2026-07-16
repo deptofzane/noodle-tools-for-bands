@@ -1,10 +1,27 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+import { cookies } from 'next/headers';
 import authConfig from './auth.config';
 import { refreshGoogleAccessToken } from '@/lib/google';
-import { getUserByEmail, upsertUser } from '@/lib/db/users';
+import { getUserByEmail } from '@/lib/db/users';
+import {
+  findOrCreateGoogleUser,
+  getAccountByProvider,
+  getUserAccount,
+  linkGoogleAccount,
+} from '@/lib/db/accounts';
 import { verifyPassword } from '@/lib/password';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
+import { LINK_COOKIE, verifyLinkToken } from '@/lib/link-token';
+
+/** Read the signed "link to this user" intent from the request cookie. */
+async function readLinkUid(): Promise<string | null> {
+  try {
+    return verifyLinkToken((await cookies()).get(LINK_COOKIE)?.value);
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Local typed view of the JWT payload's app-owned fields.
@@ -86,6 +103,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    // When a signed-in user is *linking* a Google account (the start route
+    // set the link cookie), reject up front if that Google account already
+    // belongs to someone else, or if they already linked a different one.
+    // Returning a string redirects there with a message the UI reads.
+    async signIn({ account, profile }) {
+      if (account?.provider !== 'google') return true;
+      const linkUid = await readLinkUid();
+      if (!linkUid) return true;
+      const sub = profile?.sub ?? '';
+      const existing = await getAccountByProvider('google', sub);
+      if (existing && existing.userId !== linkUid) {
+        return '/settings?tab=account&link=conflict';
+      }
+      const current = await getUserAccount(linkUid, 'google');
+      if (current && current.providerAccountId !== sub) {
+        return '/settings?tab=account&link=exists';
+      }
+      return true;
+    },
+
     async jwt({ token, account, profile, user }) {
       // Treat the token as our typed view for the rest of this function;
       // it's the same object, just with named fields.
@@ -103,15 +140,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return t;
       }
 
-      // (1) Fresh Google sign-in or scope upgrade — upsert the user and use
-      // its DB id as the identity so it matches credential users.
+      // (1) Fresh Google sign-in or scope upgrade. Two cases:
+      //   - Linking: a signed-in user connected Google via Settings (the
+      //     start route set the link cookie). Attach the account to *that*
+      //     user and keep their identity — the Google email may differ.
+      //   - Normal login: resolve or create the user for this Google sub.
       if (account && profile) {
-        const dbUser = await upsertUser({
-          googleSub: profile.sub ?? '',
-          email: profile.email,
-          name: profile.name,
-        });
-        t.sub = dbUser.id;
+        const sub = profile.sub ?? '';
+        const linkUid = await readLinkUid();
+        let userId: string;
+        if (linkUid) {
+          try {
+            await linkGoogleAccount(linkUid, sub, profile.email ?? null);
+          } catch {
+            // Conflicts were already handled by the signIn callback's
+            // redirect; if one slips through, don't switch accounts.
+          }
+          try {
+            (await cookies()).delete(LINK_COOKIE);
+          } catch {
+            // best-effort; the cookie is short-lived anyway
+          }
+          userId = linkUid;
+        } else {
+          const dbUser = await findOrCreateGoogleUser({
+            sub,
+            email: profile.email,
+            name: profile.name,
+          });
+          userId = dbUser.id;
+        }
+        t.sub = userId;
         t.accessToken = account.access_token ?? undefined;
         // Google sometimes omits the refresh token on subsequent grants
         // (e.g., re-auth for additional scopes without `prompt=consent`).

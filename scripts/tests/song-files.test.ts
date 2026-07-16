@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { closeDb, db } from '../../lib/db';
 import { songFiles, users } from '../../lib/db/schema';
 import { upsertUser } from '../../lib/db/users';
+import { deleteUsersByGoogleSub } from '../../lib/db/accounts';
 import { createBand, deleteBand } from '../../lib/db/bands';
 import { findOrCreateConversation } from '../../lib/db/conversations';
 import {
@@ -110,7 +111,7 @@ test('song-files: object-store round-trip, range, default audio, cascade', async
     assert.equal(await streamSongFile(conv.id, 'audio'), null, 'object no longer served');
   } finally {
     if (bandId) await deleteBand(bandId);
-    await db.delete(users).where(eq(users.googleSub, 'SF_OWNER'));
+    await deleteUsersByGoogleSub(['SF_OWNER']);
   }
 });
 
@@ -191,6 +192,6 @@ test('song-files: multiple audio versions, default invariant, set/delete', async
     assert.ok(!(await hasSongFile(conv.id, 'audio')), 'song has no audio');
   } finally {
     if (bandId) await deleteBand(bandId);
-    await db.delete(users).where(eq(users.googleSub, 'SF_VER'));
+    await deleteUsersByGoogleSub(['SF_VER']);
   }
 });

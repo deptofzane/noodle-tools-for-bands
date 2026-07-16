@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { closeDb, db } from '../../lib/db';
 import { bands, events, users } from '../../lib/db/schema';
 import { upsertUser } from '../../lib/db/users';
+import { deleteUsersByGoogleSub } from '../../lib/db/accounts';
 import { createBand } from '../../lib/db/bands';
 import {
   addEventMember,
@@ -73,6 +74,6 @@ test('events: band-member + added-member visibility, range filter', async () => 
   } finally {
     if (bandId) await db.delete(bands).where(eq(bands.id, bandId)); // cascades events + members
     await db.delete(events).where(eq(events.title, 'Gig'));
-    for (const s of subs) await db.delete(users).where(eq(users.googleSub, s));
+    await deleteUsersByGoogleSub(subs);
   }
 });

@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { closeDb, db } from '../../lib/db';
 import { bands, users } from '../../lib/db/schema';
 import { upsertUser } from '../../lib/db/users';
+import { deleteUsersByGoogleSub } from '../../lib/db/accounts';
 import {
   BandAccessError,
   addMember,
@@ -56,6 +57,6 @@ test('bands: creation, membership scoping, roles', async () => {
     assert.equal((await listMembers(band.id)).length, 1, 'one member after remove');
   } finally {
     if (bandId) await db.delete(bands).where(eq(bands.id, bandId));
-    for (const s of subs) await db.delete(users).where(eq(users.googleSub, s));
+    await deleteUsersByGoogleSub(subs);
   }
 });

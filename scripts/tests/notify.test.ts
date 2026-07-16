@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { closeDb, db } from '../../lib/db';
 import { bands, users } from '../../lib/db/schema';
 import { upsertUser } from '../../lib/db/users';
+import { deleteUsersByGoogleSub } from '../../lib/db/accounts';
 import { createBand } from '../../lib/db/bands';
 import { findOrCreateConversation } from '../../lib/db/conversations';
 import { createNote } from '../../lib/db/notes';
@@ -51,6 +52,6 @@ test('notify: LISTEN/NOTIFY fans a mutation to the right subscriber', async () =
     assert.equal(fired, 1, 'no callback after unsubscribe');
   } finally {
     if (bandId) await db.delete(bands).where(eq(bands.id, bandId));
-    await db.delete(users).where(eq(users.googleSub, 'N_OWNER'));
+    await deleteUsersByGoogleSub(['N_OWNER']);
   }
 });

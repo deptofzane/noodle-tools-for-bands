@@ -10,36 +10,26 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+/**
+ * Resolve (or create) a user for a Google sign-in. Thin wrapper over
+ * `findOrCreateGoogleUser` in the accounts layer; kept for callers/tests
+ * that just need a user for a given Google `sub`.
+ */
 export async function upsertUser(input: {
   googleSub: string;
   email?: string | null;
   name?: string | null;
 }): Promise<DbUser> {
-  const email = input.email ? normalizeEmail(input.email) : null;
-  const [row] = await db
-    .insert(users)
-    .values({ googleSub: input.googleSub, email, name: input.name ?? null })
-    .onConflictDoUpdate({
-      target: users.googleSub,
-      set: { email, name: input.name ?? null },
-    })
-    .returning();
-  return row!;
+  const { findOrCreateGoogleUser } = await import('./accounts');
+  return findOrCreateGoogleUser({
+    sub: input.googleSub,
+    email: input.email,
+    name: input.name,
+  });
 }
 
 export async function getUserById(id: string): Promise<DbUser | null> {
   const [row] = await db.select().from(users).where(eq(users.id, id)).limit(1);
-  return row ?? null;
-}
-
-export async function getUserByGoogleSub(
-  googleSub: string,
-): Promise<DbUser | null> {
-  const [row] = await db
-    .select()
-    .from(users)
-    .where(eq(users.googleSub, googleSub))
-    .limit(1);
   return row ?? null;
 }
 

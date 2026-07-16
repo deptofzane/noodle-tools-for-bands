@@ -6,6 +6,7 @@ import { closeDb, db } from '../../lib/db';
 import { users } from '../../lib/db/schema';
 import { addMember, createBand, deleteBand } from '../../lib/db/bands';
 import { upsertUser } from '../../lib/db/users';
+import { deleteUsersByGoogleSub } from '../../lib/db/accounts';
 import {
   createNotification,
   getMutedKinds,
@@ -63,7 +64,7 @@ test('notifications: muted kinds are excluded from feed + count', async () => {
     assert.equal((await listNotifications(member.id)).length, 2, 'unmute restores the feed');
   } finally {
     if (bandId) await deleteBand(bandId);
-    await db.delete(users).where(inArray(users.googleSub, SUBS));
+    await deleteUsersByGoogleSub(SUBS);
   }
 });
 
@@ -144,6 +145,6 @@ test('notifications: scope, actor exclusion, unread, mark-read', async () => {
   } finally {
     if (bandId) await deleteBand(bandId);
     if (otherBandId) await deleteBand(otherBandId);
-    await db.delete(users).where(inArray(users.googleSub, SUBS));
+    await deleteUsersByGoogleSub(SUBS);
   }
 });
