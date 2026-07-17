@@ -217,6 +217,10 @@ export function Live({
         ) : (
           <Centered>Nothing to show.</Centered>
         )}
+
+        {/* Tablet-only tap-to-advance edges (clean taps only). */}
+        {canBack && <EdgeTap side="left" onTap={goPrev} />}
+        {canForward && <EdgeTap side="right" onTap={goNext} />}
       </div>
 
       {/* On phones/tablets, Exit moves to a high-contrast bottom-left button. */}
@@ -404,6 +408,46 @@ function SheetView({
         Open sheet music
       </a>
     </Centered>
+  );
+}
+
+/**
+ * A tap-to-advance zone along one edge of the sheet, tablet-only (hidden on
+ * phones and desktop). Fires only on a clean tap — a short, nearly-stationary
+ * press by the primary pointer — so panning or pinching a zoomed sheet near
+ * the edge doesn't accidentally change items.
+ */
+function EdgeTap({ side, onTap }: { side: 'left' | 'right'; onTap: () => void }) {
+  const start = useRef<{ x: number; y: number; t: number } | null>(null);
+  return (
+    <div
+      onPointerDown={(e) => {
+        if (e.isPrimary) start.current = { x: e.clientX, y: e.clientY, t: Date.now() };
+      }}
+      onPointerUp={(e) => {
+        if (!e.isPrimary) return;
+        const s = start.current;
+        start.current = null;
+        if (!s) return;
+        const moved = Math.hypot(e.clientX - s.x, e.clientY - s.y);
+        if (moved < 12 && Date.now() - s.t < 500) onTap();
+      }}
+      onPointerCancel={() => {
+        start.current = null;
+      }}
+      aria-hidden="true"
+      className={`absolute inset-y-0 hidden w-[18%] md:block lg:hidden ${
+        side === 'left' ? 'left-0' : 'right-0'
+      }`}
+    >
+      <span
+        className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-3xl text-neutral-400/40 ${
+          side === 'left' ? 'left-2' : 'right-2'
+        }`}
+      >
+        {side === 'left' ? '‹' : '›'}
+      </span>
+    </div>
   );
 }
 
