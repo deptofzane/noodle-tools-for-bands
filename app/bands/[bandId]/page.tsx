@@ -32,7 +32,9 @@ export default async function BandDetailPage({
         bandId={bandId}
         apiKey={apiKey}
         currentUserId={currentUserId}
-        initialTab={tab === 'chat' ? 'chat' : 'overview'}
+        initialTab={
+          tab === 'chat' ? 'chat' : tab === 'members' ? 'members' : 'overview'
+        }
       />
     </main>
   );

@@ -71,7 +71,7 @@ export function BandDetailClient({
   bandId: string;
   apiKey: string;
   currentUserId: string;
-  initialTab?: 'overview' | 'chat';
+  initialTab?: 'overview' | 'chat' | 'members';
 }) {
   const [data, setData] = useState<BandDetail | null>(null);
   const [conversations, setConversations] = useState<Conversation[] | null>(
@@ -96,7 +96,6 @@ export function BandDetailClient({
     new Set(),
   );
   const [addingToSetlist, setAddingToSetlist] = useState(false);
-  const [membersMinimized, setMembersMinimized] = useState(true);
   const [showsMinimized, setShowsMinimized] = useState(false);
   const [audioMinimized, setAudioMinimized] = useState(true);
   const [setlistsMinimized, setSetlistsMinimized] = useState(true);
@@ -107,7 +106,9 @@ export function BandDetailClient({
   );
   // Shows start minimized: a show is expanded only while its id is in the set.
   const [expandedShows, setExpandedShows] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState<'overview' | 'chat'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'overview' | 'chat' | 'members'>(
+    initialTab,
+  );
   const [chatChange, setChatChange] = useState(0);
   const [unread, setUnread] = useState<{ count: number; mentioned: boolean }>({
     count: 0,
@@ -584,6 +585,9 @@ export function BandDetailClient({
         <ActionMenuItem onClick={() => openAddToSetlist(c)}>
           Add to setlist
         </ActionMenuItem>
+        <ActionMenuItem onClick={() => router.push(`/notes/${c.id}/edit`)}>
+          Edit song
+        </ActionMenuItem>
         <ActionMenuItem onClick={() => handleToggleArchive(c)}>
           {c.archived ? 'Unarchive song' : 'Archive song'}
         </ActionMenuItem>
@@ -614,7 +618,7 @@ export function BandDetailClient({
         aria-label="Band sections"
         className="flex gap-1 border-b border-neutral-200 dark:border-neutral-800"
       >
-        {(['overview', 'chat'] as const).map((tab) => (
+        {(['overview', 'chat', 'members'] as const).map((tab) => (
           <button
             key={tab}
             type="button"
@@ -659,50 +663,33 @@ export function BandDetailClient({
         />
       )}
 
+      {activeTab === 'members' && (
+        <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+          {data.members.map((m) => (
+            <li
+              key={m.userId}
+              className="flex items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm"
+            >
+              <div className="min-w-0">
+                <div className="truncate font-medium">
+                  {m.name ?? m.email ?? 'Unknown'}
+                </div>
+                {m.email && m.name && (
+                  <div className="truncate text-xs text-neutral-500">
+                    {m.email}
+                  </div>
+                )}
+              </div>
+              <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+                {m.role}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
       {activeTab === 'overview' && (
         <>
-      <section className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <MinimizeToggle
-            minimized={membersMinimized}
-            onToggle={() => setMembersMinimized((v) => !v)}
-            label="Members"
-          >
-            <h2 className="text-sm font-medium">Members</h2>
-          </MinimizeToggle>
-          {membersMinimized && (
-            <span className="text-xs text-neutral-500">
-              <span aria-hidden="true">·</span> {data.members.length}{' '}
-              {data.members.length === 1 ? 'member' : 'members'}
-            </span>
-          )}
-        </div>
-        {!membersMinimized && (
-          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-            {data.members.map((m) => (
-              <li
-                key={m.userId}
-                className="flex items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm"
-              >
-                <div className="min-w-0">
-                  <div className="truncate font-medium">
-                    {m.name ?? m.email ?? 'Unknown'}
-                  </div>
-                  {m.email && m.name && (
-                    <div className="truncate text-xs text-neutral-500">
-                      {m.email}
-                    </div>
-                  )}
-                </div>
-                <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-                  {m.role}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <span className="flex min-w-0 items-center gap-2">
