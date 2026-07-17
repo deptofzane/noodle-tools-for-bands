@@ -57,7 +57,14 @@ export default async function EventPage({
 
       <div className="pb-4">
         <h1 className="title-text">{event.title}</h1>
-        <p className="mt-1 text-sm text-neutral-500">{event.bandName}</p>
+        <p className="mt-1 text-sm text-neutral-500">
+          <Link
+            href={`/bands/${event.bandId}`}
+            className="hover:underline hover:text-neutral-700 dark:hover:text-neutral-300"
+          >
+            {event.bandName}
+          </Link>
+        </p>
       </div>
 
       <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4 text-sm dark:border-neutral-800 mb-4">
