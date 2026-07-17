@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDbUser } from '@/lib/current-user';
-import { getMembership } from '@/lib/db/bands';
+import { requireBandMember } from '@/lib/api-guard';
 import { listBandConversations } from '@/lib/db/conversations';
 import {
   createSetlist,
@@ -25,11 +24,9 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ bandId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
   const { bandId } = await params;
-  if (!(await getMembership(user.id, bandId)))
-    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  const guard = await requireBandMember(bandId);
+  if (guard instanceof NextResponse) return guard;
   return NextResponse.json({ setlists: await listBandSetlists(bandId) });
 }
 
@@ -37,11 +34,10 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ bandId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
   const { bandId } = await params;
-  if (!(await getMembership(user.id, bandId)))
-    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  const guard = await requireBandMember(bandId);
+  if (guard instanceof NextResponse) return guard;
+  const { user } = guard;
 
   const body = await req.json().catch(() => null);
   const name = typeof body?.name === 'string' ? body.name.trim() : '';

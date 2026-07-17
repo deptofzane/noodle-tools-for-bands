@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDbUser } from '@/lib/current-user';
+import { requireUser } from '@/lib/api-guard';
 import { getConversationMembership } from '@/lib/db/conversations';
 import { deleteNote, NoteNotFoundError, setNoteResolved, updateNote } from '@/lib/db/notes';
 
@@ -15,8 +15,8 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ conversationId: string; noteId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { conversationId, noteId } = await params;
 
   if (!(await getConversationMembership(user.id, conversationId)))
@@ -52,8 +52,8 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ conversationId: string; noteId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { conversationId, noteId } = await params;
 
   if (!(await getConversationMembership(user.id, conversationId)))

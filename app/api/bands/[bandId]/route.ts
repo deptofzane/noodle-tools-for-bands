@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDbUser } from '@/lib/current-user';
+import { requireUser } from '@/lib/api-guard';
 import {
   deleteBand,
   getBandById,
@@ -8,8 +8,8 @@ import {
 } from '@/lib/db/bands';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ bandId: string }> }) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { bandId } = await params;
   const membership = await getMembership(user.id, bandId);
   if (!membership) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
@@ -26,8 +26,8 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ bandId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { bandId } = await params;
   const membership = await getMembership(user.id, bandId);
   if (!membership || membership.role !== 'owner') {

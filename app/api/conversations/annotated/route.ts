@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDbUser } from '@/lib/current-user';
+import { requireUser } from '@/lib/api-guard';
 import {
   listConversationsForUser,
   type ConversationFilter,
@@ -15,8 +15,8 @@ import {
  * @-mentioned in (no broad Drive scan needed).
  */
 export async function GET(req: Request) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
 
   const param = new URL(req.url).searchParams.get('filter');
   const filter: ConversationFilter =

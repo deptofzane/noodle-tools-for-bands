@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDbUser } from '@/lib/current-user';
+import { requireUser } from '@/lib/api-guard';
 import { getConversationMembership } from '@/lib/db/conversations';
 import {
   deleteAudioVersion,
@@ -28,8 +28,8 @@ export async function PATCH(
     params,
   }: { params: Promise<{ conversationId: string; versionId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { conversationId, versionId } = await params;
   if (!(await getConversationMembership(user.id, conversationId))) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
@@ -75,8 +75,8 @@ export async function DELETE(
     params,
   }: { params: Promise<{ conversationId: string; versionId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { conversationId, versionId } = await params;
   if (!(await getConversationMembership(user.id, conversationId))) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });

@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDbUser } from '@/lib/current-user';
+import { requireUser } from '@/lib/api-guard';
 import { createBand, listMyBands } from '@/lib/db/bands';
 
 export async function GET() {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   return NextResponse.json({ bands: await listMyBands(user.id) });
 }
 
 export async function POST(req: Request) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const body = await req.json().catch(() => null);
   const name = typeof body?.name === 'string' ? body.name.trim() : '';
   if (!name || name.length > 100)

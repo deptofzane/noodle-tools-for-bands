@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDbUser } from '@/lib/current-user';
+import { requireUser } from '@/lib/api-guard';
 import { addMember, getMembership } from '@/lib/db/bands';
 import { getUserByEmail } from '@/lib/db/users';
 import { notify } from '@/lib/db/notifications';
 
 export async function POST(req: Request, { params }: { params: Promise<{ bandId: string }> }) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { bandId } = await params;
   const membership = await getMembership(user.id, bandId);
   if (!membership) return NextResponse.json({ error: 'forbidden' }, { status: 403 });

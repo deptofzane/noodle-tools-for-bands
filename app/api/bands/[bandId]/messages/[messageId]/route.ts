@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDbUser } from '@/lib/current-user';
+import { requireUser } from '@/lib/api-guard';
 import { getMembership } from '@/lib/db/bands';
 import { deleteBandMessage, editBandMessage } from '@/lib/db/band-messages';
 import { sanitizeMentionIds } from '@/lib/db/notes';
@@ -21,8 +21,8 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ bandId: string; messageId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { bandId, messageId } = await params;
 
   if (!(await getMembership(user.id, bandId))) {
@@ -57,8 +57,8 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ bandId: string; messageId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { bandId, messageId } = await params;
 
   const membership = await getMembership(user.id, bandId);

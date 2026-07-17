@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDbUser } from '@/lib/current-user';
+import { requireUser } from '@/lib/api-guard';
 import { getMembership } from '@/lib/db/bands';
 import { getEventForUser, updateEvent } from '@/lib/db/events';
 import { getSetlist } from '@/lib/db/setlists';
@@ -17,8 +17,8 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ eventId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { eventId } = await params;
 
   const event = await getEventForUser(user.id, eventId);

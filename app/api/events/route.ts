@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDbUser } from '@/lib/current-user';
+import { requireUser } from '@/lib/api-guard';
 import { getMembership } from '@/lib/db/bands';
 import { createEvent, listEventsForUserInRange } from '@/lib/db/events';
 import { getSetlist } from '@/lib/db/setlists';
@@ -18,8 +18,8 @@ import { notify } from '@/lib/db/notifications';
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function GET(req: Request) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
 
   const url = new URL(req.url);
   const from = url.searchParams.get('from') ?? '';
@@ -36,8 +36,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
 
   const body = await req.json().catch(() => null);
   const bandId = typeof body?.bandId === 'string' ? body.bandId : '';

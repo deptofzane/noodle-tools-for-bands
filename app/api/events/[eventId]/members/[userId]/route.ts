@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDbUser } from '@/lib/current-user';
+import { requireUser } from '@/lib/api-guard';
 import { getMembership } from '@/lib/db/bands';
 import { getEventForUser, removeEventMember } from '@/lib/db/events';
 
@@ -11,8 +11,8 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ eventId: string; userId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { eventId, userId } = await params;
 
   const event = await getEventForUser(user.id, eventId);

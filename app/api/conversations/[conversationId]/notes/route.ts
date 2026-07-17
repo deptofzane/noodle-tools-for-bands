@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDbUser } from '@/lib/current-user';
-import { getConversationMembership } from '@/lib/db/conversations';
+import { requireConversationMember } from '@/lib/api-guard';
 import { createNote, sanitizeMentionIds } from '@/lib/db/notes';
 import { notify } from '@/lib/db/notifications';
 
@@ -13,13 +12,10 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ conversationId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
   const { conversationId } = await params;
-
-  const membership = await getConversationMembership(user.id, conversationId);
-  if (!membership)
-    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  const guard = await requireConversationMember(conversationId);
+  if (guard instanceof NextResponse) return guard;
+  const { user, membership } = guard;
 
   const body = await req.json().catch(() => null);
   const timestampMs = body?.timestampMs;

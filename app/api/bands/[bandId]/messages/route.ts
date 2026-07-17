@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDbUser } from '@/lib/current-user';
+import { requireUser } from '@/lib/api-guard';
 import { getMembership } from '@/lib/db/bands';
 import { createBandMessage, listBandMessages } from '@/lib/db/band-messages';
 import { sanitizeMentionIds } from '@/lib/db/notes';
@@ -22,8 +22,8 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ bandId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { bandId } = await params;
   if (!(await getMembership(user.id, bandId))) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
@@ -45,8 +45,8 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ bandId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { bandId } = await params;
   if (!(await getMembership(user.id, bandId))) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });

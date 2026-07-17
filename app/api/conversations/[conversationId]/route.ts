@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDbUser } from '@/lib/current-user';
+import { requireConversationMember, requireUser } from '@/lib/api-guard';
 import {
   ConversationConflictError,
   deleteConversation,
@@ -31,12 +31,10 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ conversationId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
   const { conversationId } = await params;
-
-  const membership = await getConversationMembership(user.id, conversationId);
-  if (!membership) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  const guard = await requireConversationMember(conversationId);
+  if (guard instanceof NextResponse) return guard;
+  const { user, membership } = guard;
 
   const [notes, activity, members] = await Promise.all([
     loadNotes(conversationId, user.id),
@@ -58,12 +56,10 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ conversationId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
   const { conversationId } = await params;
-
-  const membership = await getConversationMembership(user.id, conversationId);
-  if (!membership) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  const guard = await requireConversationMember(conversationId);
+  if (guard instanceof NextResponse) return guard;
+  const { user, membership } = guard;
 
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== 'object')
@@ -130,8 +126,8 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ conversationId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { conversationId } = await params;
 
   if (!(await getConversationMembership(user.id, conversationId)))

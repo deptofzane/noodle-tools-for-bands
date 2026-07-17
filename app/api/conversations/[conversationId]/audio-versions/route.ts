@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
+import { requireUser } from '@/lib/api-guard';
 import { auth } from '@/auth';
 import { getDriveClient } from '@/lib/drive';
-import { getCurrentDbUser } from '@/lib/current-user';
 import { getConversationMembership } from '@/lib/db/conversations';
 import type { Readable } from 'node:stream';
 import { addAudioVersion, listAudioVersions } from '@/lib/db/song-files';
@@ -25,8 +25,8 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ conversationId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { conversationId } = await params;
   if (!(await getConversationMembership(user.id, conversationId))) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
@@ -38,8 +38,8 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ conversationId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { conversationId } = await params;
   if (!(await getConversationMembership(user.id, conversationId))) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });

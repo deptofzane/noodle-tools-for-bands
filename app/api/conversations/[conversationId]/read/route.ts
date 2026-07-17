@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDbUser } from '@/lib/current-user';
+import { requireUser } from '@/lib/api-guard';
 import { getConversationMembership } from '@/lib/db/conversations';
 import { markConversationRead } from '@/lib/db/listing';
 
@@ -12,8 +12,8 @@ export async function POST(
   _req: Request,
   { params }: { params: Promise<{ conversationId: string }> },
 ) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   const { conversationId } = await params;
 
   if (!(await getConversationMembership(user.id, conversationId)))

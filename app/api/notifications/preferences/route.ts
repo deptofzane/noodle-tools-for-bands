@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentDbUser } from '@/lib/current-user';
+import { requireUser } from '@/lib/api-guard';
 import {
   NOTIFICATION_KINDS,
   getMutedKinds,
@@ -24,14 +24,14 @@ function isKind(v: unknown): v is NotificationKind {
 }
 
 export async function GET() {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
   return NextResponse.json({ muted: await getMutedKinds(user.id) });
 }
 
 export async function PATCH(req: Request) {
-  const user = await getCurrentDbUser();
-  if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
 
   const body = await req.json().catch(() => null);
   if (!isKind(body?.kind) || typeof body?.enabled !== 'boolean') {
