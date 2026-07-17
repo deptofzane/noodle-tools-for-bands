@@ -43,6 +43,20 @@ export function Live({
   );
   const exit = useCallback(() => router.push(exitHref), [router, exitHref]);
 
+  // One zoom control (percent) drives image width, PDF viewer zoom, and text
+  // font size. Persists across items as you flip through.
+  const [zoom, setZoom] = useState(100);
+  const zoomIn = useCallback(() => setZoom((z) => Math.min(400, z + 25)), []);
+  const zoomOut = useCallback(() => setZoom((z) => Math.max(50, z - 25)), []);
+  const resetZoom = useCallback(() => setZoom(100), []);
+
+  const sheet = song?.sheetMusic ?? null;
+  const kind =
+    song?.conversationId && sheet
+      ? previewKind(sheet.mimeType, sheet.fileName)
+      : null;
+  const zoomable = kind === 'image' || kind === 'pdf' || kind === 'text';
+
   // Keyboard + foot-pedal navigation; Esc exits.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -55,11 +69,20 @@ export function Live({
       } else if (e.key === 'Escape') {
         e.preventDefault();
         exit();
+      } else if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        zoomIn();
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        zoomOut();
+      } else if (e.key === '0') {
+        e.preventDefault();
+        resetZoom();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [goNext, goPrev, exit]);
+  }, [goNext, goPrev, exit, zoomIn, zoomOut, resetZoom]);
 
   // Lock body scroll while the overlay is up.
   useEffect(() => {
@@ -101,7 +124,7 @@ export function Live({
       {/* Sheet fills everything; controls float on top. */}
       <div className="relative min-h-0 flex-1">
         {song ? (
-          <SheetView song={song} />
+          <SheetView song={song} zoom={zoom} />
         ) : (
           <Centered>Nothing to show.</Centered>
         )}
@@ -147,11 +170,45 @@ export function Live({
           ✕ Exit
         </button>
       </div>
+
+      {/* Zoom control (only for viewable sheets). */}
+      {zoomable && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-3">
+          <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-black/10 p-1 text-neutral-700 dark:bg-white/10 dark:text-neutral-200">
+            <button
+              type="button"
+              onClick={zoomOut}
+              disabled={zoom <= 50}
+              aria-label="Zoom out"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-xl leading-none hover:bg-black/10 disabled:opacity-40 dark:hover:bg-white/10"
+            >
+              −
+            </button>
+            <button
+              type="button"
+              onClick={resetZoom}
+              aria-label="Reset zoom"
+              className="min-w-[3.25rem] rounded-full px-2 text-center text-xs font-medium tabular-nums hover:bg-black/10 dark:hover:bg-white/10"
+            >
+              {zoom}%
+            </button>
+            <button
+              type="button"
+              onClick={zoomIn}
+              disabled={zoom >= 400}
+              aria-label="Zoom in"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-xl leading-none hover:bg-black/10 disabled:opacity-40 dark:hover:bg-white/10"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function SheetView({ song }: { song: PracticeSong }) {
+function SheetView({ song, zoom }: { song: PracticeSong; zoom: number }) {
   const [text, setText] = useState<string | null>(null);
 
   const sheet = song.sheetMusic ?? null;
@@ -202,32 +259,41 @@ function SheetView({ song }: { song: PracticeSong }) {
   }
 
   if (kind === 'image') {
+    // width = zoom% of the viewport: 100% fits the width; zooming in grows
+    // it and the container scrolls (mx-auto centers when it's narrower).
     return (
-      <div className="flex h-full w-full items-center justify-center bg-neutral-100 dark:bg-neutral-900">
+      <div className="h-full w-full overflow-auto bg-neutral-100 py-4 dark:bg-neutral-900">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={url}
           alt={song.title}
-          className="max-h-full max-w-full object-contain"
+          style={{ width: `${zoom}%`, maxWidth: 'none' }}
+          className="mx-auto block h-auto"
         />
       </div>
     );
   }
 
   if (kind === 'pdf') {
-    // #toolbar=0 hides the built-in PDF chrome in most browsers.
+    // #toolbar=0 hides the built-in PDF chrome; #zoom uses the viewer's own
+    // (crisp) zoom rather than raster-scaling the iframe.
     return (
       <iframe
         title={song.title}
-        src={`${url}#toolbar=0&navpanes=0&view=FitH`}
+        src={`${url}#toolbar=0&navpanes=0&zoom=${zoom}`}
         className="h-full w-full border-0"
       />
     );
   }
 
   if (kind === 'text') {
+    // Pasted text must NOT wrap — `whitespace-pre` keeps lines intact and the
+    // container scrolls horizontally. Zoom drives the font size.
     return (
-      <pre className="h-full w-full overflow-auto whitespace-pre-wrap px-6 py-12 font-mono text-lg leading-relaxed">
+      <pre
+        style={{ fontSize: `${(zoom / 100) * 1.125}rem` }}
+        className="h-full w-full overflow-auto whitespace-pre px-6 py-12 font-mono leading-relaxed"
+      >
         {text ?? 'Loading…'}
       </pre>
     );
