@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNotNull } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import { db } from './index';
 import { conversations, setlists, setlistSongs, songFiles } from './schema';
 
@@ -45,13 +45,23 @@ export interface SetlistDetail {
   songs: SetlistSong[];
 }
 
-/** Create a setlist and its ordered songs in one transaction. */
+/**
+ * Create a setlist and its ordered items in one transaction. Accepts either
+ * `items` (songs and/or markers) or the legacy `conversationIds` (songs).
+ */
 export async function createSetlist(input: {
   bandId: string;
   createdBy: string;
   name: string;
-  conversationIds: string[];
+  conversationIds?: string[];
+  items?: SetlistItemInput[];
 }): Promise<Setlist> {
+  const items: SetlistItemInput[] =
+    input.items ??
+    (input.conversationIds ?? []).map((conversationId) => ({
+      conversationId,
+      label: null,
+    }));
   return db.transaction(async (tx) => {
     const [row] = await tx
       .insert(setlists)
@@ -61,11 +71,12 @@ export async function createSetlist(input: {
         createdBy: input.createdBy,
       })
       .returning();
-    if (input.conversationIds.length > 0) {
+    if (items.length > 0) {
       await tx.insert(setlistSongs).values(
-        input.conversationIds.map((conversationId, position) => ({
+        items.map((it, position) => ({
           setlistId: row!.id,
-          conversationId,
+          conversationId: it.conversationId,
+          label: it.conversationId ? null : it.label,
           position,
         })),
       );
@@ -240,54 +251,50 @@ export async function listBandSetlists(
 }
 
 export interface PracticeSong {
-  conversationId: string;
+  /** Null for a marker step (set break / custom) — not playable. */
+  conversationId: string | null;
   title: string;
   mimeType: string;
   sheetMusic: { fileName: string; mimeType: string; updatedAt: string } | null;
 }
 
 /**
- * A setlist's songs, in order, enriched for the Practice view: each song's
- * audio MIME type and its sheet-music metadata (if any). Two queries — the
- * ordered songs, then a batched lookup of their audio/sheet file rows.
+ * A setlist's items, in order, enriched for the Practice view. Songs carry
+ * their audio MIME type and sheet-music metadata; markers (set breaks /
+ * custom) come through as non-playable steps (conversationId null). Two
+ * queries — the ordered items, then a batched lookup of the songs' files.
  */
 export async function getSetlistPracticeSongs(
   setlistId: string,
 ): Promise<PracticeSong[]> {
-  const rawRows = await db
+  const rows = await db
     .select({
       conversationId: setlistSongs.conversationId,
       audioFileName: conversations.audioFileName,
+      label: setlistSongs.label,
     })
     .from(setlistSongs)
-    .innerJoin(conversations, eq(conversations.id, setlistSongs.conversationId))
-    // Markers (no conversation) aren't playable — Practice steps songs only.
-    .where(
-      and(
-        eq(setlistSongs.setlistId, setlistId),
-        isNotNull(setlistSongs.conversationId),
-      ),
-    )
+    .leftJoin(conversations, eq(conversations.id, setlistSongs.conversationId))
+    .where(eq(setlistSongs.setlistId, setlistId))
     .orderBy(asc(setlistSongs.position));
-  // The isNotNull filter guarantees a conversation id; narrow the type.
-  const rows = rawRows.filter(
-    (r): r is { conversationId: string; audioFileName: string | null } =>
-      r.conversationId !== null,
-  );
   if (rows.length === 0) return [];
 
-  const ids = rows.map((r) => r.conversationId);
-  const files = await db
-    .select({
-      conversationId: songFiles.conversationId,
-      kind: songFiles.kind,
-      isDefault: songFiles.isDefault,
-      fileName: songFiles.fileName,
-      mimeType: songFiles.mimeType,
-      updatedAt: songFiles.updatedAt,
-    })
-    .from(songFiles)
-    .where(inArray(songFiles.conversationId, ids));
+  const ids = rows
+    .map((r) => r.conversationId)
+    .filter((id): id is string => id !== null);
+  const files = ids.length
+    ? await db
+        .select({
+          conversationId: songFiles.conversationId,
+          kind: songFiles.kind,
+          isDefault: songFiles.isDefault,
+          fileName: songFiles.fileName,
+          mimeType: songFiles.mimeType,
+          updatedAt: songFiles.updatedAt,
+        })
+        .from(songFiles)
+        .where(inArray(songFiles.conversationId, ids))
+    : [];
 
   const audioByConv = new Map<string, (typeof files)[number]>();
   const sheetByConv = new Map<string, (typeof files)[number]>();
@@ -298,6 +305,15 @@ export async function getSetlistPracticeSongs(
   }
 
   return rows.map((r) => {
+    if (!r.conversationId) {
+      // A marker (set break / custom) — a step with no audio.
+      return {
+        conversationId: null,
+        title: r.label ?? 'Set break',
+        mimeType: '',
+        sheetMusic: null,
+      };
+    }
     const audio = audioByConv.get(r.conversationId);
     const sheet = sheetByConv.get(r.conversationId);
     return {

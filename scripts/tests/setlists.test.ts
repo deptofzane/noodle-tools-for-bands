@@ -127,10 +127,12 @@ test('setlists: markers (set break / custom) coexist with songs', async () => {
     assert.equal(detail?.songs[0]?.conversationId, song.id, 'song keeps conversation');
     assert.equal(detail?.songs[1]?.conversationId, null, 'marker has no conversation');
 
-    // Practice steps songs only — markers are skipped.
+    // Practice steps through every item; markers are non-playable steps.
     const practice = await getSetlistPracticeSongs(setlist.id);
-    assert.equal(practice.length, 1, 'only the song is playable');
-    assert.equal(practice[0]?.conversationId, song.id, 'the song');
+    assert.equal(practice.length, 3, 'songs and markers are all steps');
+    assert.equal(practice[0]?.conversationId, song.id, 'first step is the song');
+    assert.equal(practice[1]?.conversationId, null, 'set break is not playable');
+    assert.equal(practice[1]?.title, 'Set break', 'break carries its label');
 
     // Markers with the same label can repeat.
     await setSetlistSongs(setlist.id, [

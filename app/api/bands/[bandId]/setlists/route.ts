@@ -2,16 +2,22 @@ import { NextResponse } from 'next/server';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { listBandConversations } from '@/lib/db/conversations';
-import { createSetlist, listBandSetlists } from '@/lib/db/setlists';
+import {
+  createSetlist,
+  listBandSetlists,
+  type SetlistItemInput,
+} from '@/lib/db/setlists';
+
+const MAX_LABEL = 100;
 
 /**
  * GET  /api/bands/[bandId]/setlists
  *   → the band's setlists (newest first), each with its ordered songs.
  *
  * POST /api/bands/[bandId]/setlists
- *   Body: { name: string, conversationIds: string[] }
- *   → create a setlist. Song ids are validated against the band's own
- *     (unarchived) songs, preserving the submitted order.
+ *   Body: { name, items: [{ conversationId?|null, label?|null }] } — songs
+ *   (validated as band songs, no dups) and/or markers (labels, e.g. a set
+ *   break), in order. Legacy { conversationIds } is also accepted.
  *
  * Both require band membership.
  */
@@ -45,27 +51,41 @@ export async function POST(
       { status: 400 },
     );
 
-  const submitted: string[] = Array.isArray(body?.conversationIds)
-    ? body.conversationIds.filter((v: unknown): v is string => typeof v === 'string')
-    : [];
+  // Normalize to a raw item list, accepting the legacy conversationIds form.
+  const raw: unknown[] = Array.isArray(body?.items)
+    ? body.items
+    : Array.isArray(body?.conversationIds)
+      ? body.conversationIds.map((id: unknown) => ({ conversationId: id }))
+      : [];
 
-  // Keep only songs that belong to this band (unarchived), in the order
-  // the user submitted them — deduped.
+  // Songs must belong to this band (unarchived), no duplicates; markers pass
+  // through with a trimmed label. Invalid songs are skipped, in order.
   const allowed = new Set(
     (await listBandConversations(bandId))
       .filter((c) => !c.archived)
       .map((c) => c.id),
   );
-  const seen = new Set<string>();
-  const conversationIds = submitted.filter(
-    (id) => allowed.has(id) && !seen.has(id) && (seen.add(id), true),
-  );
+  const items: SetlistItemInput[] = [];
+  const seenSongs = new Set<string>();
+  for (const entry of raw) {
+    const it = entry as { conversationId?: unknown; label?: unknown };
+    const cid = typeof it?.conversationId === 'string' ? it.conversationId : null;
+    if (cid) {
+      if (allowed.has(cid) && !seenSongs.has(cid)) {
+        seenSongs.add(cid);
+        items.push({ conversationId: cid, label: null });
+      }
+    } else {
+      const label = typeof it?.label === 'string' ? it.label.trim() : '';
+      if (label) items.push({ conversationId: null, label: label.slice(0, MAX_LABEL) });
+    }
+  }
 
   const setlist = await createSetlist({
     bandId,
     createdBy: user.id,
     name,
-    conversationIds,
+    items,
   });
   return NextResponse.json({ setlist }, { status: 201 });
 }

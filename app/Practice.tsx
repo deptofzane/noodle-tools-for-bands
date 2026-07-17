@@ -9,7 +9,8 @@ import {
 } from './notes/[conversationId]/SheetMusic';
 
 export interface PracticeSong {
-  conversationId: string;
+  /** Null for a marker step (set break / custom) — shown without a player. */
+  conversationId: string | null;
   /** Display title, also the audio filename (its extension hints the format). */
   title: string;
   /** Audio MIME type; defaults to audio/mpeg when unknown. */
@@ -42,10 +43,6 @@ export function Practice({ songs }: { songs: PracticeSong[] }) {
   const song = songs[current]!;
   const canBack = current > 0;
   const canForward = current < total - 1;
-
-  const src = `/api/conversations/${song.conversationId}/files/audio?name=${encodeURIComponent(
-    song.title,
-  )}`;
 
   const navBtn =
     'shrink-0 rounded-md border border-neutral-300 px-3 py-2 text-lg leading-none font-medium hover:bg-neutral-50 disabled:opacity-40 dark:border-neutral-700 dark:hover:bg-neutral-900';
@@ -82,23 +79,34 @@ export function Practice({ songs }: { songs: PracticeSong[] }) {
         </button>
       </div>
 
-      <PlayerProvider key={song.conversationId}>
-        <div className="flex flex-col">
-          <AudioPlayer
-            src={src}
-            fileName={song.title}
-            mimeType={song.mimeType ?? 'audio/mpeg'}
-            sticky
-          />
-          {song.sheetMusic && (
-            <SheetMusic
-              conversationId={song.conversationId}
-              initial={song.sheetMusic}
-              startClosed={false}
+      {song.conversationId ? (
+        <PlayerProvider key={song.conversationId}>
+          <div className="flex flex-col">
+            <AudioPlayer
+              src={`/api/conversations/${song.conversationId}/files/audio?name=${encodeURIComponent(
+                song.title,
+              )}`}
+              fileName={song.title}
+              mimeType={song.mimeType ?? 'audio/mpeg'}
+              sticky
             />
-          )}
+            {song.sheetMusic && (
+              <SheetMusic
+                conversationId={song.conversationId}
+                initial={song.sheetMusic}
+                startClosed={false}
+              />
+            )}
+          </div>
+        </PlayerProvider>
+      ) : (
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-neutral-300 py-16 text-center dark:border-neutral-700">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
+            Break
+          </p>
+          <p className="mt-1 text-lg font-medium">{song.title}</p>
         </div>
-      </PlayerProvider>
+      )}
     </div>
   );
 }
