@@ -3,7 +3,7 @@
 import { ensureOk } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { Modal } from '../../../Modal';
 import { Select } from '../../../Select';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
@@ -49,6 +49,9 @@ export function NewEventClient({
   const [setlistId, setSetlistId] = useState('');
   const [setlists, setSetlists] = useState<BandOption[]>([]);
   const [busy, setBusy] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newSetlistName, setNewSetlistName] = useState('');
+  const [creatingSetlist, setCreatingSetlist] = useState(false);
 
   // Load the chosen band's setlists for the association picker; reset the
   // selection whenever the band changes (setlists are per-band).
@@ -102,6 +105,37 @@ export function NewEventClient({
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setBusy(false);
+    }
+  };
+
+  // Quick-create an (empty) setlist without leaving the form: add it to the
+  // dropdown and select it. Songs can be added to it later.
+  const handleCreateSetlist = async () => {
+    const name = newSetlistName.trim();
+    if (!name || creatingSetlist || !bandId) return;
+    setCreatingSetlist(true);
+    try {
+      const created = await trackPending(async () => {
+        const r = await fetch(`/api/bands/${bandId}/setlists`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, items: [] }),
+        });
+        await ensureOk(r);
+        const data = (await r.json()) as {
+          setlist: { id: string; name: string };
+        };
+        return data.setlist;
+      });
+      setSetlists((prev) => [{ id: created.id, name: created.name }, ...prev]);
+      setSetlistId(created.id);
+      setCreateOpen(false);
+      setNewSetlistName('');
+      showToast('Setlist created.', 'success');
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setCreatingSetlist(false);
     }
   };
 
@@ -216,12 +250,16 @@ export function NewEventClient({
         )}
         {bandId && (
           <div className="pt-1.5">
-            <Link
-              href={`/bands/${bandId}/setlists/new`}
+            <button
+              type="button"
+              onClick={() => {
+                setNewSetlistName('');
+                setCreateOpen(true);
+              }}
               className="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
             >
               + Create a new setlist
-            </Link>
+            </button>
           </div>
         )}
       </div>
@@ -238,6 +276,54 @@ export function NewEventClient({
           className={field}
         />
       </div>
+
+      {createOpen && (
+        <Modal
+          onClose={() => setCreateOpen(false)}
+          busy={creatingSetlist}
+          labelledBy="new-setlist-title"
+          size="sm"
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleCreateSetlist();
+            }}
+          >
+            <h2 id="new-setlist-title" className="text-base font-semibold">
+              Create a setlist
+            </h2>
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              It’ll be added to this event. You can add songs to it later.
+            </p>
+            <input
+              value={newSetlistName}
+              onChange={(e) => setNewSetlistName(e.target.value)}
+              placeholder="Setlist name"
+              autoFocus
+              maxLength={255}
+              className="mt-3 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCreateOpen(false)}
+                disabled={creatingSetlist}
+                className="btn-ghost"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={creatingSetlist || !newSetlistName.trim()}
+                className="btn-primary"
+              >
+                {creatingSetlist ? 'Creating…' : 'Create'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }
