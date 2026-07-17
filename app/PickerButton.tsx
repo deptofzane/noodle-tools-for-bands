@@ -32,6 +32,7 @@ interface PickerDocsView {
 interface PickerBuilder {
   addView: (view: PickerDocsView) => PickerBuilder;
   enableFeature: (feature: string) => PickerBuilder;
+  setSize: (width: number, height: number) => PickerBuilder;
   setOAuthToken: (token: string) => PickerBuilder;
   setDeveloperKey: (key: string) => PickerBuilder;
   setCallback: (cb: (data: PickerCallbackData) => void) => PickerBuilder;
@@ -133,6 +134,12 @@ export function PickerButton({
       builder = builder.enableFeature(
         w.google.picker.Feature.MULTISELECT_ENABLED,
       );
+    }
+    // On phones, size the dialog to the viewport so it's effectively
+    // full-screen (the Picker clamps to the window, so this maxes it out).
+    // Desktop keeps the default centered dialog.
+    if (window.innerWidth <= 640) {
+      builder = builder.setSize(window.innerWidth, window.innerHeight);
     }
     const picker = builder
       .setOAuthToken(accessToken)
