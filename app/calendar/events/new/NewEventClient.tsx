@@ -3,6 +3,7 @@
 import { ensureOk } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Select } from '../../../Select';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
@@ -212,6 +213,16 @@ export function NewEventClient({
           <p className="text-[11px] text-neutral-500">
             This band has no setlists yet.
           </p>
+        )}
+        {bandId && (
+          <div className="pt-1.5">
+            <Link
+              href={`/bands/${bandId}/setlists/new`}
+              className="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+            >
+              + Create a new setlist
+            </Link>
+          </div>
         )}
       </div>
 
