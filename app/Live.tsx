@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { previewKind } from '@/lib/sheet-preview';
+import { PdfView } from './PdfView';
 import type { PracticeSong } from './Practice';
 
 /** Minimal typing for the (still-experimental) Screen Wake Lock API. */
@@ -238,8 +239,8 @@ export function Live({
  * Two-finger pinch → zoom, mapped to the shared zoom state. Attaches native
  * non-passive touch listeners (React's are passive, so preventDefault
  * wouldn't stick) to the given element. One-finger panning stays native via
- * the container's scroll. PDFs are excluded — the browser's PDF viewer
- * handles pinch inside the iframe itself.
+ * the container's scroll. Attached to image, text, and (now PDF.js-rendered)
+ * PDF containers alike.
  */
 function usePinchZoom(getZoom: () => number, setZoom: (n: number) => void) {
   const ref = useRef<HTMLDivElement>(null);
@@ -364,15 +365,14 @@ function SheetView({
   }
 
   if (kind === 'pdf') {
-    // #toolbar=0 hides the built-in PDF chrome; #zoom uses the viewer's own
-    // (crisp) zoom. A fragment-only src change doesn't reload the iframe, so
-    // the viewer never re-reads #zoom — `key` forces a reload on zoom change.
+    // Rendered with PDF.js (not an <iframe>) so it scrolls with one finger on
+    // every platform — iOS Safari won't scroll an embedded PDF.
     return (
-      <iframe
-        key={zoom}
+      <PdfView
+        url={url}
         title={song.title}
-        src={`${url}#toolbar=0&navpanes=0&zoom=${zoom}`}
-        className="h-full w-full border-0"
+        zoom={zoom}
+        containerRef={pinchRef}
       />
     );
   }

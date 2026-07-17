@@ -31,6 +31,7 @@
     "music-metadata": "^11.13.0",
     "next": "^15.5.18",
     "next-auth": "5.0.0-beta.25",
+    "pdfjs-dist": "^6.1.200",
     "pg": "^8.22.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
