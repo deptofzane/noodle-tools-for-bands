@@ -131,9 +131,81 @@ export function Live({
     };
   }, []);
 
+  const navBtn =
+    'flex h-9 w-9 items-center justify-center rounded-md border border-neutral-300 text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:border-neutral-700 dark:hover:bg-neutral-900';
+
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-white dark:bg-neutral-950">
-      {/* Sheet fills everything; controls float on top. */}
+      {/* Controls header. */}
+      <header className="flex items-center justify-between gap-2 border-b border-neutral-200 px-2 py-2 dark:border-neutral-800">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={goPrev}
+            disabled={!canBack}
+            aria-label="Previous"
+            className={navBtn}
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            onClick={goNext}
+            disabled={!canForward}
+            aria-label="Next"
+            className={navBtn}
+          >
+            ›
+          </button>
+          <span className="ml-1 text-xs tabular-nums text-neutral-500">
+            {total === 0 ? '0 / 0' : `${current + 1} / ${total}`}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {zoomable && (
+            <div className="flex items-center gap-0.5 rounded-md border border-neutral-300 dark:border-neutral-700">
+              <button
+                type="button"
+                onClick={zoomOut}
+                disabled={zoom <= 50}
+                aria-label="Zoom out"
+                className="flex h-9 w-9 items-center justify-center rounded-l-md text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:hover:bg-neutral-900"
+              >
+                −
+              </button>
+              <button
+                type="button"
+                onClick={resetZoom}
+                aria-label="Reset zoom"
+                className="min-w-[3.25rem] px-1 text-center text-xs font-medium tabular-nums hover:bg-neutral-50 dark:hover:bg-neutral-900"
+              >
+                {zoom}%
+              </button>
+              <button
+                type="button"
+                onClick={zoomIn}
+                disabled={zoom >= 400}
+                aria-label="Zoom in"
+                className="flex h-9 w-9 items-center justify-center rounded-r-md text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:hover:bg-neutral-900"
+              >
+                +
+              </button>
+            </div>
+          )}
+          {/* Exit lives in the header on desktop. */}
+          <button
+            type="button"
+            onClick={exit}
+            aria-label="Exit live mode"
+            className="hidden h-9 items-center rounded-md border border-neutral-300 px-3 text-sm font-medium hover:bg-neutral-50 lg:inline-flex dark:border-neutral-700 dark:hover:bg-neutral-900"
+          >
+            ✕ Exit
+          </button>
+        </div>
+      </header>
+
+      {/* Sheet fills the rest. */}
       <div className="relative min-h-0 flex-1">
         {song ? (
           <SheetView
@@ -145,82 +217,17 @@ export function Live({
         ) : (
           <Centered>Nothing to show.</Centered>
         )}
-
-        {/* Edge tap zones for prev / next. */}
-        {canBack && (
-          <button
-            type="button"
-            onClick={goPrev}
-            aria-label="Previous"
-            className="group absolute inset-y-0 left-0 flex w-[15%] items-center justify-start pl-2 text-neutral-400"
-          >
-            <span className="rounded-full bg-black/5 px-2 py-3 text-2xl opacity-0 transition group-hover:opacity-100 dark:bg-white/10">
-              ‹
-            </span>
-          </button>
-        )}
-        {canForward && (
-          <button
-            type="button"
-            onClick={goNext}
-            aria-label="Next"
-            className="group absolute inset-y-0 right-0 flex w-[15%] items-center justify-end pr-2 text-neutral-400"
-          >
-            <span className="rounded-full bg-black/5 px-2 py-3 text-2xl opacity-0 transition group-hover:opacity-100 dark:bg-white/10">
-              ›
-            </span>
-          </button>
-        )}
       </div>
 
-      {/* Top overlay: position + exit. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-3">
-        <span className="pointer-events-auto rounded-full bg-black/10 px-2.5 py-1 text-xs font-medium text-neutral-700 dark:bg-white/10 dark:text-neutral-200">
-          {total === 0 ? '0 / 0' : `${current + 1} / ${total}`}
-        </span>
-        <button
-          type="button"
-          onClick={exit}
-          aria-label="Exit live mode"
-          className="pointer-events-auto rounded-full bg-black/10 px-3 py-1 text-sm font-medium text-neutral-700 hover:bg-black/20 dark:bg-white/10 dark:text-neutral-200 dark:hover:bg-white/20"
-        >
-          ✕ Exit
-        </button>
-      </div>
-
-      {/* Zoom control (only for viewable sheets). */}
-      {zoomable && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-3">
-          <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-black/10 p-1 text-neutral-700 dark:bg-white/10 dark:text-neutral-200">
-            <button
-              type="button"
-              onClick={zoomOut}
-              disabled={zoom <= 50}
-              aria-label="Zoom out"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-xl leading-none hover:bg-black/10 disabled:opacity-40 dark:hover:bg-white/10"
-            >
-              −
-            </button>
-            <button
-              type="button"
-              onClick={resetZoom}
-              aria-label="Reset zoom"
-              className="min-w-[3.25rem] rounded-full px-2 text-center text-xs font-medium tabular-nums hover:bg-black/10 dark:hover:bg-white/10"
-            >
-              {zoom}%
-            </button>
-            <button
-              type="button"
-              onClick={zoomIn}
-              disabled={zoom >= 400}
-              aria-label="Zoom in"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-xl leading-none hover:bg-black/10 disabled:opacity-40 dark:hover:bg-white/10"
-            >
-              +
-            </button>
-          </div>
-        </div>
-      )}
+      {/* On phones/tablets, Exit moves to a high-contrast bottom-left button. */}
+      <button
+        type="button"
+        onClick={exit}
+        aria-label="Exit live mode"
+        className="absolute bottom-4 left-4 z-10 rounded-full bg-black px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-neutral-800 lg:hidden"
+      >
+        ✕ Exit
+      </button>
     </div>
   );
 }
