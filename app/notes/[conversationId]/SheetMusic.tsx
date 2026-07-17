@@ -6,27 +6,13 @@ import { ConnectDriveButton } from '../../ConnectDriveButton';
 import { useCanUseDrive } from '../../DriveCapabilityProvider';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
+import { previewKind } from '@/lib/sheet-preview';
 
 export interface SheetMusicMeta {
   fileName: string;
   mimeType: string;
   /** Last-write timestamp — used to cache-bust the preview on replace. */
   updatedAt: string;
-}
-
-type PreviewKind = 'image' | 'pdf' | 'text' | 'other';
-
-/** How to render a file inline, from its MIME type (with extension fallback). */
-function previewKind(mime: string, fileName: string): PreviewKind {
-  const m = (mime || '').toLowerCase();
-  const ext = fileName.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] ?? '';
-  if (m === 'image/svg+xml' || ext === 'svg') return 'other'; // never inline SVG
-  if (m.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext))
-    return 'image';
-  if (m === 'application/pdf' || ext === 'pdf') return 'pdf';
-  if (m.startsWith('text/') || ['txt', 'md', 'markdown', 'csv'].includes(ext))
-    return 'text';
-  return 'other';
 }
 
 /**
