@@ -138,29 +138,18 @@ export function Live({
     <div className="fixed inset-0 z-[60] flex flex-col bg-white dark:bg-neutral-950">
       {/* Controls header. */}
       <header className="flex items-center justify-between gap-2 border-b border-neutral-200 px-2 py-2 dark:border-neutral-800">
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={goPrev}
-            disabled={!canBack}
-            aria-label="Previous"
-            className={navBtn}
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            onClick={goNext}
-            disabled={!canForward}
-            aria-label="Next"
-            className={navBtn}
-          >
-            ›
-          </button>
-          <span className="ml-1 text-xs tabular-nums text-neutral-500">
-            {total === 0 ? '0 / 0' : `${current + 1} / ${total}`}
-          </span>
-        </div>
+        <button
+          type="button"
+          onClick={goPrev}
+          disabled={!canBack}
+          aria-label="Previous"
+          className={navBtn}
+        >
+          ‹
+        </button>
+        <span className="ml-1 text-xs tabular-nums text-neutral-300">
+          {total === 0 ? '0 / 0' : `${current + 1} / ${total}`}
+        </span>
 
         <div className="flex items-center gap-2">
           {zoomable && (
@@ -203,6 +192,15 @@ export function Live({
             ✕ Exit
           </button>
         </div>
+        <button
+          type="button"
+          onClick={goNext}
+          disabled={!canForward}
+          aria-label="Next"
+          className={navBtn}
+        >
+          ›
+        </button>
       </header>
 
       {/* Sheet fills the rest. */}
@@ -251,10 +249,7 @@ function usePinchZoom(getZoom: () => number, setZoom: (n: number) => void) {
     let startDist = 0;
     let startZoom = 100;
     const dist = (t: TouchList) =>
-      Math.hypot(
-        t[0]!.clientX - t[1]!.clientX,
-        t[0]!.clientY - t[1]!.clientY,
-      );
+      Math.hypot(t[0]!.clientX - t[1]!.clientX, t[0]!.clientY - t[1]!.clientY);
     const onStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
         startDist = dist(e.touches);
@@ -346,30 +341,35 @@ function SheetView({
   }
 
   if (kind === 'image') {
-    // width = zoom% of the viewport: 100% fits the width; zooming in grows
-    // it and the container scrolls (mx-auto centers when it's narrower).
+    // The zoom % lives on a WRAPPER (which has no max-width cap) and the img
+    // fills it — so zooming isn't fighting the browser default of
+    // `img { max-width: 100% }`. 100% fits the width; zooming in grows it and
+    // the container scrolls (mx-auto centers when it's narrower).
     return (
       <div
         ref={pinchRef}
         style={{ touchAction: 'pan-x pan-y' }}
         className="h-full w-full overflow-auto bg-neutral-100 py-4 dark:bg-neutral-900"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={url}
-          alt={song.title}
-          style={{ width: `${zoom}%`, maxWidth: 'none' }}
-          className="mx-auto block h-auto"
-        />
+        <div style={{ width: `${zoom}%` }} className="mx-auto">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={url}
+            alt={song.title}
+            className="block h-auto w-full"
+          />
+        </div>
       </div>
     );
   }
 
   if (kind === 'pdf') {
     // #toolbar=0 hides the built-in PDF chrome; #zoom uses the viewer's own
-    // (crisp) zoom rather than raster-scaling the iframe.
+    // (crisp) zoom. A fragment-only src change doesn't reload the iframe, so
+    // the viewer never re-reads #zoom — `key` forces a reload on zoom change.
     return (
       <iframe
+        key={zoom}
         title={song.title}
         src={`${url}#toolbar=0&navpanes=0&zoom=${zoom}`}
         className="h-full w-full border-0"
@@ -417,12 +417,19 @@ function SheetView({
  * press by the primary pointer — so panning or pinching a zoomed sheet near
  * the edge doesn't accidentally change items.
  */
-function EdgeTap({ side, onTap }: { side: 'left' | 'right'; onTap: () => void }) {
+function EdgeTap({
+  side,
+  onTap,
+}: {
+  side: 'left' | 'right';
+  onTap: () => void;
+}) {
   const start = useRef<{ x: number; y: number; t: number } | null>(null);
   return (
     <div
       onPointerDown={(e) => {
-        if (e.isPrimary) start.current = { x: e.clientX, y: e.clientY, t: Date.now() };
+        if (e.isPrimary)
+          start.current = { x: e.clientX, y: e.clientY, t: Date.now() };
       }}
       onPointerUp={(e) => {
         if (!e.isPrimary) return;
