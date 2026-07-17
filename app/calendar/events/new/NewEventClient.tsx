@@ -3,6 +3,7 @@
 import { ensureOk } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Select } from '../../../Select';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
 
@@ -129,18 +130,12 @@ export function NewEventClient({
         <label htmlFor="event-band" className="text-sm font-medium">
           Band
         </label>
-        <select
+        <Select
           id="event-band"
           value={bandId}
-          onChange={(e) => setBandId(e.target.value)}
-          className={field}
-        >
-          {bands.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
-            </option>
-          ))}
-        </select>
+          onChange={setBandId}
+          options={bands.map((b) => ({ value: b.id, label: b.name }))}
+        />
         <p className="text-[11px] text-neutral-500">
           The band that owns this event. Its members can see it; you can add
           others later.
@@ -204,19 +199,15 @@ export function NewEventClient({
         <label htmlFor="event-setlist" className="text-sm font-medium">
           Setlist
         </label>
-        <select
+        <Select
           id="event-setlist"
           value={setlistId}
-          onChange={(e) => setSetlistId(e.target.value)}
-          className={field}
-        >
-          <option value="">None</option>
-          {setlists.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
+          onChange={setSetlistId}
+          options={[
+            { value: '', label: 'None' },
+            ...setlists.map((s) => ({ value: s.id, label: s.name })),
+          ]}
+        />
         {setlists.length === 0 && (
           <p className="text-[11px] text-neutral-500">
             This band has no setlists yet.
