@@ -33,6 +33,7 @@ export default async function EditEventPage({
 
       <EditEventClient
         eventId={eventId}
+        bandId={event.bandId}
         bandName={event.bandName}
         setlists={setlists}
         initial={{

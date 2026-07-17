@@ -4,6 +4,8 @@ import { ensureOk } from '@/lib/api';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Modal } from '../../../../Modal';
+import { Select } from '../../../../Select';
 import { useTrackPending } from '../../../../PendingActionProvider';
 import { useToast } from '../../../../ToastProvider';
 
@@ -25,11 +27,13 @@ const field =
  */
 export function EditEventClient({
   eventId,
+  bandId,
   bandName,
-  setlists,
+  setlists: initialSetlists,
   initial,
 }: {
   eventId: string;
+  bandId: string;
   bandName: string;
   setlists: { id: string; name: string }[];
   initial: EventFields;
@@ -40,6 +44,10 @@ export function EditEventClient({
 
   const [fields, setFields] = useState<EventFields>(initial);
   const [busy, setBusy] = useState(false);
+  const [setlists, setSetlists] = useState(initialSetlists);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newSetlistName, setNewSetlistName] = useState('');
+  const [creatingSetlist, setCreatingSetlist] = useState(false);
 
   const set = (k: keyof EventFields, v: string) =>
     setFields((prev) => ({ ...prev, [k]: v }));
@@ -64,6 +72,37 @@ export function EditEventClient({
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setBusy(false);
+    }
+  };
+
+  // Quick-create an (empty) setlist without leaving the form: add it to the
+  // dropdown and select it. Songs can be added to it later.
+  const handleCreateSetlist = async () => {
+    const name = newSetlistName.trim();
+    if (!name || creatingSetlist) return;
+    setCreatingSetlist(true);
+    try {
+      const created = await trackPending(async () => {
+        const r = await fetch(`/api/bands/${bandId}/setlists`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, items: [] }),
+        });
+        await ensureOk(r);
+        const data = (await r.json()) as {
+          setlist: { id: string; name: string };
+        };
+        return data.setlist;
+      });
+      setSetlists((prev) => [{ id: created.id, name: created.name }, ...prev]);
+      set('setlistId', created.id);
+      setCreateOpen(false);
+      setNewSetlistName('');
+      showToast('Setlist created.', 'success');
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setCreatingSetlist(false);
     }
   };
 
@@ -132,24 +171,32 @@ export function EditEventClient({
         <label htmlFor="event-setlist" className="text-sm font-medium">
           Setlist
         </label>
-        <select
+        <Select
           id="event-setlist"
           value={fields.setlistId}
-          onChange={(e) => set('setlistId', e.target.value)}
-          className={field}
-        >
-          <option value="">None</option>
-          {setlists.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
+          onChange={(v) => set('setlistId', v)}
+          options={[
+            { value: '', label: 'None' },
+            ...setlists.map((s) => ({ value: s.id, label: s.name })),
+          ]}
+        />
         {setlists.length === 0 && (
           <p className="text-[11px] text-neutral-500">
             This band has no setlists yet.
           </p>
         )}
+        <div className="pt-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              setNewSetlistName('');
+              setCreateOpen(true);
+            }}
+            className="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+          >
+            + Create a new setlist
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-1">
@@ -180,6 +227,54 @@ export function EditEventClient({
           {busy ? 'Saving…' : 'Save'}
         </button>
       </div>
+
+      {createOpen && (
+        <Modal
+          onClose={() => setCreateOpen(false)}
+          busy={creatingSetlist}
+          labelledBy="new-setlist-title"
+          size="sm"
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleCreateSetlist();
+            }}
+          >
+            <h2 id="new-setlist-title" className="text-base font-semibold">
+              Create a setlist
+            </h2>
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              It’ll be added to this event. You can add songs to it later.
+            </p>
+            <input
+              value={newSetlistName}
+              onChange={(e) => setNewSetlistName(e.target.value)}
+              placeholder="Setlist name"
+              autoFocus
+              maxLength={255}
+              className="mt-3 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCreateOpen(false)}
+                disabled={creatingSetlist}
+                className="btn-ghost"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={creatingSetlist || !newSetlistName.trim()}
+                className="btn-primary"
+              >
+                {creatingSetlist ? 'Creating…' : 'Create'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }
