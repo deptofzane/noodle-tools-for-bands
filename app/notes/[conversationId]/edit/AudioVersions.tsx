@@ -1,5 +1,6 @@
 'use client';
 
+import { ensureOk } from '@/lib/api';
 import { useRef, useState } from 'react';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { Modal } from '../../../Modal';
@@ -64,10 +65,7 @@ export function AudioVersions({
         const form = new FormData();
         form.append('file', file);
         const res = await fetch(endpoint, { method: 'POST', body: form });
-        if (!res.ok) {
-          const b = await res.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${res.status}`);
-        }
+        await ensureOk(res);
         await refresh();
       });
       showToast('Version added.', 'success');
@@ -89,10 +87,7 @@ export function AudioVersions({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ driveFileId: file.id }),
         });
-        if (!res.ok) {
-          const b = await res.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${res.status}`);
-        }
+        await ensureOk(res);
         await refresh();
       });
       showToast('Version added.', 'success');
@@ -113,10 +108,7 @@ export function AudioVersions({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ default: true }),
         });
-        if (!res.ok) {
-          const b = await res.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${res.status}`);
-        }
+        await ensureOk(res);
       });
       // Reflect locally without a round-trip.
       setVersions((prev) =>
@@ -146,10 +138,7 @@ export function AudioVersions({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ label }),
         });
-        if (!res.ok) {
-          const b = await res.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${res.status}`);
-        }
+        await ensureOk(res);
       });
       setVersions((prev) => prev.map((v) => (v.id === id ? { ...v, label } : v)));
       setEditingId(null);
@@ -169,10 +158,7 @@ export function AudioVersions({
         const res = await fetch(`${endpoint}/${deleteTarget.id}`, {
           method: 'DELETE',
         });
-        if (!res.ok) {
-          const b = await res.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${res.status}`);
-        }
+        await ensureOk(res);
         await refresh();
       });
       showToast('Version deleted.', 'success');

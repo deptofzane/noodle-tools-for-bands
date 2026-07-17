@@ -1,5 +1,6 @@
 'use client';
 
+import { ensureOk } from '@/lib/api';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ConfirmModal } from '../../ConfirmModal';
 import { NoteForm, type Mentionable } from '../../notes/[conversationId]/NoteForm';
@@ -167,10 +168,7 @@ export function BandChat({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body, mentions }),
       });
-      if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        throw new Error(b.message ?? `HTTP ${res.status}`);
-      }
+      await ensureOk(res);
       atBottomRef.current = true; // sending jumps you to your message
       await fetchLatest();
     });
@@ -183,10 +181,7 @@ export function BandChat({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body, mentions }),
       });
-      if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        throw new Error(b.message ?? `HTTP ${res.status}`);
-      }
+      await ensureOk(res);
       const data = (await res.json()) as { message: Message };
       setMessages((prev) => prev.map((m) => (m.id === id ? data.message : m)));
       setEditingId(null);
@@ -200,10 +195,7 @@ export function BandChat({
     try {
       await trackPending(async () => {
         const res = await fetch(`${base}/${id}`, { method: 'DELETE' });
-        if (!res.ok) {
-          const b = await res.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${res.status}`);
-        }
+        await ensureOk(res);
         setMessages((prev) => prev.filter((m) => m.id !== id));
       });
       setDeleteTarget(null);

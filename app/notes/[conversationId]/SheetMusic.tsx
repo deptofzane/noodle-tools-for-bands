@@ -1,5 +1,6 @@
 'use client';
 
+import { ensureOk } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
 import { Modal } from '../../Modal';
 import { PickerButton, type PickedFile } from '../../PickerButton';
@@ -110,10 +111,7 @@ export function SheetMusic({
         const form = new FormData();
         form.append('file', file);
         const res = await fetch(endpoint, { method: 'POST', body: form });
-        if (!res.ok) {
-          const b = await res.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${res.status}`);
-        }
+        await ensureOk(res);
         const data = (await res.json()) as { sheetMusic: SheetMusicMeta };
         setMeta(data.sheetMusic);
         showToast('Sheet music saved.', 'success');
@@ -136,10 +134,7 @@ export function SheetMusic({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ driveFileId: file.id }),
         });
-        if (!res.ok) {
-          const b = await res.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${res.status}`);
-        }
+        await ensureOk(res);
         const data = (await res.json()) as { sheetMusic: SheetMusicMeta };
         setMeta(data.sheetMusic);
         showToast('Sheet music saved.', 'success');
@@ -157,10 +152,7 @@ export function SheetMusic({
     try {
       await trackPending(async () => {
         const res = await fetch(endpoint, { method: 'DELETE' });
-        if (!res.ok && res.status !== 204) {
-          const b = await res.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${res.status}`);
-        }
+        await ensureOk(res, [204]);
       });
       setMeta(null);
     } catch (e) {

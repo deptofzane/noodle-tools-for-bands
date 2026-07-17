@@ -1,5 +1,6 @@
 'use client';
 
+import { ensureOk } from '@/lib/api';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ConfirmModal } from '../../../ConfirmModal';
@@ -40,10 +41,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
   const load = useCallback(async () => {
     try {
       const res = await fetch(`/api/bands/${bandId}`, { cache: 'no-store' });
-      if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        throw new Error(b.message ?? b.error ?? `HTTP ${res.status}`);
-      }
+      await ensureOk(res);
       setData((await res.json()) as BandDetail);
       setError(null);
     } catch (e) {
@@ -67,10 +65,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: v }),
         });
-        if (!r.ok) {
-          const b = await r.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${r.status}`);
-        }
+        await ensureOk(r);
       });
       setEmail('');
       await load();
@@ -90,10 +85,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
           `/api/bands/${bandId}/members/${removeTarget.userId}`,
           { method: 'DELETE' },
         );
-        if (!r.ok) {
-          const b = await r.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${r.status}`);
-        }
+        await ensureOk(r);
       });
       setRemoveTarget(null);
       await load();
@@ -110,10 +102,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
     try {
       await trackPending(async () => {
         const r = await fetch(`/api/bands/${bandId}`, { method: 'DELETE' });
-        if (!r.ok) {
-          const b = await r.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${r.status}`);
-        }
+        await ensureOk(r);
       });
       router.push('/bands');
     } catch (e) {

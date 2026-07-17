@@ -1,5 +1,6 @@
 'use client';
 
+import { ensureOk } from '@/lib/api';
 import { useCallback, useEffect, useState } from 'react';
 import { useTrackPending } from '../../PendingActionProvider';
 import type { Conversation, Member, Setlist, Show } from './bandDetailShared';
@@ -33,10 +34,7 @@ export function useBandData(bandId: string) {
         fetch(`/api/bands/${bandId}/setlists`, { cache: 'no-store' }),
         fetch(`/api/bands/${bandId}/events`, { cache: 'no-store' }),
       ]);
-      if (!detailRes.ok) {
-        const b = await detailRes.json().catch(() => ({}));
-        throw new Error(b.message ?? b.error ?? `HTTP ${detailRes.status}`);
-      }
+      await ensureOk(detailRes);
       setData((await detailRes.json()) as BandDetail);
       if (convRes.ok) {
         const cd = (await convRes.json()) as { conversations: Conversation[] };

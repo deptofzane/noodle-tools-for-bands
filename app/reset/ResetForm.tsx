@@ -1,5 +1,6 @@
 'use client';
 
+import { ensureOk } from '@/lib/api';
 import { useState } from 'react';
 import Link from 'next/link';
 
@@ -47,10 +48,7 @@ export function ResetForm({ token }: { token: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, password }),
       });
-      if (!r.ok) {
-        const b = await r.json().catch(() => ({}));
-        throw new Error(b.message ?? `HTTP ${r.status}`);
-      }
+      await ensureOk(r);
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

@@ -1,5 +1,6 @@
 'use client';
 
+import { ensureOk } from '@/lib/api';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -61,10 +62,7 @@ export function EditSetlistClient({
             })),
           }),
         });
-        if (!r.ok) {
-          const b = await r.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${r.status}`);
-        }
+        await ensureOk(r);
       });
       showToast('Setlist saved.', 'success');
       router.push(viewHref);

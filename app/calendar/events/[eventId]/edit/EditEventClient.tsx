@@ -1,5 +1,6 @@
 'use client';
 
+import { ensureOk } from '@/lib/api';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -56,10 +57,7 @@ export function EditEventClient({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(fields),
         });
-        if (!r.ok) {
-          const b = await r.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${r.status}`);
-        }
+        await ensureOk(r);
       });
       showToast('Event saved.', 'success');
       router.push(eventHref);

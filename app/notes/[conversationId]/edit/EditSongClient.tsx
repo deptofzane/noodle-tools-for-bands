@@ -1,5 +1,6 @@
 'use client';
 
+import { ensureOk } from '@/lib/api';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ConfirmModal } from '../../../ConfirmModal';
@@ -54,10 +55,7 @@ export function EditSongClient({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) {
-      const b = await res.json().catch(() => ({}));
-      throw new Error(b.message ?? `HTTP ${res.status}`);
-    }
+    await ensureOk(res);
   };
 
   const handleSaveName = async () => {
@@ -114,10 +112,7 @@ export function EditSongClient({
         const res = await fetch(`/api/conversations/${conversationId}`, {
           method: 'DELETE',
         });
-        if (!res.ok && res.status !== 204) {
-          const b = await res.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${res.status}`);
-        }
+        await ensureOk(res, [204]);
       });
       router.push('/open-conversations');
     } catch (e) {

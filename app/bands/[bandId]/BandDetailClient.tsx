@@ -1,5 +1,6 @@
 'use client';
 
+import { ensureOk, errorMessage } from '@/lib/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -98,10 +99,7 @@ export function BandDetailClient({
                   audioFileName: f.name,
                 }),
               });
-              if (!r.ok) {
-                const b = await r.json().catch(() => ({}));
-                throw new Error(b.message ?? `HTTP ${r.status}`);
-              }
+              await ensureOk(r);
               added += 1;
             } catch (e) {
               if (!firstError) {
@@ -140,10 +138,7 @@ export function BandDetailClient({
           method: 'POST',
           body: form,
         });
-        if (!r.ok) {
-          const b = await r.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${r.status}`);
-        }
+        await ensureOk(r);
       });
       await reload();
     } catch (e) {
@@ -160,10 +155,7 @@ export function BandDetailClient({
     try {
       await trackPending(async () => {
         const r = await fetch(`/api/bands/${bandId}/leave`, { method: 'POST' });
-        if (!r.ok) {
-          const b = await r.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${r.status}`);
-        }
+        await ensureOk(r);
       });
       router.push('/bands');
     } catch (e) {
@@ -182,10 +174,7 @@ export function BandDetailClient({
         const r = await fetch(`/api/conversations/${deleteTarget.id}`, {
           method: 'DELETE',
         });
-        if (!r.ok && r.status !== 204) {
-          const b = await r.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${r.status}`);
-        }
+        await ensureOk(r, [204]);
       });
       setDeleteTarget(null);
       await reload();
@@ -206,10 +195,7 @@ export function BandDetailClient({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ archived: !c.archived }),
         });
-        if (!r.ok) {
-          const b = await r.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${r.status}`);
-        }
+        await ensureOk(r);
       });
       await reload();
     } catch (e) {
@@ -255,10 +241,7 @@ export function BandDetailClient({
           ),
         );
         const bad = results.find((r) => !r.ok);
-        if (bad) {
-          const b = await bad.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${bad.status}`);
-        }
+        if (bad) throw new Error(await errorMessage(bad));
       });
       showToast(
         `Added to ${ids.length} setlist${ids.length === 1 ? '' : 's'}.`,

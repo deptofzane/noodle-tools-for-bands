@@ -1,5 +1,6 @@
 'use client';
 
+import { ensureOk } from '@/lib/api';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
@@ -26,10 +27,7 @@ export function SignupForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, name }),
       });
-      if (!r.ok) {
-        const b = await r.json().catch(() => ({}));
-        throw new Error(b.message ?? `HTTP ${r.status}`);
-      }
+      await ensureOk(r);
       // Account created — sign them in.
       const res = await signIn('credentials', {
         email,

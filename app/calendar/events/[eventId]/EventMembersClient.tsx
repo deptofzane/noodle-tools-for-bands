@@ -1,5 +1,6 @@
 'use client';
 
+import { ensureOk } from '@/lib/api';
 import { useState } from 'react';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
@@ -53,10 +54,7 @@ export function EventMembersClient({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: v }),
         });
-        if (!r.ok) {
-          const b = await r.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${r.status}`);
-        }
+        await ensureOk(r);
       });
       setEmail('');
       await reload();
@@ -75,10 +73,7 @@ export function EventMembersClient({
         const r = await fetch(`/api/events/${eventId}/members/${userId}`, {
           method: 'DELETE',
         });
-        if (!r.ok && r.status !== 204) {
-          const b = await r.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${r.status}`);
-        }
+        await ensureOk(r, [204]);
       });
       await reload();
     } catch (e) {

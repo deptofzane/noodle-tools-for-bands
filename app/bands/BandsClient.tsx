@@ -1,5 +1,6 @@
 'use client';
 
+import { ensureOk } from '@/lib/api';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTrackPending } from '../PendingActionProvider';
@@ -28,10 +29,7 @@ export function BandsClient() {
   const load = useCallback(async () => {
     try {
       const r = await fetch('/api/bands', { cache: 'no-store' });
-      if (!r.ok) {
-        const b = await r.json().catch(() => ({}));
-        throw new Error(b.message ?? b.error ?? `HTTP ${r.status}`);
-      }
+      await ensureOk(r);
       const data = (await r.json()) as { bands: BandSummary[] };
       setBands(data.bands);
       setError(null);
@@ -56,10 +54,7 @@ export function BandsClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: trimmed }),
         });
-        if (!r.ok) {
-          const b = await r.json().catch(() => ({}));
-          throw new Error(b.message ?? `HTTP ${r.status}`);
-        }
+        await ensureOk(r);
       });
       setName('');
       await load();
