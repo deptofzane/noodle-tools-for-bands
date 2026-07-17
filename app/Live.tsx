@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { previewKind } from '@/lib/sheet-preview';
 import type { PracticeSong } from './Practice';
@@ -49,6 +49,18 @@ export function Live({
   const zoomIn = useCallback(() => setZoom((z) => Math.min(400, z + 25)), []);
   const zoomOut = useCallback(() => setZoom((z) => Math.max(50, z - 25)), []);
   const resetZoom = useCallback(() => setZoom(100), []);
+
+  // For pinch-to-zoom: read the live value without re-subscribing, and set a
+  // clamped absolute value.
+  const zoomRef = useRef(zoom);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+  const getZoom = useCallback(() => zoomRef.current, []);
+  const applyZoom = useCallback(
+    (n: number) => setZoom(Math.min(400, Math.max(50, Math.round(n)))),
+    [],
+  );
 
   const sheet = song?.sheetMusic ?? null;
   const kind =
@@ -124,7 +136,12 @@ export function Live({
       {/* Sheet fills everything; controls float on top. */}
       <div className="relative min-h-0 flex-1">
         {song ? (
-          <SheetView song={song} zoom={zoom} />
+          <SheetView
+            song={song}
+            zoom={zoom}
+            getZoom={getZoom}
+            setZoom={applyZoom}
+          />
         ) : (
           <Centered>Nothing to show.</Centered>
         )}
@@ -208,8 +225,67 @@ export function Live({
   );
 }
 
-function SheetView({ song, zoom }: { song: PracticeSong; zoom: number }) {
+/**
+ * Two-finger pinch → zoom, mapped to the shared zoom state. Attaches native
+ * non-passive touch listeners (React's are passive, so preventDefault
+ * wouldn't stick) to the given element. One-finger panning stays native via
+ * the container's scroll. PDFs are excluded — the browser's PDF viewer
+ * handles pinch inside the iframe itself.
+ */
+function usePinchZoom(getZoom: () => number, setZoom: (n: number) => void) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let startDist = 0;
+    let startZoom = 100;
+    const dist = (t: TouchList) =>
+      Math.hypot(
+        t[0]!.clientX - t[1]!.clientX,
+        t[0]!.clientY - t[1]!.clientY,
+      );
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        startDist = dist(e.touches);
+        startZoom = getZoom();
+      }
+    };
+    const onMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && startDist > 0) {
+        e.preventDefault();
+        setZoom((startZoom * dist(e.touches)) / startDist);
+      }
+    };
+    const onEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) startDist = 0;
+    };
+    el.addEventListener('touchstart', onStart, { passive: false });
+    el.addEventListener('touchmove', onMove, { passive: false });
+    el.addEventListener('touchend', onEnd);
+    el.addEventListener('touchcancel', onEnd);
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchmove', onMove);
+      el.removeEventListener('touchend', onEnd);
+      el.removeEventListener('touchcancel', onEnd);
+    };
+  }, [getZoom, setZoom]);
+  return ref;
+}
+
+function SheetView({
+  song,
+  zoom,
+  getZoom,
+  setZoom,
+}: {
+  song: PracticeSong;
+  zoom: number;
+  getZoom: () => number;
+  setZoom: (n: number) => void;
+}) {
   const [text, setText] = useState<string | null>(null);
+  const pinchRef = usePinchZoom(getZoom, setZoom);
 
   const sheet = song.sheetMusic ?? null;
   const kind = sheet ? previewKind(sheet.mimeType, sheet.fileName) : null;
@@ -262,7 +338,11 @@ function SheetView({ song, zoom }: { song: PracticeSong; zoom: number }) {
     // width = zoom% of the viewport: 100% fits the width; zooming in grows
     // it and the container scrolls (mx-auto centers when it's narrower).
     return (
-      <div className="h-full w-full overflow-auto bg-neutral-100 py-4 dark:bg-neutral-900">
+      <div
+        ref={pinchRef}
+        style={{ touchAction: 'pan-x pan-y' }}
+        className="h-full w-full overflow-auto bg-neutral-100 py-4 dark:bg-neutral-900"
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={url}
@@ -290,12 +370,18 @@ function SheetView({ song, zoom }: { song: PracticeSong; zoom: number }) {
     // Pasted text must NOT wrap — `whitespace-pre` keeps lines intact and the
     // container scrolls horizontally. Zoom drives the font size.
     return (
-      <pre
-        style={{ fontSize: `${(zoom / 100) * 1.125}rem` }}
-        className="h-full w-full overflow-auto whitespace-pre px-6 py-12 font-mono leading-relaxed"
+      <div
+        ref={pinchRef}
+        style={{ touchAction: 'pan-x pan-y' }}
+        className="h-full w-full overflow-auto"
       >
-        {text ?? 'Loading…'}
-      </pre>
+        <pre
+          style={{ fontSize: `${(zoom / 100) * 1.125}rem` }}
+          className="w-max whitespace-pre px-6 py-12 font-mono leading-relaxed"
+        >
+          {text ?? 'Loading…'}
+        </pre>
+      </div>
     );
   }
 
