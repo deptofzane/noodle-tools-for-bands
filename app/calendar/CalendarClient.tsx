@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Modal } from '../Modal';
 import { useTrackPending } from '../PendingActionProvider';
 import { formatDateLong, formatTime12h } from '@/lib/format';
 
@@ -85,29 +86,24 @@ export function CalendarClient() {
     void trackPending(() => load());
   }, [load, trackPending]);
 
-  // Close the day summary on Escape.
-  useEffect(() => {
-    if (!summaryDate) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSummaryDate(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [summaryDate]);
 
   const prevMonth = () =>
     setView((v) =>
-      v.month === 0 ? { year: v.year - 1, month: 11 } : { ...v, month: v.month - 1 },
+      v.month === 0
+        ? { year: v.year - 1, month: 11 }
+        : { ...v, month: v.month - 1 },
     );
   const nextMonth = () =>
     setView((v) =>
-      v.month === 11 ? { year: v.year + 1, month: 0 } : { ...v, month: v.month + 1 },
+      v.month === 11
+        ? { year: v.year + 1, month: 0 }
+        : { ...v, month: v.month + 1 },
     );
   const goToday = () =>
     setView({ year: today.getFullYear(), month: today.getMonth() });
 
   const navBtn =
-    'rounded-md border border-neutral-300 px-2.5 py-1 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900';
+    'rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900';
 
   return (
     <div className="flex flex-col gap-3">
@@ -115,6 +111,8 @@ export function CalendarClient() {
         <h2 className="text-lg font-medium">
           {MONTHS[view.month]} {view.year}
         </h2>
+      </div>
+      <div className="flex justify-between items-center">
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -135,13 +133,13 @@ export function CalendarClient() {
           >
             <span aria-hidden="true">›</span>
           </button>
-          <Link
-            href="/calendar/events/new"
-            className="ml-1 rounded-md bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-500"
-          >
-            Add event
-          </Link>
         </div>
+        <Link
+          href="/calendar/events/new"
+          className="ml-1 rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500"
+        >
+          Add event
+        </Link>
       </div>
 
       <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200 dark:border-neutral-800 dark:bg-neutral-800">
@@ -201,17 +199,11 @@ export function CalendarClient() {
       </div>
 
       {summaryDate && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="day-summary-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => setSummaryDate(null)}
+        <Modal
+          onClose={() => setSummaryDate(null)}
+          labelledBy="day-summary-title"
+          size="sm"
         >
-          <div
-            className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-5 shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
-            onClick={(e) => e.stopPropagation()}
-          >
             <h2 id="day-summary-title" className="text-base font-semibold">
               {formatDateLong(summaryDate)}
             </h2>
@@ -247,20 +239,19 @@ export function CalendarClient() {
             <div className="mt-4 flex items-center justify-between gap-2">
               <Link
                 href={`/calendar/events/new?date=${summaryDate}`}
-                className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
               >
                 Add event
               </Link>
               <button
                 type="button"
                 onClick={() => setSummaryDate(null)}
-                className="rounded-md px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
               >
                 Close
               </button>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

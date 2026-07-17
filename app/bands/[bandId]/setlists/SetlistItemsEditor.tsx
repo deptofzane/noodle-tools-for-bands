@@ -24,6 +24,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { Modal } from '../../../Modal';
 
 /** A setlist entry: a song (conversationId) or a marker (set break / custom). */
 export interface SetlistItem {
@@ -151,18 +152,16 @@ export function SetlistItemsEditor({
     setAddOpen(false);
   };
 
-  // Close the modals on Escape.
+  // Close the (full-screen) add-songs modal on Escape. The add-other modal is
+  // a <Modal>, which handles its own Escape.
   useEffect(() => {
-    if (!addOpen && !otherOpen) return;
+    if (!addOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setAddOpen(false);
-        setOtherOpen(false);
-      }
+      if (e.key === 'Escape') setAddOpen(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [addOpen, otherOpen]);
+  }, [addOpen]);
 
   return (
     <>
@@ -299,20 +298,16 @@ export function SetlistItemsEditor({
       )}
 
       {otherOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="add-other-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => setOtherOpen(false)}
+        <Modal
+          onClose={() => setOtherOpen(false)}
+          labelledBy="add-other-title"
+          size="sm"
         >
           <form
-            onClick={(e) => e.stopPropagation()}
             onSubmit={(e) => {
               e.preventDefault();
               addOther();
             }}
-            className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-5 shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
           >
             <h2 id="add-other-title" className="text-base font-semibold">
               Add item
@@ -345,7 +340,7 @@ export function SetlistItemsEditor({
               </button>
             </div>
           </form>
-        </div>
+        </Modal>
       )}
     </>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { Modal } from '../../Modal';
 import { PickerButton, type PickedFile } from '../../PickerButton';
 import { ConnectDriveButton } from '../../ConnectDriveButton';
 import { useCanUseDrive } from '../../DriveCapabilityProvider';
@@ -149,16 +150,6 @@ export function SheetMusic({
       setBusy(false);
     }
   };
-
-  // Close the source-choice modal on Escape.
-  useEffect(() => {
-    if (!chooseOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !busy) setChooseOpen(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [chooseOpen, busy]);
 
   const handleRemove = async () => {
     if (busy) return;
@@ -315,20 +306,12 @@ export function SheetMusic({
       />
 
       {chooseOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="sheet-source-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={closeChooser}
+        <Modal
+          onClose={closeChooser}
+          busy={busy}
+          labelledBy="sheet-source-title"
+          size={pasteMode ? 'lg' : 'sm'}
         >
-          <div
-            className={
-              'w-full rounded-lg border border-neutral-200 bg-white p-5 shadow-xl dark:border-neutral-800 dark:bg-neutral-900 ' +
-              (pasteMode ? 'max-w-lg' : 'max-w-sm')
-            }
-            onClick={(e) => e.stopPropagation()}
-          >
             <h2 id="sheet-source-title" className="text-base font-semibold">
               Add sheet music
             </h2>
@@ -420,8 +403,7 @@ export function SheetMusic({
                 </div>
               </>
             )}
-          </div>
-        </div>
+        </Modal>
       )}
     </section>
   );

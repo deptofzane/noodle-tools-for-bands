@@ -154,16 +154,6 @@ export function BandDetailClient({
     }
   };
 
-  // Close the source-choice modal on Escape.
-  useEffect(() => {
-    if (!chooseOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !audioBusy) setChooseOpen(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [chooseOpen, audioBusy]);
-
   const handleLeave = async () => {
     if (leaving) return;
     setLeaving(true);
@@ -282,16 +272,6 @@ export function BandDetailClient({
       setAddingToSetlist(false);
     }
   };
-
-  // Close the Add-to-setlist modal on Escape.
-  useEffect(() => {
-    if (!addTarget) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !addingToSetlist) setAddTarget(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [addTarget, addingToSetlist]);
 
   if (error) {
     return (
