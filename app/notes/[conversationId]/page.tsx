@@ -29,13 +29,13 @@ export default async function NotesPage({
   searchParams,
 }: {
   params: Promise<{ conversationId: string }>;
-  searchParams: Promise<{ thread?: string }>;
+  searchParams: Promise<{ thread?: string; from?: string }>;
 }) {
   const session = await auth();
   if (!session?.user) return null;
 
   const { conversationId } = await params;
-  const { thread: threadQuery } = await searchParams;
+  const { thread: threadQuery, from } = await searchParams;
 
   const user = await getCurrentDbUser();
   if (!user) redirect('/login');
@@ -43,6 +43,14 @@ export default async function NotesPage({
   const membership = await getConversationMembership(user.id, conversationId);
   if (!membership) notFound();
   const conversation = membership.conversation;
+
+  // Back to the band page, reopening the tab the user came from (songs are
+  // linked from the Audio tab) so the same tab appears on return.
+  const bandTabs = ['overview', 'chat', 'members', 'audio'];
+  const backHref =
+    from && bandTabs.includes(from)
+      ? `/bands/${conversation.bandId}?tab=${from}`
+      : `/bands/${conversation.bandId}`;
 
   // Player metadata from the stored audio file, falling back to the
   // conversation's name if the audio hasn't been imported yet. Sheet
@@ -60,7 +68,7 @@ export default async function NotesPage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col px-6 pb-4">
-      <PageHeader defaultHref={`/bands/${conversation.bandId}`} canGoBack={false}>
+      <PageHeader defaultHref={backHref} canGoBack={false}>
         <Link
           href={`/notes/${conversationId}/edit`}
           className="hover:text-neutral-900 dark:hover:text-neutral-100 py-4"
@@ -87,7 +95,7 @@ export default async function NotesPage({
             }))}
           />
           {sheetMusic && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 justify-center">
               <Link
                 href={`/notes/${conversationId}/practice`}
                 className="rounded-md border h-12 md:h-9 flex items-center border-neutral-300 px-4 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"

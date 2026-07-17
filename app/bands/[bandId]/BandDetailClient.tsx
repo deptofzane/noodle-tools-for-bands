@@ -573,7 +573,7 @@ export function BandDetailClient({
       className="flex items-center gap-2 pr-4 hover:bg-neutral-50 dark:hover:bg-neutral-900"
     >
       <Link
-        href={`/notes/${c.id}`}
+        href={`/notes/${c.id}?from=audio`}
         className="min-w-0 flex-1 px-4 py-3 md:py-1.5 md:px-3 text-sm"
       >
         <div className="flex items-center gap-2">
