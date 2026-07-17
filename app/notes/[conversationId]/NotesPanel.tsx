@@ -6,6 +6,7 @@ import type { ThreadedNote } from '@/lib/db/notes';
 import type { ActivityKind, ConversationActivity } from '@/lib/db/activity';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
+import { useEventSource } from '../../useEventSource';
 import { usePlayer } from './PlayerContext';
 import { NoteForm, type Mentionable } from './NoteForm';
 import { NoteItem } from './NoteItem';
@@ -153,53 +154,11 @@ export function NotesPanel({
 
   // Real-time updates via SSE (Postgres LISTEN/NOTIFY). On each change
   // event, refetch. Reconnects with backoff; the poll below is a backstop.
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
-      return;
-    }
-    let es: EventSource | null = null;
-    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-    let cancelled = false;
-    let backoffMs = 1000;
-    const MAX_BACKOFF_MS = 30_000;
-
-    const connect = () => {
-      if (cancelled) return;
-      try {
-        es = new EventSource(`/api/conversations/${conversationId}/events`);
-      } catch {
-        scheduleReconnect();
-        return;
-      }
-      es.addEventListener('open', () => {
-        backoffMs = 1000;
-      });
-      es.addEventListener('change', () => {
-        void fetchNotes();
-      });
-      es.addEventListener('error', () => {
-        es?.close();
-        es = null;
-        scheduleReconnect();
-      });
-    };
-
-    const scheduleReconnect = () => {
-      if (cancelled) return;
-      reconnectTimer = setTimeout(() => {
-        connect();
-        backoffMs = Math.min(backoffMs * 2, MAX_BACKOFF_MS);
-      }, backoffMs);
-    };
-
-    connect();
-    return () => {
-      cancelled = true;
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      es?.close();
-      es = null;
-    };
-  }, [conversationId, fetchNotes]);
+  useEventSource(`/api/conversations/${conversationId}/events`, {
+    change: () => {
+      void fetchNotes();
+    },
+  });
 
   // Backstop polling — catches anything the SSE feed missed (transient
   // disconnects). Quiet, since SSE does the real-time work.

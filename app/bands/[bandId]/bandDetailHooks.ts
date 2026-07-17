@@ -3,6 +3,7 @@
 import { ensureOk } from '@/lib/api';
 import { useCallback, useEffect, useState } from 'react';
 import { useTrackPending } from '../../PendingActionProvider';
+import { useEventSource } from '../../useEventSource';
 import type { Conversation, Member, Setlist, Show } from './bandDetailShared';
 
 export interface BandDetail {
@@ -75,48 +76,9 @@ export function useBandChat(bandId: string, activeTab: string) {
 
   // One SSE stream for chat activity, shared by the unread badge and the Chat
   // tab, so the page holds a single connection rather than one per consumer.
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
-      return;
-    }
-    let es: EventSource | null = null;
-    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-    let cancelled = false;
-    let backoffMs = 1000;
-
-    const connect = () => {
-      if (cancelled) return;
-      try {
-        es = new EventSource(`/api/bands/${bandId}/messages/events`);
-      } catch {
-        scheduleReconnect();
-        return;
-      }
-      es.addEventListener('open', () => {
-        backoffMs = 1000;
-      });
-      es.addEventListener('change', () => setChatChange((c) => c + 1));
-      es.addEventListener('error', () => {
-        es?.close();
-        es = null;
-        scheduleReconnect();
-      });
-    };
-    const scheduleReconnect = () => {
-      if (cancelled) return;
-      reconnectTimer = setTimeout(() => {
-        connect();
-        backoffMs = Math.min(backoffMs * 2, 30_000);
-      }, backoffMs);
-    };
-
-    connect();
-    return () => {
-      cancelled = true;
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      es?.close();
-    };
-  }, [bandId]);
+  useEventSource(`/api/bands/${bandId}/messages/events`, {
+    change: () => setChatChange((c) => c + 1),
+  });
 
   const fetchUnread = useCallback(async () => {
     const res = await fetch(`/api/bands/${bandId}/messages/unread`, {
