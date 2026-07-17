@@ -85,7 +85,7 @@ export function EditSetlistClient({
           type="button"
           onClick={handleSave}
           disabled={!dirty || saving}
-          className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+          className="btn-primary"
         >
           {saving ? 'Saving…' : 'Save'}
         </button>

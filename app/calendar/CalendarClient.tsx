@@ -103,7 +103,7 @@ export function CalendarClient() {
     setView({ year: today.getFullYear(), month: today.getMonth() });
 
   const navBtn =
-    'rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900';
+    'btn-outline';
 
   return (
     <div className="flex flex-col gap-3">
@@ -136,7 +136,7 @@ export function CalendarClient() {
         </div>
         <Link
           href="/calendar/events/new"
-          className="ml-1 rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500"
+          className="ml-1 btn-primary"
         >
           Add event
         </Link>
@@ -239,14 +239,14 @@ export function CalendarClient() {
             <div className="mt-4 flex items-center justify-between gap-2">
               <Link
                 href={`/calendar/events/new?date=${summaryDate}`}
-                className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                className="btn-outline"
               >
                 Add event
               </Link>
               <button
                 type="button"
                 onClick={() => setSummaryDate(null)}
-                className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                className="btn-ghost"
               >
                 Close
               </button>

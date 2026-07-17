@@ -197,7 +197,7 @@ export function EditSongClient({
             type="button"
             onClick={handleToggleArchive}
             disabled={busy}
-            className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+            className="btn-outline"
           >
             {archived ? 'Unarchive song' : 'Archive song'}
           </button>

@@ -277,7 +277,7 @@ export function BandDetailClient({
         {isOwner && (
           <Link
             href={`/bands/${bandId}/edit`}
-            className="shrink-0 rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+            className="shrink-0 btn-outline"
           >
             Edit band
           </Link>

@@ -18,3 +18,19 @@ body {
 .title-text {
   @apply text-2xl font-semibold tracking-tight
 }
+
+/*
+ * Button styles. Padding is roomier on mobile (px-4 py-3) and tighter on
+ * desktop (md:px-3 md:py-1.5). `disabled:opacity-50` is a no-op on links.
+ */
+.btn-outline {
+  @apply rounded-md border border-neutral-300 px-4 py-3 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 md:px-3 md:py-1.5 dark:border-neutral-700 dark:hover:bg-neutral-900
+}
+
+.btn-primary {
+  @apply rounded-md bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 md:px-3 md:py-1.5
+}
+
+.btn-ghost {
+  @apply rounded-md px-4 py-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 md:px-3 md:py-1.5 dark:text-neutral-400 dark:hover:bg-neutral-800
+}

@@ -167,7 +167,7 @@ export function EditEventClient({
       <div className="flex items-center gap-2 justify-between">
         <Link
           href={eventHref}
-          className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+          className="btn-outline"
         >
           Cancel
         </Link>
@@ -175,7 +175,7 @@ export function EditEventClient({
           type="button"
           onClick={handleSave}
           disabled={!canSave}
-          className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+          className="btn-primary"
         >
           {busy ? 'Saving…' : 'Save'}
         </button>

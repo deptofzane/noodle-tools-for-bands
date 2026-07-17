@@ -89,7 +89,7 @@ export function ConfirmModal({
           type="button"
           onClick={onCancel}
           disabled={busy}
-          className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+          className="btn-ghost"
         >
           Cancel
         </button>

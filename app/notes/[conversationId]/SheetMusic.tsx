@@ -329,7 +329,7 @@ export function SheetMusic({
                       setPasteText('');
                     }}
                     disabled={busy}
-                    className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                    className="btn-ghost"
                   >
                     Back
                   </button>
@@ -337,7 +337,7 @@ export function SheetMusic({
                     type="button"
                     onClick={() => void savePaste()}
                     disabled={busy || !pasteText.trim()}
-                    className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+                    className="btn-primary"
                   >
                     {busy ? 'Saving…' : 'Save'}
                   </button>
@@ -371,14 +371,14 @@ export function SheetMusic({
                       setChooseOpen(false);
                       inputRef.current?.click();
                     }}
-                    className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                    className="btn-outline"
                   >
                     Upload a local file
                   </button>
                   <button
                     type="button"
                     onClick={() => setPasteMode(true)}
-                    className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                    className="btn-outline"
                   >
                     Paste text or Markdown
                   </button>
@@ -388,7 +388,7 @@ export function SheetMusic({
                     type="button"
                     onClick={closeChooser}
                     disabled={busy}
-                    className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                    className="btn-ghost"
                   >
                     Cancel
                   </button>

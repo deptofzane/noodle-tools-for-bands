@@ -46,7 +46,7 @@ export function AddAudioSourceModal({
         <button
           type="button"
           onClick={onUploadLocal}
-          className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+          className="btn-outline"
         >
           Upload a local file
         </button>
@@ -56,7 +56,7 @@ export function AddAudioSourceModal({
           type="button"
           onClick={onClose}
           disabled={busy}
-          className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+          className="btn-ghost"
         >
           Cancel
         </button>

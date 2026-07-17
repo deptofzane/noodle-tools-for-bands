@@ -70,7 +70,7 @@ export function NewSetlistClient({
           type="button"
           onClick={handleDone}
           disabled={busy || !name.trim()}
-          className="shrink-0 rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+          className="shrink-0 btn-primary"
         >
           {busy ? 'Saving…' : 'Done'}
         </button>

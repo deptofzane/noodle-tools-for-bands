@@ -46,7 +46,7 @@ export const makeSetlistRowId = () =>
     : `tmp-${Math.random().toString(36).slice(2)}`;
 
 const addBtnClass =
-  'rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900';
+  'btn-outline';
 
 /**
  * The shared body of the New/Edit setlist screens: the "Add songs / set break /
@@ -280,7 +280,7 @@ export function SetlistItemsEditor({
               <button
                 type="button"
                 onClick={() => setAddOpen(false)}
-                className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                className="btn-ghost"
               >
                 Cancel
               </button>
@@ -288,7 +288,7 @@ export function SetlistItemsEditor({
                 type="button"
                 onClick={handleAddSongs}
                 disabled={selectedToAdd.size === 0}
-                className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+                className="btn-primary"
               >
                 Add songs
               </button>
@@ -327,14 +327,14 @@ export function SetlistItemsEditor({
               <button
                 type="button"
                 onClick={() => setOtherOpen(false)}
-                className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                className="btn-ghost"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={!otherName.trim()}
-                className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+                className="btn-primary"
               >
                 Add
               </button>

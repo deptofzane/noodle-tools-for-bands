@@ -152,7 +152,7 @@ export function BandOverviewTab({
           </span>
           <Link
             href={`/calendar/events/new?bandId=${bandId}`}
-            className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+            className="btn-outline"
           >
             Add show
           </Link>
@@ -183,7 +183,7 @@ export function BandOverviewTab({
             </span>
             <Link
               href={`/bands/${bandId}/setlists/new`}
-              className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+              className="btn-outline"
             >
               Create setlist
             </Link>

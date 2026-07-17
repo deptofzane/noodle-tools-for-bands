@@ -66,7 +66,7 @@ export function AddToSetlistModal({
           type="button"
           onClick={onCancel}
           disabled={busy}
-          className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+          className="btn-ghost"
         >
           Cancel
         </button>
@@ -74,7 +74,7 @@ export function AddToSetlistModal({
           type="button"
           onClick={onConfirm}
           disabled={busy || selected.size === 0}
-          className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+          className="btn-primary"
         >
           {busy ? 'Adding…' : 'Add to setlist'}
         </button>

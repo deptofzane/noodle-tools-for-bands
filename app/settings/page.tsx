@@ -119,7 +119,7 @@ export default async function SettingsPage({
               <input type="hidden" name="next" value="/settings?tab=account" />
               <button
                 type="submit"
-                className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500"
+                className="btn-primary"
               >
                 Connect Google
               </button>
@@ -135,7 +135,7 @@ export default async function SettingsPage({
                   />
                   <button
                     type="submit"
-                    className="rounded-md bg-blue-600 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-white hover:bg-blue-500"
+                    className="btn-primary"
                   >
                     {refreshError ? 'Reconnect Google' : 'Enable Drive access'}
                   </button>
@@ -150,7 +150,7 @@ export default async function SettingsPage({
                       ? undefined
                       : 'Set a password first so you can still sign in.'
                   }
-                  className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                  className="btn-outline"
                 >
                   Disconnect
                 </button>
