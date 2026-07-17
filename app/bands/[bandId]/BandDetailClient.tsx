@@ -239,6 +239,17 @@ export function BandDetailClient({
     else void fetchUnread();
   }, [activeTab, chatChange, fetchUnread, markChatRead]);
 
+  // Mirror the active tab into the URL (?tab=…) so browser-back and refresh
+  // restore it. Uses history.replaceState — no navigation/refetch, and it
+  // doesn't add a history entry per tab switch. Overview stays paramless.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (activeTab === 'overview') url.searchParams.delete('tab');
+    else url.searchParams.set('tab', activeTab);
+    window.history.replaceState(window.history.state, '', url.toString());
+  }, [activeTab]);
+
   const handleRegister = useCallback(
     async (files: PickedFile[]) => {
       if (files.length === 0) return;
