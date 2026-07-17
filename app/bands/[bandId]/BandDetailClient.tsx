@@ -109,6 +109,7 @@ export function BandDetailClient({
   const [activeTab, setActiveTab] = useState<
     'overview' | 'chat' | 'members' | 'audio'
   >(initialTab);
+  const [audioSearch, setAudioSearch] = useState('');
   const [chatChange, setChatChange] = useState(0);
   const [unread, setUnread] = useState<{ count: number; mentioned: boolean }>({
     count: 0,
@@ -472,6 +473,14 @@ export function BandDetailClient({
   const activeSongs = conversations?.filter((c) => !c.archived) ?? null;
   const archivedSongs = conversations?.filter((c) => c.archived) ?? [];
 
+  // Audio-tab search: filter both lists by file name (case-insensitive).
+  const audioQuery = audioSearch.trim().toLowerCase();
+  const matchesAudio = (c: Conversation) =>
+    !audioQuery ||
+    (c.audioFileName ?? 'Untitled audio').toLowerCase().includes(audioQuery);
+  const visibleActive = activeSongs ? activeSongs.filter(matchesAudio) : null;
+  const visibleArchived = archivedSongs.filter(matchesAudio);
+
   // Split shows by today's local date. Upcoming soonest-first; past kept
   // newest-first (the API order).
   const todayStr = (() => {
@@ -724,6 +733,14 @@ export function BandDetailClient({
 
       {activeTab === 'audio' && (
         <>
+      <input
+        type="search"
+        value={audioSearch}
+        onChange={(e) => setAudioSearch(e.target.value)}
+        placeholder="Search audio…"
+        aria-label="Search audio"
+        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:placeholder:text-neutral-500"
+      />
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <span className="flex min-w-0 items-center gap-2">
@@ -761,9 +778,18 @@ export function BandDetailClient({
             {canUseDrive ? 'from Drive or your device' : 'from your device'}.
           </p>
         )}
-        {!audioMinimized && activeSongs && activeSongs.length > 0 && (
+        {!audioMinimized &&
+          activeSongs &&
+          activeSongs.length > 0 &&
+          visibleActive &&
+          visibleActive.length === 0 && (
+            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+              No audio matches “{audioSearch.trim()}”.
+            </p>
+          )}
+        {!audioMinimized && visibleActive && visibleActive.length > 0 && (
           <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-            {activeSongs.map(renderSongRow)}
+            {visibleActive.map(renderSongRow)}
           </ul>
         )}
 
@@ -850,10 +876,15 @@ export function BandDetailClient({
               Archived Audio
             </h2>
           </MinimizeToggle>
-          {!archivedMinimized && (
+          {!archivedMinimized && visibleArchived.length > 0 && (
             <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-              {archivedSongs.map(renderSongRow)}
+              {visibleArchived.map(renderSongRow)}
             </ul>
+          )}
+          {!archivedMinimized && visibleArchived.length === 0 && (
+            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+              No archived audio matches “{audioSearch.trim()}”.
+            </p>
           )}
         </section>
       )}
