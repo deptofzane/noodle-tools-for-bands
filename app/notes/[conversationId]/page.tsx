@@ -86,6 +86,22 @@ export default async function NotesPage({
               isDefault: v.isDefault,
             }))}
           />
+          {sheetMusic && (
+            <div className="flex gap-2">
+              <Link
+                href={`/notes/${conversationId}/practice`}
+                className="rounded-md border h-12 md:h-9 flex items-center border-neutral-300 px-4 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+              >
+                Practice
+              </Link>
+              <Link
+                href={`/notes/${conversationId}/live`}
+                className="rounded-md border h-12 md:h-9 flex items-center border-neutral-300 px-4 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+              >
+                Live
+              </Link>
+            </div>
+          )}
           <SheetMusic
             conversationId={conversationId}
             initial={sheetMusic}

@@ -330,3 +330,48 @@ export async function getSetlistPracticeSongs(
     };
   });
 }
+
+/**
+ * Build a single-song Practice/Live item for one conversation — used by the
+ * per-song Practice and Live routes. Uses the default audio version and the
+ * song's sheet music, if any. Returns null if the conversation is gone.
+ */
+export async function getConversationPracticeSong(
+  conversationId: string,
+): Promise<PracticeSong | null> {
+  const [conv] = await db
+    .select({ audioFileName: conversations.audioFileName })
+    .from(conversations)
+    .where(eq(conversations.id, conversationId))
+    .limit(1);
+  if (!conv) return null;
+
+  const files = await db
+    .select({
+      kind: songFiles.kind,
+      isDefault: songFiles.isDefault,
+      fileName: songFiles.fileName,
+      mimeType: songFiles.mimeType,
+      updatedAt: songFiles.updatedAt,
+    })
+    .from(songFiles)
+    .where(eq(songFiles.conversationId, conversationId));
+
+  const audio =
+    files.find((f) => f.kind === 'audio' && f.isDefault) ??
+    files.find((f) => f.kind === 'audio');
+  const sheet = files.find((f) => f.kind === 'sheet_music');
+
+  return {
+    conversationId,
+    title: conv.audioFileName ?? audio?.fileName ?? 'Untitled audio',
+    mimeType: audio?.mimeType ?? 'audio/mpeg',
+    sheetMusic: sheet
+      ? {
+          fileName: sheet.fileName,
+          mimeType: sheet.mimeType,
+          updatedAt: sheet.updatedAt.toISOString(),
+        }
+      : null,
+  };
+}
