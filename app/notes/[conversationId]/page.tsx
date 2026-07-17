@@ -86,7 +86,11 @@ export default async function NotesPage({
               isDefault: v.isDefault,
             }))}
           />
-          <SheetMusic conversationId={conversationId} initial={sheetMusic} />
+          <SheetMusic
+            conversationId={conversationId}
+            initial={sheetMusic}
+            variant="notice"
+          />
           <NotesPanel
             conversationId={conversationId}
             currentUserId={user.id}

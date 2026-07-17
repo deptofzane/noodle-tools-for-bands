@@ -28,11 +28,18 @@ export interface SheetMusicMeta {
 export function SheetMusic({
   conversationId,
   initial = null,
-  startClosed = true
+  startClosed = true,
+  variant = 'panel',
 }: {
   conversationId: string;
   initial?: SheetMusicMeta | null;
-  startClosed?: boolean
+  startClosed?: boolean;
+  /**
+   * 'panel' — the full container with preview + manage controls.
+   * 'notice' — renders nothing when sheet music exists; otherwise a small
+   * notice with an "Add sheet music" button (reuses the same add flow).
+   */
+  variant?: 'panel' | 'notice';
 }) {
   const [meta, setMeta] = useState<SheetMusicMeta | null>(initial);
   const [busy, setBusy] = useState(false);
@@ -108,6 +115,7 @@ export function SheetMusic({
         }
         const data = (await res.json()) as { sheetMusic: SheetMusicMeta };
         setMeta(data.sheetMusic);
+        showToast('Sheet music saved.', 'success');
       });
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
@@ -133,6 +141,7 @@ export function SheetMusic({
         }
         const data = (await res.json()) as { sheetMusic: SheetMusicMeta };
         setMeta(data.sheetMusic);
+        showToast('Sheet music saved.', 'success');
       });
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
@@ -170,8 +179,33 @@ export function SheetMusic({
     }
   };
 
+  // Notice variant: nothing to show once sheet music exists.
+  if (variant === 'notice' && meta) return null;
+
   return (
-    <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-4 py-2 dark:border-neutral-800">
+    <section
+      className={
+        variant === 'notice'
+          ? 'flex items-center justify-between gap-3 rounded-lg border border-dashed border-neutral-300 px-4 py-3 dark:border-neutral-700'
+          : 'flex flex-col gap-2 rounded-lg border border-neutral-200 px-4 py-2 dark:border-neutral-800'
+      }
+    >
+      {variant === 'notice' ? (
+        <>
+          <span className="text-sm text-neutral-500">
+            No sheet music for this track.
+          </span>
+          <button
+            type="button"
+            onClick={openChooser}
+            disabled={busy}
+            className="shrink-0 rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+          >
+            {busy ? 'Uploading…' : 'Add sheet music'}
+          </button>
+        </>
+      ) : (
+        <>
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-2">
           <button
@@ -266,6 +300,8 @@ export function SheetMusic({
             {busy ? 'Uploading…' : '+ Add sheet music (PDF, text, image)'}
           </button>
         ))}
+        </>
+      )}
 
       <input
         ref={inputRef}
