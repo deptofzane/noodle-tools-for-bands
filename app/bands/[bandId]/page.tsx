@@ -33,7 +33,13 @@ export default async function BandDetailPage({
         apiKey={apiKey}
         currentUserId={currentUserId}
         initialTab={
-          tab === 'chat' ? 'chat' : tab === 'members' ? 'members' : 'overview'
+          tab === 'chat'
+            ? 'chat'
+            : tab === 'members'
+              ? 'members'
+              : tab === 'audio'
+                ? 'audio'
+                : 'overview'
         }
       />
     </main>

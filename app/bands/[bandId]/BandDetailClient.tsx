@@ -71,7 +71,7 @@ export function BandDetailClient({
   bandId: string;
   apiKey: string;
   currentUserId: string;
-  initialTab?: 'overview' | 'chat' | 'members';
+  initialTab?: 'overview' | 'chat' | 'members' | 'audio';
 }) {
   const [data, setData] = useState<BandDetail | null>(null);
   const [conversations, setConversations] = useState<Conversation[] | null>(
@@ -97,7 +97,7 @@ export function BandDetailClient({
   );
   const [addingToSetlist, setAddingToSetlist] = useState(false);
   const [showsMinimized, setShowsMinimized] = useState(false);
-  const [audioMinimized, setAudioMinimized] = useState(true);
+  const [audioMinimized, setAudioMinimized] = useState(false);
   const [setlistsMinimized, setSetlistsMinimized] = useState(true);
   const [pastShowsMinimized, setPastShowsMinimized] = useState(true);
   const [archivedMinimized, setArchivedMinimized] = useState(true);
@@ -106,9 +106,9 @@ export function BandDetailClient({
   );
   // Shows start minimized: a show is expanded only while its id is in the set.
   const [expandedShows, setExpandedShows] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState<'overview' | 'chat' | 'members'>(
-    initialTab,
-  );
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'chat' | 'members' | 'audio'
+  >(initialTab);
   const [chatChange, setChatChange] = useState(0);
   const [unread, setUnread] = useState<{ count: number; mentioned: boolean }>({
     count: 0,
@@ -618,7 +618,7 @@ export function BandDetailClient({
         aria-label="Band sections"
         className="flex gap-1 border-b border-neutral-200 dark:border-neutral-800"
       >
-        {(['overview', 'chat', 'members'] as const).map((tab) => (
+        {(['overview', 'chat', 'members', 'audio'] as const).map((tab) => (
           <button
             key={tab}
             type="button"
@@ -719,7 +719,11 @@ export function BandDetailClient({
             </p>
           ))}
       </section>
+        </>
+      )}
 
+      {activeTab === 'audio' && (
+        <>
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <span className="flex min-w-0 items-center gap-2">
@@ -835,6 +839,29 @@ export function BandDetailClient({
         )}
       </section>
 
+      {archivedSongs.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <MinimizeToggle
+            minimized={archivedMinimized}
+            onToggle={() => setArchivedMinimized((v) => !v)}
+            label="Archived Audio"
+          >
+            <h2 className="text-sm font-medium text-neutral-500">
+              Archived Audio
+            </h2>
+          </MinimizeToggle>
+          {!archivedMinimized && (
+            <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+              {archivedSongs.map(renderSongRow)}
+            </ul>
+          )}
+        </section>
+      )}
+        </>
+      )}
+
+      {activeTab === 'overview' && (
+        <>
       {setlists.length > 0 && (
         <section className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
@@ -932,25 +959,6 @@ export function BandDetailClient({
           </div>
           {!pastShowsMinimized && (
             <ul className="flex flex-col gap-2">{pastShows.map(renderShow)}</ul>
-          )}
-        </section>
-      )}
-
-      {archivedSongs.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <MinimizeToggle
-            minimized={archivedMinimized}
-            onToggle={() => setArchivedMinimized((v) => !v)}
-            label="Archived Audio"
-          >
-            <h2 className="text-sm font-medium text-neutral-500">
-              Archived Audio
-            </h2>
-          </MinimizeToggle>
-          {!archivedMinimized && (
-            <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-              {archivedSongs.map(renderSongRow)}
-            </ul>
           )}
         </section>
       )}
