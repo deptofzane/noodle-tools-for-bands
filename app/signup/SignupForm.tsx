@@ -41,7 +41,7 @@ export function SignupForm() {
         router.push('/login');
         return;
       }
-      router.push('/open-conversations');
+      router.push('/home');
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

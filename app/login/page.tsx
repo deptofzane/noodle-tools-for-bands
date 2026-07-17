@@ -26,7 +26,7 @@ export default async function LoginPage({
           action={async () => {
             'use server';
             await signIn('google', {
-              redirectTo: callbackUrl ?? '/open-conversations',
+              redirectTo: callbackUrl ?? '/home',
             });
           }}
           className="mt-6"
@@ -50,7 +50,7 @@ export default async function LoginPage({
           <span className="h-px flex-1 bg-neutral-200 dark:bg-neutral-800" />
         </div>
 
-        <CredentialsForm callbackUrl={callbackUrl ?? '/open-conversations'} />
+        <CredentialsForm callbackUrl={callbackUrl ?? '/home'} />
       </div>
     </main>
   );
