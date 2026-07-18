@@ -175,6 +175,7 @@ export const notificationKind = pgEnum('notification_kind', [
   'song-updated',
   'event-updated',
   'band-updated',
+  'poll-created',
 ]);
 
 // What a notification points at, for building its link.
@@ -182,6 +183,7 @@ export const notificationSubject = pgEnum('notification_subject', [
   'conversation',
   'event',
   'band',
+  'poll',
 ]);
 
 export const notifications = pgTable(
@@ -515,6 +517,40 @@ export const events = pgTable(
     index('events_band_idx').on(t.bandId),
     index('events_date_idx').on(t.date),
   ],
+);
+
+// A poll the band's members can be asked to weigh in on: a title, optional
+// description, and a set of options (stored in poll_options).
+export const polls = pgTable(
+  'polls',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    bandId: uuid('band_id')
+      .notNull()
+      .references(() => bands.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    description: text('description'),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index('polls_band_idx').on(t.bandId)],
+);
+
+export const pollOptions = pgTable(
+  'poll_options',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    pollId: uuid('poll_id')
+      .notNull()
+      .references(() => polls.id, { onDelete: 'cascade' }),
+    text: text('text').notNull(),
+    position: integer('position').notNull(),
+  },
+  (t) => [index('poll_options_poll_idx').on(t.pollId)],
 );
 
 // Extra attendees on an event, beyond the owning band's members. Added by

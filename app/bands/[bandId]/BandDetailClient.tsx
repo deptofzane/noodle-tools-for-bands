@@ -365,7 +365,9 @@ export function BandDetailClient({
         />
       )}
 
-      {activeTab === 'members' && <BandMembersTab members={data.members} />}
+      {activeTab === 'members' && (
+        <BandMembersTab bandId={bandId} members={data.members} />
+      )}
 
       {activeTab === 'audio' && (
         <BandAudioTab

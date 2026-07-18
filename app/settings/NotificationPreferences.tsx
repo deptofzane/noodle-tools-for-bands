@@ -8,7 +8,8 @@ type Kind =
   | 'event-added'
   | 'song-updated'
   | 'event-updated'
-  | 'band-updated';
+  | 'band-updated'
+  | 'poll-created';
 
 const KINDS: { kind: Kind; label: string; description: string }[] = [
   {
@@ -40,6 +41,11 @@ const KINDS: { kind: Kind; label: string; description: string }[] = [
     kind: 'band-updated',
     label: 'Band updates',
     description: 'When a band’s members change.',
+  },
+  {
+    kind: 'poll-created',
+    label: 'Polls',
+    description: 'When a new poll is started in one of your bands.',
   },
 ];
 

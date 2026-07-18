@@ -12,8 +12,9 @@ export interface NotificationItem {
     | 'event-added'
     | 'song-updated'
     | 'event-updated'
-    | 'band-updated';
-  subjectType: 'conversation' | 'event' | 'band';
+    | 'band-updated'
+    | 'poll-created';
+  subjectType: 'conversation' | 'event' | 'band' | 'poll';
   subjectId: string | null;
   subjectLabel: string | null;
   bandId: string;
@@ -36,6 +37,10 @@ function hrefFor(n: NotificationItem): string {
       return n.kind === 'chat-message'
         ? `/bands/${n.bandId}?tab=chat`
         : `/bands/${n.bandId}`;
+    case 'poll':
+      return n.subjectId
+        ? `/bands/${n.bandId}/polls/${n.subjectId}`
+        : `/bands/${n.bandId}`;
   }
 }
 
@@ -55,6 +60,8 @@ function messageFor(n: NotificationItem): string {
       return `${who} updated the event: ${n.subjectLabel ?? 'Untitled'}`;
     case 'band-updated':
       return `${who} updated ${band}${n.subjectLabel ? ` (${n.subjectLabel})` : ''}`;
+    case 'poll-created':
+      return `${who} started a poll: ${n.subjectLabel ?? 'Untitled'}`;
   }
 }
 
