@@ -4,6 +4,14 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { usePendingCount } from './PendingActionProvider';
+import { Select } from './Select';
+
+interface BandOption {
+  id: string;
+  name: string;
+}
+
+const SELECTED_BAND_KEY = 'selectedBandId';
 
 /**
  * Top-of-page navigation, shown on every signed-in route. Rendered
@@ -20,21 +28,65 @@ import { usePendingCount } from './PendingActionProvider';
  * leave the header un-highlighted, which is the least-wrong choice —
  * none of these links is a precise "parent" of that route.
  */
-const NAV_LINKS = [
-  { href: '/home', label: 'Home' },
-  { href: '/bands', label: 'Bands' },
-  { href: '/calendar', label: 'Calendar' },
-  { href: '/open-conversations', label: 'Open Conversations' },
-  { href: '/history', label: 'History' },
-  { href: '/settings', label: 'Settings' },
-] as const;
-
 export function Header() {
   const pathname = usePathname();
   const pendingCount = usePendingCount();
   const [menuOpen, setMenuOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [bands, setBands] = useState<BandOption[]>([]);
+  const [selectedBandId, setSelectedBandId] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Load the user's bands and restore the saved "current band" selection
+  // (falling back to the first band if the saved one is gone). Runs once —
+  // the header stays mounted across client navigations.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/bands', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = (await res.json()) as { bands: BandOption[] };
+        if (cancelled) return;
+        setBands(data.bands);
+        const saved =
+          typeof localStorage !== 'undefined'
+            ? localStorage.getItem(SELECTED_BAND_KEY)
+            : null;
+        if (saved && data.bands.some((b) => b.id === saved)) {
+          setSelectedBandId(saved);
+        } else if (data.bands[0]) {
+          setSelectedBandId(data.bands[0].id);
+        }
+      } catch {
+        // best-effort; the picker just stays empty
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const selectBand = (id: string) => {
+    setSelectedBandId(id);
+    try {
+      localStorage.setItem(SELECTED_BAND_KEY, id);
+    } catch {
+      // ignore storage failures (private mode, etc.)
+    }
+  };
+
+  // "Overview" jumps to the currently-selected band's page.
+  const overviewHref = selectedBandId ? `/bands/${selectedBandId}` : '/bands';
+  const navLinks = [
+    { href: '/home', label: 'Home' },
+    { href: overviewHref, label: 'Overview' },
+    { href: '/bands', label: 'Bands' },
+    { href: '/calendar', label: 'Calendar' },
+    { href: '/open-conversations', label: 'Open Conversations' },
+    { href: '/history', label: 'History' },
+    { href: '/settings', label: 'Settings' },
+  ];
 
   // Close the mobile menu whenever the route changes.
   useEffect(() => setMenuOpen(false), [pathname]);
@@ -119,68 +171,82 @@ export function Header() {
           </span>
         </span>
 
-        {/* Desktop: inline links. */}
-        <span className="hidden items-center sm:inline-flex">
-          {NAV_LINKS.map((link) => {
-            const isActive = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                aria-current={isActive ? 'page' : undefined}
-                className={navLinkClass(isActive)}
-              >
-                {link.label}
-                {link.href === '/home' && <NavBadge count={unread} />}
-              </Link>
-            );
-          })}
-        </span>
-
-        {/* Mobile: hamburger dropdown. */}
-        <div ref={menuRef} className="relative sm:hidden">
-          <button
-            type="button"
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            aria-controls="mobile-nav"
-            aria-label="Menu"
-            className="rounded-md px-3 pt-2 pb-3 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
-          >
-            <span aria-hidden="true" className="block text-xl leading-none">
-              ☰
-            </span>
-          </button>
-          {menuOpen && (
-            <div
-              id="mobile-nav"
-              role="menu"
-              className="absolute right-0 z-50 mt-2 flex min-w-56 flex-col gap-0.5 rounded-md border border-neutral-200 bg-white p-1.5 shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
-            >
-              {NAV_LINKS.map((link) => {
-                const isActive = pathname === link.href;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    role="menuitem"
-                    aria-current={isActive ? 'page' : undefined}
-                    onClick={() => setMenuOpen(false)}
-                    className={
-                      'flex items-center rounded px-4 py-3 text-base ' +
-                      (isActive
-                        ? 'bg-neutral-100 font-medium text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
-                        : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800')
-                    }
-                  >
-                    {link.label}
-                    {link.href === '/home' && <NavBadge count={unread} />}
-                  </Link>
-                );
-              })}
-            </div>
+        {/* Right cluster: band picker + nav (inline on desktop, menu on mobile). */}
+        <div className="flex items-center gap-2">
+          {bands.length > 0 && (
+            <Select
+              className="w-28 sm:w-44"
+              value={selectedBandId}
+              onChange={selectBand}
+              placeholder="Select band"
+              ariaLabel="Current band"
+              options={bands.map((b) => ({ value: b.id, label: b.name }))}
+            />
           )}
+
+          {/* Desktop: inline links. */}
+          <span className="hidden items-center sm:inline-flex">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={navLinkClass(isActive)}
+                >
+                  {link.label}
+                  {link.href === '/home' && <NavBadge count={unread} />}
+                </Link>
+              );
+            })}
+          </span>
+
+          {/* Mobile: hamburger dropdown. */}
+          <div ref={menuRef} className="relative sm:hidden">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              aria-controls="mobile-nav"
+              aria-label="Menu"
+              className="rounded-md px-3 pt-2 pb-3 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+            >
+              <span aria-hidden="true" className="block text-xl leading-none">
+                ☰
+              </span>
+            </button>
+            {menuOpen && (
+              <div
+                id="mobile-nav"
+                role="menu"
+                className="absolute right-0 z-50 mt-2 flex min-w-56 flex-col gap-0.5 rounded-md border border-neutral-200 bg-white p-1.5 shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
+              >
+                {navLinks.map((link) => {
+                  const isActive = pathname === link.href;
+                  return (
+                    <Link
+                      key={link.label}
+                      href={link.href}
+                      role="menuitem"
+                      aria-current={isActive ? 'page' : undefined}
+                      onClick={() => setMenuOpen(false)}
+                      className={
+                        'flex items-center rounded px-4 py-3 text-base ' +
+                        (isActive
+                          ? 'bg-neutral-100 font-medium text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
+                          : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800')
+                      }
+                    >
+                      {link.label}
+                      {link.href === '/home' && <NavBadge count={unread} />}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </nav>
     </header>

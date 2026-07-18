@@ -22,6 +22,8 @@ export function Select({
   onChange,
   options,
   className = '',
+  placeholder = '',
+  ariaLabel,
 }: {
   id?: string;
   value: string;
@@ -29,6 +31,10 @@ export function Select({
   options: SelectOption[];
   /** Extra classes on the wrapper. */
   className?: string;
+  /** Shown (muted) when no option matches `value`. */
+  placeholder?: string;
+  /** Accessible name when there's no associated <label>. */
+  ariaLabel?: string;
 }) {
   const listId = useId();
   const [open, setOpen] = useState(false);
@@ -118,6 +124,7 @@ export function Select({
         id={id}
         type="button"
         role="combobox"
+        aria-label={ariaLabel}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
@@ -128,7 +135,9 @@ export function Select({
         onKeyDown={onKeyDown}
         className="flex w-full items-center justify-between gap-2 rounded-md border border-neutral-300 bg-white px-3 py-2 text-left text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
       >
-        <span className="truncate">{selected?.label ?? ''}</span>
+        <span className={'truncate ' + (selected ? '' : 'text-neutral-400')}>
+          {selected ? selected.label : placeholder}
+        </span>
         <span aria-hidden="true" className="shrink-0 text-neutral-400">
           ▾
         </span>
