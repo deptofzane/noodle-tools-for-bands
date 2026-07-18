@@ -1,6 +1,6 @@
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import { db } from './index';
-import { pollOptions, pollVotes, polls } from './schema';
+import { bandMembers, bands, pollOptions, pollVotes, polls } from './schema';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -22,6 +22,44 @@ export interface PollSummary {
   id: string;
   title: string;
   createdAt: string; // ISO 8601
+}
+
+export interface OpenPoll {
+  id: string;
+  bandId: string;
+  bandName: string;
+  title: string;
+  description: string | null;
+}
+
+/**
+ * Polls across the user's bands that they haven't voted in yet, newest first.
+ * (A left join to the user's vote, filtered to rows where none exists.)
+ */
+export async function listOpenPollsForUser(
+  userId: string,
+): Promise<OpenPoll[]> {
+  const rows = await db
+    .select({
+      id: polls.id,
+      bandId: polls.bandId,
+      bandName: bands.name,
+      title: polls.title,
+      description: polls.description,
+    })
+    .from(polls)
+    .innerJoin(
+      bandMembers,
+      and(eq(bandMembers.bandId, polls.bandId), eq(bandMembers.userId, userId)),
+    )
+    .innerJoin(bands, eq(bands.id, polls.bandId))
+    .leftJoin(
+      pollVotes,
+      and(eq(pollVotes.pollId, polls.id), eq(pollVotes.userId, userId)),
+    )
+    .where(isNull(pollVotes.id))
+    .orderBy(desc(polls.createdAt));
+  return rows;
 }
 
 /** The band's polls, newest first. */

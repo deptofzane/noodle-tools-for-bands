@@ -5,7 +5,9 @@ import {
   listNotifications,
 } from '@/lib/db/notifications';
 import { listEventsForUserInRange } from '@/lib/db/events';
+import { listOpenPollsForUser } from '@/lib/db/polls';
 import { NotificationList } from './NotificationList';
+import { OpenPolls } from './OpenPolls';
 import { UpcomingShows } from './UpcomingShows';
 
 /**
@@ -30,21 +32,24 @@ export default async function HomePage() {
   const bufferTo = new Date();
   bufferTo.setDate(bufferTo.getDate() + 9);
 
-  const [notifications, unreadCount, showsBuffer] = await Promise.all([
-    listNotifications(userId),
-    getUnreadNotificationCount(userId),
-    listEventsForUserInRange(
-      userId,
-      bufferFrom.toLocaleDateString('en-CA'),
-      bufferTo.toLocaleDateString('en-CA'),
-    ),
-  ]);
+  const [notifications, unreadCount, showsBuffer, openPolls] =
+    await Promise.all([
+      listNotifications(userId),
+      getUnreadNotificationCount(userId),
+      listEventsForUserInRange(
+        userId,
+        bufferFrom.toLocaleDateString('en-CA'),
+        bufferTo.toLocaleDateString('en-CA'),
+      ),
+      listOpenPollsForUser(userId),
+    ]);
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 px-6 py-4">
       {showsBuffer.length > 0 && (
         <UpcomingShows shows={showsBuffer} serverToday={serverToday} />
       )}
+      <OpenPolls polls={openPolls} />
       <NotificationList initial={notifications} initialUnread={unreadCount} />
 
       <div className="rounded-lg border border-neutral-200 p-4 text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">
