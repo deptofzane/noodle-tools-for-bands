@@ -155,6 +155,13 @@
       "when": 1784416378994,
       "tag": "0021_amazing_arachne",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1784418526094,
+      "tag": "0022_acoustic_sphinx",
+      "breakpoints": true
     }
   ]
 }

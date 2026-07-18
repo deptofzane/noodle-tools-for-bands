@@ -176,6 +176,7 @@ export const notificationKind = pgEnum('notification_kind', [
   'event-updated',
   'band-updated',
   'poll-created',
+  'poll-closed',
 ]);
 
 // What a notification points at, for building its link.

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { db } from './index';
 import { bandMembers, bands, pollOptions, pollVotes, polls } from './schema';
 
@@ -159,6 +159,61 @@ export async function getPoll(
     totalVotes: votes.length,
     myVote,
   };
+}
+
+/**
+ * Update a poll's title/description and reconcile its options: existing
+ * options (matched by id) are renamed/reordered in place — keeping their
+ * votes — new ones are inserted, and any dropped from the list are deleted
+ * (which cascades their votes).
+ */
+export async function updatePoll(input: {
+  pollId: string;
+  title: string;
+  description: string | null;
+  options: { id?: string; text: string }[];
+}): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx
+      .update(polls)
+      .set({ title: input.title, description: input.description })
+      .where(eq(polls.id, input.pollId));
+
+    const existing = await tx
+      .select({ id: pollOptions.id })
+      .from(pollOptions)
+      .where(eq(pollOptions.pollId, input.pollId));
+    const existingIds = new Set(existing.map((o) => o.id));
+    const keptIds = new Set(
+      input.options
+        .map((o) => o.id)
+        .filter((id): id is string => !!id && existingIds.has(id)),
+    );
+
+    const toDelete = [...existingIds].filter((id) => !keptIds.has(id));
+    if (toDelete.length > 0) {
+      await tx.delete(pollOptions).where(inArray(pollOptions.id, toDelete));
+    }
+
+    for (let i = 0; i < input.options.length; i++) {
+      const o = input.options[i]!;
+      if (o.id && existingIds.has(o.id)) {
+        await tx
+          .update(pollOptions)
+          .set({ text: o.text, position: i })
+          .where(eq(pollOptions.id, o.id));
+      } else {
+        await tx
+          .insert(pollOptions)
+          .values({ pollId: input.pollId, text: o.text, position: i });
+      }
+    }
+  });
+}
+
+/** Delete a poll (cascades its options and votes). */
+export async function deletePoll(pollId: string): Promise<void> {
+  await db.delete(polls).where(eq(polls.id, pollId));
 }
 
 /**

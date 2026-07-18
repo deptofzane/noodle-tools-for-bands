@@ -13,7 +13,8 @@ export interface NotificationItem {
     | 'song-updated'
     | 'event-updated'
     | 'band-updated'
-    | 'poll-created';
+    | 'poll-created'
+    | 'poll-closed';
   subjectType: 'conversation' | 'event' | 'band' | 'poll';
   subjectId: string | null;
   subjectLabel: string | null;
@@ -62,6 +63,8 @@ function messageFor(n: NotificationItem): string {
       return `${who} updated ${band}${n.subjectLabel ? ` (${n.subjectLabel})` : ''}`;
     case 'poll-created':
       return `${who} started a poll: ${n.subjectLabel ?? 'Untitled'}`;
+    case 'poll-closed':
+      return `${who} closed the poll: ${n.subjectLabel ?? 'Untitled'}`;
   }
 }
 

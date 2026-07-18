@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
@@ -30,7 +31,14 @@ export default async function PollPage({
         defaultHref={`/bands/${bandId}?tab=members`}
         defaultHrefName="Band"
         canGoBack={false}
-      />
+      >
+        <Link
+          href={`/bands/${bandId}/polls/${pollId}/edit`}
+          className="hover:text-neutral-900 dark:hover:text-neutral-100"
+        >
+          Edit poll
+        </Link>
+      </PageHeader>
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
