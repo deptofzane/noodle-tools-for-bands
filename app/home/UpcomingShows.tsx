@@ -84,7 +84,7 @@ export function UpcomingShows({
             <li key={s.id} className="flex items-center gap-2 px-3 py-2.5">
               <Link
                 href={`/calendar/events/${s.id}`}
-                className="-mx-1 flex min-w-0 flex-1 items-start justify-start gap-3 rounded px-1 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                className="-mx-1 flex min-w-0 flex-1 items-start flex-col justify-start gap-3 rounded px-1 hover:bg-neutral-50 dark:hover:bg-neutral-900"
               >
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate text-sm font-medium">{s.title}</span>
@@ -101,7 +101,7 @@ export function UpcomingShows({
                 </span>
               </Link>
               {s.setlistId && (
-                <div className="flex shrink-0 flex-col gap-1">
+                <div className="flex shrink-0 flex-col gap-2">
                   <Link
                     href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice`}
                     title="Practice this event’s setlist"

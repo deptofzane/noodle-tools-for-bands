@@ -83,8 +83,8 @@ export function Header() {
   const navLinks = [
     { href: '/home', label: 'Home' },
     { href: overviewHref, label: 'Overview' },
-    { href: '/bands', label: 'Bands' },
     { href: '/calendar', label: 'Calendar' },
+    { href: '/bands', label: 'Bands' },
     { href: '/open-conversations', label: 'Open Conversations' },
     { href: '/history', label: 'History' },
     { href: '/settings', label: 'Settings' },
