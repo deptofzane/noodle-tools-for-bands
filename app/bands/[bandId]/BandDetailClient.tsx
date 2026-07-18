@@ -18,6 +18,10 @@ import { AddAudioSourceModal } from './AddAudioSourceModal';
 import { useBandData, useBandChat } from './bandDetailHooks';
 import type { Conversation } from './bandDetailShared';
 
+const BAND_TABS = ['overview', 'chat', 'members', 'audio'] as const;
+type BandTab = (typeof BAND_TABS)[number];
+const ACTIVE_TAB_KEY = 'bandActiveTab';
+
 /**
  * Band detail coordinator: fetches the band's data, owns the audio / song /
  * setlist / leave actions and the tab state, and renders the tab bar plus the
@@ -33,7 +37,7 @@ export function BandDetailClient({
   bandId: string;
   apiKey: string;
   currentUserId: string;
-  initialTab?: 'overview' | 'chat' | 'members' | 'audio';
+  initialTab?: BandTab;
 }) {
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -51,9 +55,7 @@ export function BandDetailClient({
     new Set(),
   );
   const [addingToSetlist, setAddingToSetlist] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    'overview' | 'chat' | 'members' | 'audio'
-  >(initialTab);
+  const [activeTab, setActiveTab] = useState<BandTab>(initialTab);
 
   const audioInputRef = useRef<HTMLInputElement>(null);
   const trackPending = useTrackPending();
@@ -75,6 +77,34 @@ export function BandDetailClient({
     else url.searchParams.set('tab', activeTab);
     window.history.replaceState(window.history.state, '', url.toString());
   }, [activeTab]);
+
+  // Persist the chosen tab so it's restored on a later visit.
+  const changeTab = useCallback((tab: BandTab) => {
+    setActiveTab(tab);
+    try {
+      localStorage.setItem(ACTIVE_TAB_KEY, tab);
+    } catch {
+      // ignore storage failures (private mode, etc.)
+    }
+  }, []);
+
+  // On a fresh nav to /bands/[id] (no ?tab=), restore the last-used tab. An
+  // explicit ?tab= (deep link / back-nav) always wins and is remembered.
+  useEffect(() => {
+    const urlTab = new URLSearchParams(window.location.search).get('tab');
+    const isTab = (v: string | null): v is BandTab =>
+      v !== null && (BAND_TABS as readonly string[]).includes(v);
+    try {
+      if (urlTab) {
+        if (isTab(urlTab)) localStorage.setItem(ACTIVE_TAB_KEY, urlTab);
+        return;
+      }
+      const saved = localStorage.getItem(ACTIVE_TAB_KEY);
+      if (isTab(saved)) setActiveTab(saved);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const handleRegister = useCallback(
     async (files: PickedFile[]) => {
@@ -290,13 +320,13 @@ export function BandDetailClient({
         aria-label="Band sections"
         className="flex gap-1 border-b border-neutral-200 dark:border-neutral-800"
       >
-        {(['overview', 'chat', 'members', 'audio'] as const).map((tab) => (
+        {BAND_TABS.map((tab) => (
           <button
             key={tab}
             type="button"
             role="tab"
             aria-selected={activeTab === tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => changeTab(tab)}
             className={
               '-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium capitalize transition ' +
               (activeTab === tab
