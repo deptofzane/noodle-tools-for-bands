@@ -101,13 +101,22 @@ export function UpcomingShows({
                 </span>
               </Link>
               {s.setlistId && (
-                <Link
-                  href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice`}
-                  title="Practice this event’s setlist"
-                  className="shrink-0 rounded-md border border-neutral-300 px-2.5 py-1 text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
-                >
-                  Practice
-                </Link>
+                <div className="flex shrink-0 flex-col gap-1">
+                  <Link
+                    href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice`}
+                    title="Practice this event’s setlist"
+                    className="rounded-md border border-neutral-300 px-2.5 py-1 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                  >
+                    Practice
+                  </Link>
+                  <Link
+                    href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice/live`}
+                    title="Perform this event’s setlist live"
+                    className="rounded-md border border-neutral-300 px-2.5 py-1 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                  >
+                    Live
+                  </Link>
+                </div>
               )}
             </li>
           ))}
