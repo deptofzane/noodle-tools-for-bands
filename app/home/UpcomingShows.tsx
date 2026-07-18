@@ -72,7 +72,7 @@ export function UpcomingShows({
         >
           {open ? '▾' : '▸'}
         </span>
-        <h2 className="text-sm font-medium">Upcoming shows</h2>
+        <h2 className="text-sm font-medium">Upcoming events</h2>
         <span className="text-xs text-neutral-500">
           <span aria-hidden="true">·</span> next 7 days · {visible.length}
         </span>
@@ -103,7 +103,7 @@ export function UpcomingShows({
               {s.setlistId && (
                 <Link
                   href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice`}
-                  title="Practice this show’s setlist"
+                  title="Practice this event’s setlist"
                   className="shrink-0 rounded-md border border-neutral-300 px-2.5 py-1 text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
                 >
                   Practice

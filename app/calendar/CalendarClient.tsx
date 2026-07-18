@@ -166,7 +166,7 @@ export function CalendarClient() {
                 <button
                   type="button"
                   onClick={() => setSummaryDate(dateStr(d))}
-                  aria-label={`Shows on ${dateStr(d)}`}
+                  aria-label={`Events on ${dateStr(d)}`}
                   className="self-start w-full text-left pb-1"
                 >
                   <span
@@ -209,7 +209,7 @@ export function CalendarClient() {
             </h2>
             {(eventsByDate[summaryDate] ?? []).length === 0 ? (
               <p className="mt-3 text-sm text-neutral-500">
-                No shows on this day.
+                No events on this day.
               </p>
             ) : (
               <ul className="mt-3 flex max-h-72 flex-col gap-1 overflow-auto">

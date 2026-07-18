@@ -155,16 +155,16 @@ export function BandOverviewTab({
             <MinimizeToggle
               minimized={showsMinimized}
               onToggle={() => setShowsMinimized((v) => !v)}
-              label="Shows"
+              label="Events"
             >
-              <h2 className="text-sm font-medium">Shows</h2>
+              <h2 className="text-sm font-medium">Events</h2>
             </MinimizeToggle>
           </span>
           <Link
             href={`/calendar/events/new?bandId=${bandId}`}
             className="btn-outline"
           >
-            Add show
+            Add event
           </Link>
         </div>
         {!showsMinimized &&
@@ -174,7 +174,7 @@ export function BandOverviewTab({
             </ul>
           ) : (
             <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
-              No upcoming shows. Use “Add show” to schedule one.
+              No upcoming events. Use “Add event” to schedule one.
             </p>
           ))}
       </section>
@@ -267,10 +267,10 @@ export function BandOverviewTab({
             <MinimizeToggle
               minimized={pastShowsMinimized}
               onToggle={() => setPastShowsMinimized((v) => !v)}
-              label="Past shows"
+              label="Past events"
             >
               <h2 className="text-sm font-medium text-neutral-500">
-                Past shows
+                Past events
               </h2>
             </MinimizeToggle>
           </div>

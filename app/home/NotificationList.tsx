@@ -48,11 +48,11 @@ function messageFor(n: NotificationItem): string {
     case 'chat-message':
       return `${who} posted in ${band} chat`;
     case 'show-added':
-      return `${who} added a show: ${n.subjectLabel ?? 'Untitled'}`;
+      return `${who} added an event: ${n.subjectLabel ?? 'Untitled'}`;
     case 'song-updated':
       return `${who} updated ${n.subjectLabel ?? 'a song'}`;
     case 'show-updated':
-      return `${who} updated the show: ${n.subjectLabel ?? 'Untitled'}`;
+      return `${who} updated the event: ${n.subjectLabel ?? 'Untitled'}`;
     case 'band-updated':
       return `${who} updated ${band}${n.subjectLabel ? ` (${n.subjectLabel})` : ''}`;
   }

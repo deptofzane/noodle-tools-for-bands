@@ -23,8 +23,8 @@ const KINDS: { kind: Kind; label: string; description: string }[] = [
   },
   {
     kind: 'show-added',
-    label: 'New shows',
-    description: 'When a show is added to one of your bands.',
+    label: 'New events',
+    description: 'When an event is added to one of your bands.',
   },
   {
     kind: 'song-updated',
@@ -33,8 +33,8 @@ const KINDS: { kind: Kind; label: string; description: string }[] = [
   },
   {
     kind: 'show-updated',
-    label: 'Show updates',
-    description: 'When a show’s details are edited.',
+    label: 'Event updates',
+    description: 'When an event’s details are edited.',
   },
   {
     kind: 'band-updated',
