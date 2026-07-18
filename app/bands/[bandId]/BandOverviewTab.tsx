@@ -37,7 +37,10 @@ export function BandOverviewTab({
     'bandSetlistsMinimized',
     true,
   );
-  const [pastShowsMinimized, setPastShowsMinimized] = useState(true);
+  const [pastShowsMinimized, setPastShowsMinimized] = usePersistedBoolean(
+    'bandPastShowsMinimized',
+    true,
+  );
   const [minimizedSetlists, setMinimizedSetlists] = useState<Set<string>>(
     new Set(),
   );
