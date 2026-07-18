@@ -3,11 +3,12 @@ import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { getPoll } from '@/lib/db/polls';
 import { PageHeader } from '../../../../PageHeader';
+import { PollVote } from './PollVote';
 
 /**
  * Poll detail. Server shell — the poll must belong to this band and the
- * viewer must be a member. Read-only for now (the options are shown; voting
- * is a later addition).
+ * viewer must be a member. Loads the poll with the viewer's current vote and
+ * hands off to the client voting UI.
  */
 export default async function PollPage({
   params,
@@ -20,7 +21,7 @@ export default async function PollPage({
   if (!user) redirect('/login');
   if (!(await getMembership(user.id, bandId))) notFound();
 
-  const poll = await getPoll(pollId);
+  const poll = await getPoll(pollId, user.id);
   if (!poll || poll.bandId !== bandId) notFound();
 
   return (
@@ -41,16 +42,13 @@ export default async function PollPage({
           )}
         </div>
 
-        <ul className="flex flex-col gap-2">
-          {poll.options.map((o) => (
-            <li
-              key={o.id}
-              className="rounded-lg border border-neutral-200 px-4 py-3 text-sm dark:border-neutral-800"
-            >
-              {o.text}
-            </li>
-          ))}
-        </ul>
+        <PollVote
+          bandId={bandId}
+          pollId={poll.id}
+          initialOptions={poll.options}
+          initialTotal={poll.totalVotes}
+          initialMyVote={poll.myVote}
+        />
       </div>
     </main>
   );

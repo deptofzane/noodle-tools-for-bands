@@ -1,6 +1,6 @@
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { db } from './index';
-import { pollOptions, polls } from './schema';
+import { pollOptions, pollVotes, polls } from './schema';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -12,7 +12,10 @@ export interface Poll {
   description: string | null;
   createdBy: string;
   createdAt: string; // ISO 8601
-  options: { id: string; text: string }[];
+  options: { id: string; text: string; votes: number }[];
+  totalVotes: number;
+  /** The viewer's chosen option id, or null (also null when no viewer). */
+  myVote: string | null;
 }
 
 /**
@@ -49,8 +52,14 @@ export async function createPoll(input: {
   return poll;
 }
 
-/** A poll with its options in order, or null if not found. */
-export async function getPoll(pollId: string): Promise<Poll | null> {
+/**
+ * A poll with its options (in order), per-option vote counts, the total, and
+ * the viewer's current vote. Returns null if not found.
+ */
+export async function getPoll(
+  pollId: string,
+  viewerId?: string,
+): Promise<Poll | null> {
   if (!UUID_RE.test(pollId)) return null;
   const [poll] = await db
     .select()
@@ -65,6 +74,18 @@ export async function getPoll(pollId: string): Promise<Poll | null> {
     .where(eq(pollOptions.pollId, pollId))
     .orderBy(asc(pollOptions.position));
 
+  const votes = await db
+    .select({ optionId: pollVotes.optionId, userId: pollVotes.userId })
+    .from(pollVotes)
+    .where(eq(pollVotes.pollId, pollId));
+
+  const counts = new Map<string, number>();
+  let myVote: string | null = null;
+  for (const v of votes) {
+    counts.set(v.optionId, (counts.get(v.optionId) ?? 0) + 1);
+    if (viewerId && v.userId === viewerId) myVote = v.optionId;
+  }
+
   return {
     id: poll.id,
     bandId: poll.bandId,
@@ -72,6 +93,51 @@ export async function getPoll(pollId: string): Promise<Poll | null> {
     description: poll.description,
     createdBy: poll.createdBy,
     createdAt: poll.createdAt.toISOString(),
-    options,
+    options: options.map((o) => ({
+      id: o.id,
+      text: o.text,
+      votes: counts.get(o.id) ?? 0,
+    })),
+    totalVotes: votes.length,
+    myVote,
   };
+}
+
+/**
+ * Cast (or change) a user's vote in a poll. The option must belong to the
+ * poll; one vote per (poll, user) — a re-vote updates the chosen option.
+ * Returns false if the option isn't part of the poll.
+ */
+export async function castVote(input: {
+  pollId: string;
+  optionId: string;
+  userId: string;
+}): Promise<boolean> {
+  if (!UUID_RE.test(input.pollId) || !UUID_RE.test(input.optionId)) {
+    return false;
+  }
+  const [opt] = await db
+    .select({ id: pollOptions.id })
+    .from(pollOptions)
+    .where(
+      and(
+        eq(pollOptions.id, input.optionId),
+        eq(pollOptions.pollId, input.pollId),
+      ),
+    )
+    .limit(1);
+  if (!opt) return false;
+
+  await db
+    .insert(pollVotes)
+    .values({
+      pollId: input.pollId,
+      optionId: input.optionId,
+      userId: input.userId,
+    })
+    .onConflictDoUpdate({
+      target: [pollVotes.pollId, pollVotes.userId],
+      set: { optionId: input.optionId },
+    });
+  return true;
 }

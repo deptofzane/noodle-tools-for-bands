@@ -553,6 +553,30 @@ export const pollOptions = pgTable(
   (t) => [index('poll_options_poll_idx').on(t.pollId)],
 );
 
+// One vote per member per poll (single-choice); re-voting updates the option.
+export const pollVotes = pgTable(
+  'poll_votes',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    pollId: uuid('poll_id')
+      .notNull()
+      .references(() => polls.id, { onDelete: 'cascade' }),
+    optionId: uuid('option_id')
+      .notNull()
+      .references(() => pollOptions.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('poll_votes_poll_user_unique').on(t.pollId, t.userId),
+    index('poll_votes_option_idx').on(t.optionId),
+  ],
+);
+
 // Extra attendees on an event, beyond the owning band's members. Added by
 // email, the same way band members are.
 export const eventMembers = pgTable(
