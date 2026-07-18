@@ -100,7 +100,9 @@ export function Header() {
     let cancelled = false;
     const fetchUnread = async () => {
       try {
-        const res = await fetch('/api/notifications/unread', { cache: 'no-store' });
+        const res = await fetch('/api/notifications/unread', {
+          cache: 'no-store',
+        });
         if (!res.ok) return;
         const data = (await res.json()) as { unreadCount?: number };
         if (!cancelled) setUnread(data.unreadCount ?? 0);
@@ -149,9 +151,14 @@ export function Header() {
       <nav className="mx-auto flex max-w-3xl flex-row items-center justify-between gap-1 px-3 py-3 sm:px-6">
         <span className="flex flex-row items-center gap-2">
           <Link key="/home" href="/home">
-            <h3 className="mb-2 font-serif text-4xl">
+            <h3 className="mb-2 font-serif text-4xl hidden sm:inline">
               side<span className="text-cyan-600">stage</span>
             </h3>
+            <span className="w-8 h-8 flex items-center justify-center sm:hidden border border-cyan-600 rounded-full">
+              <h3 className="font-serif text-2xl text-center mb-1">
+                s
+              </h3>
+            </span>
           </Link>
           {/*
             Reserve a fixed slot so layout doesn't shift when the
@@ -173,11 +180,25 @@ export function Header() {
           </span>
         </span>
 
+        {/* Mobile: centered, widened band picker between the logo and menu. */}
+        {bands.length > 0 && (
+          <div className="flex flex-1 justify-center sm:hidden">
+            <Select
+              className="w-full max-w-[16rem]"
+              value={selectedBandId}
+              onChange={selectBand}
+              placeholder="Select band"
+              ariaLabel="Current band"
+              options={bands.map((b) => ({ value: b.id, label: b.name }))}
+            />
+          </div>
+        )}
+
         {/* Right cluster: band picker + nav (inline on desktop, menu on mobile). */}
         <div className="flex items-center gap-2">
           {bands.length > 0 && (
             <Select
-              className="w-28 sm:w-44"
+              className="hidden w-44 sm:block"
               value={selectedBandId}
               onChange={selectBand}
               placeholder="Select band"
