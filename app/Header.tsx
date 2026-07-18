@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { usePendingCount } from './PendingActionProvider';
 import { Select } from './Select';
 
@@ -30,6 +30,7 @@ const SELECTED_BAND_KEY = 'selectedBandId';
  */
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const pendingCount = usePendingCount();
   const [menuOpen, setMenuOpen] = useState(false);
   const [unread, setUnread] = useState(0);
@@ -74,6 +75,7 @@ export function Header() {
     } catch {
       // ignore storage failures (private mode, etc.)
     }
+    router.push(`/bands/${id}`);
   };
 
   // "Overview" jumps to the currently-selected band's page.
