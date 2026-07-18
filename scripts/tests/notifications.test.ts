@@ -40,7 +40,7 @@ test('notifications: muted kinds are excluded from feed + count', async () => {
     await createNotification({
       bandId: band.id,
       actorId: owner.id,
-      kind: 'show-added',
+      kind: 'event-added',
       subjectType: 'event',
       subjectId: band.id,
       subjectLabel: 'Gig',
@@ -54,7 +54,7 @@ test('notifications: muted kinds are excluded from feed + count', async () => {
     assert.deepEqual(await getMutedKinds(member.id), ['chat-message'], 'kind is muted');
     const list = await listNotifications(member.id);
     assert.equal(list.length, 1, 'muted kind dropped from feed');
-    assert.equal(list[0]!.kind, 'show-added', 'the surviving one');
+    assert.equal(list[0]!.kind, 'event-added', 'the surviving one');
     assert.equal(await getUnreadNotificationCount(member.id), 1, 'muted kind not counted');
 
     // Muting is idempotent; unmuting restores it.
@@ -104,7 +104,7 @@ test('notifications: scope, actor exclusion, unread, mark-read', async () => {
     await createNotification({
       bandId: otherBand.id,
       actorId: other.id,
-      kind: 'show-added',
+      kind: 'event-added',
       subjectType: 'event',
       subjectId: otherBand.id,
       subjectLabel: 'Gig',
@@ -133,7 +133,7 @@ test('notifications: scope, actor exclusion, unread, mark-read', async () => {
     await createNotification({
       bandId: band.id,
       actorId: owner.id,
-      kind: 'show-added',
+      kind: 'event-added',
       subjectType: 'event',
       subjectId: band.id,
       subjectLabel: 'Rehearsal',
@@ -141,7 +141,7 @@ test('notifications: scope, actor exclusion, unread, mark-read', async () => {
     assert.equal(await getUnreadNotificationCount(member.id), 1, 'new activity is unread');
     const after = await listNotifications(member.id);
     assert.equal(after.length, 2, 'both band notifications listed');
-    assert.equal(after[0]!.kind, 'show-added', 'newest first');
+    assert.equal(after[0]!.kind, 'event-added', 'newest first');
   } finally {
     if (bandId) await deleteBand(bandId);
     if (otherBandId) await deleteBand(otherBandId);

@@ -171,9 +171,9 @@ export const conversations = pgTable(
 export const notificationKind = pgEnum('notification_kind', [
   'song-comment',
   'chat-message',
-  'show-added',
+  'event-added',
   'song-updated',
-  'show-updated',
+  'event-updated',
   'band-updated',
 ]);
 

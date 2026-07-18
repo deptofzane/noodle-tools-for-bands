@@ -70,7 +70,7 @@ export async function PATCH(
   await notify({
     bandId: event.bandId,
     actorId: user.id,
-    kind: 'show-updated',
+    kind: 'event-updated',
     subjectType: 'event',
     subjectId: eventId,
     subjectLabel: title,

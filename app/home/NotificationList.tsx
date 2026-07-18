@@ -9,9 +9,9 @@ export interface NotificationItem {
   kind:
     | 'song-comment'
     | 'chat-message'
-    | 'show-added'
+    | 'event-added'
     | 'song-updated'
-    | 'show-updated'
+    | 'event-updated'
     | 'band-updated';
   subjectType: 'conversation' | 'event' | 'band';
   subjectId: string | null;
@@ -47,11 +47,11 @@ function messageFor(n: NotificationItem): string {
       return `${who} commented on ${n.subjectLabel ?? 'a song'}`;
     case 'chat-message':
       return `${who} posted in ${band} chat`;
-    case 'show-added':
+    case 'event-added':
       return `${who} added an event: ${n.subjectLabel ?? 'Untitled'}`;
     case 'song-updated':
       return `${who} updated ${n.subjectLabel ?? 'a song'}`;
-    case 'show-updated':
+    case 'event-updated':
       return `${who} updated the event: ${n.subjectLabel ?? 'Untitled'}`;
     case 'band-updated':
       return `${who} updated ${band}${n.subjectLabel ? ` (${n.subjectLabel})` : ''}`;

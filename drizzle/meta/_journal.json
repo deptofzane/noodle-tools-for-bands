@@ -134,6 +134,13 @@
       "when": 1784240701811,
       "tag": "0018_lethal_dazzler",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1784413501811,
+      "tag": "0019_rename_show_notification_kinds",
+      "breakpoints": true
     }
   ]
 }

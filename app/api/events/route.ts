@@ -95,7 +95,7 @@ export async function POST(req: Request) {
   await notify({
     bandId,
     actorId: user.id,
-    kind: 'show-added',
+    kind: 'event-added',
     subjectType: 'event',
     subjectId: id,
     subjectLabel: title,

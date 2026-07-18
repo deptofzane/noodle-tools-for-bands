@@ -5,9 +5,9 @@ import { useState } from 'react';
 type Kind =
   | 'song-comment'
   | 'chat-message'
-  | 'show-added'
+  | 'event-added'
   | 'song-updated'
-  | 'show-updated'
+  | 'event-updated'
   | 'band-updated';
 
 const KINDS: { kind: Kind; label: string; description: string }[] = [
@@ -22,7 +22,7 @@ const KINDS: { kind: Kind; label: string; description: string }[] = [
     description: 'New messages in a band’s chat.',
   },
   {
-    kind: 'show-added',
+    kind: 'event-added',
     label: 'New events',
     description: 'When an event is added to one of your bands.',
   },
@@ -32,7 +32,7 @@ const KINDS: { kind: Kind; label: string; description: string }[] = [
     description: 'When a song is renamed, moved, or archived.',
   },
   {
-    kind: 'show-updated',
+    kind: 'event-updated',
     label: 'Event updates',
     description: 'When an event’s details are edited.',
   },
