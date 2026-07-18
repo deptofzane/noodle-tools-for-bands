@@ -163,15 +163,18 @@ export async function getPoll(
 
 /**
  * Update a poll's title/description and reconcile its options: existing
- * options (matched by id) are renamed/reordered in place — keeping their
- * votes — new ones are inserted, and any dropped from the list are deleted
- * (which cascades their votes).
+ * options (matched by id) are renamed/reordered in place, new ones inserted,
+ * and any dropped from the list deleted (cascading their votes).
+ *
+ * When `resetVotes` is set, all of the poll's votes are cleared — used when
+ * the content changed, so the poll starts fresh (see the PATCH route).
  */
 export async function updatePoll(input: {
   pollId: string;
   title: string;
   description: string | null;
   options: { id?: string; text: string }[];
+  resetVotes: boolean;
 }): Promise<void> {
   await db.transaction(async (tx) => {
     await tx
@@ -207,6 +210,10 @@ export async function updatePoll(input: {
           .insert(pollOptions)
           .values({ pollId: input.pollId, text: o.text, position: i });
       }
+    }
+
+    if (input.resetVotes) {
+      await tx.delete(pollVotes).where(eq(pollVotes.pollId, input.pollId));
     }
   });
 }

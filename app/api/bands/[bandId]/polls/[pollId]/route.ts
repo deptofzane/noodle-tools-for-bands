@@ -55,7 +55,23 @@ export async function PATCH(
       { status: 400 },
     );
 
-  await updatePoll({ pollId, title, description: description || null, options });
+  // Any change to the title, description, or the option texts (in order)
+  // resets the poll's votes — the edited poll is treated as new.
+  const existingTexts = existing.options.map((o) => o.text);
+  const newTexts = options.map((o) => o.text);
+  const changed =
+    title !== existing.title ||
+    (description || null) !== (existing.description ?? null) ||
+    existingTexts.length !== newTexts.length ||
+    existingTexts.some((t, i) => t !== newTexts[i]);
+
+  await updatePoll({
+    pollId,
+    title,
+    description: description || null,
+    options,
+    resetVotes: changed,
+  });
   return NextResponse.json({ id: pollId });
 }
 
