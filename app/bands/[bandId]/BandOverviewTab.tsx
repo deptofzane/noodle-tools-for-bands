@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { formatDateLong, formatDateShort, formatTime12h } from '@/lib/format';
+import { usePersistedBoolean } from '../../usePersistedBoolean';
 import {
   MinimizeToggle,
   songCountLabel,
@@ -28,8 +29,14 @@ export function BandOverviewTab({
   isOwner: boolean;
   onLeave: () => void;
 }) {
-  const [showsMinimized, setShowsMinimized] = useState(false);
-  const [setlistsMinimized, setSetlistsMinimized] = useState(true);
+  const [showsMinimized, setShowsMinimized] = usePersistedBoolean(
+    'bandShowsMinimized',
+    false,
+  );
+  const [setlistsMinimized, setSetlistsMinimized] = usePersistedBoolean(
+    'bandSetlistsMinimized',
+    true,
+  );
   const [pastShowsMinimized, setPastShowsMinimized] = useState(true);
   const [minimizedSetlists, setMinimizedSetlists] = useState<Set<string>>(
     new Set(),
