@@ -1,9 +1,20 @@
 import { NextResponse } from 'next/server';
 import { requireBandMember } from '@/lib/api-guard';
-import { createPoll } from '@/lib/db/polls';
+import { createPoll, listBandPolls } from '@/lib/db/polls';
 import { notify } from '@/lib/db/notifications';
 
 const MAX_OPTIONS = 20;
+
+/** GET /api/bands/[bandId]/polls → the band's polls (newest first). */
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ bandId: string }> },
+) {
+  const { bandId } = await params;
+  const guard = await requireBandMember(bandId);
+  if (guard instanceof NextResponse) return guard;
+  return NextResponse.json({ polls: await listBandPolls(bandId) });
+}
 
 /**
  * POST /api/bands/[bandId]/polls

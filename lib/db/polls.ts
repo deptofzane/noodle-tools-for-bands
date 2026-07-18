@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq } from 'drizzle-orm';
 import { db } from './index';
 import { pollOptions, pollVotes, polls } from './schema';
 
@@ -16,6 +16,26 @@ export interface Poll {
   totalVotes: number;
   /** The viewer's chosen option id, or null (also null when no viewer). */
   myVote: string | null;
+}
+
+export interface PollSummary {
+  id: string;
+  title: string;
+  createdAt: string; // ISO 8601
+}
+
+/** The band's polls, newest first. */
+export async function listBandPolls(bandId: string): Promise<PollSummary[]> {
+  const rows = await db
+    .select({ id: polls.id, title: polls.title, createdAt: polls.createdAt })
+    .from(polls)
+    .where(eq(polls.bandId, bandId))
+    .orderBy(desc(polls.createdAt));
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    createdAt: r.createdAt.toISOString(),
+  }));
 }
 
 /**
