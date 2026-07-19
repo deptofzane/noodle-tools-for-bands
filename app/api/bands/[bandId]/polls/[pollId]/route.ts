@@ -18,6 +18,7 @@ export async function PATCH(
   const { bandId, pollId } = await params;
   const guard = await requireBandMember(bandId);
   if (guard instanceof NextResponse) return guard;
+  const { user } = guard;
 
   const existing = await getPoll(pollId);
   if (!existing || existing.bandId !== bandId)
@@ -72,6 +73,19 @@ export async function PATCH(
     options,
     resetVotes: changed,
   });
+
+  // A real change resets votes and re-opens the poll — tell the band.
+  if (changed) {
+    await notify({
+      bandId,
+      actorId: user.id,
+      kind: 'poll-updated',
+      subjectType: 'poll',
+      subjectId: pollId,
+      subjectLabel: title,
+    });
+  }
+
   return NextResponse.json({ id: pollId });
 }
 

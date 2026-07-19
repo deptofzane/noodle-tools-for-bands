@@ -162,6 +162,13 @@
       "when": 1784418526094,
       "tag": "0022_acoustic_sphinx",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1784419255298,
+      "tag": "0023_adorable_cable",
+      "breakpoints": true
     }
   ]
 }

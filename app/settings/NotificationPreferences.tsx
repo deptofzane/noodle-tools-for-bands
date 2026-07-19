@@ -10,7 +10,8 @@ type Kind =
   | 'event-updated'
   | 'band-updated'
   | 'poll-created'
-  | 'poll-closed';
+  | 'poll-closed'
+  | 'poll-updated';
 
 const KINDS: { kind: Kind; label: string; description: string }[] = [
   {
@@ -52,6 +53,11 @@ const KINDS: { kind: Kind; label: string; description: string }[] = [
     kind: 'poll-closed',
     label: 'Cancelled polls',
     description: 'When a poll in one of your bands is cancelled.',
+  },
+  {
+    kind: 'poll-updated',
+    label: 'Poll updates',
+    description: 'When a poll in one of your bands is edited (and re-opened).',
   },
 ];
 
