@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, notInArray, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, notInArray, or, sql } from 'drizzle-orm';
 import { db } from './index';
 import {
   bandMembers,
@@ -39,6 +39,20 @@ export interface NotificationDTO {
   actorName: string | null;
   createdAt: string; // ISO 8601
   unread: boolean;
+  /** True when this notification is about the viewer's own action. */
+  isSelf: boolean;
+}
+
+// Kinds a user also receives for their own actions; every other kind
+// excludes the actor from their own feed.
+const SELF_VISIBLE_KINDS = ['poll-created', 'poll-updated'] as const;
+
+/** SQL: notification is from someone else, or is a self-visible kind. */
+function actorVisible(userId: string) {
+  return or(
+    sql`${notifications.actorId} <> ${userId}`,
+    inArray(notifications.kind, [...SELF_VISIBLE_KINDS]),
+  );
 }
 
 export interface CreateNotificationInput {
@@ -150,6 +164,7 @@ export async function listNotifications(
       subjectLabel: notifications.subjectLabel,
       bandId: notifications.bandId,
       bandName: notifications.bandName,
+      actorId: notifications.actorId,
       actorName: notifications.actorName,
       createdAt: notifications.createdAt,
     })
@@ -163,17 +178,18 @@ export async function listNotifications(
     )
     .where(
       and(
-        sql`${notifications.actorId} <> ${userId}`,
+        actorVisible(userId),
         muted.length ? notInArray(notifications.kind, muted) : undefined,
       ),
     )
     .orderBy(desc(notifications.createdAt))
     .limit(Math.min(Math.max(limit, 1), 100));
 
-  return rows.map((r) => ({
+  return rows.map(({ actorId, ...r }) => ({
     ...r,
     createdAt: r.createdAt.toISOString(),
     unread: r.createdAt > lastSeen,
+    isSelf: actorId === userId,
   }));
 }
 
@@ -197,7 +213,7 @@ export async function getUnreadNotificationCount(
     )
     .where(
       and(
-        sql`${notifications.actorId} <> ${userId}`,
+        actorVisible(userId),
         gt(notifications.createdAt, lastSeen),
         muted.length ? notInArray(notifications.kind, muted) : undefined,
       ),

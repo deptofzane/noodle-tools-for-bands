@@ -24,6 +24,7 @@ export interface NotificationItem {
   actorName: string | null;
   createdAt: string;
   unread: boolean;
+  isSelf: boolean;
 }
 
 const POLL_INTERVAL_MS = 60_000;
@@ -47,7 +48,7 @@ function hrefFor(n: NotificationItem): string {
 }
 
 function messageFor(n: NotificationItem): string {
-  const who = n.actorName ?? 'Someone';
+  const who = n.isSelf ? 'You' : (n.actorName ?? 'Someone');
   const band = n.bandName ?? 'the band';
   switch (n.kind) {
     case 'song-comment':
