@@ -49,6 +49,9 @@ export async function POST(
   const guard = await requireBandMember(bandId);
   if (guard instanceof NextResponse) return guard;
   const { user } = guard;
+  // Bulk imports (Drive picker) pass ?silent=1 and send one batched
+  // notification afterwards instead of one per file.
+  const silent = new URL(req.url).searchParams.get('silent') === '1';
 
   // Local upload: multipart `file` → new conversation + stored audio,
   // no Drive round-trip. Mirrors the Drive import below.
@@ -98,14 +101,16 @@ export async function POST(
         { status: 502 },
       );
     }
-    await notify({
-      bandId,
-      actorId: user.id,
-      kind: 'audio-added',
-      subjectType: 'conversation',
-      subjectId: conversation.id,
-      subjectLabel: conversation.audioFileName ?? fileName,
-    });
+    if (!silent) {
+      await notify({
+        bandId,
+        actorId: user.id,
+        kind: 'audio-added',
+        subjectType: 'conversation',
+        subjectId: conversation.id,
+        subjectLabel: conversation.audioFileName ?? fileName,
+      });
+    }
     return NextResponse.json({ conversation }, { status: 201 });
   }
 
@@ -182,7 +187,7 @@ export async function POST(
     }
   }
 
-  if (addedAudio) {
+  if (addedAudio && !silent) {
     await notify({
       bandId,
       actorId: user.id,

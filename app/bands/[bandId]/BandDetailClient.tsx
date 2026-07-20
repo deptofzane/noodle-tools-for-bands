@@ -114,6 +114,9 @@ export function BandDetailClient({
       // summary. Sequential to avoid buffering several large downloads at once.
       let added = 0;
       let firstError: string | null = null;
+      // For a bulk import, add each file silently and send one batched
+      // notification afterwards (a single file keeps its per-file notice).
+      const silent = files.length > 1;
       setImportProgress({ current: 1, total: files.length });
       try {
         await trackPending(async () => {
@@ -121,14 +124,17 @@ export function BandDetailClient({
             const f = files[i]!;
             setImportProgress({ current: i + 1, total: files.length });
             try {
-              const r = await fetch(`/api/bands/${bandId}/conversations`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  driveAudioFileId: f.id,
-                  audioFileName: f.name,
-                }),
-              });
+              const r = await fetch(
+                `/api/bands/${bandId}/conversations${silent ? '?silent=1' : ''}`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    driveAudioFileId: f.id,
+                    audioFileName: f.name,
+                  }),
+                },
+              );
               await ensureOk(r);
               added += 1;
             } catch (e) {
@@ -140,6 +146,13 @@ export function BandDetailClient({
         });
       } finally {
         setImportProgress(null);
+      }
+      if (silent && added > 0) {
+        await fetch(`/api/bands/${bandId}/conversations/notify-added`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ count: added }),
+        }).catch(() => {});
       }
       await reload();
 
