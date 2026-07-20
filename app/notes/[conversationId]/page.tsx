@@ -46,7 +46,7 @@ export default async function NotesPage({
 
   // Back to the band page, reopening the tab the user came from (songs are
   // linked from the Audio tab) so the same tab appears on return.
-  const bandTabs = ['overview', 'chat', 'members', 'audio'];
+  const bandTabs = ['overview', 'chat', 'polls', 'audio'];
   const backHref =
     from && bandTabs.includes(from)
       ? `/bands/${conversation.bandId}?tab=${from}`

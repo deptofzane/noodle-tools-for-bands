@@ -35,8 +35,8 @@ export default async function BandDetailPage({
         initialTab={
           tab === 'chat'
             ? 'chat'
-            : tab === 'members'
-              ? 'members'
+            : tab === 'polls'
+              ? 'polls'
               : tab === 'audio'
                 ? 'audio'
                 : 'overview'

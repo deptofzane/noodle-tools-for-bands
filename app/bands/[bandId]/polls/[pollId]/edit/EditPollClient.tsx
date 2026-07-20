@@ -102,7 +102,7 @@ export function EditPollClient({
         await ensureOk(r, [204]);
       });
       showToast('Poll cancelled.', 'success');
-      router.push(`/bands/${bandId}?tab=members`);
+      router.push(`/bands/${bandId}?tab=polls`);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setCancelling(false);

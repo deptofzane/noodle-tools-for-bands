@@ -18,7 +18,7 @@ import { AddAudioSourceModal } from './AddAudioSourceModal';
 import { useBandData, useBandChat } from './bandDetailHooks';
 import type { Conversation } from './bandDetailShared';
 
-const BAND_TABS = ['overview', 'chat', 'members', 'audio'] as const;
+const BAND_TABS = ['overview', 'chat', 'polls', 'audio'] as const;
 type BandTab = (typeof BAND_TABS)[number];
 const ACTIVE_TAB_KEY = 'bandActiveTab';
 
@@ -378,7 +378,7 @@ export function BandDetailClient({
         />
       )}
 
-      {activeTab === 'members' && (
+      {activeTab === 'polls' && (
         <BandMembersTab bandId={bandId} members={data.members} />
       )}
 

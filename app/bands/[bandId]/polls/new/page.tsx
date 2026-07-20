@@ -22,7 +22,7 @@ export default async function NewPollPage({
   return (
     <main className="main-container">
       <PageHeader
-        defaultHref={`/bands/${bandId}?tab=members`}
+        defaultHref={`/bands/${bandId}?tab=polls`}
         defaultHrefName="Band"
       />
       <NewPollClient bandId={bandId} />

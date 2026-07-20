@@ -28,7 +28,7 @@ export default async function PollPage({
   return (
     <main className="main-container">
       <PageHeader
-        defaultHref={`/bands/${bandId}?tab=members`}
+        defaultHref={`/bands/${bandId}?tab=polls`}
         defaultHrefName="Band"
         canGoBack={false}
       >
