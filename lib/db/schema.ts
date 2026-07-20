@@ -178,6 +178,7 @@ export const notificationKind = pgEnum('notification_kind', [
   'poll-created',
   'poll-closed',
   'poll-updated',
+  'poll-cancelled',
   'setlist-created',
   'audio-added',
 ]);
@@ -541,6 +542,9 @@ export const polls = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
+    // Set when the poll is closed (voting stopped, kept for history). Null
+    // while open. Cancelling deletes the row instead.
+    closedAt: timestamp('closed_at', { withTimezone: true }),
   },
   (t) => [index('polls_band_idx').on(t.bandId)],
 );

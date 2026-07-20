@@ -19,6 +19,11 @@ export async function POST(
   const before = await getPoll(pollId);
   if (!before || before.bandId !== bandId)
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (before.closed)
+    return NextResponse.json(
+      { error: 'poll_closed', message: 'This poll is closed.' },
+      { status: 409 },
+    );
 
   const body = await req.json().catch(() => null);
   const optionId = typeof body?.optionId === 'string' ? body.optionId : '';

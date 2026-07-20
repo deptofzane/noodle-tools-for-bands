@@ -14,7 +14,8 @@ interface Opt {
 /**
  * Poll voting UI: each option is a button showing a result bar and its tally;
  * tapping casts (or changes) the member's vote. State is refreshed from the
- * server's returned tallies after each vote.
+ * server's returned tallies after each vote. When `closed`, the poll is
+ * archived: options render as read-only result bars and no vote is sent.
  */
 export function PollVote({
   bandId,
@@ -22,12 +23,14 @@ export function PollVote({
   initialOptions,
   initialTotal,
   initialMyVote,
+  closed = false,
 }: {
   bandId: string;
   pollId: string;
   initialOptions: Opt[];
   initialTotal: number;
   initialMyVote: string | null;
+  closed?: boolean;
 }) {
   const trackPending = useTrackPending();
   const showToast = useToast();
@@ -37,7 +40,7 @@ export function PollVote({
   const [busy, setBusy] = useState(false);
 
   const vote = async (optionId: string) => {
-    if (busy || optionId === myVote) return;
+    if (closed || busy || optionId === myVote) return;
     setBusy(true);
     try {
       const data = await trackPending(async () => {
@@ -79,13 +82,14 @@ export function PollVote({
               <button
                 type="button"
                 onClick={() => vote(o.id)}
-                disabled={busy}
+                disabled={busy || closed}
                 aria-pressed={mine}
                 className={
                   'relative w-full overflow-hidden rounded-lg border px-4 py-3 text-left transition disabled:cursor-default ' +
                   (mine
                     ? 'border-blue-500 dark:border-blue-500'
-                    : 'border-neutral-200 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900')
+                    : 'border-neutral-200 dark:border-neutral-800 ' +
+                      (closed ? '' : 'hover:bg-neutral-50 dark:hover:bg-neutral-900'))
                 }
               >
                 <span
@@ -114,7 +118,11 @@ export function PollVote({
       </ul>
       <p className="text-xs text-neutral-500">
         {total} {total === 1 ? 'vote' : 'votes'}
-        {myVote ? '' : ' · tap an option to vote'}
+        {closed
+          ? ' · final results'
+          : myVote
+            ? ''
+            : ' · tap an option to vote'}
       </p>
     </div>
   );

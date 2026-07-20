@@ -10,11 +10,13 @@ interface PollSummary {
   id: string;
   title: string;
   createdAt: string;
+  closed: boolean;
 }
 
 /**
- * The Members tab: a Polls section (create + list the band's polls) and the
- * band's members in a collapsible container.
+ * The Members tab: a Polls section (create + list the band's open polls, with
+ * closed polls tucked into a collapsible history) and the band's members in a
+ * collapsible container.
  */
 export function BandMembersTab({
   bandId,
@@ -24,6 +26,10 @@ export function BandMembersTab({
   members: Member[];
 }) {
   const [polls, setPolls] = useState<PollSummary[] | null>(null);
+  const [closedMinimized, setClosedMinimized] = usePersistedBoolean(
+    'bandClosedPollsMinimized',
+    true,
+  );
   const [membersMinimized, setMembersMinimized] = usePersistedBoolean(
     'bandMembersMinimized',
     false,
@@ -48,6 +54,27 @@ export function BandMembersTab({
     };
   }, [bandId]);
 
+  const openPolls = polls?.filter((p) => !p.closed) ?? null;
+  const closedPolls = polls?.filter((p) => p.closed) ?? [];
+
+  const renderPollList = (list: PollSummary[]) => (
+    <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+      {list.map((p) => (
+        <li key={p.id}>
+          <Link
+            href={`/bands/${bandId}/polls/${p.id}`}
+            className="flex items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
+          >
+            <span className="min-w-0 truncate font-medium">{p.title}</span>
+            <span className="shrink-0 text-xs text-neutral-500">
+              {formatRelativeTime(p.createdAt)}
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+
   return (
     <div className="flex flex-col gap-4">
       <section className="flex flex-col gap-2">
@@ -62,22 +89,31 @@ export function BandMembersTab({
             No polls yet. Use “New poll” to ask the band something.
           </p>
         )}
-        {polls && polls.length > 0 && (
-          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-            {polls.map((p) => (
-              <li key={p.id}>
-                <Link
-                  href={`/bands/${bandId}/polls/${p.id}`}
-                  className="flex items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
-                >
-                  <span className="min-w-0 truncate font-medium">{p.title}</span>
-                  <span className="shrink-0 text-xs text-neutral-500">
-                    {formatRelativeTime(p.createdAt)}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+        {openPolls && openPolls.length > 0 && renderPollList(openPolls)}
+        {polls && openPolls?.length === 0 && closedPolls.length > 0 && (
+          <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+            No open polls. Use “New poll” to ask the band something.
+          </p>
+        )}
+
+        {closedPolls.length > 0 && (
+          <div className="mt-1 flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <MinimizeToggle
+                minimized={closedMinimized}
+                onToggle={() => setClosedMinimized((v) => !v)}
+                label="Closed polls"
+              >
+                <h3 className="text-xs font-medium text-neutral-500">
+                  Closed polls
+                </h3>
+              </MinimizeToggle>
+              <span className="text-xs text-neutral-500">
+                <span aria-hidden="true">·</span> {closedPolls.length}
+              </span>
+            </div>
+            {!closedMinimized && renderPollList(closedPolls)}
+          </div>
         )}
       </section>
 

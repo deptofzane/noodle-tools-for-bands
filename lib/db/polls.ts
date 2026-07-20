@@ -12,6 +12,8 @@ export interface Poll {
   description: string | null;
   createdBy: string;
   createdAt: string; // ISO 8601
+  /** True once the poll is closed (voting stopped; kept for history). */
+  closed: boolean;
   options: { id: string; text: string; votes: number }[];
   totalVotes: number;
   /** The viewer's chosen option id, or null (also null when no viewer). */
@@ -22,6 +24,7 @@ export interface PollSummary {
   id: string;
   title: string;
   createdAt: string; // ISO 8601
+  closed: boolean;
 }
 
 export interface OpenPoll {
@@ -33,8 +36,9 @@ export interface OpenPoll {
 }
 
 /**
- * Polls across the user's bands that they haven't voted in yet, newest first.
- * (A left join to the user's vote, filtered to rows where none exists.)
+ * Open polls across the user's bands that they haven't voted in yet, newest
+ * first. Closed polls are excluded (a left join to the user's vote, filtered
+ * to rows with no vote and not closed).
  */
 export async function listOpenPollsForUser(
   userId: string,
@@ -57,15 +61,20 @@ export async function listOpenPollsForUser(
       pollVotes,
       and(eq(pollVotes.pollId, polls.id), eq(pollVotes.userId, userId)),
     )
-    .where(isNull(pollVotes.id))
+    .where(and(isNull(pollVotes.id), isNull(polls.closedAt)))
     .orderBy(desc(polls.createdAt));
   return rows;
 }
 
-/** The band's polls, newest first. */
+/** The band's polls, newest first (open and closed). */
 export async function listBandPolls(bandId: string): Promise<PollSummary[]> {
   const rows = await db
-    .select({ id: polls.id, title: polls.title, createdAt: polls.createdAt })
+    .select({
+      id: polls.id,
+      title: polls.title,
+      createdAt: polls.createdAt,
+      closedAt: polls.closedAt,
+    })
     .from(polls)
     .where(eq(polls.bandId, bandId))
     .orderBy(desc(polls.createdAt));
@@ -73,6 +82,7 @@ export async function listBandPolls(bandId: string): Promise<PollSummary[]> {
     id: r.id,
     title: r.title,
     createdAt: r.createdAt.toISOString(),
+    closed: r.closedAt !== null,
   }));
 }
 
@@ -151,6 +161,7 @@ export async function getPoll(
     description: poll.description,
     createdBy: poll.createdBy,
     createdAt: poll.createdAt.toISOString(),
+    closed: poll.closedAt !== null,
     options: options.map((o) => ({
       id: o.id,
       text: o.text,
@@ -159,6 +170,14 @@ export async function getPoll(
     totalVotes: votes.length,
     myVote,
   };
+}
+
+/** Close a poll: stop voting, keep it (and its votes) for history. */
+export async function closePoll(pollId: string): Promise<void> {
+  await db
+    .update(polls)
+    .set({ closedAt: new Date() })
+    .where(and(eq(polls.id, pollId), isNull(polls.closedAt)));
 }
 
 /**

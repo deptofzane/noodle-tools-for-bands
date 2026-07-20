@@ -22,6 +22,8 @@ export default async function EditPollPage({
 
   const poll = await getPoll(pollId);
   if (!poll || poll.bandId !== bandId) notFound();
+  // A closed poll is archived — read-only; send edits back to its results.
+  if (poll.closed) redirect(`/bands/${bandId}/polls/${pollId}`);
 
   return (
     <main className="main-container">

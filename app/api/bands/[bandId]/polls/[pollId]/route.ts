@@ -23,6 +23,11 @@ export async function PATCH(
   const existing = await getPoll(pollId);
   if (!existing || existing.bandId !== bandId)
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (existing.closed)
+    return NextResponse.json(
+      { error: 'poll_closed', message: 'This poll is closed.' },
+      { status: 400 },
+    );
 
   const body = await req.json().catch(() => null);
   const title = typeof body?.title === 'string' ? body.title.trim() : '';
@@ -90,8 +95,9 @@ export async function PATCH(
 }
 
 /**
- * DELETE /api/bands/[bandId]/polls/[pollId] — cancel the poll (deletes it and
- * its votes) and notify the band that it was closed.
+ * DELETE /api/bands/[bandId]/polls/[pollId] — cancel the poll (permanently
+ * deletes it and its votes) and notify the band it was cancelled. Any band
+ * member may cancel a poll.
  */
 export async function DELETE(
   _req: Request,
@@ -110,7 +116,7 @@ export async function DELETE(
   await notify({
     bandId,
     actorId: user.id,
-    kind: 'poll-closed',
+    kind: 'poll-cancelled',
     subjectType: 'band',
     subjectId: null,
     subjectLabel: existing.title,

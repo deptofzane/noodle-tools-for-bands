@@ -21,10 +21,10 @@ const uid = () =>
     : `tmp-${Math.random().toString(36).slice(2)}`;
 
 /**
- * Edit a poll's title, description, and options, or cancel it. Existing
+ * Edit a poll's title, description, and options, or close/cancel it. Existing
  * options keep their id (and votes); newly-added ones get a client id.
- * Cancelling asks for confirmation, then deletes the poll and notifies the
- * band.
+ * Closing archives the poll (stops voting, keeps it for history); cancelling
+ * deletes it. Both ask for confirmation and notify the band.
  */
 export function EditPollClient({
   bandId,
@@ -49,6 +49,8 @@ export function EditPollClient({
   const [busy, setBusy] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [closeOpen, setCloseOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
 
   const pollHref = `/bands/${bandId}/polls/${pollId}`;
   const nonEmpty = options.filter((o) => o.text.trim()).length;
@@ -107,6 +109,25 @@ export function EditPollClient({
       showToast(e instanceof Error ? e.message : String(e));
       setCancelling(false);
       setCancelOpen(false);
+    }
+  };
+
+  const handleClosePoll = async () => {
+    if (closing) return;
+    setClosing(true);
+    try {
+      await trackPending(async () => {
+        const r = await fetch(`/api/bands/${bandId}/polls/${pollId}/close`, {
+          method: 'POST',
+        });
+        await ensureOk(r, [204]);
+      });
+      showToast('Poll closed.', 'success');
+      router.push(pollHref);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+      setClosing(false);
+      setCloseOpen(false);
     }
   };
 
@@ -182,18 +203,38 @@ export function EditPollClient({
         </button>
       </div>
 
-      <button
-        type="button"
-        onClick={() => setCancelOpen(true)}
-        className="mt-2 self-start rounded-md border border-red-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
-      >
-        Cancel poll
-      </button>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setCloseOpen(true)}
+          className="self-start btn-outline"
+        >
+          Close poll
+        </button>
+        <button
+          type="button"
+          onClick={() => setCancelOpen(true)}
+          className="self-start rounded-md border border-red-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+        >
+          Cancel poll
+        </button>
+      </div>
+
+      <ConfirmModal
+        open={closeOpen}
+        title="Close this poll?"
+        description="This stops voting and archives the poll with its current results. It stays viewable in history but can’t be reopened."
+        confirmLabel="Close poll"
+        busyLabel="Closing…"
+        busy={closing}
+        onConfirm={handleClosePoll}
+        onCancel={() => setCloseOpen(false)}
+      />
 
       <ConfirmModal
         open={cancelOpen}
         title="Cancel this poll?"
-        description="This deletes the poll and its votes, and notifies the band. This can’t be undone."
+        description="This permanently deletes the poll and its votes, and notifies the band. This can’t be undone."
         confirmLabel="Cancel poll"
         busyLabel="Cancelling…"
         busy={cancelling}

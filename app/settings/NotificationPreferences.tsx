@@ -12,6 +12,7 @@ type Kind =
   | 'poll-created'
   | 'poll-closed'
   | 'poll-updated'
+  | 'poll-cancelled'
   | 'setlist-created'
   | 'audio-added';
 
@@ -53,6 +54,11 @@ const KINDS: { kind: Kind; label: string; description: string }[] = [
   },
   {
     kind: 'poll-closed',
+    label: 'Closed polls',
+    description: 'When a poll in one of your bands is closed.',
+  },
+  {
+    kind: 'poll-cancelled',
     label: 'Cancelled polls',
     description: 'When a poll in one of your bands is cancelled.',
   },

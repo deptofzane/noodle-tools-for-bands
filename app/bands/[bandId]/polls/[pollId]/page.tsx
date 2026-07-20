@@ -32,17 +32,26 @@ export default async function PollPage({
         defaultHrefName="Band"
         canGoBack={false}
       >
-        <Link
-          href={`/bands/${bandId}/polls/${pollId}/edit`}
-          className="hover:text-neutral-900 dark:hover:text-neutral-100"
-        >
-          Edit poll
-        </Link>
+        {!poll.closed && (
+          <Link
+            href={`/bands/${bandId}/polls/${pollId}/edit`}
+            className="hover:text-neutral-900 dark:hover:text-neutral-100"
+          >
+            Edit poll
+          </Link>
+        )}
       </PageHeader>
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="title-text">{poll.title}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="title-text">{poll.title}</h1>
+            {poll.closed && (
+              <span className="shrink-0 rounded-full bg-neutral-200 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                Closed
+              </span>
+            )}
+          </div>
           {poll.description && (
             <p className="whitespace-pre-wrap text-sm text-neutral-600 dark:text-neutral-400">
               {poll.description}
@@ -56,6 +65,7 @@ export default async function PollPage({
           initialOptions={poll.options}
           initialTotal={poll.totalVotes}
           initialMyVote={poll.myVote}
+          closed={poll.closed}
         />
       </div>
     </main>
