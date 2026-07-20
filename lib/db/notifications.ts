@@ -50,6 +50,7 @@ const SELF_VISIBLE_KINDS = [
   'poll-updated',
   'poll-closed',
   'poll-cancelled',
+  'poll-auto-closed',
   'event-added',
   'setlist-created',
   'audio-added',

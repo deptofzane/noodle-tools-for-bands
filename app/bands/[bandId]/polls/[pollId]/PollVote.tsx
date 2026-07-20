@@ -23,7 +23,7 @@ export function PollVote({
   initialOptions,
   initialTotal,
   initialMyVote,
-  closed = false,
+  closed: initialClosed = false,
 }: {
   bandId: string;
   pollId: string;
@@ -37,6 +37,7 @@ export function PollVote({
   const [options, setOptions] = useState(initialOptions);
   const [total, setTotal] = useState(initialTotal);
   const [myVote, setMyVote] = useState(initialMyVote);
+  const [closed, setClosed] = useState(initialClosed);
   const [busy, setBusy] = useState(false);
 
   const vote = async (optionId: string) => {
@@ -54,6 +55,7 @@ export function PollVote({
           options: { id: string; votes: number }[];
           total: number;
           myVote: string | null;
+          closed: boolean;
         };
       });
       setOptions((prev) =>
@@ -64,6 +66,10 @@ export function PollVote({
       );
       setTotal(data.total);
       setMyVote(data.myVote);
+      if (data.closed && !closed) {
+        setClosed(true);
+        showToast('Everyone voted — the poll closed automatically.', 'success');
+      }
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
     } finally {

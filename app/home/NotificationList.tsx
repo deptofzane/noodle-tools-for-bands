@@ -17,6 +17,7 @@ export interface NotificationItem {
     | 'poll-closed'
     | 'poll-updated'
     | 'poll-cancelled'
+    | 'poll-auto-closed'
     | 'setlist-created'
     | 'audio-added';
   subjectType: 'conversation' | 'event' | 'band' | 'poll' | 'setlist';
@@ -76,6 +77,8 @@ function messageFor(n: NotificationItem): string {
       return `${who} closed the poll: ${n.subjectLabel ?? 'Untitled'}`;
     case 'poll-cancelled':
       return `${who} cancelled the poll: ${n.subjectLabel ?? 'Untitled'}`;
+    case 'poll-auto-closed':
+      return `Everyone voted — the poll closed automatically: ${n.subjectLabel ?? 'Untitled'}`;
     case 'poll-updated':
       return `${who} updated the poll: ${n.subjectLabel ?? 'Untitled'}`;
     case 'setlist-created':

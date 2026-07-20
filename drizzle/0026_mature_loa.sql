@@ -1,0 +1,1 @@
+ALTER TYPE "public"."notification_kind" ADD VALUE 'poll-auto-closed' BEFORE 'setlist-created';

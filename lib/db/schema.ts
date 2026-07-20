@@ -179,6 +179,7 @@ export const notificationKind = pgEnum('notification_kind', [
   'poll-closed',
   'poll-updated',
   'poll-cancelled',
+  'poll-auto-closed',
   'setlist-created',
   'audio-added',
 ]);

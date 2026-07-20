@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from './index';
 import { bandMembers, bands, pollOptions, pollVotes, polls } from './schema';
 
@@ -170,6 +170,36 @@ export async function getPoll(
     totalVotes: votes.length,
     myVote,
   };
+}
+
+/**
+ * True when every current member of `bandId` has voted in the poll — used to
+ * auto-close a poll once participation is complete. Only votes from current
+ * members count; a band with no members is never "complete".
+ */
+export async function allMembersVoted(
+  pollId: string,
+  bandId: string,
+): Promise<boolean> {
+  const [members] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(bandMembers)
+    .where(eq(bandMembers.bandId, bandId));
+  const memberCount = members?.count ?? 0;
+  if (memberCount === 0) return false;
+
+  const [voted] = await db
+    .select({ count: sql<number>`count(distinct ${pollVotes.userId})::int` })
+    .from(pollVotes)
+    .innerJoin(
+      bandMembers,
+      and(
+        eq(bandMembers.userId, pollVotes.userId),
+        eq(bandMembers.bandId, bandId),
+      ),
+    )
+    .where(eq(pollVotes.pollId, pollId));
+  return (voted?.count ?? 0) >= memberCount;
 }
 
 /** Close a poll: stop voting, keep it (and its votes) for history. */
