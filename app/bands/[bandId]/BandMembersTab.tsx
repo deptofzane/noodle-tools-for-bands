@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { formatRelativeTime } from '@/lib/format';
 import { MinimizeToggle, type Member } from './bandDetailShared';
+import { PollCard } from './PollCard';
 import { usePersistedBoolean } from '../../usePersistedBoolean';
 
 interface PollSummary {
@@ -60,17 +60,13 @@ export function BandMembersTab({
   const renderPollList = (list: PollSummary[]) => (
     <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
       {list.map((p) => (
-        <li key={p.id}>
-          <Link
-            href={`/bands/${bandId}/polls/${p.id}`}
-            className="flex items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
-          >
-            <span className="min-w-0 truncate font-medium">{p.title}</span>
-            <span className="shrink-0 text-xs text-neutral-500">
-              {formatRelativeTime(p.createdAt)}
-            </span>
-          </Link>
-        </li>
+        <PollCard
+          key={p.id}
+          bandId={bandId}
+          id={p.id}
+          title={p.title}
+          createdAt={p.createdAt}
+        />
       ))}
     </ul>
   );

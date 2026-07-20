@@ -6,6 +6,35 @@ import { notify } from '@/lib/db/notifications';
 const MAX_OPTIONS = 20;
 
 /**
+ * GET /api/bands/[bandId]/polls/[pollId] → the poll with its description,
+ * options + tallies, total, and the viewer's vote. Requires band membership;
+ * the poll must belong to the band. Used to expand a poll card inline.
+ */
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ bandId: string; pollId: string }> },
+) {
+  const { bandId, pollId } = await params;
+  const guard = await requireBandMember(bandId);
+  if (guard instanceof NextResponse) return guard;
+  const { user } = guard;
+
+  const poll = await getPoll(pollId, user.id);
+  if (!poll || poll.bandId !== bandId)
+    return NextResponse.json({ error: 'not_found' }, { status: 404 });
+
+  return NextResponse.json({
+    id: poll.id,
+    title: poll.title,
+    description: poll.description,
+    closed: poll.closed,
+    options: poll.options,
+    totalVotes: poll.totalVotes,
+    myVote: poll.myVote,
+  });
+}
+
+/**
  * PATCH /api/bands/[bandId]/polls/[pollId]
  *   Body: { title, description?, options: (string | { id?, text })[] } — edit
  *   the poll. Existing options keep their votes (matched by id); dropped ones
