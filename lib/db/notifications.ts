@@ -48,6 +48,7 @@ export interface NotificationDTO {
 const SELF_VISIBLE_KINDS = [
   'poll-created',
   'poll-updated',
+  'poll-closed',
   'event-added',
   'setlist-created',
   'audio-added',
