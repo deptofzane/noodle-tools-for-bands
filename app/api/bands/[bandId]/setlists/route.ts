@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireBandMember } from '@/lib/api-guard';
 import { listBandConversations } from '@/lib/db/conversations';
+import { notify } from '@/lib/db/notifications';
 import {
   createSetlist,
   listBandSetlists,
@@ -82,6 +83,14 @@ export async function POST(
     createdBy: user.id,
     name,
     items,
+  });
+  await notify({
+    bandId,
+    actorId: user.id,
+    kind: 'setlist-created',
+    subjectType: 'setlist',
+    subjectId: setlist.id,
+    subjectLabel: setlist.name,
   });
   return NextResponse.json({ setlist }, { status: 201 });
 }

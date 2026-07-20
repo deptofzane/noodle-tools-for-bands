@@ -8,6 +8,7 @@ import {
   findOrCreateConversation,
   listBandConversations,
 } from '@/lib/db/conversations';
+import { notify } from '@/lib/db/notifications';
 import type { Readable } from 'node:stream';
 import { addAudioVersion, hasSongFile } from '@/lib/db/song-files';
 import { MAX_AUDIO_BYTES, normalizeAudioMime } from '@/lib/audio-mime';
@@ -47,6 +48,7 @@ export async function POST(
   const { bandId } = await params;
   const guard = await requireBandMember(bandId);
   if (guard instanceof NextResponse) return guard;
+  const { user } = guard;
 
   // Local upload: multipart `file` → new conversation + stored audio,
   // no Drive round-trip. Mirrors the Drive import below.
@@ -96,6 +98,14 @@ export async function POST(
         { status: 502 },
       );
     }
+    await notify({
+      bandId,
+      actorId: user.id,
+      kind: 'audio-added',
+      subjectType: 'conversation',
+      subjectId: conversation.id,
+      subjectLabel: conversation.audioFileName ?? fileName,
+    });
     return NextResponse.json({ conversation }, { status: 201 });
   }
 
@@ -120,6 +130,7 @@ export async function POST(
   // they just opened the file via the Picker, so they can read it. After
   // this the file is owned by us; playback no longer touches Drive.
   // Re-registering an existing song with no stored audio backfills it.
+  let addedAudio = false;
   if (!(await hasSongFile(conversation.id, 'audio'))) {
     const session = await auth();
     if (!session?.accessToken) {
@@ -161,6 +172,7 @@ export async function POST(
           driveFileId: driveAudioFileId,
         }),
       );
+      addedAudio = true;
     } catch (err) {
       console.error('[conversations] audio import failed', err);
       return NextResponse.json(
@@ -168,6 +180,17 @@ export async function POST(
         { status: 502 },
       );
     }
+  }
+
+  if (addedAudio) {
+    await notify({
+      bandId,
+      actorId: user.id,
+      kind: 'audio-added',
+      subjectType: 'conversation',
+      subjectId: conversation.id,
+      subjectLabel: conversation.audioFileName ?? audioFileName,
+    });
   }
 
   return NextResponse.json({ conversation }, { status: 201 });

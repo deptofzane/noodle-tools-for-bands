@@ -178,6 +178,8 @@ export const notificationKind = pgEnum('notification_kind', [
   'poll-created',
   'poll-closed',
   'poll-updated',
+  'setlist-created',
+  'audio-added',
 ]);
 
 // What a notification points at, for building its link.
@@ -186,6 +188,7 @@ export const notificationSubject = pgEnum('notification_subject', [
   'event',
   'band',
   'poll',
+  'setlist',
 ]);
 
 export const notifications = pgTable(

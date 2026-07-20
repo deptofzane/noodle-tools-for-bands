@@ -11,7 +11,9 @@ type Kind =
   | 'band-updated'
   | 'poll-created'
   | 'poll-closed'
-  | 'poll-updated';
+  | 'poll-updated'
+  | 'setlist-created'
+  | 'audio-added';
 
 const KINDS: { kind: Kind; label: string; description: string }[] = [
   {
@@ -58,6 +60,16 @@ const KINDS: { kind: Kind; label: string; description: string }[] = [
     kind: 'poll-updated',
     label: 'Poll updates',
     description: 'When a poll in one of your bands is edited (and re-opened).',
+  },
+  {
+    kind: 'setlist-created',
+    label: 'New setlists',
+    description: 'When a setlist is created in one of your bands.',
+  },
+  {
+    kind: 'audio-added',
+    label: 'New audio',
+    description: 'When audio is added to one of your bands.',
   },
 ];
 

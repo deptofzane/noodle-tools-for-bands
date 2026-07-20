@@ -15,8 +15,10 @@ export interface NotificationItem {
     | 'band-updated'
     | 'poll-created'
     | 'poll-closed'
-    | 'poll-updated';
-  subjectType: 'conversation' | 'event' | 'band' | 'poll';
+    | 'poll-updated'
+    | 'setlist-created'
+    | 'audio-added';
+  subjectType: 'conversation' | 'event' | 'band' | 'poll' | 'setlist';
   subjectId: string | null;
   subjectLabel: string | null;
   bandId: string;
@@ -44,6 +46,10 @@ function hrefFor(n: NotificationItem): string {
       return n.subjectId
         ? `/bands/${n.bandId}/polls/${n.subjectId}`
         : `/bands/${n.bandId}`;
+    case 'setlist':
+      return n.subjectId
+        ? `/bands/${n.bandId}/setlists/${n.subjectId}`
+        : `/bands/${n.bandId}`;
   }
 }
 
@@ -69,6 +75,10 @@ function messageFor(n: NotificationItem): string {
       return `${who} closed the poll: ${n.subjectLabel ?? 'Untitled'}`;
     case 'poll-updated':
       return `${who} updated the poll: ${n.subjectLabel ?? 'Untitled'}`;
+    case 'setlist-created':
+      return `${who} created a setlist: ${n.subjectLabel ?? 'Untitled'}`;
+    case 'audio-added':
+      return `${who} added audio: ${n.subjectLabel ?? 'Untitled'}`;
   }
 }
 

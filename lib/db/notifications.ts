@@ -43,9 +43,15 @@ export interface NotificationDTO {
   isSelf: boolean;
 }
 
-// Kinds a user also receives for their own actions; every other kind
-// excludes the actor from their own feed.
-const SELF_VISIBLE_KINDS = ['poll-created', 'poll-updated'] as const;
+// Kinds a user also receives for their own actions (creation events); every
+// other kind excludes the actor from their own feed.
+const SELF_VISIBLE_KINDS = [
+  'poll-created',
+  'poll-updated',
+  'event-added',
+  'setlist-created',
+  'audio-added',
+] as const;
 
 /** SQL: notification is from someone else, or is a self-visible kind. */
 function actorVisible(userId: string) {
