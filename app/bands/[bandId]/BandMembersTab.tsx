@@ -14,9 +14,9 @@ interface PollSummary {
 }
 
 /**
- * The Members tab: a Polls section (create + list the band's open polls, with
- * closed polls tucked into a collapsible history) and the band's members in a
- * collapsible container.
+ * The Polls tab: a Polls section (create + list the band's open polls), the
+ * band's members in a collapsible container, and — below that — a collapsible
+ * "Closed polls" history (shown only when there are closed polls).
  */
 export function BandMembersTab({
   bandId,
@@ -95,26 +95,6 @@ export function BandMembersTab({
             No open polls. Use “New poll” to ask the band something.
           </p>
         )}
-
-        {closedPolls.length > 0 && (
-          <div className="mt-1 flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <MinimizeToggle
-                minimized={closedMinimized}
-                onToggle={() => setClosedMinimized((v) => !v)}
-                label="Closed polls"
-              >
-                <h3 className="text-xs font-medium text-neutral-500">
-                  Closed polls
-                </h3>
-              </MinimizeToggle>
-              <span className="text-xs text-neutral-500">
-                <span aria-hidden="true">·</span> {closedPolls.length}
-              </span>
-            </div>
-            {!closedMinimized && renderPollList(closedPolls)}
-          </div>
-        )}
       </section>
 
       <section className="flex flex-col gap-2">
@@ -158,6 +138,24 @@ export function BandMembersTab({
           </ul>
         )}
       </section>
+
+      {closedPolls.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <MinimizeToggle
+              minimized={closedMinimized}
+              onToggle={() => setClosedMinimized((v) => !v)}
+              label="Closed polls"
+            >
+              <h2 className="text-sm font-medium">Closed polls</h2>
+            </MinimizeToggle>
+            <span className="text-xs text-neutral-500">
+              <span aria-hidden="true">·</span> {closedPolls.length}
+            </span>
+          </div>
+          {!closedMinimized && renderPollList(closedPolls)}
+        </section>
+      )}
     </div>
   );
 }
