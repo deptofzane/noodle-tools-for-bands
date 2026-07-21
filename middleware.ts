@@ -13,6 +13,9 @@ import authConfig from './auth.config';
  * Routing rules:
  *   - `/login`, `/signup`, `/forgot`, `/reset`, and `/api/health` are public
  *   - `/api/auth/*` (Auth.js handlers + register/forgot/reset) are always allowed
+ *   - `/api/calendar/<token>` (the iCalendar feed) is public — calendar apps
+ *     fetch it with no session; the unguessable token is its credential. Only
+ *     the single-segment feed path is exempt, not the management sub-routes.
  *   - Everything else requires a signed-in user; unauthenticated
  *     requests are redirected to `/login?callbackUrl=<original-path>`
  */
@@ -26,11 +29,17 @@ const PUBLIC_PATHS = new Set<string>([
   '/api/health',
 ]);
 
+// The unauthenticated calendar feed: exactly `/api/calendar/<token>` (one
+// segment). `/api/calendar/feed/...` management routes are NOT matched and
+// stay behind auth.
+const CALENDAR_FEED_RE = /^\/api\/calendar\/[^/]+$/;
+
 export default auth((req) => {
   const { pathname } = req.nextUrl;
 
   if (pathname.startsWith('/api/auth')) return;
   if (PUBLIC_PATHS.has(pathname)) return;
+  if (CALENDAR_FEED_RE.test(pathname)) return;
   if (req.auth) return;
 
   const url = new URL('/login', req.nextUrl);

@@ -4,8 +4,10 @@ import { getCurrentDbUser } from '@/lib/current-user';
 import { getUserAccount } from '@/lib/db/accounts';
 import { hasAllDriveScopes } from '@/lib/google';
 import { getMutedKinds } from '@/lib/db/notifications';
+import { getOrCreateFeedToken } from '@/lib/db/calendarFeeds';
 import { startGoogleConnect, disconnectGoogle } from '../account-actions';
 import { ThemeToggle } from '../ThemeToggle';
+import { CalendarSubscription } from './CalendarSubscription';
 import { NotificationPreferences } from './NotificationPreferences';
 import { SettingsTabs, type SettingsTab } from './SettingsTabs';
 
@@ -41,9 +43,10 @@ export default async function SettingsPage({
   const { tab, link } = await searchParams;
 
   const dbUser = await getCurrentDbUser();
-  const [mutedKinds, googleAccount] = await Promise.all([
+  const [mutedKinds, googleAccount, feedToken] = await Promise.all([
     getMutedKinds(session.user.sub ?? ''),
     dbUser ? getUserAccount(dbUser.id, 'google') : Promise.resolve(null),
+    dbUser ? getOrCreateFeedToken(dbUser.id) : Promise.resolve(null),
   ]);
   const hasPassword = Boolean(dbUser?.passwordHash);
   const driveConnected = hasAllDriveScopes(session.scopes);
@@ -206,6 +209,15 @@ export default async function SettingsPage({
       label: 'Notifications',
       content: <NotificationPreferences initialMuted={mutedKinds} />,
     },
+    ...(feedToken
+      ? [
+          {
+            id: 'calendar',
+            label: 'Calendar',
+            content: <CalendarSubscription token={feedToken} />,
+          } satisfies SettingsTab,
+        ]
+      : []),
     { id: 'appearance', label: 'Appearance', content: appearance },
   ];
 

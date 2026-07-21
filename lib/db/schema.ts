@@ -607,3 +607,26 @@ export const eventMembers = pgTable(
     index('event_members_user_idx').on(t.userId),
   ],
 );
+
+// A private, revocable token backing a per-user iCalendar subscription feed.
+// The token is a bearer capability embedded in the feed URL (calendar apps
+// can't log in), so it must be unguessable. Resetting swaps the token, which
+// invalidates the previously-shared URL. One feed per user for now; a per-band
+// feed could be added later as a second scope.
+export const calendarFeeds = pgTable(
+  'calendar_feeds',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    token: text('token').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('calendar_feeds_token_unique').on(t.token),
+    uniqueIndex('calendar_feeds_user_unique').on(t.userId),
+  ],
+);

@@ -129,6 +129,66 @@ export async function listEventsForUserInRange(
   return rows;
 }
 
+export interface FeedEvent {
+  id: string;
+  bandName: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  time: string | null;
+  location: string | null;
+  details: string | null;
+  setlistName: string | null;
+  updatedAt: Date;
+}
+
+/** `base` shifted by `days`, as a UTC YYYY-MM-DD string. */
+function isoDateOffset(base: Date, days: number): string {
+  return new Date(base.getTime() + days * 86_400_000).toISOString().slice(0, 10);
+}
+
+/**
+ * Events for a user's calendar subscription feed — the same visibility union
+ * as listEventsForUserInRange, but windowed (default: the past year through
+ * two years out) to keep the feed finite, and carrying the fields the ICS
+ * document needs (details, setlist name, updatedAt).
+ */
+export async function listEventsForFeed(
+  userId: string,
+  window?: { from?: string; to?: string },
+): Promise<FeedEvent[]> {
+  const now = new Date();
+  const from = window?.from ?? isoDateOffset(now, -365);
+  const to = window?.to ?? isoDateOffset(now, 365 * 2);
+
+  const bandIds = await userBandIds(userId);
+  const visible =
+    bandIds.length > 0
+      ? or(inArray(events.bandId, bandIds), eq(eventMembers.userId, userId))
+      : eq(eventMembers.userId, userId);
+
+  return db
+    .select({
+      id: events.id,
+      bandName: bands.name,
+      title: events.title,
+      date: events.date,
+      time: events.time,
+      location: events.location,
+      details: events.details,
+      setlistName: setlists.name,
+      updatedAt: events.updatedAt,
+    })
+    .from(events)
+    .innerJoin(bands, eq(bands.id, events.bandId))
+    .leftJoin(
+      eventMembers,
+      and(eq(eventMembers.eventId, events.id), eq(eventMembers.userId, userId)),
+    )
+    .leftJoin(setlists, eq(setlists.id, events.setlistId))
+    .where(and(gte(events.date, from), lte(events.date, to), visible))
+    .orderBy(asc(events.date), asc(events.time));
+}
+
 /**
  * All of a band's events (its "shows"), newest date first, each with its
  * associated setlist name if any. Caller gates on band membership.
