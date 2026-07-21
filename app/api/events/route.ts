@@ -4,6 +4,20 @@ import { getMembership } from '@/lib/db/bands';
 import { createEvent, listEventsForUserInRange } from '@/lib/db/events';
 import { getSetlist } from '@/lib/db/setlists';
 import { notify } from '@/lib/db/notifications';
+import { addHoursToTime, DEFAULT_EVENT_DURATION_HOURS } from '@/lib/format';
+
+const TIME_RE = /^\d{2}:\d{2}$/;
+
+/**
+ * Resolve an event's end time: only meaningful with a start; a valid provided
+ * end wins, otherwise it defaults to `DEFAULT_EVENT_DURATION_HOURS` after the
+ * start. Null for all-day (no start) events.
+ */
+function resolveEndTime(time: string | null, rawEnd: string | null): string | null {
+  if (!time) return null;
+  if (rawEnd && TIME_RE.test(rawEnd)) return rawEnd;
+  return addHoursToTime(time, DEFAULT_EVENT_DURATION_HOURS);
+}
 
 /**
  * GET  /api/events?from=YYYY-MM-DD&to=YYYY-MM-DD
@@ -11,9 +25,10 @@ import { notify } from '@/lib/db/notifications';
  *     with a date in the range.
  *
  * POST /api/events
- *   Body: { bandId, title, date, time?, location?, details?, setlistId? }
- *   → create an event owned by a band the user belongs to. A setlistId, if
- *     given, must belong to that band.
+ *   Body: { bandId, title, date, time?, endTime?, location?, details?,
+ *     setlistId? } → create an event owned by a band the user belongs to. If a
+ *     start `time` is given, `endTime` defaults to two hours later. A setlistId,
+ *     if given, must belong to that band.
  */
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -82,11 +97,13 @@ export async function POST(req: Request) {
       );
   }
 
+  const time = str(body?.time);
   const { id } = await createEvent({
     bandId,
     title,
     date,
-    time: str(body?.time),
+    time,
+    endTime: resolveEndTime(time, str(body?.endTime)),
     location: str(body?.location),
     details: str(body?.details),
     setlistId,

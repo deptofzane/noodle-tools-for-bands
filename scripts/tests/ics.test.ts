@@ -7,6 +7,7 @@ const baseEvent: IcsEvent = {
   title: 'Gig',
   date: '2026-07-21',
   time: '19:00',
+  endTime: null,
   location: null,
   description: null,
   url: null,
@@ -35,6 +36,24 @@ test('ics: timed event uses floating local time + default 2h end', () => {
   assert.ok(ics.includes('DTEND:20260721T210000'), 'start + 2h');
   assert.ok(ics.includes('UID:abc-123@sidestage.app'), 'stable UID');
   assert.ok(ics.includes('DTSTAMP:20260720T123000Z'), 'DTSTAMP in UTC');
+});
+
+test('ics: an explicit end time is used verbatim', () => {
+  const ics = buildCalendar({
+    name: 'Sidestage',
+    events: [{ ...baseEvent, endTime: '22:30' }],
+  });
+  assert.ok(ics.includes('DTSTART:20260721T190000'), 'start');
+  assert.ok(ics.includes('DTEND:20260721T223000'), 'explicit end, not +2h');
+});
+
+test('ics: an end at/before the start rolls into the next day', () => {
+  const ics = buildCalendar({
+    name: 'Sidestage',
+    events: [{ ...baseEvent, time: '22:00', endTime: '01:00' }],
+  });
+  assert.ok(ics.includes('DTSTART:20260721T220000'), 'late start');
+  assert.ok(ics.includes('DTEND:20260722T010000'), 'end next day');
 });
 
 test('ics: default duration is configurable', () => {

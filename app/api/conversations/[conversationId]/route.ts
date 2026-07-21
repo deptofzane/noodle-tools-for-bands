@@ -8,6 +8,7 @@ import {
   renameConversation,
   setConversationArchived,
   setConversationClosed,
+  setConversationMeta,
 } from '@/lib/db/conversations';
 import { getConversationActivity } from '@/lib/db/activity';
 import { loadNotes } from '@/lib/db/notes';
@@ -19,8 +20,9 @@ import { notify } from '@/lib/db/notifications';
  *   → { conversation, closed, notes (threaded), activity, members, myRole }
  *
  * PATCH  /api/conversations/[conversationId]
- *   Body may include any of: { closed?, name?, bandId?, archived? } —
- *   open/close, rename, move to another band you belong to, or archive.
+ *   Body may include any of: { closed?, name?, bandId?, archived?, bpm?, key? }
+ *   — open/close, rename, move to another band you belong to, archive, or set
+ *   the optional tempo / key (send null to clear either).
  *
  * DELETE /api/conversations/[conversationId]
  *   → delete the song (cascades notes, mentions, activity, files).
@@ -105,6 +107,46 @@ export async function PATCH(
 
   if (typeof body.archived === 'boolean') {
     conversation = await setConversationArchived(conversationId, body.archived);
+    edited = true;
+  }
+
+  // Optional song metadata (tempo / key). Present-but-unchanged is a no-op;
+  // send null to clear either.
+  const meta: { bpm?: number | null; key?: string | null } = {};
+  if ('bpm' in body) {
+    const raw = body.bpm;
+    let bpm: number | null;
+    if (raw === null || raw === '') bpm = null;
+    else if (
+      typeof raw === 'number' &&
+      Number.isInteger(raw) &&
+      raw >= 1 &&
+      raw <= 400
+    )
+      bpm = raw;
+    else
+      return NextResponse.json(
+        { error: 'bad_bpm', message: 'BPM must be a whole number from 1 to 400.' },
+        { status: 400 },
+      );
+    if (bpm !== (conversation.bpm ?? null)) meta.bpm = bpm;
+  }
+  if ('key' in body) {
+    const raw = body.key;
+    let key: string | null;
+    if (raw === null || raw === '') key = null;
+    else if (typeof raw === 'string') {
+      const t = raw.trim();
+      key = t ? t.slice(0, 24) : null;
+    } else
+      return NextResponse.json(
+        { error: 'bad_key', message: 'Key must be text.' },
+        { status: 400 },
+      );
+    if (key !== (conversation.key ?? null)) meta.key = key;
+  }
+  if (meta.bpm !== undefined || meta.key !== undefined) {
+    conversation = await setConversationMeta(conversationId, meta);
     edited = true;
   }
 

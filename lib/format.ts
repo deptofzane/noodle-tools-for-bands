@@ -84,3 +84,36 @@ export function formatTime12h(s: string): string {
   h = h % 12 || 12;
   return `${h}:${m[2]} ${ampm}`;
 }
+
+/** Default gap between an event's start and end time, in hours. */
+export const DEFAULT_EVENT_DURATION_HOURS = 2;
+
+/**
+ * Add whole hours to an `HH:MM` clock time, wrapping past midnight. Returns
+ * `HH:MM`, or null if the input isn't a valid time.
+ */
+export function addHoursToTime(time: string, hours: number): string | null {
+  const m = time.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const day = 24 * 60;
+  const total =
+    (((Number(m[1]) * 60 + Number(m[2]) + hours * 60) % day) + day) % day;
+  const p = (x: number) => x.toString().padStart(2, '0');
+  return `${p(Math.floor(total / 60))}:${p(total % 60)}`;
+}
+
+/** "7:00 PM – 9:00 PM", or just the start when there's no end. */
+export function formatTimeRange(start: string, end: string | null): string {
+  return end ? `${formatTime12h(start)} – ${formatTime12h(end)}` : formatTime12h(start);
+}
+
+/** A song's tempo/key as a compact line ("128 BPM · Am"), or null if neither. */
+export function formatSongMeta(
+  bpm: number | null,
+  key: string | null,
+): string | null {
+  const parts: string[] = [];
+  if (bpm != null) parts.push(`${bpm} BPM`);
+  if (key) parts.push(key);
+  return parts.length ? parts.join(' · ') : null;
+}

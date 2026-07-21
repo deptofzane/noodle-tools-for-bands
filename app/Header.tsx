@@ -169,7 +169,7 @@ export function Header() {
             role="status"
             aria-live="polite"
             aria-label={pendingCount > 0 ? 'Loading' : undefined}
-            className="ml-2 inline-flex h-5 w-5 items-center justify-center"
+            className="mx-2 inline-flex h-5 w-5 items-center justify-center"
           >
             {pendingCount > 0 && (
               <span

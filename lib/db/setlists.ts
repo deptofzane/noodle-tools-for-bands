@@ -19,6 +19,10 @@ export interface SetlistSong {
   name: string;
   /** Audio duration in whole seconds; null for markers / unknown. */
   songLength: number | null;
+  /** Optional song tempo; null for markers / unset. */
+  bpm: number | null;
+  /** Optional song key; null for markers / unset. */
+  key: string | null;
 }
 
 /** One item to persist: a song (conversationId) or a marker (label). */
@@ -35,6 +39,7 @@ export interface SetlistWithSongs {
   id: string;
   name: string;
   updatedAt: string;
+  archived: boolean;
   songs: SetlistSong[];
 }
 
@@ -101,6 +106,8 @@ export async function getSetlist(
       id: setlistSongs.id,
       conversationId: setlistSongs.conversationId,
       audioFileName: conversations.audioFileName,
+      bpm: conversations.bpm,
+      key: conversations.key,
       label: setlistSongs.label,
       songLength: songFiles.songLength,
     })
@@ -125,6 +132,8 @@ export async function getSetlist(
     conversationId: r.conversationId,
     name: resolveName(r.audioFileName, r.label),
     songLength: r.songLength,
+    bpm: r.bpm,
+    key: r.key,
   }));
   return { id: row.id, bandId: row.bandId, name: row.name, songs };
 }
@@ -183,14 +192,17 @@ export async function setSetlistSongs(
   });
 }
 
-/** Just the id + name of a band's setlists (newest first) — for pickers. */
+/**
+ * Just the id + name of a band's active (non-archived) setlists (newest
+ * first) — for pickers (event association, add-to-setlist).
+ */
 export async function listBandSetlistNames(
   bandId: string,
 ): Promise<{ id: string; name: string }[]> {
   return db
     .select({ id: setlists.id, name: setlists.name })
     .from(setlists)
-    .where(eq(setlists.bandId, bandId))
+    .where(and(eq(setlists.bandId, bandId), eq(setlists.archived, false)))
     .orderBy(desc(setlists.updatedAt));
 }
 
@@ -212,6 +224,8 @@ export async function listBandSetlists(
       id: setlistSongs.id,
       conversationId: setlistSongs.conversationId,
       audioFileName: conversations.audioFileName,
+      bpm: conversations.bpm,
+      key: conversations.key,
       label: setlistSongs.label,
       songLength: songFiles.songLength,
     })
@@ -238,6 +252,8 @@ export async function listBandSetlists(
       conversationId: s.conversationId,
       name: resolveName(s.audioFileName, s.label),
       songLength: s.songLength,
+      bpm: s.bpm,
+      key: s.key,
     });
     byList.set(s.setlistId, arr);
   }
@@ -246,8 +262,20 @@ export async function listBandSetlists(
     id: l.id,
     name: l.name,
     updatedAt: l.updatedAt.toISOString(),
+    archived: l.archived,
     songs: byList.get(l.id) ?? [],
   }));
+}
+
+/** Archive or unarchive a setlist (reversible). Bumps updatedAt. */
+export async function setSetlistArchived(
+  setlistId: string,
+  archived: boolean,
+): Promise<void> {
+  await db
+    .update(setlists)
+    .set({ archived, updatedAt: new Date() })
+    .where(eq(setlists.id, setlistId));
 }
 
 export interface PracticeSong {

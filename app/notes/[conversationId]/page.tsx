@@ -94,6 +94,20 @@ export default async function NotesPage({
               isDefault: v.isDefault,
             }))}
           />
+          {(conversation.bpm != null || conversation.key) && (
+            <div className="flex justify-center gap-4 text-sm text-neutral-600 dark:text-neutral-400">
+              {conversation.bpm != null && (
+                <span>
+                  <span className="font-medium">{conversation.bpm}</span> BPM
+                </span>
+              )}
+              {conversation.key && (
+                <span>
+                  Key of <span className="font-medium">{conversation.key}</span>
+                </span>
+              )}
+            </div>
+          )}
           {sheetMusic && (
             <div className="flex gap-2 justify-center">
               <Link

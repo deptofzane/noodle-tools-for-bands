@@ -4,7 +4,7 @@ import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { getEventForUser, listEventMembers } from '@/lib/db/events';
 import { getSetlist } from '@/lib/db/setlists';
-import { formatDateLong, formatDuration, formatTime12h } from '@/lib/format';
+import { formatDateLong, formatDuration, formatTimeRange } from '@/lib/format';
 import { PageHeader } from '../../../PageHeader';
 import { EventMembersClient } from './EventMembersClient';
 
@@ -74,7 +74,7 @@ export default async function EventPage({
         {event.time && (
           <div>
             <span className="font-medium">Time:</span>{' '}
-            {formatTime12h(event.time)}
+            {formatTimeRange(event.time, event.endTime)}
           </div>
         )}
         {event.location && (

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { formatDateShort, formatTime12h } from '@/lib/format';
+import { formatDateShort, formatTimeRange } from '@/lib/format';
 
 export interface UpcomingShow {
   id: string;
@@ -11,6 +11,7 @@ export interface UpcomingShow {
   title: string;
   date: string; // YYYY-MM-DD
   time: string | null;
+  endTime: string | null;
   location: string | null;
   setlistId: string | null;
 }
@@ -97,7 +98,7 @@ export function UpcomingShows({
                   <span className="block font-medium text-neutral-700 dark:text-neutral-300">
                     {formatDateShort(s.date)}
                   </span>
-                  {s.time && <span>{formatTime12h(s.time)}</span>}
+                  {s.time && <span>{formatTimeRange(s.time, s.endTime)}</span>}
                 </span>
               </Link>
               {s.setlistId && (
@@ -105,14 +106,14 @@ export function UpcomingShows({
                   <Link
                     href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice`}
                     title="Practice this event’s setlist"
-                    className="rounded-md border border-neutral-300 px-2.5 py-1 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                    className="rounded-md border border-neutral-300 px-2.5 py-2 sm:py-1 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
                   >
                     Practice
                   </Link>
                   <Link
                     href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice/live`}
                     title="Perform this event’s setlist live"
-                    className="rounded-md border border-neutral-300 px-2.5 py-1 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                    className="rounded-md border border-neutral-300 px-2.5 py-2 sm:py-1 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
                   >
                     Live
                   </Link>

@@ -143,7 +143,7 @@ export function BandMembersTab({
               onToggle={() => setClosedMinimized((v) => !v)}
               label="Closed polls"
             >
-              <h2 className="text-sm font-medium">Closed polls</h2>
+              <h2 className="text-sm font-medium text-neutral-500">Closed polls</h2>
             </MinimizeToggle>
             <span className="text-xs text-neutral-500">
               <span aria-hidden="true">·</span> {closedPolls.length}

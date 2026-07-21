@@ -13,12 +13,13 @@ import { useToast } from '../../ToastProvider';
 import { BandMembersTab } from './BandMembersTab';
 import { BandAudioTab } from './BandAudioTab';
 import { BandOverviewTab } from './BandOverviewTab';
+import { BandSetlistsTab } from './BandSetlistsTab';
 import { AddToSetlistModal } from './AddToSetlistModal';
 import { AddAudioSourceModal } from './AddAudioSourceModal';
 import { useBandData, useBandChat } from './bandDetailHooks';
 import type { Conversation } from './bandDetailShared';
 
-const BAND_TABS = ['overview', 'chat', 'polls', 'audio'] as const;
+const BAND_TABS = ['events', 'setlists', 'chat', 'audio', 'polls'] as const;
 type BandTab = (typeof BAND_TABS)[number];
 const ACTIVE_TAB_KEY = 'bandActiveTab';
 
@@ -32,7 +33,7 @@ export function BandDetailClient({
   bandId,
   apiKey,
   currentUserId,
-  initialTab = 'overview',
+  initialTab = 'events',
 }: {
   bandId: string;
   apiKey: string;
@@ -73,7 +74,7 @@ export function BandDetailClient({
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
-    if (activeTab === 'overview') url.searchParams.delete('tab');
+    if (activeTab === 'events') url.searchParams.delete('tab');
     else url.searchParams.set('tab', activeTab);
     window.history.replaceState(window.history.state, '', url.toString());
   }, [activeTab]);
@@ -331,7 +332,7 @@ export function BandDetailClient({
       <div
         role="tablist"
         aria-label="Band sections"
-        className="flex gap-1 border-b border-neutral-200 dark:border-neutral-800"
+        className="flex gap-1 overflow-x-auto border-b border-neutral-200 dark:border-neutral-800"
       >
         {BAND_TABS.map((tab) => (
           <button
@@ -341,7 +342,7 @@ export function BandDetailClient({
             aria-selected={activeTab === tab}
             onClick={() => changeTab(tab)}
             className={
-              '-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium capitalize transition ' +
+              '-mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium capitalize transition ' +
               (activeTab === tab
                 ? 'border-blue-600 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200')
@@ -397,13 +398,20 @@ export function BandDetailClient({
         />
       )}
 
-      {activeTab === 'overview' && (
+      {activeTab === 'events' && (
         <BandOverviewTab
           bandId={bandId}
           shows={shows}
-          setlists={setlists}
           isOwner={isOwner}
           onLeave={() => setLeaveOpen(true)}
+        />
+      )}
+
+      {activeTab === 'setlists' && (
+        <BandSetlistsTab
+          bandId={bandId}
+          setlists={setlists}
+          onReload={reload}
         />
       )}
 
@@ -432,7 +440,7 @@ export function BandDetailClient({
       {addTarget && (
         <AddToSetlistModal
           target={addTarget}
-          setlists={setlists}
+          setlists={setlists.filter((s) => !s.archived)}
           selected={selectedSetlists}
           busy={addingToSetlist}
           onToggle={toggleSetlist}

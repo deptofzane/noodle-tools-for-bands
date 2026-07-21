@@ -4,14 +4,24 @@ import { getMembership } from '@/lib/db/bands';
 import { getEventForUser, updateEvent } from '@/lib/db/events';
 import { getSetlist } from '@/lib/db/setlists';
 import { notify } from '@/lib/db/notifications';
+import { addHoursToTime, DEFAULT_EVENT_DURATION_HOURS } from '@/lib/format';
 
 /**
  * PATCH /api/events/[eventId]
- *   Body: { title, date, time?, location?, details?, setlistId? }
- *   → edit the event. Only members of the owning band. A setlistId, if
- *     given, must belong to that band.
+ *   Body: { title, date, time?, endTime?, location?, details?, setlistId? }
+ *   → edit the event. Only members of the owning band. If a start `time` is
+ *     given, `endTime` defaults to two hours later. A setlistId, if given, must
+ *     belong to that band.
  */
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_RE = /^\d{2}:\d{2}$/;
+
+/** End time only applies with a start; defaults to +2h when not provided. */
+function resolveEndTime(time: string | null, rawEnd: string | null): string | null {
+  if (!time) return null;
+  if (rawEnd && TIME_RE.test(rawEnd)) return rawEnd;
+  return addHoursToTime(time, DEFAULT_EVENT_DURATION_HOURS);
+}
 
 export async function PATCH(
   req: Request,
@@ -59,10 +69,12 @@ export async function PATCH(
       );
   }
 
+  const time = str(body?.time);
   await updateEvent(eventId, {
     title,
     date,
-    time: str(body?.time),
+    time,
+    endTime: resolveEndTime(time, str(body?.endTime)),
     location: str(body?.location),
     details: str(body?.details),
     setlistId,

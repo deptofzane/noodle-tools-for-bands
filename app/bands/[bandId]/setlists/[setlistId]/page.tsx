@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { getSetlist } from '@/lib/db/setlists';
-import { formatDuration } from '@/lib/format';
+import { formatDuration, formatSongMeta } from '@/lib/format';
 import { PageHeader } from '../../../../PageHeader';
 
 /**
@@ -53,6 +53,11 @@ export default async function SetlistPage({
                 {` - ${formatDuration(s.songLength)}`}
               </span>
             ) : null}
+            {formatSongMeta(s.bpm, s.key) && (
+              <span className="text-neutral-400">
+                {` · ${formatSongMeta(s.bpm, s.key)}`}
+              </span>
+            )}
           </span>
         </li>
       );

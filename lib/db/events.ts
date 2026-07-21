@@ -25,6 +25,7 @@ export interface EventListItem {
   title: string;
   date: string; // YYYY-MM-DD
   time: string | null;
+  endTime: string | null;
   location: string | null;
   setlistId: string | null;
 }
@@ -34,6 +35,7 @@ export interface BandEvent {
   title: string;
   date: string; // YYYY-MM-DD
   time: string | null;
+  endTime: string | null;
   location: string | null;
   details: string | null;
   setlistId: string | null;
@@ -66,6 +68,7 @@ export async function createEvent(input: {
   title: string;
   date: string;
   time: string | null;
+  endTime: string | null;
   location: string | null;
   details: string | null;
   setlistId: string | null;
@@ -78,6 +81,7 @@ export async function createEvent(input: {
       title: input.title,
       date: input.date,
       time: input.time,
+      endTime: input.endTime,
       location: input.location,
       details: input.details,
       setlistId: input.setlistId,
@@ -110,6 +114,7 @@ export async function listEventsForUserInRange(
       title: events.title,
       date: events.date,
       time: events.time,
+      endTime: events.endTime,
       location: events.location,
       setlistId: events.setlistId,
     })
@@ -135,6 +140,7 @@ export interface FeedEvent {
   title: string;
   date: string; // YYYY-MM-DD
   time: string | null;
+  endTime: string | null;
   location: string | null;
   details: string | null;
   setlistName: string | null;
@@ -173,6 +179,7 @@ export async function listEventsForFeed(
       title: events.title,
       date: events.date,
       time: events.time,
+      endTime: events.endTime,
       location: events.location,
       details: events.details,
       setlistName: setlists.name,
@@ -200,6 +207,7 @@ export async function listBandEvents(bandId: string): Promise<BandEvent[]> {
       title: events.title,
       date: events.date,
       time: events.time,
+      endTime: events.endTime,
       location: events.location,
       details: events.details,
       setlistId: events.setlistId,
@@ -224,6 +232,7 @@ export async function getEventForUser(
       title: events.title,
       date: events.date,
       time: events.time,
+      endTime: events.endTime,
       location: events.location,
       details: events.details,
       setlistId: events.setlistId,
@@ -247,6 +256,7 @@ export async function updateEvent(
     title: string;
     date: string;
     time: string | null;
+    endTime: string | null;
     location: string | null;
     details: string | null;
     setlistId: string | null;

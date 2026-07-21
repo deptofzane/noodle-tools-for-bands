@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
-import { formatRelativeTime } from '@/lib/format';
+import { formatRelativeTime, formatSongMeta } from '@/lib/format';
 import type { Conversation } from './bandDetailShared';
 
 /**
@@ -22,6 +22,7 @@ export function SongRow({
   onToggleArchive: (c: Conversation) => void;
   onDelete: (c: Conversation) => void;
 }) {
+  const meta = formatSongMeta(c.bpm, c.key);
   return (
     <li className="flex items-center gap-2 pr-4 hover:bg-neutral-50 dark:hover:bg-neutral-900">
       <Link
@@ -38,6 +39,9 @@ export function SongRow({
             </span>
           )}
         </div>
+        {meta && (
+          <div className="mt-0.5 text-xs text-neutral-500">{meta}</div>
+        )}
         <div className="mt-0.5 text-xs text-neutral-500">
           Updated {formatRelativeTime(c.updatedAt)}
         </div>

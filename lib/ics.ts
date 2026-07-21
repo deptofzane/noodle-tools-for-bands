@@ -20,7 +20,12 @@ export interface IcsEvent {
   id: string;
   title: string;
   date: string; // YYYY-MM-DD
-  time: string | null; // HH:MM, or null for an all-day event
+  time: string | null; // HH:MM start, or null for an all-day event
+  /**
+   * HH:MM end. When set (and earlier than or equal to `time`) it's treated as
+   * the next day. When null, a timed event falls back to the default duration.
+   */
+  endTime: string | null;
   location: string | null;
   /** Pre-composed DESCRIPTION text (details, setlist, deep link), or null. */
   description: string | null;
@@ -122,7 +127,16 @@ function buildVEvent(ev: IcsEvent, durationMinutes: number): string {
 
   if (ev.time) {
     const start = wallClockToDate(ev.date, ev.time);
-    const end = new Date(start.getTime() + durationMinutes * 60_000);
+    let end: Date;
+    if (ev.endTime) {
+      end = wallClockToDate(ev.date, ev.endTime);
+      // An end at or before the start means it runs into the next day.
+      if (end.getTime() <= start.getTime()) {
+        end = new Date(end.getTime() + 24 * 60 * 60_000);
+      }
+    } else {
+      end = new Date(start.getTime() + durationMinutes * 60_000);
+    }
     lines.push(prop('DTSTART', dateTimeCompact(start)));
     lines.push(prop('DTEND', dateTimeCompact(end)));
   } else {

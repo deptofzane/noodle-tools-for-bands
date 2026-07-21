@@ -142,6 +142,9 @@ export const conversations = pgTable(
       .references(() => bands.id, { onDelete: 'cascade' }),
     driveAudioFileId: text('drive_audio_file_id').notNull(),
     audioFileName: text('audio_file_name'), // denormalized snapshot
+    // Optional song metadata — both start blank, neither is required.
+    bpm: integer('bpm'), // tempo in beats per minute
+    key: text('song_key'), // musical key, free text (e.g. "Am", "C#")
     closed: boolean('closed').notNull().default(false),
     // Archived songs stay in the band but move to a separate list.
     archived: boolean('archived').notNull().default(false),
@@ -449,6 +452,9 @@ export const setlists = pgTable(
       .notNull()
       .references(() => bands.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
+    // Archived setlists are hidden from the active list and can't be picked
+    // as targets (add-to-setlist, event association). Reversible.
+    archived: boolean('archived').notNull().default(false),
     createdBy: uuid('created_by')
       .notNull()
       .references(() => users.id),
@@ -502,7 +508,10 @@ export const events = pgTable(
       .references(() => bands.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
     date: date('date', { mode: 'string' }).notNull(), // YYYY-MM-DD
-    time: text('time'), // HH:MM, optional
+    time: text('time'), // HH:MM start, optional
+    // HH:MM end. Only meaningful with a start `time`; defaults to two hours
+    // after the start. Null for all-day (no start) events.
+    endTime: text('end_time'),
     location: text('location'),
     details: text('details'),
     // Optional associated setlist (must belong to the same band). Cleared

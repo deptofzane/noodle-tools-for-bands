@@ -16,13 +16,6 @@ export default async function CalendarPage() {
     <main className="main-container">
       <PageHeader defaultHref="/home" />
 
-      <div className="pb-4">
-        <h1 className="title-text">Calendar</h1>
-        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-          Mark upcoming events for your bands.
-        </p>
-      </div>
-
       <CalendarClient />
     </main>
   );

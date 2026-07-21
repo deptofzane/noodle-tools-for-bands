@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Modal } from '../Modal';
 import { useTrackPending } from '../PendingActionProvider';
-import { formatDateLong, formatTime12h } from '@/lib/format';
+import { formatDateLong, formatTime12h, formatTimeRange } from '@/lib/format';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [
@@ -27,6 +27,7 @@ interface CalendarEvent {
   title: string;
   date: string; // YYYY-MM-DD
   time: string | null;
+  endTime: string | null;
   bandName: string;
   location: string | null;
 }
@@ -223,7 +224,7 @@ export function CalendarClient() {
                         <span className="truncate font-medium">{ev.title}</span>
                         {ev.time && (
                           <span className="shrink-0 text-xs text-neutral-500">
-                            {formatTime12h(ev.time)}
+                            {formatTimeRange(ev.time, ev.endTime)}
                           </span>
                         )}
                       </div>

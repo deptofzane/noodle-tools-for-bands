@@ -52,6 +52,7 @@ export async function GET(
     title: `${ev.bandName}: ${ev.title}`,
     date: ev.date,
     time: ev.time,
+    endTime: ev.endTime,
     location: ev.location,
     description: describe(ev, appUrl),
     url: `${appUrl}/calendar/events/${ev.id}`,

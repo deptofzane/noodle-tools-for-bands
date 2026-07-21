@@ -1,0 +1,204 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { ensureOk } from '@/lib/api';
+import { formatSongMeta } from '@/lib/format';
+import { usePersistedBoolean } from '../../usePersistedBoolean';
+import { useTrackPending } from '../../PendingActionProvider';
+import { useToast } from '../../ToastProvider';
+import { MinimizeToggle, songCountLabel, type Setlist } from './bandDetailShared';
+
+/**
+ * The Setlists tab: the band's active setlists (each expandable to reveal its
+ * songs), a Create button, and a collapsible "Archived setlists" section.
+ * Archiving is reversible and hides a setlist from the active list and from
+ * add-to-setlist / event pickers. Owns per-setlist collapse + section state.
+ */
+export function BandSetlistsTab({
+  bandId,
+  setlists,
+  onReload,
+}: {
+  bandId: string;
+  setlists: Setlist[];
+  onReload: () => Promise<void> | void;
+}) {
+  const trackPending = useTrackPending();
+  const showToast = useToast();
+  const [expandedSetlists, setExpandedSetlists] = useState<Set<string>>(
+    new Set(),
+  );
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [setlistsMinimized, setSetlistsMinimized] = usePersistedBoolean(
+    'bandSetlistsMinimized',
+    false,
+  );
+  const [archivedMinimized, setArchivedMinimized] = usePersistedBoolean(
+    'bandArchivedSetlistsMinimized',
+    true,
+  );
+
+  const toggleSetlistExpanded = (id: string) =>
+    setExpandedSetlists((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const setArchived = async (sl: Setlist, archived: boolean) => {
+    if (busyId) return;
+    setBusyId(sl.id);
+    try {
+      await trackPending(async () => {
+        const r = await fetch(
+          `/api/bands/${bandId}/setlists/${sl.id}/archive`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ archived }),
+          },
+        );
+        await ensureOk(r, [204]);
+      });
+      showToast(archived ? 'Setlist archived.' : 'Setlist unarchived.', 'success');
+      await onReload();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const activeSetlists = setlists.filter((s) => !s.archived);
+  const archivedSetlists = setlists.filter((s) => s.archived);
+
+  const renderSetlist = (sl: Setlist) => {
+    const collapsed = !expandedSetlists.has(sl.id);
+    const busy = busyId === sl.id;
+    return (
+      <li
+        key={sl.id}
+        className="rounded-lg border border-neutral-200 dark:border-neutral-800"
+      >
+        <div className="flex items-center justify-between gap-2 pr-1 py-0 md:px-4 md:py-3">
+          <span className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => toggleSetlistExpanded(sl.id)}
+              aria-expanded={!collapsed}
+              aria-label={collapsed ? 'Expand setlist' : 'Minimize setlist'}
+              title={collapsed ? 'Expand setlist' : 'Minimize setlist'}
+              className="-mr-1 px-3 py-4 md:px-2 md:py-1 text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 px-4 py-3 md:py-1.5 md:px-3"
+            >
+              <span aria-hidden="true">{collapsed ? '▸' : '▾'}</span>
+            </button>
+            <Link
+              href={`/bands/${bandId}/setlists/${sl.id}`}
+              className="truncate font-medium text-sm hover:underline py-3 md:py-0"
+            >
+              {sl.name}
+            </Link>
+          </span>
+          <span className="flex shrink-0 items-center gap-3 pr-3">
+            <span className="text-xs text-neutral-500">
+              {songCountLabel(sl.songs)}
+            </span>
+            <button
+              type="button"
+              onClick={() => setArchived(sl, !sl.archived)}
+              disabled={busy}
+              className="text-xs font-medium text-neutral-500 hover:text-neutral-800 disabled:opacity-50 dark:hover:text-neutral-200"
+            >
+              {busy ? '…' : sl.archived ? 'Unarchive' : 'Archive'}
+            </button>
+          </span>
+        </div>
+        {!collapsed && sl.songs.length > 0 && (
+          <ul className="flex flex-col gap-0.5 px-4 pb-3 text-sm text-neutral-600 dark:text-neutral-400">
+            {sl.songs.map((s) => {
+              const meta = s.conversationId
+                ? formatSongMeta(s.bpm, s.key)
+                : null;
+              return (
+                <li
+                  key={s.id}
+                  className={
+                    'truncate ' +
+                    (s.conversationId
+                      ? ''
+                      : 'text-xs font-semibold uppercase tracking-wide text-neutral-400')
+                  }
+                >
+                  {s.name}
+                  {meta && <span className="text-neutral-400"> · {meta}</span>}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </li>
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <section className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <MinimizeToggle
+            minimized={setlistsMinimized}
+            onToggle={() => setSetlistsMinimized((v) => !v)}
+            label="Setlists"
+          >
+            <h2 className="text-sm font-medium">Setlists</h2>
+          </MinimizeToggle>
+          <Link href={`/bands/${bandId}/setlists/new`} className="btn-outline">
+            Create setlist
+          </Link>
+        </div>
+        {!setlistsMinimized && (
+          <>
+            {setlists.length === 0 && (
+              <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+                No setlists yet. Use “Create setlist” to build one.
+              </p>
+            )}
+            {activeSetlists.length > 0 && (
+              <ul className="flex flex-col gap-2">
+                {activeSetlists.map(renderSetlist)}
+              </ul>
+            )}
+            {setlists.length > 0 && activeSetlists.length === 0 && (
+              <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+                No active setlists. Use “Create setlist” to build one.
+              </p>
+            )}
+          </>
+        )}
+      </section>
+
+      {archivedSetlists.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <MinimizeToggle
+              minimized={archivedMinimized}
+              onToggle={() => setArchivedMinimized((v) => !v)}
+              label="Archived setlists"
+            >
+              <h2 className="text-sm font-medium text-neutral-500">Archived setlists</h2>
+            </MinimizeToggle>
+            <span className="text-xs text-neutral-500">
+              <span aria-hidden="true">·</span> {archivedSetlists.length}
+            </span>
+          </div>
+          {!archivedMinimized && (
+            <ul className="flex flex-col gap-2">
+              {archivedSetlists.map(renderSetlist)}
+            </ul>
+          )}
+        </section>
+      )}
+    </div>
+  );
+}

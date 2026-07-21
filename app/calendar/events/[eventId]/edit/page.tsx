@@ -40,6 +40,7 @@ export default async function EditEventPage({
           title: event.title,
           date: event.date,
           time: event.time ?? '',
+          endTime: event.endTime ?? '',
           location: event.location ?? '',
           details: event.details ?? '',
           setlistId: event.setlistId ?? '',

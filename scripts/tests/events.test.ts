@@ -38,6 +38,7 @@ test('events: band-member + added-member visibility, range filter', async () => 
       title: 'Gig',
       date: '2026-07-15',
       time: '19:30',
+      endTime: '21:30',
       location: 'The Club',
       details: null,
       setlistId: null,

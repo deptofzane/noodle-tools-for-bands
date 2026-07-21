@@ -2,30 +2,23 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { formatDateLong, formatDateShort, formatTime12h } from '@/lib/format';
+import { formatDateLong, formatDateShort, formatTimeRange } from '@/lib/format';
 import { usePersistedBoolean } from '../../usePersistedBoolean';
-import {
-  MinimizeToggle,
-  songCountLabel,
-  type Setlist,
-  type Show,
-} from './bandDetailShared';
+import { MinimizeToggle, type Show } from './bandDetailShared';
 
 /**
- * The Overview tab: upcoming Shows, Setlists, Past shows, and (for non-owners)
- * a Leave button. Owns its own collapse/expand UI state; the parent supplies
- * the data and the leave handler.
+ * The Overview tab: upcoming Shows, Past shows, and (for non-owners) a Leave
+ * button. Owns its own collapse/expand UI state; the parent supplies the data
+ * and the leave handler.
  */
 export function BandOverviewTab({
   bandId,
   shows,
-  setlists,
   isOwner,
   onLeave,
 }: {
   bandId: string;
   shows: Show[];
-  setlists: Setlist[];
   isOwner: boolean;
   onLeave: () => void;
 }) {
@@ -33,26 +26,12 @@ export function BandOverviewTab({
     'bandShowsMinimized',
     false,
   );
-  const [setlistsMinimized, setSetlistsMinimized] = usePersistedBoolean(
-    'bandSetlistsMinimized',
-    true,
-  );
   const [pastShowsMinimized, setPastShowsMinimized] = usePersistedBoolean(
     'bandPastShowsMinimized',
     true,
   );
-  const [minimizedSetlists, setMinimizedSetlists] = useState<Set<string>>(
-    new Set(),
-  );
   const [expandedShows, setExpandedShows] = useState<Set<string>>(new Set());
 
-  const toggleSetlistMinimized = (id: string) =>
-    setMinimizedSetlists((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
   const toggleShowExpanded = (id: string) =>
     setExpandedShows((prev) => {
       const next = new Set(prev);
@@ -108,7 +87,7 @@ export function BandOverviewTab({
             {show.time && (
               <div>
                 <span className="font-medium">Time:</span>{' '}
-                {formatTime12h(show.time)}
+                {formatTimeRange(show.time, show.endTime)}
               </div>
             )}
             {show.location && (
@@ -178,88 +157,6 @@ export function BandOverviewTab({
             </p>
           ))}
       </section>
-
-      {setlists.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="flex min-w-0 items-center gap-2">
-              <MinimizeToggle
-                minimized={setlistsMinimized}
-                onToggle={() => setSetlistsMinimized((v) => !v)}
-                label="Setlists"
-              >
-                <h2 className="text-sm font-medium">Setlists</h2>
-              </MinimizeToggle>
-            </span>
-            <Link
-              href={`/bands/${bandId}/setlists/new`}
-              className="btn-outline"
-            >
-              Create setlist
-            </Link>
-          </div>
-          {!setlistsMinimized && (
-            <ul className="flex flex-col gap-2">
-              {setlists.map((sl) => {
-                const collapsed = !minimizedSetlists.has(sl.id);
-                return (
-                  <li
-                    key={sl.id}
-                    className="rounded-lg border border-neutral-200 dark:border-neutral-800"
-                  >
-                    <div className="flex items-center justify-between gap-2 pr-1 py-0 md:px-4 md:py-3">
-                      <span className="flex min-w-0 items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => toggleSetlistMinimized(sl.id)}
-                          aria-expanded={!collapsed}
-                          aria-label={
-                            collapsed ? 'Expand setlist' : 'Minimize setlist'
-                          }
-                          title={
-                            collapsed ? 'Expand setlist' : 'Minimize setlist'
-                          }
-                          className="-mr-1 px-3 py-4 md:px-2 md:py-1 text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 px-4 py-3 md:py-1.5 md:px-3"
-                        >
-                          <span aria-hidden="true">
-                            {collapsed ? '▸' : '▾'}
-                          </span>
-                        </button>
-                        <Link
-                          href={`/bands/${bandId}/setlists/${sl.id}`}
-                          className="truncate font-medium text-sm hover:underline py-3 md:py-0"
-                        >
-                          {sl.name}
-                        </Link>
-                      </span>
-                      <span className="shrink-0 text-xs text-neutral-500 pr-3">
-                        {songCountLabel(sl.songs)}
-                      </span>
-                    </div>
-                    {!collapsed && sl.songs.length > 0 && (
-                      <ul className="flex flex-col gap-0.5 px-4 pb-3 text-sm text-neutral-600 dark:text-neutral-400">
-                        {sl.songs.map((s) => (
-                          <li
-                            key={s.id}
-                            className={
-                              'truncate ' +
-                              (s.conversationId
-                                ? ''
-                                : 'text-xs font-semibold uppercase tracking-wide text-neutral-400')
-                            }
-                          >
-                            {s.name}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-      )}
 
       {pastShows.length > 0 && (
         <section className="flex flex-col gap-2">

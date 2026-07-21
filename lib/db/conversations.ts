@@ -191,6 +191,22 @@ export async function renameConversation(
 }
 
 /**
+ * Update a song's optional metadata (tempo / key). Only the provided fields
+ * are changed; pass `null` to clear one. Both are optional and start blank.
+ */
+export async function setConversationMeta(
+  conversationId: string,
+  fields: { bpm?: number | null; key?: string | null },
+): Promise<Conversation> {
+  const [row] = await db
+    .update(conversations)
+    .set(fields)
+    .where(eq(conversations.id, conversationId))
+    .returning();
+  return row!;
+}
+
+/**
  * Move a song to a different band. Throws ConversationConflictError if
  * the target band already has a conversation for the same audio file
  * (the (band, drive_audio_file_id) unique constraint).

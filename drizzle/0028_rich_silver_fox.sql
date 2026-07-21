@@ -1,0 +1,1 @@
+ALTER TABLE "setlists" ADD COLUMN "archived" boolean DEFAULT false NOT NULL;

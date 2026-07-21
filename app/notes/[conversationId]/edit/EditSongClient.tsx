@@ -19,11 +19,16 @@ interface BandOption {
  * its sheet music, or delete it (cascades all its notes/files). Any band
  * member can edit; the API enforces membership.
  */
+const inputCls =
+  'w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900';
+
 export function EditSongClient({
   conversationId,
   initialName,
   initialBandId,
   initialArchived,
+  initialBpm,
+  initialKey,
   bands,
   audioVersions,
   sheetMusic,
@@ -32,6 +37,8 @@ export function EditSongClient({
   initialName: string;
   initialBandId: string;
   initialArchived: boolean;
+  initialBpm: number | null;
+  initialKey: string | null;
   bands: BandOption[];
   audioVersions: AudioVersionMeta[];
   sheetMusic: SheetMusicMeta | null;
@@ -45,9 +52,17 @@ export function EditSongClient({
   const [bandId, setBandId] = useState(initialBandId);
   const [savedBandId, setSavedBandId] = useState(initialBandId);
   const [archived, setArchived] = useState(initialArchived);
+  const [bpm, setBpm] = useState(initialBpm != null ? String(initialBpm) : '');
+  const [savedBpm, setSavedBpm] = useState(
+    initialBpm != null ? String(initialBpm) : '',
+  );
+  const [key, setKey] = useState(initialKey ?? '');
+  const [savedKey, setSavedKey] = useState(initialKey ?? '');
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const detailsDirty = bpm.trim() !== savedBpm || key.trim() !== savedKey;
 
   const patch = async (payload: Record<string, unknown>) => {
     const res = await fetch(`/api/conversations/${conversationId}`, {
@@ -66,6 +81,34 @@ export function EditSongClient({
       await trackPending(() => patch({ name: trimmed }));
       setSavedName(trimmed);
       showToast('Song renamed.', 'success');
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSaveDetails = async () => {
+    if (busy || !detailsDirty) return;
+    const bpmTrim = bpm.trim();
+    const nextBpm = bpmTrim === '' ? null : Number(bpmTrim);
+    if (
+      nextBpm !== null &&
+      (!Number.isInteger(nextBpm) || nextBpm < 1 || nextBpm > 400)
+    ) {
+      showToast('BPM must be a whole number from 1 to 400.');
+      return;
+    }
+    const nextKey = key.trim() === '' ? null : key.trim();
+    setBusy(true);
+    try {
+      await trackPending(() => patch({ bpm: nextBpm, key: nextKey }));
+      // Normalize the inputs to their saved forms.
+      setBpm(nextBpm === null ? '' : String(nextBpm));
+      setSavedBpm(nextBpm === null ? '' : String(nextBpm));
+      setKey(nextKey ?? '');
+      setSavedKey(nextKey ?? '');
+      showToast('Song details saved.', 'success');
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
     } finally {
@@ -175,6 +218,47 @@ export function EditSongClient({
         <p className="text-[11px] text-neutral-500">
           Moving changes who can access this song — only members of the new band
           will see it.
+        </p>
+      </section>
+
+      {/* Details (tempo / key) */}
+      <section className="flex flex-col gap-2">
+        <label className="text-sm font-medium">Details</label>
+        <div className="flex items-end gap-2">
+          <div className="flex flex-1 flex-col gap-1">
+            <span className="text-xs text-neutral-500">BPM</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={400}
+              value={bpm}
+              onChange={(e) => setBpm(e.target.value)}
+              placeholder="—"
+              className={inputCls}
+            />
+          </div>
+          <div className="flex flex-1 flex-col gap-1">
+            <span className="text-xs text-neutral-500">Key</span>
+            <input
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              maxLength={24}
+              placeholder="e.g. Am"
+              className={inputCls}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleSaveDetails}
+            disabled={busy || !detailsDirty}
+            className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+          >
+            Save
+          </button>
+        </div>
+        <p className="text-[11px] text-neutral-500">
+          Optional — tempo and musical key. Leave blank if unknown.
         </p>
       </section>
 

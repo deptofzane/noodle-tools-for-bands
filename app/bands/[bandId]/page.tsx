@@ -39,7 +39,7 @@ export default async function BandDetailPage({
               ? 'polls'
               : tab === 'audio'
                 ? 'audio'
-                : 'overview'
+                : 'events'
         }
       />
     </main>

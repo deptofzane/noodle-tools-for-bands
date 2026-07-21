@@ -12,6 +12,8 @@ export interface Conversation {
   audioFileName: string | null;
   closed: boolean;
   archived: boolean;
+  bpm: number | null;
+  key: string | null;
   updatedAt: string;
 }
 
@@ -19,7 +21,14 @@ export interface Setlist {
   id: string;
   name: string;
   updatedAt: string;
-  songs: { id: string; conversationId: string | null; name: string }[];
+  archived: boolean;
+  songs: {
+    id: string;
+    conversationId: string | null;
+    name: string;
+    bpm: number | null;
+    key: string | null;
+  }[];
 }
 
 export interface Show {
@@ -27,6 +36,7 @@ export interface Show {
   title: string;
   date: string;
   time: string | null;
+  endTime: string | null;
   location: string | null;
   details: string | null;
   setlistId: string | null;

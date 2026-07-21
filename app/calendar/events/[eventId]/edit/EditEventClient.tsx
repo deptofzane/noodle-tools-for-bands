@@ -1,6 +1,7 @@
 'use client';
 
 import { ensureOk } from '@/lib/api';
+import { addHoursToTime, DEFAULT_EVENT_DURATION_HOURS } from '@/lib/format';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -13,6 +14,7 @@ interface EventFields {
   title: string;
   date: string;
   time: string;
+  endTime: string;
   location: string;
   details: string;
   setlistId: string;
@@ -51,6 +53,23 @@ export function EditEventClient({
 
   const set = (k: keyof EventFields, v: string) =>
     setFields((prev) => ({ ...prev, [k]: v }));
+
+  // Editing the start re-derives the end (+2h) as long as the current end is
+  // empty or still the auto value for the previous start; a hand-set end that
+  // differs is left alone.
+  const setStart = (v: string) =>
+    setFields((prev) => {
+      const autoPrev = prev.time
+        ? addHoursToTime(prev.time, DEFAULT_EVENT_DURATION_HOURS)
+        : '';
+      const keepEnd = prev.endTime && prev.endTime !== autoPrev;
+      const endTime = keepEnd
+        ? prev.endTime
+        : v
+          ? (addHoursToTime(v, DEFAULT_EVENT_DURATION_HOURS) ?? '')
+          : '';
+      return { ...prev, time: v, endTime };
+    });
 
   const eventHref = `/calendar/events/${eventId}`;
   const canSave = Boolean(fields.title.trim() && fields.date && !busy);
@@ -142,13 +161,26 @@ export function EditEventClient({
         </div>
         <div className="flex flex-1 flex-col gap-1">
           <label htmlFor="event-time" className="text-sm font-medium">
-            Time
+            Start time
           </label>
           <input
             id="event-time"
             type="time"
             value={fields.time}
-            onChange={(e) => set('time', e.target.value)}
+            onChange={(e) => setStart(e.target.value)}
+            className={field}
+          />
+        </div>
+        <div className="flex flex-1 flex-col gap-1">
+          <label htmlFor="event-end-time" className="text-sm font-medium">
+            End time
+          </label>
+          <input
+            id="event-end-time"
+            type="time"
+            value={fields.endTime}
+            disabled={!fields.time}
+            onChange={(e) => set('endTime', e.target.value)}
             className={field}
           />
         </div>
