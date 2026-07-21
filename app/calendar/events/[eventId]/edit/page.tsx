@@ -1,4 +1,3 @@
-import { PageHeader } from '../../../../PageHeader';
 import { notFound, redirect } from 'next/navigation';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
@@ -29,8 +28,6 @@ export default async function EditEventPage({
 
   return (
     <main className="mx-auto flex h-max max-w-2xl flex-col px-6 pb-4">
-      <PageHeader defaultHref={`/calendar/events/${eventId}`} />
-
       <EditEventClient
         eventId={eventId}
         bandId={event.bandId}

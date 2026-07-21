@@ -126,7 +126,23 @@ export function EditEventClient({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 mt-2">
+      <div className="flex items-center gap-2 justify-between">
+        <Link
+          href={eventHref}
+          className="btn-outline"
+        >
+          Cancel
+        </Link>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!canSave}
+          className="btn-primary"
+        >
+          {busy ? 'Saving…' : 'Save'}
+        </button>
+      </div>
       <div className="flex items-center justify-between gap-2">
         <h1 className="title-text">Edit event</h1>
       </div>
@@ -242,22 +258,6 @@ export function EditEventClient({
           rows={3}
           className={field}
         />
-      </div>
-      <div className="flex items-center gap-2 justify-between">
-        <Link
-          href={eventHref}
-          className="btn-outline"
-        >
-          Cancel
-        </Link>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={!canSave}
-          className="btn-primary"
-        >
-          {busy ? 'Saving…' : 'Save'}
-        </button>
       </div>
 
       {createOpen && (

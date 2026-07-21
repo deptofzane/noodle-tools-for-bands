@@ -42,7 +42,7 @@ export default async function PracticeSetlistPage({
         <p className="text-sm text-neutral-500">Practice</p>
       </div> */}
 
-      <Practice songs={songs} />
+      <Practice songs={songs} apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ''} />
     </main>
   );
 }

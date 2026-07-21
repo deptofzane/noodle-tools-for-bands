@@ -29,11 +29,19 @@ export interface SheetMusicMeta {
  */
 export function SheetMusic({
   conversationId,
+  apiKey,
   initial = null,
   startClosed = true,
   variant = 'panel',
 }: {
   conversationId: string;
+  /**
+   * Google Picker API key, read server-side and passed in. NEXT_PUBLIC_*
+   * values are inlined into client bundles at build time, so reading it here
+   * in client code breaks whenever the build lacked the var; taking it as a
+   * prop from a server component makes it runtime-configurable.
+   */
+  apiKey: string;
   initial?: SheetMusicMeta | null;
   startClosed?: boolean;
   /**
@@ -53,7 +61,6 @@ export function SheetMusic({
   const inputRef = useRef<HTMLInputElement>(null);
   const trackPending = useTrackPending();
   const showToast = useToast();
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? '';
   const canUseDrive = useCanUseDrive();
 
   // Drive users get a source picker (Drive vs. local); everyone else

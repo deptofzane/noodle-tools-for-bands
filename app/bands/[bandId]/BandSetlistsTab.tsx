@@ -2,8 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
 import { formatSongMeta } from '@/lib/format';
+import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
+import { ConfirmModal } from '../../ConfirmModal';
 import { usePersistedBoolean } from '../../usePersistedBoolean';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
@@ -24,12 +27,15 @@ export function BandSetlistsTab({
   setlists: Setlist[];
   onReload: () => Promise<void> | void;
 }) {
+  const router = useRouter();
   const trackPending = useTrackPending();
   const showToast = useToast();
   const [expandedSetlists, setExpandedSetlists] = useState<Set<string>>(
     new Set(),
   );
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Setlist | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [setlistsMinimized, setSetlistsMinimized] = usePersistedBoolean(
     'bandSetlistsMinimized',
     false,
@@ -71,6 +77,27 @@ export function BandSetlistsTab({
     }
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    try {
+      await trackPending(async () => {
+        const r = await fetch(
+          `/api/bands/${bandId}/setlists/${deleteTarget.id}`,
+          { method: 'DELETE' },
+        );
+        await ensureOk(r, [204]);
+      });
+      showToast('Setlist deleted.', 'success');
+      setDeleteTarget(null);
+      await onReload();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const activeSetlists = setlists.filter((s) => !s.archived);
   const archivedSetlists = setlists.filter((s) => s.archived);
 
@@ -101,18 +128,25 @@ export function BandSetlistsTab({
               {sl.name}
             </Link>
           </span>
-          <span className="flex shrink-0 items-center gap-3 pr-3">
+          <span className="flex shrink-0 items-center gap-2 pr-1">
             <span className="text-xs text-neutral-500">
               {songCountLabel(sl.songs)}
             </span>
-            <button
-              type="button"
-              onClick={() => setArchived(sl, !sl.archived)}
-              disabled={busy}
-              className="text-xs font-medium text-neutral-500 hover:text-neutral-800 disabled:opacity-50 dark:hover:text-neutral-200"
-            >
-              {busy ? '…' : sl.archived ? 'Unarchive' : 'Archive'}
-            </button>
+            <ActionMenu label="Setlist actions" disabled={busy}>
+              <ActionMenuItem
+                onClick={() =>
+                  router.push(`/bands/${bandId}/setlists/${sl.id}/edit`)
+                }
+              >
+                Edit setlist
+              </ActionMenuItem>
+              <ActionMenuItem onClick={() => setArchived(sl, !sl.archived)}>
+                {sl.archived ? 'Unarchive setlist' : 'Archive setlist'}
+              </ActionMenuItem>
+              <ActionMenuItem destructive onClick={() => setDeleteTarget(sl)}>
+                Delete setlist
+              </ActionMenuItem>
+            </ActionMenu>
           </span>
         </div>
         {!collapsed && sl.songs.length > 0 && (
@@ -199,6 +233,17 @@ export function BandSetlistsTab({
           )}
         </section>
       )}
+
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Delete setlist?"
+        description={`This permanently deletes “${deleteTarget?.name ?? ''}” and removes it from any events. This can’t be undone.`}
+        confirmLabel="Delete setlist"
+        busyLabel="Deleting…"
+        busy={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

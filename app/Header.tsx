@@ -20,7 +20,7 @@ const SELECTED_BAND_KEY = 'selectedBandId';
  *
  * The links show inline on desktop and collapse into a hamburger dropdown
  * on mobile (a pure CSS breakpoint split: both variants render, and
- * `hidden`/`sm:hidden` picks one — no viewport measuring, no flash).
+ * `hidden`/`lg:hidden` picks one — no viewport measuring, no flash).
  *
  * Active-tab matching is intentionally exact: `/bands`, `/calendar`,
  * `/open-conversations`, and `/history` each get their own dedicated
@@ -148,13 +148,13 @@ export function Header() {
 
   return (
     <header className="border-b border-neutral-200 dark:border-neutral-800">
-      <nav className="mx-auto flex flex-row items-center justify-between gap-1 px-3 py-3 sm:px-6">
+      <nav className="mx-auto flex max-w-5xl flex-row items-center justify-between gap-1 px-3 py-3 lg:px-6">
         <span className="flex flex-row items-center gap-2">
           <Link key="/home" href="/home">
-            <h3 className="mb-2 font-serif text-4xl hidden sm:inline">
+            <h3 className="mb-2 font-serif text-4xl hidden lg:inline">
               side<span className="text-cyan-600">stage</span>
             </h3>
-            <span className="w-8 h-8 flex items-center justify-center sm:hidden border border-cyan-600 rounded-full">
+            <span className="w-8 h-8 flex items-center justify-center lg:hidden border border-cyan-600 rounded-full">
               <h3 className="font-serif text-2xl text-center mb-1">
                 s
               </h3>
@@ -182,7 +182,7 @@ export function Header() {
 
         {/* Mobile: centered, widened band picker between the logo and menu. */}
         {bands.length > 0 && (
-          <div className="flex flex-1 justify-center sm:hidden">
+          <div className="flex flex-1 justify-center lg:hidden">
             <Select
               className="w-full max-w-[16rem]"
               value={selectedBandId}
@@ -198,7 +198,7 @@ export function Header() {
         <div className="flex items-center gap-2">
           {bands.length > 0 && (
             <Select
-              className="hidden w-44 sm:block"
+              className="hidden w-44 lg:block"
               value={selectedBandId}
               onChange={selectBand}
               placeholder="Select band"
@@ -208,7 +208,7 @@ export function Header() {
           )}
 
           {/* Desktop: inline links. */}
-          <span className="hidden items-center sm:inline-flex">
+          <span className="hidden items-center lg:inline-flex lg:gap-1">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
@@ -226,7 +226,7 @@ export function Header() {
           </span>
 
           {/* Mobile: hamburger dropdown. */}
-          <div ref={menuRef} className="relative sm:hidden">
+          <div ref={menuRef} className="relative lg:hidden">
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}

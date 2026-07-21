@@ -63,6 +63,9 @@ export default async function NotesPage({
   ]);
   const fileName = conversation.audioFileName ?? audio?.fileName ?? 'audio';
   const mimeType = audio?.mimeType ?? 'audio/mpeg';
+  // Read the Picker API key server-side (runtime) and pass it to the client
+  // pickers — NEXT_PUBLIC_* is inlined into client bundles at build time.
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? '';
   const sheetMusic = sheet
     ? {
         fileName: sheet.fileName,
@@ -138,6 +141,7 @@ export default async function NotesPage({
           )}
           <SheetMusic
             conversationId={conversationId}
+            apiKey={apiKey}
             initial={sheetMusic}
             variant="notice"
           />

@@ -267,6 +267,14 @@ export async function listBandSetlists(
   }));
 }
 
+/**
+ * Permanently delete a setlist. Its songs cascade; any event's association to
+ * it is cleared (the events.setlist_id FK is ON DELETE SET NULL).
+ */
+export async function deleteSetlist(setlistId: string): Promise<void> {
+  await db.delete(setlists).where(eq(setlists.id, setlistId));
+}
+
 /** Archive or unarchive a setlist (reversible). Bumps updatedAt. */
 export async function setSetlistArchived(
   setlistId: string,

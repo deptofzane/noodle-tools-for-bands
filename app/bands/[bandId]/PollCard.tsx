@@ -132,7 +132,7 @@ export function PollCard({
       </button>
 
       {expanded && (
-        <div className="flex flex-col gap-2 px-4 pb-3 md:px-3">
+        <div className="flex flex-col gap-2 px-4 pb-3 md:px-3 mt-1">
           {loading && <p className="text-xs text-neutral-500">Loading…</p>}
           {error && (
             <p className="text-xs text-red-600 dark:text-red-400">{error}</p>

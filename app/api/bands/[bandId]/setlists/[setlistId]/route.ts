@@ -3,6 +3,7 @@ import { requireUser } from '@/lib/api-guard';
 import { getMembership } from '@/lib/db/bands';
 import { listBandConversations } from '@/lib/db/conversations';
 import {
+  deleteSetlist,
   getSetlist,
   setSetlistSongs,
   type SetlistItemInput,
@@ -70,4 +71,27 @@ export async function PATCH(
 
   await setSetlistSongs(setlistId, items);
   return NextResponse.json({ setlist: await getSetlist(setlistId) });
+}
+
+/**
+ * DELETE /api/bands/[bandId]/setlists/[setlistId] — permanently delete the
+ * setlist (its songs cascade; any event's association to it is cleared).
+ * Requires band membership; the setlist must belong to the band.
+ */
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ bandId: string; setlistId: string }> },
+) {
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
+  const { bandId, setlistId } = await params;
+  if (!(await getMembership(user.id, bandId)))
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+
+  const setlist = await getSetlist(setlistId);
+  if (!setlist || setlist.bandId !== bandId)
+    return NextResponse.json({ error: 'not_found' }, { status: 404 });
+
+  await deleteSetlist(setlistId);
+  return new NextResponse(null, { status: 204 });
 }

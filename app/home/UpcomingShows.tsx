@@ -102,7 +102,7 @@ export function UpcomingShows({
                 </span>
               </Link>
               {s.setlistId && (
-                <div className="flex shrink-0 flex-col gap-2">
+                <div className="flex shrink-0 flex-col gap-2 ml-2">
                   <Link
                     href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice`}
                     title="Practice this event’s setlist"

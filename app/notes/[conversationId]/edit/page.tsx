@@ -1,4 +1,3 @@
-import { PageHeader } from '../../../PageHeader';
 import { notFound, redirect } from 'next/navigation';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { listMyBands } from '@/lib/db/bands';
@@ -33,10 +32,9 @@ export default async function EditSongPage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col px-6 pb-4">
-      <PageHeader defaultHref={`/notes/${conversationId}`} />
-
       <EditSongClient
         conversationId={conversationId}
+        apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ''}
         initialName={conversation.audioFileName ?? ''}
         initialBandId={conversation.bandId}
         initialArchived={conversation.archived}

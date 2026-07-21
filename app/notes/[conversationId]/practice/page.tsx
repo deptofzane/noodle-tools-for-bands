@@ -35,7 +35,7 @@ export default async function SongPracticePage({
         />
       </div>
 
-      <Practice songs={[song]} />
+      <Practice songs={[song]} apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ''} />
     </main>
   );
 }

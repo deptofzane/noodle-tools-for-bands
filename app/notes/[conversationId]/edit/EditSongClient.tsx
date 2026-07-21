@@ -1,8 +1,9 @@
 'use client';
 
 import { ensureOk } from '@/lib/api';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useCanGoBack } from '../../../NavigationHistoryProvider';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
@@ -15,15 +16,18 @@ interface BandOption {
 }
 
 /**
- * Edit a song: rename it, move it to another band you belong to, manage
- * its sheet music, or delete it (cascades all its notes/files). Any band
- * member can edit; the API enforces membership.
+ * Edit a song: rename it, move it to another band you belong to, and set its
+ * tempo/key — all committed together via "Save all changes" (Cancel discards
+ * and returns to the song). Sheet music and audio versions manage themselves;
+ * archive and delete stay separate actions. Any band member can edit; the API
+ * enforces membership.
  */
 const inputCls =
   'w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900';
 
 export function EditSongClient({
   conversationId,
+  apiKey,
   initialName,
   initialBandId,
   initialArchived,
@@ -34,6 +38,7 @@ export function EditSongClient({
   sheetMusic,
 }: {
   conversationId: string;
+  apiKey: string;
   initialName: string;
   initialBandId: string;
   initialArchived: boolean;
@@ -44,25 +49,61 @@ export function EditSongClient({
   sheetMusic: SheetMusicMeta | null;
 }) {
   const router = useRouter();
+  const canGoBack = useCanGoBack();
   const trackPending = useTrackPending();
   const showToast = useToast();
 
   const [name, setName] = useState(initialName);
-  const [savedName, setSavedName] = useState(initialName);
   const [bandId, setBandId] = useState(initialBandId);
-  const [savedBandId, setSavedBandId] = useState(initialBandId);
   const [archived, setArchived] = useState(initialArchived);
   const [bpm, setBpm] = useState(initialBpm != null ? String(initialBpm) : '');
-  const [savedBpm, setSavedBpm] = useState(
-    initialBpm != null ? String(initialBpm) : '',
-  );
   const [key, setKey] = useState(initialKey ?? '');
-  const [savedKey, setSavedKey] = useState(initialKey ?? '');
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
 
-  const detailsDirty = bpm.trim() !== savedBpm || key.trim() !== savedKey;
+  // Baselines to diff against. A successful save navigates away, so these
+  // never need to change after mount.
+  const savedName = initialName;
+  const savedBandId = initialBandId;
+  const savedBpm = initialBpm != null ? String(initialBpm) : '';
+  const savedKey = initialKey ?? '';
+
+  const songHref = `/notes/${conversationId}`;
+  const nameTrim = name.trim();
+  const bpmTrim = bpm.trim();
+  const keyTrim = key.trim();
+  const dirty =
+    nameTrim !== savedName ||
+    bandId !== savedBandId ||
+    bpmTrim !== savedBpm ||
+    keyTrim !== savedKey;
+  const canSave = dirty && nameTrim !== '' && !busy;
+
+  // Guard a hard unload (refresh / tab close) while there are unsaved edits.
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [dirty]);
+
+  // Return to the page the user came from (in-app history), falling back to
+  // the song itself on a fresh load / deep link.
+  const leave = () => {
+    if (canGoBack()) router.back();
+    else router.push(songHref);
+  };
+
+  // Cancel: confirm first if there are unsaved edits, otherwise leave directly.
+  const handleCancel = () => {
+    if (dirty) setLeaveOpen(true);
+    else leave();
+  };
 
   const patch = async (payload: Record<string, unknown>) => {
     const res = await fetch(`/api/conversations/${conversationId}`, {
@@ -73,24 +114,8 @@ export function EditSongClient({
     await ensureOk(res);
   };
 
-  const handleSaveName = async () => {
-    const trimmed = name.trim();
-    if (!trimmed || trimmed === savedName || busy) return;
-    setBusy(true);
-    try {
-      await trackPending(() => patch({ name: trimmed }));
-      setSavedName(trimmed);
-      showToast('Song renamed.', 'success');
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleSaveDetails = async () => {
-    if (busy || !detailsDirty) return;
-    const bpmTrim = bpm.trim();
+  const handleSaveAll = async () => {
+    if (!canSave) return;
     const nextBpm = bpmTrim === '' ? null : Number(bpmTrim);
     if (
       nextBpm !== null &&
@@ -99,35 +124,22 @@ export function EditSongClient({
       showToast('BPM must be a whole number from 1 to 400.');
       return;
     }
-    const nextKey = key.trim() === '' ? null : key.trim();
-    setBusy(true);
-    try {
-      await trackPending(() => patch({ bpm: nextBpm, key: nextKey }));
-      // Normalize the inputs to their saved forms.
-      setBpm(nextBpm === null ? '' : String(nextBpm));
-      setSavedBpm(nextBpm === null ? '' : String(nextBpm));
-      setKey(nextKey ?? '');
-      setSavedKey(nextKey ?? '');
-      showToast('Song details saved.', 'success');
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  };
+    const nextKey = keyTrim === '' ? null : keyTrim;
 
-  const handleMove = async () => {
-    if (bandId === savedBandId || busy) return;
+    // Send only what changed, so the API doesn't emit a spurious update.
+    const payload: Record<string, unknown> = {};
+    if (nameTrim !== savedName) payload.name = nameTrim;
+    if (bandId !== savedBandId) payload.bandId = bandId;
+    if (bpmTrim !== savedBpm) payload.bpm = nextBpm;
+    if (keyTrim !== savedKey) payload.key = nextKey;
+
     setBusy(true);
     try {
-      await trackPending(() => patch({ bandId }));
-      setSavedBandId(bandId);
-      const target = bands.find((b) => b.id === bandId)?.name ?? 'the band';
-      showToast(`Moved to ${target}.`, 'success');
+      await trackPending(() => patch(payload));
+      showToast('Song saved.', 'success');
+      router.push(songHref);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
-      setBandId(savedBandId); // revert the select
-    } finally {
       setBusy(false);
     }
   };
@@ -167,54 +179,48 @@ export function EditSongClient({
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 mt-2">
+      <div className="flex items-center justify-between gap-2">
+        <button type="button" onClick={handleCancel} className="btn-outline">
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSaveAll}
+          disabled={!canSave}
+          className="btn-primary"
+        >
+          {busy ? 'Saving…' : 'Save'}
+        </button>
+      </div>
+
       <h1 className="title-text">Edit song</h1>
 
       {/* Name */}
       <section className="flex flex-col gap-2">
         <label className="text-sm font-medium">Name</label>
-        <div className="flex gap-2">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={255}
-            className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
-          />
-          <button
-            type="button"
-            onClick={handleSaveName}
-            disabled={busy || !name.trim() || name.trim() === savedName}
-            className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
-          >
-            Save
-          </button>
-        </div>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={255}
+          className={inputCls}
+        />
       </section>
 
       {/* Band */}
       <section className="flex flex-col gap-2">
         <label className="text-sm font-medium">Band</label>
-        <div className="flex gap-2">
-          <select
-            value={bandId}
-            onChange={(e) => setBandId(e.target.value)}
-            className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
-          >
-            {bands.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={handleMove}
-            disabled={busy || bandId === savedBandId}
-            className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
-          >
-            Move
-          </button>
-        </div>
+        <select
+          value={bandId}
+          onChange={(e) => setBandId(e.target.value)}
+          className={inputCls}
+        >
+          {bands.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.name}
+            </option>
+          ))}
+        </select>
         <p className="text-[11px] text-neutral-500">
           Moving changes who can access this song — only members of the new band
           will see it.
@@ -224,7 +230,7 @@ export function EditSongClient({
       {/* Details (tempo / key) */}
       <section className="flex flex-col gap-2">
         <label className="text-sm font-medium">Details</label>
-        <div className="flex items-end gap-2">
+        <div className="flex gap-2">
           <div className="flex flex-1 flex-col gap-1">
             <span className="text-xs text-neutral-500">BPM</span>
             <input
@@ -248,14 +254,6 @@ export function EditSongClient({
               className={inputCls}
             />
           </div>
-          <button
-            type="button"
-            onClick={handleSaveDetails}
-            disabled={busy || !detailsDirty}
-            className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
-          >
-            Save
-          </button>
         </div>
         <p className="text-[11px] text-neutral-500">
           Optional — tempo and musical key. Leave blank if unknown.
@@ -263,10 +261,19 @@ export function EditSongClient({
       </section>
 
       {/* Audio versions */}
-      <AudioVersions conversationId={conversationId} initial={audioVersions} />
+      <AudioVersions
+        conversationId={conversationId}
+        apiKey={apiKey}
+        initial={audioVersions}
+      />
 
       {/* Sheet music (reuses the song-page panel) */}
-      <SheetMusic conversationId={conversationId} initial={sheetMusic} startClosed={false}/>
+      <SheetMusic
+        conversationId={conversationId}
+        apiKey={apiKey}
+        initial={sheetMusic}
+        startClosed={false}
+      />
 
       {/* Archive */}
       <section className="flex flex-col gap-2">
@@ -317,6 +324,15 @@ export function EditSongClient({
         busy={deleting}
         onConfirm={handleDelete}
         onCancel={() => setDeleteOpen(false)}
+      />
+
+      <ConfirmModal
+        open={leaveOpen}
+        title="Leave without saving?"
+        description="Changes have been made. Are you sure you want to leave without saving?"
+        confirmLabel="Leave without saving"
+        onConfirm={leave}
+        onCancel={() => setLeaveOpen(false)}
       />
     </div>
   );

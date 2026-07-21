@@ -29,9 +29,12 @@ export interface AudioVersionMeta {
  */
 export function AudioVersions({
   conversationId,
+  apiKey,
   initial,
 }: {
   conversationId: string;
+  /** Google Picker API key, passed from a server component (see SheetMusic). */
+  apiKey: string;
   initial: AudioVersionMeta[];
 }) {
   const [versions, setVersions] = useState<AudioVersionMeta[]>(initial);
@@ -45,7 +48,6 @@ export function AudioVersions({
   const canUseDrive = useCanUseDrive();
   const trackPending = useTrackPending();
   const showToast = useToast();
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? '';
 
   const endpoint = `/api/conversations/${conversationId}/audio-versions`;
 

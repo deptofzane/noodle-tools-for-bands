@@ -26,7 +26,13 @@ export interface PracticeSong {
  * is keyed by conversation id), so switching tears down the old audio engine
  * and spins up a clean one for the new song.
  */
-export function Practice({ songs }: { songs: PracticeSong[] }) {
+export function Practice({
+  songs,
+  apiKey,
+}: {
+  songs: PracticeSong[];
+  apiKey: string;
+}) {
   const [index, setIndex] = useState(0);
 
   if (songs.length === 0) {
@@ -93,6 +99,7 @@ export function Practice({ songs }: { songs: PracticeSong[] }) {
             {song.sheetMusic && (
               <SheetMusic
                 conversationId={song.conversationId}
+                apiKey={apiKey}
                 initial={song.sheetMusic}
                 startClosed={false}
               />
