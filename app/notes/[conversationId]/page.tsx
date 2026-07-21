@@ -7,6 +7,7 @@ import { getSongFileMeta, listAudioVersions } from '@/lib/db/song-files';
 import { PlayerProvider } from './PlayerContext';
 import { AudioPlayer } from './AudioPlayer';
 import { SheetMusic } from './SheetMusic';
+import { SongDetails } from './SongDetails';
 import { NotesPanel } from './NotesPanel';
 import { PageHeader } from '../../PageHeader';
 
@@ -63,7 +64,11 @@ export default async function NotesPage({
   const fileName = conversation.audioFileName ?? audio?.fileName ?? 'audio';
   const mimeType = audio?.mimeType ?? 'audio/mpeg';
   const sheetMusic = sheet
-    ? { fileName: sheet.fileName, mimeType: sheet.mimeType, updatedAt: sheet.updatedAt }
+    ? {
+        fileName: sheet.fileName,
+        mimeType: sheet.mimeType,
+        updatedAt: sheet.updatedAt,
+      }
     : null;
 
   return (
@@ -94,35 +99,42 @@ export default async function NotesPage({
               isDefault: v.isDefault,
             }))}
           />
-          {(conversation.bpm != null || conversation.key) && (
-            <div className="flex justify-center gap-4 text-sm text-neutral-600 dark:text-neutral-400">
-              {conversation.bpm != null && (
-                <span>
-                  <span className="font-medium">{conversation.bpm}</span> BPM
-                </span>
-              )}
-              {conversation.key && (
-                <span>
-                  Key of <span className="font-medium">{conversation.key}</span>
-                </span>
-              )}
-            </div>
-          )}
-          {sheetMusic && (
-            <div className="flex gap-2 justify-center">
-              <Link
-                href={`/notes/${conversationId}/practice`}
-                className="rounded-md border h-12 md:h-9 flex items-center border-neutral-300 px-4 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
-              >
-                Practice
-              </Link>
-              <Link
-                href={`/notes/${conversationId}/live`}
-                className="rounded-md border h-12 md:h-9 flex items-center border-neutral-300 px-4 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
-              >
-                Live
-              </Link>
-            </div>
+          {(conversation.bpm != null || conversation.key || sheetMusic) && (
+            <SongDetails>
+              <span className="flex justify-around">
+                {(conversation.bpm != null || conversation.key) && (
+                  <div className="flex justify-center flex-col gap-1 text-sm text-neutral-600 dark:text-neutral-400">
+                    {conversation.bpm != null && (
+                      <span>
+                        <span className="font-medium">{conversation.bpm}</span> BPM
+                      </span>
+                    )}
+                    {conversation.key && (
+                      <span>
+                        Key of{' '}
+                        <span className="font-medium">{conversation.key}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
+                {sheetMusic && (
+                  <div className="flex gap-2 justify-center">
+                    <Link
+                      href={`/notes/${conversationId}/practice`}
+                      className="rounded-md border h-12 md:h-9 flex items-center border-neutral-300 px-4 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                    >
+                      Practice
+                    </Link>
+                    <Link
+                      href={`/notes/${conversationId}/live`}
+                      className="rounded-md border h-12 md:h-9 flex items-center border-neutral-300 px-4 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                    >
+                      Live
+                    </Link>
+                  </div>
+                )}
+              </span>
+            </SongDetails>
           )}
           <SheetMusic
             conversationId={conversationId}
