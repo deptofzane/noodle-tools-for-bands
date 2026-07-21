@@ -82,7 +82,7 @@ export function UpcomingShows({
       {open && (
         <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
           {visible.map((s) => (
-            <li key={s.id} className="flex items-center gap-2 px-3 py-2.5">
+            <li key={s.id} className="flex items-center gap-1 px-3 py-2.5">
               <Link
                 href={`/calendar/events/${s.id}`}
                 className="-mx-1 flex min-w-0 flex-1 items-start flex-col justify-start gap-3 rounded px-1 hover:bg-neutral-50 dark:hover:bg-neutral-900"
@@ -94,7 +94,7 @@ export function UpcomingShows({
                     {s.location ? ` · ${s.location}` : ''}
                   </span>
                 </span>
-                <span className="shrink-0 text-right text-[11px] text-neutral-500">
+                <span className="shrink-0 text-[11px] text-neutral-500">
                   <span className="block font-medium text-neutral-700 dark:text-neutral-300">
                     {formatDateShort(s.date)}
                   </span>
@@ -106,14 +106,14 @@ export function UpcomingShows({
                   <Link
                     href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice`}
                     title="Practice this event’s setlist"
-                    className="rounded-md border border-neutral-300 px-2.5 py-2 sm:py-1 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                    className="rounded-md border border-neutral-300 px-2.5 py-2 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
                   >
                     Practice
                   </Link>
                   <Link
                     href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice/live`}
                     title="Perform this event’s setlist live"
-                    className="rounded-md border border-neutral-300 px-2.5 py-2 sm:py-1 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                    className="rounded-md border border-neutral-300 px-2.5 py-2 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
                   >
                     Live
                   </Link>

@@ -148,7 +148,7 @@ export function Header() {
 
   return (
     <header className="border-b border-neutral-200 dark:border-neutral-800">
-      <nav className="mx-auto flex max-w-3xl flex-row items-center justify-between gap-1 px-3 py-3 sm:px-6">
+      <nav className="mx-auto flex flex-row items-center justify-between gap-1 px-3 py-3 sm:px-6">
         <span className="flex flex-row items-center gap-2">
           <Link key="/home" href="/home">
             <h3 className="mb-2 font-serif text-4xl hidden sm:inline">

@@ -114,6 +114,6 @@ export function formatSongMeta(
 ): string | null {
   const parts: string[] = [];
   if (bpm != null) parts.push(`${bpm} BPM`);
-  if (key) parts.push(key);
+  if (key) parts.push(`Key: ${key}`);
   return parts.length ? parts.join(' · ') : null;
 }

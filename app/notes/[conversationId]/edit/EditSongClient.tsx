@@ -266,7 +266,7 @@ export function EditSongClient({
       <AudioVersions conversationId={conversationId} initial={audioVersions} />
 
       {/* Sheet music (reuses the song-page panel) */}
-      <SheetMusic conversationId={conversationId} initial={sheetMusic} />
+      <SheetMusic conversationId={conversationId} initial={sheetMusic} startClosed={false}/>
 
       {/* Archive */}
       <section className="flex flex-col gap-2">
