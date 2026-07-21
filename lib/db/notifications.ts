@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, notInArray, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, lt, notInArray, or, sql } from 'drizzle-orm';
 import { db } from './index';
 import {
   bandMembers,
@@ -41,6 +41,33 @@ export interface NotificationDTO {
   unread: boolean;
   /** True when this notification is about the viewer's own action. */
   isSelf: boolean;
+}
+
+export interface NotificationsPage {
+  notifications: NotificationDTO[];
+  /**
+   * Opaque cursor for the next (older) page — pass back as `before`. Null when
+   * there are no older notifications.
+   */
+  nextCursor: string | null;
+}
+
+const DEFAULT_PAGE_SIZE = 30;
+const MAX_PAGE_SIZE = 100;
+
+/**
+ * Cursor is `<createdAt ISO>|<id>` — the (timestamp, id) of the last row on a
+ * page, so the next page starts strictly older than it. Returns null for a
+ * missing or malformed cursor (treated as "from the top").
+ */
+function parseCursor(cursor?: string): { createdAt: Date; id: string } | null {
+  if (!cursor) return null;
+  const sep = cursor.indexOf('|');
+  if (sep < 0) return null;
+  const createdAt = new Date(cursor.slice(0, sep));
+  const id = cursor.slice(sep + 1);
+  if (Number.isNaN(createdAt.getTime()) || !id) return null;
+  return { createdAt, id };
 }
 
 // Kinds a user also receives for their own actions (creation events); every
@@ -152,14 +179,20 @@ async function getLastSeen(userId: string): Promise<Date> {
 }
 
 /**
- * The user's most recent notifications (newest first), across every band
- * they belong to, excluding their own actions. `unread` is relative to the
- * user's last-seen marker.
+ * A page of the user's notifications (newest first), across every band they
+ * belong to, excluding their own actions. `unread` is relative to the user's
+ * last-seen marker. Pass `before` (a prior page's `nextCursor`) to page back
+ * through older notifications; `nextCursor` is null once none remain.
  */
 export async function listNotifications(
   userId: string,
-  limit = 30,
-): Promise<NotificationDTO[]> {
+  opts: { limit?: number; before?: string } = {},
+): Promise<NotificationsPage> {
+  const pageSize = Math.min(
+    Math.max(opts.limit ?? DEFAULT_PAGE_SIZE, 1),
+    MAX_PAGE_SIZE,
+  );
+  const cursor = parseCursor(opts.before);
   const [lastSeen, muted] = await Promise.all([
     getLastSeen(userId),
     getMutedKinds(userId),
@@ -189,17 +222,37 @@ export async function listNotifications(
       and(
         actorVisible(userId),
         muted.length ? notInArray(notifications.kind, muted) : undefined,
+        cursor
+          ? or(
+              lt(notifications.createdAt, cursor.createdAt),
+              and(
+                eq(notifications.createdAt, cursor.createdAt),
+                lt(notifications.id, cursor.id),
+              ),
+            )
+          : undefined,
       ),
     )
-    .orderBy(desc(notifications.createdAt))
-    .limit(Math.min(Math.max(limit, 1), 100));
+    // Tiebreak on id so the (createdAt, id) cursor is a strict, stable order.
+    .orderBy(desc(notifications.createdAt), desc(notifications.id))
+    // Over-fetch by one to learn whether an older page exists.
+    .limit(pageSize + 1);
 
-  return rows.map(({ actorId, ...r }) => ({
-    ...r,
-    createdAt: r.createdAt.toISOString(),
-    unread: r.createdAt > lastSeen,
-    isSelf: actorId === userId,
-  }));
+  const hasMore = rows.length > pageSize;
+  const page = hasMore ? rows.slice(0, pageSize) : rows;
+  const last = page[page.length - 1];
+  const nextCursor =
+    hasMore && last ? `${last.createdAt.toISOString()}|${last.id}` : null;
+
+  return {
+    notifications: page.map(({ actorId, ...r }) => ({
+      ...r,
+      createdAt: r.createdAt.toISOString(),
+      unread: r.createdAt > lastSeen,
+      isSelf: actorId === userId,
+    })),
+    nextCursor,
+  };
 }
 
 /** How many notifications are unread for the user. */

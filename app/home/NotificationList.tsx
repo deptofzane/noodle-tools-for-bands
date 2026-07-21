@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { formatRelativeTime } from '@/lib/format';
+import { usePersistedBoolean } from '../usePersistedBoolean';
 
 export interface NotificationItem {
   id: string;
@@ -89,19 +90,53 @@ function messageFor(n: NotificationItem): string {
 }
 
 /**
+ * Merge notification pages by id, newest first. Existing items win over
+ * incoming duplicates, so their current read/unread highlight is preserved
+ * across a refresh; genuinely new (or older, paged-in) items are added.
+ */
+function mergeByNewest(
+  existing: NotificationItem[],
+  incoming: NotificationItem[],
+): NotificationItem[] {
+  const byId = new Map(existing.map((n) => [n.id, n]));
+  for (const n of incoming) if (!byId.has(n.id)) byId.set(n.id, n);
+  return [...byId.values()].sort((a, b) =>
+    a.createdAt < b.createdAt
+      ? 1
+      : a.createdAt > b.createdAt
+        ? -1
+        : a.id < b.id
+          ? 1
+          : a.id > b.id
+            ? -1
+            : 0,
+  );
+}
+
+/**
  * Home notification feed. Server-rendered with the first page; then marks
  * the feed read (so it stays "caught up") and polls for new activity.
- * Unread items from the initial load stay highlighted for this view.
+ * Unread items from the initial load stay highlighted for this view. The
+ * section is collapsible (persisted) and pages back through older
+ * notifications on demand.
  */
 export function NotificationList({
   initial,
   initialUnread,
+  initialCursor,
 }: {
   initial: NotificationItem[];
   initialUnread: number;
+  initialCursor: string | null;
 }) {
   const [items, setItems] = useState<NotificationItem[]>(initial);
   const [unread, setUnread] = useState(initialUnread);
+  const [cursor, setCursor] = useState<string | null>(initialCursor);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [minimized, setMinimized] = usePersistedBoolean(
+    'homeNotificationsMinimized',
+    false,
+  );
 
   const markRead = useCallback(async () => {
     // Let the nav badge clear immediately, before the request resolves.
@@ -116,10 +151,32 @@ export function NotificationList({
       notifications: NotificationItem[];
       unreadCount: number;
     };
-    setItems(data.notifications);
+    // Merge the newest page into what's shown so any older pages the user
+    // loaded survive the poll; the load-older cursor is left untouched.
+    setItems((prev) => mergeByNewest(prev, data.notifications));
     setUnread(data.unreadCount);
     if (data.unreadCount > 0) void markRead();
   }, [markRead]);
+
+  const loadMore = useCallback(async () => {
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(
+        `/api/notifications?cursor=${encodeURIComponent(cursor)}`,
+        { cache: 'no-store' },
+      );
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        notifications: NotificationItem[];
+        nextCursor: string | null;
+      };
+      setItems((prev) => mergeByNewest(prev, data.notifications));
+      setCursor(data.nextCursor);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [cursor, loadingMore]);
 
   // Clear the unread marker on view (keeps the current highlights), then
   // poll for new activity while the tab is visible.
@@ -137,7 +194,23 @@ export function NotificationList({
   return (
     <section className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <h2 className="text-sm font-medium">Notifications</h2>
+        <button
+          type="button"
+          onClick={() => setMinimized((v) => !v)}
+          aria-expanded={!minimized}
+          aria-label={
+            minimized ? 'Expand Notifications' : 'Minimize Notifications'
+          }
+          className="flex items-center gap-2"
+        >
+          <span
+            aria-hidden="true"
+            className="text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+          >
+            {minimized ? '▸' : '▾'}
+          </span>
+          <h2 className="text-sm font-medium">Notifications</h2>
+        </button>
         {unread > 0 && (
           <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-semibold text-white">
             {unread} new
@@ -145,40 +218,53 @@ export function NotificationList({
         )}
       </div>
 
-      {items.length === 0 ? (
-        <p className="rounded-lg border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
-          No notifications yet. Activity from your bands shows up here.
-        </p>
-      ) : (
-        <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-          {items.map((n) => (
-            <li key={n.id}>
-              <Link
-                href={hrefFor(n)}
-                className={
-                  'flex items-start gap-3 px-3 py-2.5 hover:bg-neutral-50 dark:hover:bg-neutral-900 ' +
-                  (n.unread ? 'bg-blue-50/50 dark:bg-blue-950/20' : '')
-                }
+      {!minimized &&
+        (items.length === 0 ? (
+          <p className="rounded-lg border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+            No notifications yet. Activity from your bands shows up here.
+          </p>
+        ) : (
+          <>
+            <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+              {items.map((n) => (
+                <li key={n.id}>
+                  <Link
+                    href={hrefFor(n)}
+                    className={
+                      'flex items-start gap-3 px-3 py-2.5 hover:bg-neutral-50 dark:hover:bg-neutral-900 ' +
+                      (n.unread ? 'bg-blue-50/50 dark:bg-blue-950/20' : '')
+                    }
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={
+                        'mt-1.5 h-2 w-2 shrink-0 rounded-full ' +
+                        (n.unread ? 'bg-blue-600' : 'bg-transparent')
+                      }
+                    />
+                    <span className="flex min-w-0 flex-col">
+                      <span className="text-sm">{messageFor(n)}</span>
+                      <span className="text-[11px] text-neutral-400">
+                        {n.bandName ? `${n.bandName} · ` : ''}
+                        {formatRelativeTime(n.createdAt)}
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            {cursor && (
+              <button
+                type="button"
+                onClick={() => void loadMore()}
+                disabled={loadingMore}
+                className="self-center rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-900"
               >
-                <span
-                  aria-hidden="true"
-                  className={
-                    'mt-1.5 h-2 w-2 shrink-0 rounded-full ' +
-                    (n.unread ? 'bg-blue-600' : 'bg-transparent')
-                  }
-                />
-                <span className="flex min-w-0 flex-col">
-                  <span className="text-sm">{messageFor(n)}</span>
-                  <span className="text-[11px] text-neutral-400">
-                    {n.bandName ? `${n.bandName} · ` : ''}
-                    {formatRelativeTime(n.createdAt)}
-                  </span>
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+                {loadingMore ? 'Loading…' : 'Load older'}
+              </button>
+            )}
+          </>
+        ))}
     </section>
   );
 }

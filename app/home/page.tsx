@@ -32,7 +32,7 @@ export default async function HomePage() {
   const bufferTo = new Date();
   bufferTo.setDate(bufferTo.getDate() + 9);
 
-  const [notifications, unreadCount, showsBuffer, openPolls] =
+  const [notifPage, unreadCount, showsBuffer, openPolls] =
     await Promise.all([
       listNotifications(userId),
       getUnreadNotificationCount(userId),
@@ -50,7 +50,11 @@ export default async function HomePage() {
         <UpcomingShows shows={showsBuffer} serverToday={serverToday} />
       )}
       <OpenPolls polls={openPolls} />
-      <NotificationList initial={notifications} initialUnread={unreadCount} />
+      <NotificationList
+        initial={notifPage.notifications}
+        initialUnread={unreadCount}
+        initialCursor={notifPage.nextCursor}
+      />
 
       <div className="rounded-lg border border-neutral-200 p-4 text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">
         Audio and conversations are organized by band now. Open a{' '}
