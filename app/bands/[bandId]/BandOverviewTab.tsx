@@ -97,7 +97,7 @@ export function BandOverviewTab({
             type="button"
             onClick={() => toggleShowExpanded(show.id)}
             aria-expanded={expanded}
-            className="flex min-w-0 flex-1 items-center justify-between gap-2 px-4 py-3 text-left md:px-3 md:py-1.5"
+            className="flex min-w-0 flex-1 items-center justify-between gap-2 px-4 py-3 text-left"
           >
             <span className="flex min-w-0 items-center gap-2">
               <span

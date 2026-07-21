@@ -404,6 +404,7 @@ export function BandDetailClient({
           shows={shows}
           isOwner={isOwner}
           onLeave={() => setLeaveOpen(true)}
+          onReload={reload}
         />
       )}
 

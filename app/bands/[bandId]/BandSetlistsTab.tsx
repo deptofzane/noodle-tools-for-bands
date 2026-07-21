@@ -116,30 +116,32 @@ export function BandSetlistsTab({
         key={sl.id}
         className="rounded-lg border border-neutral-200 dark:border-neutral-800"
       >
-        <div className="flex items-center justify-between gap-2 pr-1 py-0 md:px-4 md:py-3">
-          <span className="flex min-w-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => toggleSetlistExpanded(sl.id)}
-              aria-expanded={!collapsed}
-              aria-label={collapsed ? 'Expand setlist' : 'Minimize setlist'}
-              title={collapsed ? 'Expand setlist' : 'Minimize setlist'}
-              className="-mr-1 px-3 py-4 md:px-2 md:py-1 text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 px-4 py-3 md:py-1.5 md:px-3"
-            >
+        <div className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left">
+          <button
+            type="button"
+            onClick={() => toggleSetlistExpanded(sl.id)}
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? 'Expand setlist' : 'Minimize setlist'}
+            title={collapsed ? 'Expand setlist' : 'Minimize setlist'}
+            className="flex min-w-0 flex-1 items-center justify-between gap-2 px-4 py-3 text-left"
+          >
+            <span className="flex min-w-0 items-center gap-2">
               <span aria-hidden="true">{collapsed ? '▸' : '▾'}</span>
-            </button>
-            <Link
-              href={`/bands/${bandId}/setlists/${sl.id}`}
-              className="truncate font-medium text-sm hover:underline py-3 md:py-0"
-            >
-              {sl.name}
-            </Link>
-          </span>
+              <span className="truncate font-medium text-sm">{sl.name}</span>
+            </span>
+          </button>
           <span className="flex shrink-0 items-center gap-2 pr-1">
             <span className="text-xs text-neutral-500">
               {songCountLabel(sl.songs)}
             </span>
             <ActionMenu label="Setlist actions" disabled={busy}>
+              <ActionMenuItem
+                onClick={() =>
+                  router.push(`/bands/${bandId}/setlists/${sl.id}`)
+                }
+              >
+                View setlist
+              </ActionMenuItem>
               <ActionMenuItem
                 onClick={() =>
                   router.push(`/bands/${bandId}/setlists/${sl.id}/edit`)
