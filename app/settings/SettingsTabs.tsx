@@ -32,7 +32,7 @@ export function SettingsTabs({
       <div
         role="tablist"
         aria-label="Settings sections"
-        className="flex gap-1 border-b border-neutral-200 dark:border-neutral-800"
+        className="flex gap-1 overflow-x-auto border-b border-neutral-200 dark:border-neutral-800"
       >
         {tabs.map((tab) => (
           <button
@@ -42,7 +42,7 @@ export function SettingsTabs({
             aria-selected={active === tab.id}
             onClick={() => setActive(tab.id)}
             className={
-              '-mb-px border-b-2 px-3 py-2 text-sm font-medium transition ' +
+              '-mb-px shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition ' +
               (active === tab.id
                 ? 'border-blue-600 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200')
