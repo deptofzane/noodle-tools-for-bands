@@ -74,7 +74,7 @@ export default async function SetlistPage({
 
   return (
     <main className="main-container">
-      <PageHeader defaultHref={`/bands/${bandId}`} defaultHrefName="Band" canGoBack={false}>
+      <PageHeader defaultHref={`/bands/${bandId}`} defaultHrefName="Band">
         <span className="flex items-center gap-3">
           <Link
             href={`/bands/${bandId}/setlists/${setlistId}/edit`}

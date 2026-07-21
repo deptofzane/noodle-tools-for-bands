@@ -2,26 +2,37 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ensureOk } from '@/lib/api';
 import { formatDateLong, formatDateShort, formatTimeRange } from '@/lib/format';
+import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
+import { ConfirmModal } from '../../ConfirmModal';
+import { useTrackPending } from '../../PendingActionProvider';
+import { useToast } from '../../ToastProvider';
 import { usePersistedBoolean } from '../../usePersistedBoolean';
 import { MinimizeToggle, type Show } from './bandDetailShared';
 
 /**
  * The Overview tab: upcoming Shows, Past shows, and (for non-owners) a Leave
- * button. Owns its own collapse/expand UI state; the parent supplies the data
- * and the leave handler.
+ * button. Owns its own collapse/expand UI state; the parent supplies the data,
+ * a reload callback, and the leave handler.
  */
 export function BandOverviewTab({
   bandId,
   shows,
   isOwner,
   onLeave,
+  onReload,
 }: {
   bandId: string;
   shows: Show[];
   isOwner: boolean;
   onLeave: () => void;
+  onReload: () => Promise<void> | void;
 }) {
+  const router = useRouter();
+  const trackPending = useTrackPending();
+  const showToast = useToast();
   const [showsMinimized, setShowsMinimized] = usePersistedBoolean(
     'bandShowsMinimized',
     false,
@@ -31,6 +42,8 @@ export function BandOverviewTab({
     true,
   );
   const [expandedShows, setExpandedShows] = useState<Set<string>>(new Set());
+  const [deleteTarget, setDeleteTarget] = useState<Show | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const toggleShowExpanded = (id: string) =>
     setExpandedShows((prev) => {
@@ -39,6 +52,26 @@ export function BandOverviewTab({
       else next.add(id);
       return next;
     });
+
+  const handleDelete = async () => {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    try {
+      await trackPending(async () => {
+        const r = await fetch(`/api/events/${deleteTarget.id}`, {
+          method: 'DELETE',
+        });
+        await ensureOk(r, [204]);
+      });
+      showToast('Event deleted.', 'success');
+      setDeleteTarget(null);
+      await onReload();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // Split shows by today's local date. Upcoming soonest-first; past kept
   // newest-first (the API order).
@@ -59,25 +92,42 @@ export function BandOverviewTab({
         key={show.id}
         className="rounded-lg border border-neutral-200 dark:border-neutral-800"
       >
-        <button
-          type="button"
-          onClick={() => toggleShowExpanded(show.id)}
-          aria-expanded={expanded}
-          className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left md:px-3 md:py-1.5"
-        >
-          <span className="flex min-w-0 items-center gap-2">
-            <span
-              aria-hidden="true"
-              className="text-sm leading-none text-neutral-400"
-            >
-              {expanded ? '▾' : '▸'}
+        <div className="flex items-center gap-1 pr-1">
+          <button
+            type="button"
+            onClick={() => toggleShowExpanded(show.id)}
+            aria-expanded={expanded}
+            className="flex min-w-0 flex-1 items-center justify-between gap-2 px-4 py-3 text-left md:px-3 md:py-1.5"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <span
+                aria-hidden="true"
+                className="text-sm leading-none text-neutral-400"
+              >
+                {expanded ? '▾' : '▸'}
+              </span>
+              <span className="truncate font-medium">{show.title}</span>
             </span>
-            <span className="truncate font-medium">{show.title}</span>
-          </span>
-          <span className="shrink-0 text-xs text-neutral-500">
-            {formatDateShort(show.date)}
-          </span>
-        </button>
+            <span className="shrink-0 text-xs text-neutral-500">
+              {formatDateShort(show.date)}
+            </span>
+          </button>
+          <ActionMenu label="Event actions">
+            <ActionMenuItem
+              onClick={() => router.push(`/calendar/events/${show.id}`)}
+            >
+              View event
+            </ActionMenuItem>
+            <ActionMenuItem
+              onClick={() => router.push(`/calendar/events/${show.id}/edit`)}
+            >
+              Edit event
+            </ActionMenuItem>
+            <ActionMenuItem destructive onClick={() => setDeleteTarget(show)}>
+              Delete event
+            </ActionMenuItem>
+          </ActionMenu>
+        </div>
         {expanded && (
           <div className="flex flex-col gap-1 border-t border-neutral-200 px-4 py-3 text-sm md:px-3 dark:border-neutral-800">
             <div>
@@ -114,12 +164,6 @@ export function BandOverviewTab({
                 </p>
               </div>
             )}
-            <Link
-              href={`/calendar/events/${show.id}`}
-              className="mt-1 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
-            >
-              View event →
-            </Link>
           </div>
         )}
       </li>

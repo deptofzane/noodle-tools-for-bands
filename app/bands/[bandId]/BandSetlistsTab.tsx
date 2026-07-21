@@ -10,7 +10,11 @@ import { ConfirmModal } from '../../ConfirmModal';
 import { usePersistedBoolean } from '../../usePersistedBoolean';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
-import { MinimizeToggle, songCountLabel, type Setlist } from './bandDetailShared';
+import {
+  MinimizeToggle,
+  songCountLabel,
+  type Setlist,
+} from './bandDetailShared';
 
 /**
  * The Setlists tab: the band's active setlists (each expandable to reveal its
@@ -68,7 +72,10 @@ export function BandSetlistsTab({
         );
         await ensureOk(r, [204]);
       });
-      showToast(archived ? 'Setlist archived.' : 'Setlist unarchived.', 'success');
+      showToast(
+        archived ? 'Setlist archived.' : 'Setlist unarchived.',
+        'success',
+      );
       await onReload();
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
@@ -165,8 +172,12 @@ export function BandSetlistsTab({
                       : 'text-xs font-semibold uppercase tracking-wide text-neutral-400')
                   }
                 >
-                  {s.name}
-                  {meta && <span className="text-neutral-400"> · {meta}</span>}
+                  <ol>
+                    {s.name}
+                    {meta && (
+                      <span className="text-neutral-400"> · {meta}</span>
+                    )}
+                  </ol>
                 </li>
               );
             })}
@@ -220,7 +231,9 @@ export function BandSetlistsTab({
               onToggle={() => setArchivedMinimized((v) => !v)}
               label="Archived setlists"
             >
-              <h2 className="text-sm font-medium text-neutral-500">Archived setlists</h2>
+              <h2 className="text-sm font-medium text-neutral-500">
+                Archived setlists
+              </h2>
             </MinimizeToggle>
             <span className="text-xs text-neutral-500">
               <span aria-hidden="true">·</span> {archivedSetlists.length}

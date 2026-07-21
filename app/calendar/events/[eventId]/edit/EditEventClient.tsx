@@ -9,6 +9,7 @@ import { Modal } from '../../../../Modal';
 import { Select } from '../../../../Select';
 import { useTrackPending } from '../../../../PendingActionProvider';
 import { useToast } from '../../../../ToastProvider';
+import { useCanGoBack } from '@/app/NavigationHistoryProvider';
 
 interface EventFields {
   title: string;
@@ -43,6 +44,7 @@ export function EditEventClient({
   const router = useRouter();
   const trackPending = useTrackPending();
   const showToast = useToast();
+  const canGoBack = useCanGoBack();
 
   const [fields, setFields] = useState<EventFields>(initial);
   const [busy, setBusy] = useState(false);
@@ -72,6 +74,13 @@ export function EditEventClient({
     });
 
   const eventHref = `/calendar/events/${eventId}`;
+
+  const leave = () => {
+    if (canGoBack()) router.back();
+    else router.push(eventHref);
+  };
+
+
   const canSave = Boolean(fields.title.trim() && fields.date && !busy);
 
   const handleSave = async () => {
@@ -128,12 +137,9 @@ export function EditEventClient({
   return (
     <div className="flex flex-col gap-4 mt-2">
       <div className="flex items-center gap-2 justify-between">
-        <Link
-          href={eventHref}
-          className="btn-outline"
-        >
+        <button type="button" onClick={leave} className="btn-outline">
           Cancel
-        </Link>
+        </button>
         <button
           type="button"
           onClick={handleSave}

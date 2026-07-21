@@ -1,5 +1,4 @@
 import { PageHeader } from '../PageHeader';
-import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { CalendarClient } from './CalendarClient';
 
@@ -10,7 +9,6 @@ import { CalendarClient } from './CalendarClient';
 export default async function CalendarPage() {
   const session = await auth();
   if (!session?.user) return null;
-  if (session.error === 'RefreshAccessTokenError') redirect('/home');
 
   return (
     <main className="main-container">

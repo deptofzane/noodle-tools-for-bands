@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { HistoryList } from './HistoryList';
 import { PageHeader } from '../PageHeader';
@@ -16,7 +15,6 @@ import { PageHeader } from '../PageHeader';
 export default async function HistoryPage() {
   const session = await auth();
   if (!session?.user) return null;
-  if (session.error === 'RefreshAccessTokenError') redirect('/home');
 
   return (
     <main className="main-container">

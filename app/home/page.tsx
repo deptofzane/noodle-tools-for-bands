@@ -4,7 +4,10 @@ import {
   getUnreadNotificationCount,
   listNotifications,
 } from '@/lib/db/notifications';
-import { listEventsForUserInRange } from '@/lib/db/events';
+import {
+  getNextEventForUser,
+  listEventsForUserInRange,
+} from '@/lib/db/events';
 import { listOpenPollsForUser } from '@/lib/db/polls';
 import { NotificationList } from './NotificationList';
 import { OpenPolls } from './OpenPolls';
@@ -32,7 +35,7 @@ export default async function HomePage() {
   const bufferTo = new Date();
   bufferTo.setDate(bufferTo.getDate() + 9);
 
-  const [notifPage, unreadCount, showsBuffer, openPolls] =
+  const [notifPage, unreadCount, showsBuffer, nextEvent, openPolls] =
     await Promise.all([
       listNotifications(userId),
       getUnreadNotificationCount(userId),
@@ -41,14 +44,19 @@ export default async function HomePage() {
         bufferFrom.toLocaleDateString('en-CA'),
         bufferTo.toLocaleDateString('en-CA'),
       ),
+      // Fallback for when nothing lands in the next 7 days: the next event,
+      // however far out. Windowed client-side to the viewer's "today".
+      getNextEventForUser(userId, serverToday),
       listOpenPollsForUser(userId),
     ]);
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 px-6 py-4">
-      {showsBuffer.length > 0 && (
-        <UpcomingShows shows={showsBuffer} serverToday={serverToday} />
-      )}
+      <UpcomingShows
+        shows={showsBuffer}
+        nextEvent={nextEvent}
+        serverToday={serverToday}
+      />
       <OpenPolls polls={openPolls} />
       <NotificationList
         initial={notifPage.notifications}

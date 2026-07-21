@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/api-guard';
 import { getMembership } from '@/lib/db/bands';
-import { getEventForUser, updateEvent } from '@/lib/db/events';
+import { deleteEvent, getEventForUser, updateEvent } from '@/lib/db/events';
 import { getSetlist } from '@/lib/db/setlists';
 import { notify } from '@/lib/db/notifications';
 import { addHoursToTime, DEFAULT_EVENT_DURATION_HOURS } from '@/lib/format';
@@ -88,4 +88,28 @@ export async function PATCH(
     subjectLabel: title,
   });
   return NextResponse.json({ ok: true });
+}
+
+/**
+ * DELETE /api/events/[eventId] — remove the event (its added-member rows
+ * cascade). Only members of the owning band.
+ */
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ eventId: string }> },
+) {
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
+  const { eventId } = await params;
+
+  const event = await getEventForUser(user.id, eventId);
+  if (!event) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (!(await getMembership(user.id, event.bandId)))
+    return NextResponse.json(
+      { error: 'forbidden', message: 'Only band members can delete this event.' },
+      { status: 403 },
+    );
+
+  await deleteEvent(eventId);
+  return new NextResponse(null, { status: 204 });
 }

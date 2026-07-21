@@ -43,7 +43,7 @@ export default async function EventPage({
 
   return (
     <main className="mx-auto flex h-max max-w-2xl flex-col px-6 pb-4">
-      <PageHeader defaultHref="/calendar" defaultHrefName="Calendar" canGoBack={false}>
+      <PageHeader defaultHref="/calendar">
         {canManage && (
           <Link
             href={`/calendar/events/${eventId}/edit`}

@@ -13,7 +13,7 @@ import { BackButton } from './BackButton';
 export function PageHeader({
   defaultHref,
   defaultHrefName,
-  canGoBack,
+  canGoBack = true,
   children,
 }: {
   defaultHref: string;
@@ -24,7 +24,7 @@ export function PageHeader({
 }) {
   return (
     <header className="flex items-center justify-between gap-2 text-xs text-neutral-500">
-      <BackButton defaultHref={defaultHref} canGoBack={canGoBack ?? true} defaultHrefName={defaultHrefName ?? null}/>
+      <BackButton defaultHref={defaultHref} canGoBack={canGoBack} defaultHrefName={defaultHrefName ?? null}/>
       {children}
     </header>
   );

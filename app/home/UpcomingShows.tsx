@@ -36,13 +36,19 @@ function addDays(ymd: string, n: number): string {
  * to the next 7 days in the *viewer's* timezone. `today` is seeded from the
  * server value so the server render and first client render match (no
  * hydration mismatch), then corrected to the browser's local date on mount.
- * Renders nothing once the local window is empty.
+ *
+ * When nothing falls in the next 7 days, we fall back to `nextEvent` — the
+ * single soonest upcoming event, however far out — so the section always
+ * surfaces the next thing on the calendar. Renders nothing only when there
+ * are no upcoming events at all.
  */
 export function UpcomingShows({
   shows,
+  nextEvent,
   serverToday,
 }: {
   shows: UpcomingShow[];
+  nextEvent?: UpcomingShow | null;
   serverToday: string;
 }) {
   const [open, setOpen] = useState(true);
@@ -57,7 +63,57 @@ export function UpcomingShows({
 
   const weekOut = addDays(today, 7);
   const visible = shows.filter((s) => s.date >= today && s.date <= weekOut);
-  if (visible.length === 0) return null;
+
+  // Fall back to the next event (however far out) when the week is empty.
+  const usingFallback = visible.length === 0;
+  const items =
+    !usingFallback
+      ? visible
+      : nextEvent && nextEvent.date >= today
+        ? [nextEvent]
+        : [];
+  if (items.length === 0) return null;
+
+  const renderShow = (s: UpcomingShow) => (
+    <li key={s.id} className="flex items-center gap-1 px-3 py-2.5">
+      <Link
+        href={`/calendar/events/${s.id}`}
+        className="-mx-1 flex min-w-0 flex-1 items-start flex-col justify-start gap-3 rounded px-1 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+      >
+        <span className="flex min-w-0 flex-col">
+          <span className="truncate text-sm font-medium">{s.title}</span>
+          <span className="truncate text-[11px] text-neutral-500">
+            {s.bandName}
+            {s.location ? ` · ${s.location}` : ''}
+          </span>
+        </span>
+        <span className="shrink-0 text-[11px] text-neutral-500">
+          <span className="block font-medium text-neutral-700 dark:text-neutral-300">
+            {formatDateShort(s.date)}
+          </span>
+          {s.time && <span>{formatTimeRange(s.time, s.endTime)}</span>}
+        </span>
+      </Link>
+      {s.setlistId && (
+        <div className="flex shrink-0 flex-col gap-2 ml-2">
+          <Link
+            href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice`}
+            title="Practice this event’s setlist"
+            className="rounded-md border border-neutral-300 px-2.5 py-2 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+          >
+            Practice
+          </Link>
+          <Link
+            href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice/live`}
+            title="Perform this event’s setlist live"
+            className="rounded-md border border-neutral-300 px-2.5 py-2 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+          >
+            Live
+          </Link>
+        </div>
+      )}
+    </li>
+  );
 
   return (
     <section className="flex flex-col gap-2">
@@ -75,52 +131,14 @@ export function UpcomingShows({
         </span>
         <h2 className="text-sm font-medium">Upcoming events</h2>
         <span className="text-xs text-neutral-500">
-          <span aria-hidden="true">·</span> next 7 days · {visible.length}
+          <span aria-hidden="true">·</span>{' '}
+          {usingFallback ? 'next event' : `next 7 days · ${visible.length}`}
         </span>
       </button>
 
       {open && (
         <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-          {visible.map((s) => (
-            <li key={s.id} className="flex items-center gap-1 px-3 py-2.5">
-              <Link
-                href={`/calendar/events/${s.id}`}
-                className="-mx-1 flex min-w-0 flex-1 items-start flex-col justify-start gap-3 rounded px-1 hover:bg-neutral-50 dark:hover:bg-neutral-900"
-              >
-                <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-sm font-medium">{s.title}</span>
-                  <span className="truncate text-[11px] text-neutral-500">
-                    {s.bandName}
-                    {s.location ? ` · ${s.location}` : ''}
-                  </span>
-                </span>
-                <span className="shrink-0 text-[11px] text-neutral-500">
-                  <span className="block font-medium text-neutral-700 dark:text-neutral-300">
-                    {formatDateShort(s.date)}
-                  </span>
-                  {s.time && <span>{formatTimeRange(s.time, s.endTime)}</span>}
-                </span>
-              </Link>
-              {s.setlistId && (
-                <div className="flex shrink-0 flex-col gap-2 ml-2">
-                  <Link
-                    href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice`}
-                    title="Practice this event’s setlist"
-                    className="rounded-md border border-neutral-300 px-2.5 py-2 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
-                  >
-                    Practice
-                  </Link>
-                  <Link
-                    href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice/live`}
-                    title="Perform this event’s setlist live"
-                    className="rounded-md border border-neutral-300 px-2.5 py-2 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
-                  >
-                    Live
-                  </Link>
-                </div>
-              )}
-            </li>
-          ))}
+          {items.map(renderShow)}
         </ul>
       )}
     </section>

@@ -134,6 +134,45 @@ export async function listEventsForUserInRange(
   return rows;
 }
 
+/**
+ * The single soonest event visible to the user with a date on or after `from`
+ * (YYYY-MM-DD), or null — no upper bound. Used as a Home fallback to surface
+ * the next event when nothing falls in the next 7 days.
+ */
+export async function getNextEventForUser(
+  userId: string,
+  from: string,
+): Promise<EventListItem | null> {
+  const bandIds = await userBandIds(userId);
+  const visible =
+    bandIds.length > 0
+      ? or(inArray(events.bandId, bandIds), eq(eventMembers.userId, userId))
+      : eq(eventMembers.userId, userId);
+
+  const [row] = await db
+    .select({
+      id: events.id,
+      bandId: events.bandId,
+      bandName: bands.name,
+      title: events.title,
+      date: events.date,
+      time: events.time,
+      endTime: events.endTime,
+      location: events.location,
+      setlistId: events.setlistId,
+    })
+    .from(events)
+    .innerJoin(bands, eq(bands.id, events.bandId))
+    .leftJoin(
+      eventMembers,
+      and(eq(eventMembers.eventId, events.id), eq(eventMembers.userId, userId)),
+    )
+    .where(and(gte(events.date, from), visible))
+    .orderBy(asc(events.date), asc(events.time))
+    .limit(1);
+  return row ?? null;
+}
+
 export interface FeedEvent {
   id: string;
   bandName: string;
@@ -266,6 +305,11 @@ export async function updateEvent(
     .update(events)
     .set({ ...fields, updatedAt: sql`now()` })
     .where(eq(events.id, eventId));
+}
+
+/** Delete an event (its added-member rows cascade). */
+export async function deleteEvent(eventId: string): Promise<void> {
+  await db.delete(events).where(eq(events.id, eventId));
 }
 
 /** True if the user is in the event's owning band or is an added member. */

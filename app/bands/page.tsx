@@ -1,5 +1,4 @@
 import { PageHeader } from '../PageHeader';
-import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { BandsClient } from './BandsClient';
 
@@ -11,7 +10,6 @@ import { BandsClient } from './BandsClient';
 export default async function BandsPage() {
   const session = await auth();
   if (!session?.user) return null;
-  if (session.error === 'RefreshAccessTokenError') redirect('/home');
 
   return (
     <main className="main-container">

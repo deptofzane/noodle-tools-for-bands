@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useTrackPending } from '../../../../../PendingActionProvider';
 import { useToast } from '../../../../../ToastProvider';
 import { SetlistItemsEditor, type SetlistItem } from '../../SetlistItemsEditor';
+import { useCanGoBack } from '@/app/NavigationHistoryProvider';
 
 interface BandSong {
   conversationId: string;
@@ -36,6 +37,7 @@ export function EditSetlistClient({
   const router = useRouter();
   const trackPending = useTrackPending();
   const showToast = useToast();
+  const canGoBack = useCanGoBack();
 
   const [items, setItems] = useState<SetlistItem[]>(initialSongs);
   const [saving, setSaving] = useState(false);
@@ -46,6 +48,13 @@ export function EditSetlistClient({
   const serialize = (list: SetlistItem[]) =>
     list.map((s) => s.conversationId ?? `marker:${s.name}`).join('|');
   const dirty = serialize(initialSongs) !== serialize(items);
+
+  // Return to the page the user came from (in-app history), falling back to
+  // the song itself on a fresh load / deep link.
+  const leave = () => {
+    if (canGoBack()) router.back();
+    else router.push(viewHref);
+  };
 
   const handleSave = async () => {
     if (!dirty || saving) return;
@@ -75,12 +84,9 @@ export function EditSetlistClient({
   return (
     <div className="flex flex-col gap-4 mt-2">
       <header className="flex flex-wrap items-center justify-between gap-2">
-        <Link
-          href={viewHref}
-          className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
-        >
+        <button type="button" onClick={leave} className="btn-outline">
           Cancel
-        </Link>
+        </button>
         <button
           type="button"
           onClick={handleSave}
