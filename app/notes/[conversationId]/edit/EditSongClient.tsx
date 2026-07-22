@@ -182,7 +182,7 @@ export function EditSongClient({
     <div className="flex flex-col gap-6 mt-2">
       <div className="flex items-center justify-between gap-2">
         <button type="button" onClick={handleCancel} className="btn-outline">
-          Cancel
+          {dirty ? 'Cancel' : 'Back'}
         </button>
         <button
           type="button"

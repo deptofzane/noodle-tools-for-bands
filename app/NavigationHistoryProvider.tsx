@@ -38,12 +38,10 @@ export function NavigationHistoryProvider({ children }: { children: ReactNode })
   useEffect(() => {
     const stack = stackRef.current;
     const top = stack[stack.length - 1];
-    console.log('full pathname!', pathname)
     if (!pathname || pathname === top || pathname.includes('edit')) return; // initial mount / no change
     if (pathname === stack[stack.length - 2]) {
       stack.pop(); // stepped back
     } else { // stop edit pages from being included in stack
-      console.log('pathname pushed', pathname)
       stack.push(pathname); // moved forward
     }
   }, [pathname]);
