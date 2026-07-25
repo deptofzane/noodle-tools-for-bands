@@ -11,7 +11,7 @@ import { usePersistedBoolean } from '../../usePersistedBoolean';
 import { usePersistedStringSet } from '../../usePersistedStringSet';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
-import { useOfflineSetlists } from '../../offline/useOfflineSetlists';
+import { useOfflineDownload } from '../../offline/useOfflineDownload';
 import {
   MinimizeToggle,
   songCountLabel,
@@ -36,7 +36,7 @@ export function BandSetlistsTab({
   const router = useRouter();
   const trackPending = useTrackPending();
   const showToast = useToast();
-  const offline = useOfflineSetlists();
+  const offline = useOfflineDownload();
   const [expandedSetlists, toggleSetlistExpanded] = usePersistedStringSet(
     `bandSetlistsExpanded:${bandId}`,
   );
@@ -100,34 +100,16 @@ export function BandSetlistsTab({
     }
   };
 
-  const downloadOffline = async (sl: Setlist) => {
-    try {
-      const rec = await offline.download({
-        bandId,
-        setlistId: sl.id,
-        name: sl.name,
-        songs: sl.songs,
-      });
-      if (rec)
-        showToast(
-          `“${sl.name}” is available offline (${rec.fileCount} sheet${
-            rec.fileCount === 1 ? '' : 's'
-          }).`,
-          'success',
-        );
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : String(e));
-    }
-  };
+  const openDownload = (sl: Setlist) =>
+    offline.openDownload({
+      bandId,
+      setlistId: sl.id,
+      name: sl.name,
+      songs: sl.songs,
+    });
 
-  const removeOffline = async (sl: Setlist) => {
-    try {
-      await offline.remove({ bandId, setlistId: sl.id });
-      showToast('Offline copy removed.', 'success');
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : String(e));
-    }
-  };
+  const removeOffline = (sl: Setlist) =>
+    offline.remove({ bandId, setlistId: sl.id, name: sl.name });
 
   const activeSetlists = setlists.filter((s) => !s.archived);
   const archivedSetlists = setlists.filter((s) => s.archived);
@@ -198,7 +180,7 @@ export function BandSetlistsTab({
               </ActionMenuItem>
               {offlineRec ? (
                 <>
-                  <ActionMenuItem onClick={() => void downloadOffline(sl)}>
+                  <ActionMenuItem onClick={() => openDownload(sl)}>
                     {downloading ? 'Downloading…' : 'Update offline copy'}
                   </ActionMenuItem>
                   <ActionMenuItem onClick={() => void removeOffline(sl)}>
@@ -206,7 +188,7 @@ export function BandSetlistsTab({
                   </ActionMenuItem>
                 </>
               ) : (
-                <ActionMenuItem onClick={() => void downloadOffline(sl)}>
+                <ActionMenuItem onClick={() => openDownload(sl)}>
                   {downloading ? 'Downloading…' : 'Download for offline'}
                 </ActionMenuItem>
               )}
@@ -316,6 +298,8 @@ export function BandSetlistsTab({
           )}
         </section>
       )}
+
+      {offline.modal}
 
       <ConfirmModal
         open={deleteTarget !== null}

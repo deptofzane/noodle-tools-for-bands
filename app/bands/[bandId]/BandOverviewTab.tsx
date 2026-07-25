@@ -11,7 +11,8 @@ import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
 import { usePersistedBoolean } from '../../usePersistedBoolean';
 import { usePersistedStringSet } from '../../usePersistedStringSet';
-import { MinimizeToggle, type Show } from './bandDetailShared';
+import { useOfflineDownload } from '../../offline/useOfflineDownload';
+import { MinimizeToggle, type Setlist, type Show } from './bandDetailShared';
 
 /**
  * The Overview tab: upcoming Shows, Past shows, and (for non-owners) a Leave
@@ -21,12 +22,16 @@ import { MinimizeToggle, type Show } from './bandDetailShared';
 export function BandOverviewTab({
   bandId,
   shows,
+  setlists,
   isOwner,
   onLeave,
   onReload,
 }: {
   bandId: string;
   shows: Show[];
+  /** All the band's setlists (with songs) — to offer offline download on an
+   * event whose setlist is associated. */
+  setlists: Setlist[];
   isOwner: boolean;
   onLeave: () => void;
   onReload: () => Promise<void> | void;
@@ -34,6 +39,7 @@ export function BandOverviewTab({
   const router = useRouter();
   const trackPending = useTrackPending();
   const showToast = useToast();
+  const offline = useOfflineDownload();
   const [showsMinimized, setShowsMinimized] = usePersistedBoolean(
     'bandShowsMinimized',
     false,
@@ -82,6 +88,23 @@ export function BandOverviewTab({
 
   const renderShow = (show: Show) => {
     const expanded = expandedShows.has(show.id);
+    // An event can offer offline download when it points at a setlist we have
+    // (with at least one real song).
+    const setlist = show.setlistId
+      ? setlists.find((s) => s.id === show.setlistId)
+      : undefined;
+    const canDownload =
+      !!setlist && setlist.songs.some((s) => s.conversationId);
+    const offlineRec = setlist ? offline.records?.get(setlist.id) : undefined;
+    const downloading = !!setlist && offline.busyId === setlist.id;
+    const downloadTarget = setlist
+      ? {
+          bandId,
+          setlistId: setlist.id,
+          name: setlist.name,
+          songs: setlist.songs,
+        }
+      : null;
     return (
       <li
         key={show.id}
@@ -118,6 +141,34 @@ export function BandOverviewTab({
             >
               Edit event
             </ActionMenuItem>
+            {canDownload &&
+              downloadTarget &&
+              (offlineRec ? (
+                <>
+                  <ActionMenuItem
+                    onClick={() => offline.openDownload(downloadTarget)}
+                  >
+                    {downloading ? 'Downloading…' : 'Update offline copy'}
+                  </ActionMenuItem>
+                  <ActionMenuItem
+                    onClick={() =>
+                      void offline.remove({
+                        bandId,
+                        setlistId: setlist!.id,
+                        name: setlist!.name,
+                      })
+                    }
+                  >
+                    Remove offline copy
+                  </ActionMenuItem>
+                </>
+              ) : (
+                <ActionMenuItem
+                  onClick={() => offline.openDownload(downloadTarget)}
+                >
+                  {downloading ? 'Downloading…' : 'Download for offline'}
+                </ActionMenuItem>
+              ))}
             <ActionMenuItem destructive onClick={() => setDeleteTarget(show)}>
               Delete event
             </ActionMenuItem>
@@ -149,6 +200,20 @@ export function BandOverviewTab({
                 >
                   {show.setlistName ?? 'View setlist'}
                 </Link>
+                {downloading ? (
+                  <span className="ml-2 text-xs tabular-nums text-blue-600 dark:text-blue-400">
+                    ↓ {Math.round(offline.progress * 100)}%
+                  </span>
+                ) : offlineRec ? (
+                  <span
+                    title={`Downloaded ${new Date(
+                      offlineRec.downloadedAt,
+                    ).toLocaleString()}`}
+                    className="ml-2 text-xs font-medium text-green-600 dark:text-green-500"
+                  >
+                    ✓ Offline
+                  </span>
+                ) : null}
               </div>
             )}
             {show.details && (
@@ -225,6 +290,8 @@ export function BandOverviewTab({
           Leave band
         </button>
       )}
+
+      {offline.modal}
 
       <ConfirmModal
         open={deleteTarget !== null}

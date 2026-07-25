@@ -12,6 +12,51 @@
 const DB_NAME = 'sidestage-offline';
 const STORE = 'setlists';
 const PAGES_CACHE = 'sidestage-pages'; // must match app/sw.ts
+const SHEET_CACHE = 'sidestage-files'; // must match app/sw.ts
+const AUDIO_CACHE = 'sidestage-audio'; // must match app/sw.ts
+
+const CHOICES_KEY = 'offline:downloadChoices';
+
+/**
+ * The content caches a URL belongs to (or null if it isn't cached content).
+ * Mirrors the service worker's matchers in app/sw.ts.
+ */
+function contentCacheForUrl(url: string): string | null {
+  if (/\/files\/sheet_music/.test(url)) return SHEET_CACHE;
+  if (/\/files\/audio/.test(url)) return AUDIO_CACHE;
+  return null;
+}
+
+/**
+ * The user's last download choices (sheet music / audio), so the modal opens
+ * with those boxes pre-checked. Defaults to sheets-only — the light, on-stage
+ * essential; audio is opt-in.
+ */
+export function readDownloadChoices(): DownloadChoices {
+  try {
+    const raw = localStorage.getItem(CHOICES_KEY);
+    if (raw) {
+      const o = JSON.parse(raw) as Partial<DownloadChoices>;
+      return { sheets: o.sheets !== false, audio: o.audio === true };
+    }
+  } catch {
+    // ignore malformed / unavailable storage
+  }
+  return { sheets: true, audio: false };
+}
+
+export function writeDownloadChoices(choices: DownloadChoices): void {
+  try {
+    localStorage.setItem(CHOICES_KEY, JSON.stringify(choices));
+  } catch {
+    // ignore
+  }
+}
+
+export interface DownloadChoices {
+  sheets: boolean;
+  audio: boolean;
+}
 
 export interface OfflineRecord {
   setlistId: string;
@@ -21,6 +66,17 @@ export interface OfflineRecord {
   songCount: number;
   /** Sheet-music files successfully cached across all songs. */
   fileCount: number;
+  /** Audio files successfully cached across all songs. */
+  audioCount: number;
+  /** What the user chose to include on the last download. */
+  choices: DownloadChoices;
+  /**
+   * Every content URL (sheet + audio) this setlist cached. Used to evict its
+   * bytes on removal — but only those no other downloaded setlist still needs
+   * (a song can appear in several setlists). Optional for records written
+   * before this was tracked.
+   */
+  urls?: string[];
   /** Epoch ms of the last successful download. */
   downloadedAt: number;
 }
@@ -96,9 +152,10 @@ export async function downloadSetlistOffline(input: {
   setlistId: string;
   name: string;
   songs: OfflineSong[];
+  choices: DownloadChoices;
   onProgress?: (fraction: number) => void;
 }): Promise<OfflineRecord> {
-  const { bandId, setlistId, name, songs, onProgress } = input;
+  const { bandId, setlistId, name, songs, choices, onProgress } = input;
 
   // Ask the browser to keep this data through storage pressure (esp. iOS).
   try {
@@ -130,30 +187,59 @@ export async function downloadSetlistOffline(input: {
   }
 
   let fileCount = 0;
+  let audioCount = 0;
+  const urls: string[] = [];
   for (const song of playable) {
     const cid = song.conversationId!;
-    try {
-      const vres = await fetch(
-        `/api/conversations/${cid}/sheet-music-versions`,
-        { cache: 'no-store' },
-      );
-      if (vres.ok) {
-        const { versions } = (await vres.json()) as { versions: SheetVersion[] };
-        for (const v of versions) {
-          const url = `/api/conversations/${cid}/files/sheet_music?version=${v.id}&v=${encodeURIComponent(
-            v.updatedAt,
-          )}`;
-          try {
-            const fres = await fetch(url);
-            if (fres.ok) fileCount++;
-          } catch {
-            // skip this file
+
+    // Sheet music: every version, keyed by its immutable versioned URL.
+    if (choices.sheets) {
+      try {
+        const vres = await fetch(
+          `/api/conversations/${cid}/sheet-music-versions`,
+          { cache: 'no-store' },
+        );
+        if (vres.ok) {
+          const { versions } = (await vres.json()) as {
+            versions: SheetVersion[];
+          };
+          for (const v of versions) {
+            const url = `/api/conversations/${cid}/files/sheet_music?version=${v.id}&v=${encodeURIComponent(
+              v.updatedAt,
+            )}`;
+            try {
+              const fres = await fetch(url);
+              if (fres.ok) {
+                fileCount++;
+                urls.push(url);
+              }
+            } catch {
+              // skip this file
+            }
           }
         }
+      } catch {
+        // skip this song's sheets
       }
-    } catch {
-      // skip this song's sheets
     }
+
+    // Audio: the default version, at the same URL the player requests so the
+    // cache entry matches. Fetched without a Range header → full 200 body.
+    if (choices.audio) {
+      try {
+        const aurl = `/api/conversations/${cid}/files/audio?name=${encodeURIComponent(
+          song.name,
+        )}`;
+        const ares = await fetch(aurl);
+        if (ares.ok) {
+          audioCount++;
+          urls.push(aurl);
+        }
+      } catch {
+        // skip this song's audio
+      }
+    }
+
     tick();
   }
 
@@ -163,6 +249,9 @@ export async function downloadSetlistOffline(input: {
     name,
     songCount: playable.length,
     fileCount,
+    audioCount,
+    choices,
+    urls,
     downloadedAt: Date.now(),
   };
   await putRecord(record);
@@ -171,16 +260,23 @@ export async function downloadSetlistOffline(input: {
 }
 
 /**
- * Remove a setlist's offline copy: drop its record and evict its cached page
- * shells. Sheet-music file bytes live in a shared, size-bounded cache and are
- * left to normal expiry/LRU rather than reference-counted per setlist.
+ * Remove a setlist's offline copy: drop its record, evict its page shells, and
+ * evict its sheet/audio bytes — but only those no other downloaded setlist
+ * still references (a song can appear in several setlists), so removing one set
+ * never breaks another's offline copy.
  */
 export async function removeSetlistOffline(input: {
   bandId: string;
   setlistId: string;
 }): Promise<void> {
   const { bandId, setlistId } = input;
+
+  // Read all records first so we can reference-count before deleting this one.
+  const all = await listOfflineSetlists();
+  const record = all.find((r) => r.setlistId === setlistId);
   await deleteRecord(setlistId);
+
+  // Page shells are unique to this setlist — always safe to drop.
   try {
     const cache = await caches.open(PAGES_CACHE);
     await cache.delete(`/bands/${bandId}/setlists/${setlistId}/practice`);
@@ -188,4 +284,32 @@ export async function removeSetlistOffline(input: {
   } catch {
     // best-effort
   }
+
+  // Content bytes: delete only URLs no remaining setlist references.
+  const mine = record?.urls;
+  if (!mine?.length) return;
+  const stillReferenced = new Set(
+    all
+      .filter((r) => r.setlistId !== setlistId)
+      .flatMap((r) => r.urls ?? []),
+  );
+  const byCache = new Map<string, string[]>();
+  for (const url of mine) {
+    if (stillReferenced.has(url)) continue;
+    const cacheName = contentCacheForUrl(url);
+    if (!cacheName) continue;
+    const list = byCache.get(cacheName) ?? [];
+    list.push(url);
+    byCache.set(cacheName, list);
+  }
+  await Promise.all(
+    [...byCache.entries()].map(async ([cacheName, list]) => {
+      try {
+        const cache = await caches.open(cacheName);
+        await Promise.all(list.map((u) => cache.delete(u)));
+      } catch {
+        // best-effort
+      }
+    }),
+  );
 }

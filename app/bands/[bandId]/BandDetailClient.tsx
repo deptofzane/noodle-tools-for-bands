@@ -404,6 +404,7 @@ export function BandDetailClient({
         <BandOverviewTab
           bandId={bandId}
           shows={shows}
+          setlists={setlists}
           isOwner={isOwner}
           onLeave={() => setLeaveOpen(true)}
           onReload={reload}

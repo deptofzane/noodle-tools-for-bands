@@ -5,6 +5,7 @@ import {
   downloadSetlistOffline,
   listOfflineSetlists,
   removeSetlistOffline,
+  type DownloadChoices,
   type OfflineRecord,
   type OfflineSong,
 } from './offlineSetlists';
@@ -20,6 +21,7 @@ export interface OfflineState {
     setlistId: string;
     name: string;
     songs: OfflineSong[];
+    choices: DownloadChoices;
   }) => Promise<OfflineRecord | null>;
   remove: (input: { bandId: string; setlistId: string }) => Promise<void>;
 }

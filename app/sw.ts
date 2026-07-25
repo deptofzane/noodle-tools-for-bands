@@ -4,6 +4,7 @@ import {
   CacheFirst,
   ExpirationPlugin,
   NetworkFirst,
+  RangeRequestsPlugin,
   Serwist,
   StaleWhileRevalidate,
   type PrecacheEntry,
@@ -34,10 +35,12 @@ declare const self: ServiceWorkerGlobalScope;
  */
 const offlineRuntimeCaching: RuntimeCaching[] = [
   // Sheet-music file bytes. URLs are versioned (`?version=&v=updatedAt`) and
-  // therefore immutable, so CacheFirst is both correct and fast.
+  // therefore immutable, so CacheFirst is both correct and fast. `?version=`
+  // must stay part of the cache key, so search is NOT ignored here.
   {
     matcher: ({ url, sameOrigin }) =>
-      sameOrigin && /^\/api\/conversations\/[^/]+\/files\//.test(url.pathname),
+      sameOrigin &&
+      /^\/api\/conversations\/[^/]+\/files\/sheet_music/.test(url.pathname),
     handler: new CacheFirst({
       cacheName: 'sidestage-files',
       matchOptions: { ignoreVary: true },
@@ -47,6 +50,28 @@ const offlineRuntimeCaching: RuntimeCaching[] = [
           maxEntries: 600,
           maxAgeSeconds: 60 * 24 * 60 * 60, // 60 days
           purgeOnQuotaError: true, // let it be evicted under storage pressure
+        }),
+      ],
+    }),
+  },
+  // Audio bytes. `RangeRequestsPlugin` serves the partial-content requests an
+  // <audio> element makes (seeking) from the fully-cached 200 response. The
+  // `?name=` query only sets the download filename, so ignore search when
+  // matching — the player's URL and the download URL still resolve to one entry.
+  {
+    matcher: ({ url, sameOrigin }) =>
+      sameOrigin &&
+      /^\/api\/conversations\/[^/]+\/files\/audio/.test(url.pathname),
+    handler: new CacheFirst({
+      cacheName: 'sidestage-audio',
+      matchOptions: { ignoreVary: true, ignoreSearch: true },
+      plugins: [
+        new CacheableResponsePlugin({ statuses: [200] }),
+        new RangeRequestsPlugin(),
+        new ExpirationPlugin({
+          maxEntries: 300,
+          maxAgeSeconds: 60 * 24 * 60 * 60, // 60 days
+          purgeOnQuotaError: true,
         }),
       ],
     }),

@@ -5,6 +5,7 @@ import { getMembership } from '@/lib/db/bands';
 import { getSetlist } from '@/lib/db/setlists';
 import { formatDuration, formatSongMeta } from '@/lib/format';
 import { PageHeader } from '../../../../PageHeader';
+import { SetlistOfflineButton } from './SetlistOfflineButton';
 
 /**
  * View a setlist: its name and songs in order. Server shell — the setlist
@@ -101,7 +102,7 @@ export default async function SetlistPage({
         </p>
       </div>
           {songCount > 0 && (
-            <span className="mt-2 flex shrink-0 gap-2">
+            <span className="mt-2 flex shrink-0 flex-wrap items-center justify-end gap-2">
               <Link
                 href={`/bands/${bandId}/setlists/${setlistId}/practice`}
                 className="btn-outline h-12 md:h-9"
@@ -114,6 +115,12 @@ export default async function SetlistPage({
               >
                 Live
               </Link>
+              <SetlistOfflineButton
+                bandId={bandId}
+                setlistId={setlistId}
+                name={setlist.name}
+                songs={setlist.songs}
+              />
             </span>
           )}
     </span>
