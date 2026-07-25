@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { listMyBands } from '@/lib/db/bands';
 import { getConversationMembership } from '@/lib/db/conversations';
-import { getSongFileMeta, listAudioVersions } from '@/lib/db/song-files';
+import { listAudioVersions, listSheetVersions } from '@/lib/db/song-files';
 import { EditSongClient } from './EditSongClient';
 
 /**
@@ -24,9 +24,9 @@ export default async function EditSongPage({
   if (!membership) notFound();
   const conversation = membership.conversation;
 
-  const [bands, sheet, audioVersions] = await Promise.all([
+  const [bands, sheetVersions, audioVersions] = await Promise.all([
     listMyBands(user.id),
-    getSongFileMeta(conversationId, 'sheet_music'),
+    listSheetVersions(conversationId),
     listAudioVersions(conversationId),
   ]);
 
@@ -42,15 +42,7 @@ export default async function EditSongPage({
         initialKey={conversation.key}
         bands={bands.map((b) => ({ id: b.id, name: b.name }))}
         audioVersions={audioVersions}
-        sheetMusic={
-          sheet
-            ? {
-                fileName: sheet.fileName,
-                mimeType: sheet.mimeType,
-                updatedAt: sheet.updatedAt,
-              }
-            : null
-        }
+        sheetVersions={sheetVersions}
       />
     </main>
   );

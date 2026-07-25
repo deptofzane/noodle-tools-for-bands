@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import withSerwistInit from '@serwist/next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -12,4 +13,13 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['googleapis'],
 };
 
-export default nextConfig;
+// Turn the app into an installable PWA: the plugin compiles `app/sw.ts` to
+// `public/sw.js` and injects the app-shell precache manifest. Disabled in dev
+// so the service worker's caching doesn't interfere with hot reload.
+const withSerwist = withSerwistInit({
+  swSrc: 'app/sw.ts',
+  swDest: 'public/sw.js',
+  disable: process.env.NODE_ENV === 'development',
+});
+
+export default withSerwist(nextConfig);

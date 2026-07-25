@@ -430,15 +430,38 @@ export const songFiles = pgTable(
   },
   (t) => [
     index('song_files_conversation_idx').on(t.conversationId),
-    // At most one sheet-music row per conversation.
-    uniqueIndex('song_files_conversation_sheet_unique')
-      .on(t.conversationId)
-      .where(sql`kind = 'sheet_music'`),
-    // At most one *default* audio version per conversation.
+    // At most one *default* version per conversation, for each kind. Audio and
+    // sheet music can both have multiple versions; exactly one is the default.
     uniqueIndex('song_files_default_audio_unique')
       .on(t.conversationId)
       .where(sql`kind = 'audio' and is_default`),
+    uniqueIndex('song_files_default_sheet_unique')
+      .on(t.conversationId)
+      .where(sql`kind = 'sheet_music' and is_default`),
   ],
+);
+
+// Each user's chosen sheet-music version per song (so members can view the
+// chart they want — e.g. a transposed or instrument-specific version — and it
+// sticks across sessions/devices). Falls back to the song's default version
+// when there's no row (or the chosen version was deleted, which cascades).
+export const sheetVersionPrefs = pgTable(
+  'sheet_version_prefs',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => conversations.id, { onDelete: 'cascade' }),
+    versionId: uuid('version_id')
+      .notNull()
+      .references(() => songFiles.id, { onDelete: 'cascade' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.conversationId] })],
 );
 
 // ── Setlists ─────────────────────────────────────────────────────────

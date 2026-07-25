@@ -7,8 +7,11 @@ import { useCanGoBack } from '../../../NavigationHistoryProvider';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
-import { SheetMusic, type SheetMusicMeta } from '../SheetMusic';
 import { AudioVersions, type AudioVersionMeta } from './AudioVersions';
+import {
+  SheetMusicVersions,
+  type SheetVersionMeta,
+} from './SheetMusicVersions';
 
 interface BandOption {
   id: string;
@@ -35,7 +38,7 @@ export function EditSongClient({
   initialKey,
   bands,
   audioVersions,
-  sheetMusic,
+  sheetVersions,
 }: {
   conversationId: string;
   apiKey: string;
@@ -46,7 +49,7 @@ export function EditSongClient({
   initialKey: string | null;
   bands: BandOption[];
   audioVersions: AudioVersionMeta[];
-  sheetMusic: SheetMusicMeta | null;
+  sheetVersions: SheetVersionMeta[];
 }) {
   const router = useRouter();
   const canGoBack = useCanGoBack();
@@ -267,12 +270,11 @@ export function EditSongClient({
         initial={audioVersions}
       />
 
-      {/* Sheet music (reuses the song-page panel) */}
-      <SheetMusic
+      {/* Sheet music versions */}
+      <SheetMusicVersions
         conversationId={conversationId}
         apiKey={apiKey}
-        initial={sheetMusic}
-        startClosed={false}
+        initial={sheetVersions}
       />
 
       {/* Archive */}

@@ -106,10 +106,11 @@ export default async function NotesPage({
             <SongDetails>
               <span className="flex justify-around">
                 {(conversation.bpm != null || conversation.key) && (
-                  <div className="flex justify-center flex-col gap-1 text-sm text-neutral-600 dark:text-neutral-400">
+                  <div className="flex justify-center flex-col md:flex-row md:gap-3 gap-1 text-sm text-neutral-600 dark:text-neutral-400">
                     {conversation.bpm != null && (
                       <span>
-                        <span className="font-medium">{conversation.bpm}</span> BPM
+                        <span className="font-medium">{conversation.bpm}</span>{' '}
+                        BPM
                       </span>
                     )}
                     {conversation.key && (
@@ -137,14 +138,14 @@ export default async function NotesPage({
                   </div>
                 )}
               </span>
+              <SheetMusic
+                conversationId={conversationId}
+                apiKey={apiKey}
+                initial={sheetMusic}
+                startClosed={false}
+              />
             </SongDetails>
           )}
-          <SheetMusic
-            conversationId={conversationId}
-            apiKey={apiKey}
-            initial={sheetMusic}
-            variant="notice"
-          />
           <NotesPanel
             conversationId={conversationId}
             currentUserId={user.id}

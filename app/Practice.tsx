@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
 import { PlayerProvider } from './notes/[conversationId]/PlayerContext';
 import { AudioPlayer } from './notes/[conversationId]/AudioPlayer';
+import { SetlistNav } from './SetlistNav';
+import { usePersistedIndex } from './usePersistedIndex';
 import {
   SheetMusic,
   type SheetMusicMeta,
@@ -29,11 +30,14 @@ export interface PracticeSong {
 export function Practice({
   songs,
   apiKey,
+  persistKey,
 }: {
   songs: PracticeSong[];
   apiKey: string;
+  /** localStorage key to remember the last-viewed song (per set). */
+  persistKey?: string;
 }) {
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = usePersistedIndex(persistKey ?? null, songs.length);
 
   if (songs.length === 0) {
     return (
@@ -66,13 +70,23 @@ export function Practice({
           <span aria-hidden="true">‹</span>
         </button>
 
-        <div className="min-w-0 text-center text-sm">
-          <span className="font-medium">{song.title}</span>
-          <span className="text-neutral-500">
-            {' '}
-            - {current + 1}/{total}
+        <SetlistNav
+          songs={songs.map((s) => ({
+            title: s.title,
+            isMarker: !s.conversationId,
+          }))}
+          current={current}
+          onSelect={setIndex}
+          align="center"
+        >
+          <span className="text-sm">
+            <span className="font-medium">{song.title}</span>
+            <span className="text-neutral-500">
+              {' '}
+              - {current + 1}/{total}
+            </span>
           </span>
-        </div>
+        </SetlistNav>
 
         <button
           type="button"
@@ -102,6 +116,7 @@ export function Practice({
                 apiKey={apiKey}
                 initial={song.sheetMusic}
                 startClosed={false}
+                zoomKey={song.conversationId}
               />
             )}
           </div>

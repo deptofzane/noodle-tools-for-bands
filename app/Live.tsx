@@ -1,9 +1,20 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import { previewKind } from '@/lib/sheet-preview';
+import { ActionMenu, ActionMenuItem } from './ActionMenu';
+import { SetlistNav } from './SetlistNav';
+import { usePersistedIndex } from './usePersistedIndex';
+import { usePersistedZoom } from './usePersistedZoom';
 import { PdfView } from './PdfView';
+import { SheetText } from './notes/[conversationId]/SheetText';
 import type { PracticeSong } from './Practice';
 
 /** Minimal typing for the (still-experimental) Screen Wake Lock API. */
@@ -24,44 +35,47 @@ interface WakeLockNavigator {
 export function Live({
   songs,
   exitHref,
+  persistKey,
 }: {
   songs: PracticeSong[];
   exitHref: string;
+  /** localStorage key to remember the last-viewed song (per set). */
+  persistKey?: string;
 }) {
   const router = useRouter();
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = usePersistedIndex(persistKey ?? null, songs.length);
 
   const total = songs.length;
   const current = Math.min(index, Math.max(0, total - 1));
   const song = songs[current];
+  const convId = song?.conversationId ?? null;
   const canBack = current > 0;
   const canForward = current < total - 1;
 
-  const goPrev = useCallback(() => setIndex((i) => Math.max(0, i - 1)), []);
+  const goPrev = useCallback(
+    () => setIndex((i) => Math.max(0, i - 1)),
+    [setIndex],
+  );
   const goNext = useCallback(
     () => setIndex((i) => Math.min(total - 1, i + 1)),
-    [total],
+    [total, setIndex],
   );
   const exit = useCallback(() => router.push(exitHref), [router, exitHref]);
 
-  // One zoom control (percent) drives image width, PDF viewer zoom, and text
-  // font size. Persists across items as you flip through.
-  const [zoom, setZoom] = useState(100);
-  const zoomIn = useCallback(() => setZoom((z) => Math.min(400, z + 25)), []);
-  const zoomOut = useCallback(() => setZoom((z) => Math.max(50, z - 25)), []);
-  const resetZoom = useCallback(() => setZoom(100), []);
+  // Zoom (percent) drives image width, PDF viewer zoom, and text font size.
+  // It's per-song and persisted (keyed by the song's conversation id), so each
+  // song keeps its own zoom as you flip through the set and come back.
+  const [zoom, setZoom] = usePersistedZoom(convId);
+  const zoomIn = useCallback(() => setZoom((z) => z + 10), [setZoom]);
+  const zoomOut = useCallback(() => setZoom((z) => z - 10), [setZoom]);
+  const resetZoom = useCallback(() => setZoom(100), [setZoom]);
 
-  // For pinch-to-zoom: read the live value without re-subscribing, and set a
-  // clamped absolute value.
+  // For pinch-to-zoom: read the live value without re-subscribing.
   const zoomRef = useRef(zoom);
   useEffect(() => {
     zoomRef.current = zoom;
   }, [zoom]);
   const getZoom = useCallback(() => zoomRef.current, []);
-  const applyZoom = useCallback(
-    (n: number) => setZoom(Math.min(400, Math.max(50, Math.round(n)))),
-    [],
-  );
 
   const sheet = song?.sheetMusic ?? null;
   const kind =
@@ -69,6 +83,54 @@ export function Live({
       ? previewKind(sheet.mimeType, sheet.fileName)
       : null;
   const zoomable = kind === 'image' || kind === 'pdf' || kind === 'text';
+
+  // Sheet-music versions for the current song + this user's preferred one.
+  // Chosen from the header kebab; the choice persists per-user.
+  const [sheetVersions, setSheetVersions] = useState<LiveSheetVersion[] | null>(
+    null,
+  );
+  const [sheetSelectedId, setSheetSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!convId) {
+      setSheetVersions([]);
+      setSheetSelectedId(null);
+      return;
+    }
+    let cancelled = false;
+    setSheetVersions(null);
+    setSheetSelectedId(null);
+    fetch(`/api/conversations/${convId}/sheet-music-versions`, {
+      cache: 'no-store',
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
+      .then(
+        (d: { versions: LiveSheetVersion[]; preferredId: string | null }) => {
+          if (cancelled) return;
+          setSheetVersions(d.versions);
+          setSheetSelectedId(d.preferredId);
+        },
+      )
+      .catch(() => {
+        if (!cancelled) setSheetVersions([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [convId]);
+
+  const selectSheetVersion = useCallback(
+    (id: string) => {
+      setSheetSelectedId(id);
+      if (convId)
+        void fetch(`/api/conversations/${convId}/sheet-music-preference`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ versionId: id }),
+        }).catch(() => {});
+    },
+    [convId],
+  );
 
   // Keyboard + foot-pedal navigation; Esc exits.
   useEffect(() => {
@@ -133,12 +195,12 @@ export function Live({
   }, []);
 
   const navBtn =
-    'flex h-9 w-9 items-center justify-center rounded-md border border-neutral-300 text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:border-neutral-700 dark:hover:bg-neutral-900';
+    'flex h-12 w-12 items-center justify-center rounded-md border border-neutral-300 text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:border-neutral-700 dark:hover:bg-neutral-900';
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-white dark:bg-neutral-950">
       {/* Controls header. */}
-      <header className="flex items-center justify-between gap-2 border-b border-neutral-200 px-2 py-2 dark:border-neutral-800">
+      <header className="flex items-center justify-between border-b border-neutral-200 px-2 py-2 dark:border-neutral-800">
         <button
           type="button"
           onClick={goPrev}
@@ -148,9 +210,19 @@ export function Live({
         >
           ‹
         </button>
-        <span className="ml-1 text-xs tabular-nums text-neutral-300">
-          {total === 0 ? '0 / 0' : `${current + 1} / ${total}`}
-        </span>
+        <SetlistNav
+          songs={songs.map((s) => ({
+            title: s.title,
+            isMarker: !s.conversationId,
+          }))}
+          current={current}
+          onSelect={setIndex}
+          align="left"
+        >
+          <span className="text-xs tabular-nums text-neutral-300">
+            {total === 0 ? '0 / 0' : `${current + 1} / ${total}`}
+          </span>
+        </SetlistNav>
 
         <div className="flex items-center gap-2">
           {zoomable && (
@@ -160,7 +232,7 @@ export function Live({
                 onClick={zoomOut}
                 disabled={zoom <= 50}
                 aria-label="Zoom out"
-                className="flex h-9 w-9 items-center justify-center rounded-l-md text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:hover:bg-neutral-900"
+                className="flex h-12 w-9 items-center justify-center rounded-l-md text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:hover:bg-neutral-900"
               >
                 −
               </button>
@@ -177,12 +249,40 @@ export function Live({
                 onClick={zoomIn}
                 disabled={zoom >= 400}
                 aria-label="Zoom in"
-                className="flex h-9 w-9 items-center justify-center rounded-r-md text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:hover:bg-neutral-900"
+                className="flex h-12 w-9 items-center justify-center rounded-r-md text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:hover:bg-neutral-900"
               >
                 +
               </button>
             </div>
           )}
+          {sheetVersions && sheetVersions.length > 1 ? (
+            <ActionMenu label="Sheet music version">
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="cursor-default px-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-neutral-400 sm:px-3 sm:py-1.5"
+              >
+                Select version
+              </div>
+              {sheetVersions.map((v) => (
+                <ActionMenuItem
+                  key={v.id}
+                  onClick={() => selectSheetVersion(v.id)}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="w-3 shrink-0 text-blue-600 dark:text-blue-400">
+                      {v.id === sheetSelectedId ? '✓' : ''}
+                    </span>
+                    <span className="truncate">
+                      {(v.label || v.fileName) +
+                        (v.isDefault ? ' (default)' : '')}
+                    </span>
+                  </span>
+                </ActionMenuItem>
+              ))}
+            </ActionMenu>
+          ) : zoomable ? (
+            <span className="rounded-md px-6 py-3 md:px-2 md:py-1 text-neutral-500"></span>
+          ) : null}
           {/* Exit lives in the header on desktop. */}
           <button
             type="button"
@@ -209,9 +309,11 @@ export function Live({
         {song ? (
           <SheetView
             song={song}
+            versions={sheetVersions}
+            selectedId={sheetSelectedId}
             zoom={zoom}
             getZoom={getZoom}
-            setZoom={applyZoom}
+            setZoom={setZoom}
           />
         ) : (
           <Centered>Nothing to show.</Centered>
@@ -280,30 +382,47 @@ function usePinchZoom(getZoom: () => number, setZoom: (n: number) => void) {
   return ref;
 }
 
+interface LiveSheetVersion {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  isDefault: boolean;
+  label: string | null;
+  updatedAt: string;
+}
+
 function SheetView({
   song,
+  versions,
+  selectedId,
   zoom,
   getZoom,
   setZoom,
 }: {
   song: PracticeSong;
+  /** Sheet-music versions (owned by Live, chosen from the header kebab). */
+  versions: LiveSheetVersion[] | null;
+  selectedId: string | null;
   zoom: number;
   getZoom: () => number;
   setZoom: (n: number) => void;
 }) {
+  const convId = song.conversationId;
   const [text, setText] = useState<string | null>(null);
   const pinchRef = usePinchZoom(getZoom, setZoom);
 
-  const sheet = song.sheetMusic ?? null;
-  const kind = sheet ? previewKind(sheet.mimeType, sheet.fileName) : null;
+  const selected = versions?.find((v) => v.id === selectedId) ?? null;
+  const kind = selected
+    ? previewKind(selected.mimeType, selected.fileName)
+    : null;
   const url =
-    song.conversationId && sheet
-      ? `/api/conversations/${song.conversationId}/files/sheet_music?v=${encodeURIComponent(
-          sheet.updatedAt,
+    convId && selected
+      ? `/api/conversations/${convId}/files/sheet_music?version=${selected.id}&v=${encodeURIComponent(
+          selected.updatedAt,
         )}`
       : null;
 
-  // Fetch text content lazily for text/markdown sheets.
+  // Fetch text content lazily for text/markdown/ChordPro sheets.
   useEffect(() => {
     if (kind !== 'text' || !url) {
       setText(null);
@@ -321,7 +440,7 @@ function SheetView({
   }, [kind, url]);
 
   // A marker (set break / custom): no sheet, just its label.
-  if (!song.conversationId) {
+  if (!convId) {
     return (
       <Centered>
         <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
@@ -332,21 +451,24 @@ function SheetView({
     );
   }
 
-  if (!sheet || !url) {
-    return (
+  let content: ReactNode;
+  if (versions === null) {
+    content = (
+      <Centered>
+        <p className="text-sm text-neutral-500">Loading…</p>
+      </Centered>
+    );
+  } else if (!selected || !url) {
+    content = (
       <Centered>
         <p className="text-lg font-medium">{song.title}</p>
         <p className="mt-1 text-sm text-neutral-500">No sheet music.</p>
       </Centered>
     );
-  }
-
-  if (kind === 'image') {
-    // The zoom % lives on a WRAPPER (which has no max-width cap) and the img
-    // fills it — so zooming isn't fighting the browser default of
-    // `img { max-width: 100% }`. 100% fits the width; zooming in grows it and
-    // the container scrolls (mx-auto centers when it's narrower).
-    return (
+  } else if (kind === 'image') {
+    // The zoom % lives on a WRAPPER (no max-width cap); the img fills it, so
+    // zooming isn't fighting `img { max-width: 100% }`.
+    content = (
       <div
         ref={pinchRef}
         style={{ touchAction: 'pan-x pan-y' }}
@@ -354,20 +476,12 @@ function SheetView({
       >
         <div style={{ width: `${zoom}%` }} className="mx-auto">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={url}
-            alt={song.title}
-            className="block h-auto w-full"
-          />
+          <img src={url} alt={song.title} className="block h-auto w-full" />
         </div>
       </div>
     );
-  }
-
-  if (kind === 'pdf') {
-    // Rendered with PDF.js (not an <iframe>) so it scrolls with one finger on
-    // every platform — iOS Safari won't scroll an embedded PDF.
-    return (
+  } else if (kind === 'pdf') {
+    content = (
       <PdfView
         url={url}
         title={song.title}
@@ -375,40 +489,48 @@ function SheetView({
         containerRef={pinchRef}
       />
     );
-  }
-
-  if (kind === 'text') {
-    // Pasted text must NOT wrap — `whitespace-pre` keeps lines intact and the
-    // container scrolls horizontally. Zoom drives the font size.
-    return (
+  } else if (kind === 'text') {
+    // Formatted Markdown / ChordPro. Zoom drives the base font size; the
+    // rendered content uses em units so it scales with it.
+    content = (
       <div
         ref={pinchRef}
         style={{ touchAction: 'pan-x pan-y' }}
         className="h-full w-full overflow-auto"
       >
-        <pre
-          style={{ fontSize: `${(zoom / 100) * 1.125}rem` }}
-          className="w-max whitespace-pre px-6 py-12 font-mono leading-relaxed"
+        <div
+          style={{ fontSize: `${(zoom / 100) * 0.9}rem` }}
+          className="px-6 py-12 leading-relaxed"
         >
-          {text ?? 'Loading…'}
-        </pre>
+          {text === null ? (
+            'Loading…'
+          ) : (
+            <SheetText
+              text={text}
+              fileName={selected.fileName}
+              controls={false}
+            />
+          )}
+        </div>
       </div>
+    );
+  } else {
+    content = (
+      <Centered>
+        <p className="text-lg font-medium">{song.title}</p>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 text-sm text-blue-600 underline dark:text-blue-400"
+        >
+          Open sheet music
+        </a>
+      </Centered>
     );
   }
 
-  return (
-    <Centered>
-      <p className="text-lg font-medium">{song.title}</p>
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-2 text-sm text-blue-600 underline dark:text-blue-400"
-      >
-        Open sheet music
-      </a>
-    </Centered>
-  );
+  return content;
 }
 
 /**

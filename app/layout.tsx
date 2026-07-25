@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { auth } from '@/auth';
 import { hasAllDriveScopes } from '@/lib/google';
 import { Header } from './Header';
@@ -11,6 +11,25 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Sidestage',
   description: 'Timestamped, collaborative notes on Google Drive audio.',
+  applicationName: 'Sidestage',
+  // Launches the installed PWA full-screen on iOS and names the home-screen
+  // icon. The manifest handles Android/desktop install.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Sidestage',
+  },
+  icons: {
+    icon: [
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: '/icons/apple-touch-icon.png',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#2563eb',
 };
 
 /**

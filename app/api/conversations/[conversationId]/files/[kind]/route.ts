@@ -5,11 +5,13 @@ import { getDriveClient } from '@/lib/drive';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getConversationMembership } from '@/lib/db/conversations';
 import {
+  addSheetVersion,
   deleteSongFile,
   getAudioVersionMeta,
+  getSheetVersionMeta,
   getSongFileMeta,
-  putSheetMusic,
   streamAudioVersion,
+  streamSheetVersion,
   streamSongFile,
   type SongFileKind,
 } from '@/lib/db/song-files';
@@ -48,15 +50,14 @@ export async function GET(
     return new Response('forbidden', { status: 403 });
   }
 
-  // Audio can request a specific version via `?version=<id>`; without it we
-  // serve the song's default version (or the single sheet-music file).
-  const versionId =
-    kind === 'audio'
-      ? new URL(req.url).searchParams.get('version')
-      : null;
+  // Both audio and sheet music can request a specific version via
+  // `?version=<id>`; without it we serve the song's default version.
+  const versionId = new URL(req.url).searchParams.get('version');
 
   const meta = versionId
-    ? await getAudioVersionMeta(conversationId, versionId)
+    ? kind === 'audio'
+      ? await getAudioVersionMeta(conversationId, versionId)
+      : await getSheetVersionMeta(conversationId, versionId)
     : await getSongFileMeta(conversationId, kind);
   if (!meta) return new Response('not_found', { status: 404 });
 
@@ -67,7 +68,9 @@ export async function GET(
   let result;
   try {
     result = versionId
-      ? await streamAudioVersion(conversationId, versionId, rangeHeader)
+      ? kind === 'audio'
+        ? await streamAudioVersion(conversationId, versionId, rangeHeader)
+        : await streamSheetVersion(conversationId, versionId, rangeHeader)
       : await streamSongFile(conversationId, kind, rangeHeader);
   } catch (err) {
     // Range the store can't satisfy → 416; anything else → 502.
@@ -209,7 +212,7 @@ export async function POST(
         mimeType = normalized;
       }
 
-      const stored = await putSheetMusic({
+      const stored = await addSheetVersion({
         conversationId,
         body,
         sizeBytes,
@@ -217,7 +220,7 @@ export async function POST(
         mimeType,
         driveFileId,
       });
-      return Response.json({ sheetMusic: stored }, { status: 201 });
+      return Response.json({ version: stored }, { status: 201 });
       });
     } catch (err) {
       console.error('[files] sheet-music Drive import failed', err);
@@ -257,8 +260,8 @@ export async function POST(
     );
   }
 
-  const meta = await uploadLimit.run(() =>
-    putSheetMusic({
+  const version = await uploadLimit.run(() =>
+    addSheetVersion({
       conversationId,
       body: fileToNodeStream(file),
       sizeBytes: file.size,
@@ -266,7 +269,7 @@ export async function POST(
       mimeType,
     }),
   );
-  return Response.json({ sheetMusic: meta }, { status: 201 });
+  return Response.json({ version }, { status: 201 });
 }
 
 export async function DELETE(
@@ -352,6 +355,12 @@ const EXT_TO_MIME: Record<string, string> = {
   md: 'text/markdown',
   markdown: 'text/markdown',
   csv: 'text/csv',
+  // ChordPro chord charts — plain text, rendered client-side.
+  cho: 'text/plain',
+  chopro: 'text/plain',
+  chordpro: 'text/plain',
+  pro: 'text/plain',
+  crd: 'text/plain',
   png: 'image/png',
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',

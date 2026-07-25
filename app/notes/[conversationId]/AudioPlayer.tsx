@@ -64,6 +64,9 @@ export function AudioPlayer({
 }: AudioPlayerProps) {
   const { setEngine } = usePlayer();
   const engineRef = useRef<AudioEngine | null>(null);
+  // Last play/pause toggle time, for the 100ms debounce (guards against a
+  // held/repeated key or a double-tap rapidly flipping playback).
+  const lastToggleRef = useRef(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -231,6 +234,10 @@ export function AudioPlayer({
   const togglePlay = useCallback(() => {
     const engine = engineRef.current;
     if (!engine || !isReady) return;
+    // Debounce: ignore toggles within 100ms of the last one.
+    const now = Date.now();
+    if (now - lastToggleRef.current < 100) return;
+    lastToggleRef.current = now;
     if (engine.isPlaying()) {
       engine.pause();
       setIsPlaying(false);
@@ -265,6 +272,39 @@ export function AudioPlayer({
     engine.seek(t);
     setCurrentTime(t);
   }, [isReady, duration]);
+
+  // Keyboard controls: space = play/pause, → = forward 10s, ← = back 10s.
+  // Ignored while a form control is focused, so typing / the seek slider /
+  // selects keep their native behavior (and space still activates a focused
+  // button natively — that path is debounced too via togglePlay).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const tag = t?.tagName;
+      if (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        tag === 'BUTTON' ||
+        tag === 'A' ||
+        t?.isContentEditable
+      )
+        return;
+      if (e.key === ' ' || e.code === 'Space') {
+        if (e.repeat) return; // don't retrigger while the key is held
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        forward10();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        back10();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [togglePlay, forward10, back10]);
 
   // Apply the selected speed — on change, and again after each (re)load,
   // since a new engine starts at 1x.

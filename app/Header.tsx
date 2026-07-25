@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { usePendingCount } from './PendingActionProvider';
@@ -38,35 +38,37 @@ export function Header() {
   const [selectedBandId, setSelectedBandId] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Load the user's bands and restore the saved "current band" selection
-  // (falling back to the first band if the saved one is gone). Runs once —
-  // the header stays mounted across client navigations.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/bands', { cache: 'no-store' });
-        if (!res.ok) return;
-        const data = (await res.json()) as { bands: BandOption[] };
-        if (cancelled) return;
-        setBands(data.bands);
+  // Load the user's bands and reconcile the "current band" selection: keep the
+  // current one if it still exists, else the saved one, else the first band.
+  const loadBands = useCallback(async () => {
+    try {
+      const res = await fetch('/api/bands', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = (await res.json()) as { bands: BandOption[] };
+      setBands(data.bands);
+      setSelectedBandId((prev) => {
+        if (prev && data.bands.some((b) => b.id === prev)) return prev;
         const saved =
           typeof localStorage !== 'undefined'
             ? localStorage.getItem(SELECTED_BAND_KEY)
             : null;
-        if (saved && data.bands.some((b) => b.id === saved)) {
-          setSelectedBandId(saved);
-        } else if (data.bands[0]) {
-          setSelectedBandId(data.bands[0].id);
-        }
-      } catch {
-        // best-effort; the picker just stays empty
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+        if (saved && data.bands.some((b) => b.id === saved)) return saved;
+        return data.bands[0]?.id ?? '';
+      });
+    } catch {
+      // best-effort; the picker just stays empty
+    }
   }, []);
+
+  // Load once on mount (the header stays mounted across client navigations),
+  // then refresh whenever a band is created/left/deleted elsewhere in the app,
+  // which dispatches `bands:changed`.
+  useEffect(() => {
+    void loadBands();
+    const onChanged = () => void loadBands();
+    window.addEventListener('bands:changed', onChanged);
+    return () => window.removeEventListener('bands:changed', onChanged);
+  }, [loadBands]);
 
   const selectBand = (id: string) => {
     setSelectedBandId(id);
@@ -77,6 +79,20 @@ export function Header() {
     }
     router.push(`/bands/${id}`);
   };
+
+  // Keep the picker in sync with the band being viewed: navigating to any
+  // /bands/[id] page (e.g. picking one from the Bands list) makes it the
+  // current band. Guarded to known bands so junk paths don't reset it.
+  useEffect(() => {
+    const id = pathname.match(/^\/bands\/([^/]+)/)?.[1];
+    if (!id || id === selectedBandId || !bands.some((b) => b.id === id)) return;
+    setSelectedBandId(id);
+    try {
+      localStorage.setItem(SELECTED_BAND_KEY, id);
+    } catch {
+      // ignore
+    }
+  }, [pathname, bands, selectedBandId]);
 
   // "Overview" jumps to the currently-selected band's page.
   const overviewHref = selectedBandId ? `/bands/${selectedBandId}` : '/bands';

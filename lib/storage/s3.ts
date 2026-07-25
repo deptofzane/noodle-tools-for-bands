@@ -69,6 +69,14 @@ export function audioVersionKey(conversationId: string, fileId: string): string 
   return `conversations/${conversationId}/audio/${fileId}`;
 }
 
+/**
+ * Object key for one sheet-music version. Like audio, sheet music can have
+ * many versions per conversation, so the key carries a per-file id.
+ */
+export function sheetVersionKey(conversationId: string, fileId: string): string {
+  return `conversations/${conversationId}/sheet_music/${fileId}`;
+}
+
 /** Destroy the cached client (closes keep-alive sockets) so scripts/tests exit. */
 export function closeObjectStore(): void {
   cached?.destroy();

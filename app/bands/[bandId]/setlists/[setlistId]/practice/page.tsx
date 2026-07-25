@@ -37,12 +37,11 @@ export default async function PracticeSetlistPage({
 
       </div>
 
-      {/* <div className="flex flex-col gap-1 pb-4">
-        <h1 className="title-text">{setlist.name}</h1>
-        <p className="text-sm text-neutral-500">Practice</p>
-      </div> */}
-
-      <Practice songs={songs} apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ''} />
+      <Practice
+        songs={songs}
+        apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ''}
+        persistKey={`practice:setlist:${setlistId}`}
+      />
     </main>
   );
 }

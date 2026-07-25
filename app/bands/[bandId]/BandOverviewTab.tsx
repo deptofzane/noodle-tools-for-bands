@@ -10,6 +10,7 @@ import { ConfirmModal } from '../../ConfirmModal';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
 import { usePersistedBoolean } from '../../usePersistedBoolean';
+import { usePersistedStringSet } from '../../usePersistedStringSet';
 import { MinimizeToggle, type Show } from './bandDetailShared';
 
 /**
@@ -41,17 +42,11 @@ export function BandOverviewTab({
     'bandPastShowsMinimized',
     true,
   );
-  const [expandedShows, setExpandedShows] = useState<Set<string>>(new Set());
+  const [expandedShows, toggleShowExpanded] = usePersistedStringSet(
+    `bandEventsExpanded:${bandId}`,
+  );
   const [deleteTarget, setDeleteTarget] = useState<Show | null>(null);
   const [deleting, setDeleting] = useState(false);
-
-  const toggleShowExpanded = (id: string) =>
-    setExpandedShows((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
 
   const handleDelete = async () => {
     if (!deleteTarget || deleting) return;
@@ -230,6 +225,17 @@ export function BandOverviewTab({
           Leave band
         </button>
       )}
+
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Delete event?"
+        description={`This permanently deletes “${deleteTarget?.title ?? ''}”. This can’t be undone.`}
+        confirmLabel="Delete event"
+        busyLabel="Deleting…"
+        busy={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </>
   );
 }

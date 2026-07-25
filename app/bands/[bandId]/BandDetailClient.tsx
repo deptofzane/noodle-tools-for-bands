@@ -201,6 +201,8 @@ export function BandDetailClient({
         const r = await fetch(`/api/bands/${bandId}/leave`, { method: 'POST' });
         await ensureOk(r);
       });
+      // Refresh the header's band picker (it's mounted separately).
+      window.dispatchEvent(new Event('bands:changed'));
       router.push('/bands');
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));

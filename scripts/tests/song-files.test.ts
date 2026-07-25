@@ -11,14 +11,16 @@ import { createBand, deleteBand } from '../../lib/db/bands';
 import { findOrCreateConversation } from '../../lib/db/conversations';
 import {
   addAudioVersion,
+  addSheetVersion,
   deleteAudioVersion,
   deleteSongFile,
   getAudioVersionMeta,
   getSongFileMeta,
   hasSongFile,
   listAudioVersions,
-  putSheetMusic,
+  listSheetVersions,
   setAudioVersionLabel,
+  setDefaultSheetVersion,
   setDefaultAudioVersion,
   streamAudioVersion,
   streamSongFile,
@@ -79,26 +81,40 @@ test('song-files: object-store round-trip, range, default audio, cascade', async
     const tail = await streamSongFile(conv.id, 'audio', 'bytes=1000-');
     assert.ok(tail && (await streamToBuffer(tail.body)).equals(data.subarray(1000, 1024)), 'tail slice matches');
 
-    // sheet music coexists with (one) audio, one row per conversation
-    await putSheetMusic({
+    // Sheet music is versioned like audio: multiple rows, one default.
+    const s1 = await addSheetVersion({
       conversationId: conv.id,
       ...streamOf(Buffer.from('%PDF-1.4 fake', 'utf8')),
       fileName: 'score.pdf',
       mimeType: 'application/pdf',
     });
-    // replacing sheet music overwrites in place (still one row)
-    await putSheetMusic({
+    const s2 = await addSheetVersion({
       conversationId: conv.id,
       ...streamOf(Buffer.from('%PDF-1.4 fake v2', 'utf8')),
       fileName: 'score2.pdf',
       mimeType: 'application/pdf',
     });
-    assert.equal((await getSongFileMeta(conv.id, 'sheet_music'))?.fileName, 'score2.pdf', 'sheet music replaced');
+    assert.ok(s1.isDefault && !s2.isDefault, 'first sheet version is the default');
+    assert.equal(
+      (await getSongFileMeta(conv.id, 'sheet_music'))?.fileName,
+      'score.pdf',
+      'default sheet is the first version',
+    );
+    assert.equal((await listSheetVersions(conv.id)).length, 2, 'two sheet versions');
     assert.equal(
       (await db.select().from(songFiles).where(eq(songFiles.conversationId, conv.id))).length,
-      2,
-      'two rows: one audio + one sheet music',
+      3,
+      'three rows: one audio + two sheet versions',
     );
+
+    // Switching the default is reflected by getSongFileMeta.
+    await setDefaultSheetVersion(conv.id, s2.id);
+    assert.equal(
+      (await getSongFileMeta(conv.id, 'sheet_music'))?.fileName,
+      'score2.pdf',
+      'set-default sheet reflected',
+    );
+
     await deleteSongFile(conv.id, 'sheet_music');
     assert.ok(!(await hasSongFile(conv.id, 'sheet_music')), 'sheet music removed');
     assert.ok(await hasSongFile(conv.id, 'audio'), 'removing sheet music leaves audio');

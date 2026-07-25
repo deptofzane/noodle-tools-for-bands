@@ -104,6 +104,8 @@ export function EditBandClient({ bandId }: { bandId: string }) {
         const r = await fetch(`/api/bands/${bandId}`, { method: 'DELETE' });
         await ensureOk(r);
       });
+      // Refresh the header's band picker (it's mounted separately).
+      window.dispatchEvent(new Event('bands:changed'));
       router.push('/bands');
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));

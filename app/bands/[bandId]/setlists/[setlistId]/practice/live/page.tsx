@@ -26,6 +26,10 @@ export default async function LiveSetlistPage({
   const songs = await getSetlistPracticeSongs(setlistId);
 
   return (
-    <Live songs={songs} exitHref={`/bands/${bandId}/setlists/${setlistId}`} />
+    <Live
+      songs={songs}
+      exitHref={`/bands/${bandId}/setlists/${setlistId}`}
+      persistKey={`live:setlist:${setlistId}`}
+    />
   );
 }

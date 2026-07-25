@@ -57,6 +57,8 @@ export function BandsClient() {
         await ensureOk(r);
       });
       setName('');
+      // Let the header's band picker refresh (it's mounted separately).
+      window.dispatchEvent(new Event('bands:changed'));
       await load();
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));

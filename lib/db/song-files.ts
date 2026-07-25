@@ -7,12 +7,12 @@ import {
   PutObjectCommand,
 } from '@aws-sdk/client-s3';
 import { db } from './index';
-import { conversations, songFiles } from './schema';
+import { conversations, sheetVersionPrefs, songFiles } from './schema';
 import {
   audioVersionKey,
   getBucket,
   getS3Client,
-  songFileKey,
+  sheetVersionKey,
 } from '../storage/s3';
 
 /**
@@ -85,11 +85,175 @@ async function readUpTo(body: Readable, max: number): Promise<Buffer> {
   return Buffer.concat(chunks);
 }
 
+function isMp3(mimeType: string): boolean {
+  const m = mimeType.toLowerCase();
+  return m === 'audio/mpeg' || m === 'audio/mp3' || m === 'audio/mpeg3';
+}
+
+// MPEG audio bitrate tables (kbps), indexed by the 4-bit bitrate field.
+// Index 0 = "free", 15 = "bad"; both are unusable → treated as 0.
+const BITRATES_V1_L1 = [0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 0];
+const BITRATES_V1_L2 = [0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384, 0];
+const BITRATES_V1_L3 = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0];
+const BITRATES_V2_L1 = [0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256, 0];
+const BITRATES_V2_L23 = [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0];
+const SAMPLE_RATES: Record<number, number[]> = {
+  3: [44100, 48000, 32000], // MPEG1
+  2: [22050, 24000, 16000], // MPEG2
+  0: [11025, 12000, 8000], // MPEG2.5
+};
+
+/** Byte length of an ID3v2 tag at the start of `buf`, or 0 if none. */
+function id3v2Size(buf: Buffer): number {
+  if (buf.length < 10 || buf[0] !== 0x49 || buf[1] !== 0x44 || buf[2] !== 0x33)
+    return 0; // not "ID3"
+  const synchsafe =
+    (buf[6]! & 0x7f) * 0x200000 +
+    (buf[7]! & 0x7f) * 0x4000 +
+    (buf[8]! & 0x7f) * 0x80 +
+    (buf[9]! & 0x7f);
+  const footer = buf[5]! & 0x10 ? 10 : 0;
+  return 10 + synchsafe + footer;
+}
+
+/** Parse the MPEG audio frame header at `off`, or null if it isn't valid. */
+function parseFrameHeader(buf: Buffer, off: number) {
+  if (off + 4 > buf.length) return null;
+  const b1 = buf[off + 1]!;
+  const b2 = buf[off + 2]!;
+  const b3 = buf[off + 3]!;
+  if (buf[off] !== 0xff || (b1 & 0xe0) !== 0xe0) return null; // frame sync
+  const versionId = (b1 >> 3) & 0x03; // 3=MPEG1, 2=MPEG2, 0=MPEG2.5, 1=reserved
+  const layer = (b1 >> 1) & 0x03; // 3=I, 2=II, 1=III, 0=reserved
+  const bitrateIdx = (b2 >> 4) & 0x0f;
+  const sampleRateIdx = (b2 >> 2) & 0x03;
+  const padding = (b2 >> 1) & 0x01;
+  const channelMode = (b3 >> 6) & 0x03; // 3 = mono
+  if (versionId === 1 || layer === 0 || sampleRateIdx === 3) return null;
+
+  const table =
+    versionId === 3
+      ? layer === 3
+        ? BITRATES_V1_L1
+        : layer === 2
+          ? BITRATES_V1_L2
+          : BITRATES_V1_L3
+      : layer === 3
+        ? BITRATES_V2_L1
+        : BITRATES_V2_L23;
+  const bitrateKbps = table[bitrateIdx]!;
+  const sampleRate = SAMPLE_RATES[versionId]![sampleRateIdx]!;
+  if (!bitrateKbps || !sampleRate) return null;
+
+  // Frame length in bytes (used to validate the next sync).
+  const samplesPer8 = layer === 3 ? 48 : versionId === 3 || layer === 2 ? 144 : 72;
+  const slot = layer === 3 ? 4 : 1;
+  const frameLength =
+    Math.floor((samplesPer8 * bitrateKbps * 1000) / sampleRate) + padding * slot;
+
+  return { versionId, channelMode, bitrateKbps, sampleRate, frameLength };
+}
+
+/**
+ * Duration (seconds) for a *headerless CBR* MP3, computed from the first
+ * frame's bitrate and the real file size. Returns null for anything else —
+ * VBR / files carrying a Xing/Info/VBRI header (which `music-metadata` reads
+ * accurately), or when a valid frame can't be found in the probe window. This
+ * is the fallback for the case where a truncated buffer makes music-metadata
+ * collapse a CBR duration to ~(probe-window ÷ bitrate).
+ */
+function estimateMp3CbrDurationSec(head: Buffer, sizeBytes: number): number | null {
+  const start = id3v2Size(head);
+  // Find the first frame whose next frame also syncs (guards against false hits).
+  let off = -1;
+  for (let i = start; i + 4 <= head.length; i++) {
+    if (head[i] !== 0xff) continue;
+    const h = parseFrameHeader(head, i);
+    if (!h) continue;
+    const next = i + h.frameLength;
+    if (next + 2 > head.length || parseFrameHeader(head, next)) {
+      off = i;
+      break;
+    }
+  }
+  if (off < 0) return null;
+
+  const h = parseFrameHeader(head, off)!;
+  // A Xing/Info (or VBRI) header means music-metadata gets the exact duration.
+  const sideInfo =
+    h.versionId === 3 ? (h.channelMode === 3 ? 17 : 32) : h.channelMode === 3 ? 9 : 17;
+  const xingAt = off + 4 + sideInfo;
+  const tag = head.subarray(xingAt, xingAt + 4).toString('latin1');
+  const vbri = head.subarray(off + 4 + 32, off + 4 + 36).toString('latin1');
+  if (tag === 'Xing' || tag === 'Info' || vbri === 'VBRI') return null;
+
+  const audioBytes = sizeBytes - off;
+  if (audioBytes <= 0) return null;
+  const seconds = (audioBytes * 8) / (h.bitrateKbps * 1000);
+  return Number.isFinite(seconds) && seconds > 0 ? Math.round(seconds) : null;
+}
+
+function isWav(mimeType: string): boolean {
+  const m = mimeType.toLowerCase();
+  return (
+    m === 'audio/wav' ||
+    m === 'audio/x-wav' ||
+    m === 'audio/wave' ||
+    m === 'audio/vnd.wave'
+  );
+}
+
+/**
+ * Duration (seconds) for a WAV from its header — the `fmt ` chunk's byteRate
+ * and the `data` chunk's size (declared, or the remainder of the file). Only
+ * the headers are needed, so it's accurate from the truncated probe buffer,
+ * unlike `music-metadata`, which computes a large WAV's duration from the
+ * bytes actually present (~probe-window ÷ byteRate). Returns null if the
+ * header can't be parsed.
+ */
+function estimateWavDurationSec(head: Buffer, sizeBytes: number): number | null {
+  if (head.length < 12) return null;
+  if (head.toString('latin1', 0, 4) !== 'RIFF') return null;
+  if (head.toString('latin1', 8, 12) !== 'WAVE') return null;
+
+  let byteRate = 0;
+  let dataStart = -1;
+  let dataDeclared = 0;
+  let off = 12;
+  while (off + 8 <= head.length) {
+    const id = head.toString('latin1', off, off + 4);
+    const size = head.readUInt32LE(off + 4);
+    const body = off + 8;
+    if (id === 'fmt ' && body + 16 <= head.length) {
+      byteRate = head.readUInt32LE(body + 8);
+    } else if (id === 'data') {
+      dataStart = body;
+      dataDeclared = size;
+      break; // audio data — no need to scan further
+    }
+    off = body + size + (size & 1); // chunks are word-aligned
+  }
+  if (byteRate <= 0 || dataStart < 0) return null;
+
+  // Prefer the declared data size when plausible; else the rest of the file
+  // (streamed WAVs sometimes write 0 or a bogus size).
+  const remaining = sizeBytes - dataStart;
+  const dataSize =
+    dataDeclared > 0 && dataDeclared <= remaining ? dataDeclared : remaining;
+  if (dataSize <= 0) return null;
+  const seconds = dataSize / byteRate;
+  return Number.isFinite(seconds) && seconds > 0 ? Math.round(seconds) : null;
+}
+
 /**
  * Best-effort audio duration WITHOUT holding the whole file in memory: read
  * just the leading bytes back from storage and parse them, passing the real
  * total size as a hint. That's enough for header/size-based formats (MP3,
  * fast-start MP4); anything it can't determine returns null (as before).
+ *
+ * For MP3 and WAV we prefer our own header-based estimate: `music-metadata`
+ * mis-estimates both from a truncated buffer (headerless CBR MP3 and large
+ * WAVs collapse to ~probe-window ÷ bit/byte-rate).
  */
 async function probeAudioDuration(
   key: string,
@@ -105,6 +269,16 @@ async function probeAudioDuration(
       }),
     );
     const head = await readUpTo(res.Body as Readable, DURATION_PROBE_BYTES);
+
+    if (isMp3(mimeType)) {
+      const cbr = estimateMp3CbrDurationSec(head, sizeBytes);
+      if (cbr != null) return cbr;
+    }
+    if (isWav(mimeType)) {
+      const wav = estimateWavDurationSec(head, sizeBytes);
+      if (wav != null) return wav;
+    }
+
     const { parseBuffer } = await import('music-metadata');
     const meta = await parseBuffer(head, { mimeType, size: sizeBytes });
     const dur = meta.format.duration;
@@ -116,21 +290,15 @@ async function probeAudioDuration(
   }
 }
 
-// Resolve the "current" row for a (conversation, kind). Sheet music has at
-// most one row; audio may have several versions, so we resolve to the
-// default — that's what the player and metadata reads target.
+// Resolve the "current" row for a (conversation, kind). Both audio and sheet
+// music can have several versions, so we resolve to the default — that's what
+// the player and default metadata reads target.
 async function getRow(conversationId: string, kind: SongFileKind) {
-  const where =
-    kind === 'audio'
-      ? and(
-          eq(songFiles.conversationId, conversationId),
-          eq(songFiles.kind, 'audio'),
-          eq(songFiles.isDefault, true),
-        )
-      : and(
-          eq(songFiles.conversationId, conversationId),
-          eq(songFiles.kind, kind),
-        );
+  const where = and(
+    eq(songFiles.conversationId, conversationId),
+    eq(songFiles.kind, kind),
+    eq(songFiles.isDefault, true),
+  );
   const [row] = await db
     .select({
       storageKey: songFiles.storageKey,
@@ -176,55 +344,8 @@ const META_COLUMNS = {
   updatedAt: songFiles.updatedAt,
 } as const;
 
-/**
- * Upload (or replace) the single sheet-music file for a song. One row per
- * conversation: an existing row is overwritten in place (same object key),
- * otherwise a new one is inserted.
- */
-export async function putSheetMusic(input: {
-  conversationId: string;
-  body: Readable;
-  sizeBytes: number;
-  fileName: string;
-  mimeType: string;
-  driveFileId?: string | null;
-}): Promise<SongFileMeta> {
-  const key = songFileKey(input.conversationId, 'sheet_music');
-  await putObjectStream(key, input.body, input.mimeType, input.sizeBytes);
-
-  const now = new Date();
-  const values = {
-    storageKey: key,
-    fileName: input.fileName,
-    mimeType: input.mimeType,
-    sizeBytes: input.sizeBytes,
-    songLength: null,
-    driveFileId: input.driveFileId ?? null,
-    updatedAt: now,
-  };
-
-  const [updated] = await db
-    .update(songFiles)
-    .set(values)
-    .where(
-      and(
-        eq(songFiles.conversationId, input.conversationId),
-        eq(songFiles.kind, 'sheet_music'),
-      ),
-    )
-    .returning(META_COLUMNS);
-  if (updated) return { ...updated, updatedAt: updated.updatedAt.toISOString() };
-
-  const [inserted] = await db
-    .insert(songFiles)
-    .values({
-      conversationId: input.conversationId,
-      kind: 'sheet_music',
-      ...values,
-    })
-    .returning(META_COLUMNS);
-  return { ...inserted!, updatedAt: inserted!.updatedAt.toISOString() };
-}
+// Sheet music is multi-version (see `addSheetVersion` and the sheet-music
+// versions section below); the old single-sheet `putSheetMusic` was removed.
 
 export interface AudioVersion {
   id: string;
@@ -300,6 +421,47 @@ export async function addAudioVersion(input: {
   });
 
   return { ...row, updatedAt: row.updatedAt.toISOString() };
+}
+
+/**
+ * Re-probe and update `song_length` for every stored audio file. One-off
+ * maintenance for rows written before the CBR-MP3 duration fix. Returns the
+ * count scanned and the count actually changed; reports each change via
+ * `onChange` if given.
+ */
+export async function reprobeAudioDurations(opts?: {
+  onChange?: (info: {
+    fileName: string;
+    from: number | null;
+    to: number | null;
+  }) => void;
+}): Promise<{ scanned: number; updated: number }> {
+  const rows = await db
+    .select({
+      id: songFiles.id,
+      storageKey: songFiles.storageKey,
+      fileName: songFiles.fileName,
+      mimeType: songFiles.mimeType,
+      sizeBytes: songFiles.sizeBytes,
+      songLength: songFiles.songLength,
+    })
+    .from(songFiles)
+    .where(eq(songFiles.kind, 'audio'));
+
+  let updated = 0;
+  for (const r of rows) {
+    if (!r.storageKey) continue;
+    const dur = await probeAudioDuration(r.storageKey, r.mimeType, r.sizeBytes);
+    if (dur !== r.songLength) {
+      await db
+        .update(songFiles)
+        .set({ songLength: dur })
+        .where(eq(songFiles.id, r.id));
+      updated++;
+      opts?.onChange?.({ fileName: r.fileName, from: r.songLength, to: dur });
+    }
+  }
+  return { scanned: rows.length, updated };
 }
 
 /** All audio versions for a song, default first, then oldest → newest. */
@@ -589,4 +751,313 @@ export async function deleteObjects(keys: string[]): Promise<void> {
   } catch (err) {
     console.error('[song-files] batch object delete failed', err);
   }
+}
+
+// ── Sheet-music versions ─────────────────────────────────────────────
+// Mirrors the audio-version model: multiple sheet_music rows per song, one
+// flagged `isDefault`, each with an optional `label`. No duration probe.
+
+export interface SheetVersion {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  isDefault: boolean;
+  label: string | null;
+  updatedAt: string;
+}
+
+/**
+ * Add a sheet-music version. The first version for a song becomes its default;
+ * later ones don't. The check + insert run in one transaction so the default
+ * flag stays consistent with the partial unique index.
+ */
+export async function addSheetVersion(input: {
+  conversationId: string;
+  body: Readable;
+  sizeBytes: number;
+  fileName: string;
+  mimeType: string;
+  label?: string | null;
+  driveFileId?: string | null;
+}): Promise<SheetVersion> {
+  const key = sheetVersionKey(input.conversationId, randomUUID());
+  await putObjectStream(key, input.body, input.mimeType, input.sizeBytes);
+
+  const row = await db.transaction(async (tx) => {
+    const existing = await tx
+      .select({ id: songFiles.id })
+      .from(songFiles)
+      .where(
+        and(
+          eq(songFiles.conversationId, input.conversationId),
+          eq(songFiles.kind, 'sheet_music'),
+          eq(songFiles.isDefault, true),
+        ),
+      )
+      .limit(1);
+    const isDefault = existing.length === 0;
+
+    const [inserted] = await tx
+      .insert(songFiles)
+      .values({
+        conversationId: input.conversationId,
+        kind: 'sheet_music',
+        storageKey: key,
+        fileName: input.fileName,
+        mimeType: input.mimeType,
+        sizeBytes: input.sizeBytes,
+        songLength: null,
+        isDefault,
+        label: input.label ?? null,
+        driveFileId: input.driveFileId ?? null,
+      })
+      .returning({
+        id: songFiles.id,
+        fileName: songFiles.fileName,
+        mimeType: songFiles.mimeType,
+        sizeBytes: songFiles.sizeBytes,
+        isDefault: songFiles.isDefault,
+        label: songFiles.label,
+        updatedAt: songFiles.updatedAt,
+      });
+    return inserted!;
+  });
+
+  return { ...row, updatedAt: row.updatedAt.toISOString() };
+}
+
+/** All sheet-music versions for a song, default first, then oldest → newest. */
+export async function listSheetVersions(
+  conversationId: string,
+): Promise<SheetVersion[]> {
+  const rows = await db
+    .select({
+      id: songFiles.id,
+      fileName: songFiles.fileName,
+      mimeType: songFiles.mimeType,
+      sizeBytes: songFiles.sizeBytes,
+      isDefault: songFiles.isDefault,
+      label: songFiles.label,
+      updatedAt: songFiles.updatedAt,
+    })
+    .from(songFiles)
+    .where(
+      and(
+        eq(songFiles.conversationId, conversationId),
+        eq(songFiles.kind, 'sheet_music'),
+      ),
+    )
+    .orderBy(desc(songFiles.isDefault), asc(songFiles.createdAt));
+  return rows.map((r) => ({ ...r, updatedAt: r.updatedAt.toISOString() }));
+}
+
+/** Metadata for one specific sheet-music version (scoped to its conversation). */
+export async function getSheetVersionMeta(
+  conversationId: string,
+  versionId: string,
+): Promise<SongFileMeta | null> {
+  if (!isUuid(versionId)) return null;
+  const [row] = await db
+    .select(META_COLUMNS)
+    .from(songFiles)
+    .where(
+      and(
+        eq(songFiles.id, versionId),
+        eq(songFiles.conversationId, conversationId),
+        eq(songFiles.kind, 'sheet_music'),
+      ),
+    )
+    .limit(1);
+  return row ? { ...row, updatedAt: row.updatedAt.toISOString() } : null;
+}
+
+/** Make `versionId` the default sheet for its song. */
+export async function setDefaultSheetVersion(
+  conversationId: string,
+  versionId: string,
+): Promise<boolean> {
+  if (!isUuid(versionId)) return false;
+  return db.transaction(async (tx) => {
+    const [target] = await tx
+      .select({ id: songFiles.id })
+      .from(songFiles)
+      .where(
+        and(
+          eq(songFiles.id, versionId),
+          eq(songFiles.conversationId, conversationId),
+          eq(songFiles.kind, 'sheet_music'),
+        ),
+      )
+      .limit(1);
+    if (!target) return false;
+
+    await tx
+      .update(songFiles)
+      .set({ isDefault: false })
+      .where(
+        and(
+          eq(songFiles.conversationId, conversationId),
+          eq(songFiles.kind, 'sheet_music'),
+          eq(songFiles.isDefault, true),
+        ),
+      );
+    await tx
+      .update(songFiles)
+      .set({ isDefault: true })
+      .where(eq(songFiles.id, versionId));
+    return true;
+  });
+}
+
+/** Set (or clear) a sheet-music version's label. */
+export async function setSheetVersionLabel(
+  conversationId: string,
+  versionId: string,
+  label: string | null,
+): Promise<boolean> {
+  if (!isUuid(versionId)) return false;
+  const trimmed = label?.trim() ? label.trim() : null;
+  const [row] = await db
+    .update(songFiles)
+    .set({ label: trimmed, updatedAt: new Date() })
+    .where(
+      and(
+        eq(songFiles.id, versionId),
+        eq(songFiles.conversationId, conversationId),
+        eq(songFiles.kind, 'sheet_music'),
+      ),
+    )
+    .returning({ id: songFiles.id });
+  return Boolean(row);
+}
+
+/**
+ * Delete one sheet-music version. If it was the default and others remain, the
+ * newest remaining version is promoted. Per-user prefs pointing at it cascade
+ * away (FK), so those users fall back to the default.
+ */
+export async function deleteSheetVersion(
+  conversationId: string,
+  versionId: string,
+): Promise<{ newDefaultId: string | null } | null> {
+  if (!isUuid(versionId)) return null;
+  const result = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({
+        id: songFiles.id,
+        storageKey: songFiles.storageKey,
+        isDefault: songFiles.isDefault,
+      })
+      .from(songFiles)
+      .where(
+        and(
+          eq(songFiles.id, versionId),
+          eq(songFiles.conversationId, conversationId),
+          eq(songFiles.kind, 'sheet_music'),
+        ),
+      )
+      .limit(1);
+    if (!row) return null;
+
+    await tx.delete(songFiles).where(eq(songFiles.id, versionId));
+
+    let newDefaultId: string | null = null;
+    if (row.isDefault) {
+      const [next] = await tx
+        .select({ id: songFiles.id })
+        .from(songFiles)
+        .where(
+          and(
+            eq(songFiles.conversationId, conversationId),
+            eq(songFiles.kind, 'sheet_music'),
+          ),
+        )
+        .orderBy(desc(songFiles.createdAt))
+        .limit(1);
+      if (next) {
+        await tx
+          .update(songFiles)
+          .set({ isDefault: true })
+          .where(eq(songFiles.id, next.id));
+        newDefaultId = next.id;
+      }
+    }
+    return { storageKey: row.storageKey, newDefaultId };
+  });
+
+  if (!result) return null;
+  if (result.storageKey) await deleteObjects([result.storageKey]);
+  return { newDefaultId: result.newDefaultId };
+}
+
+/** Stream one specific sheet-music version (scoped to its conversation). */
+export async function streamSheetVersion(
+  conversationId: string,
+  versionId: string,
+  rangeHeader?: string,
+): Promise<SongFileStream | null> {
+  if (!isUuid(versionId)) return null;
+  const [row] = await db
+    .select({ storageKey: songFiles.storageKey })
+    .from(songFiles)
+    .where(
+      and(
+        eq(songFiles.id, versionId),
+        eq(songFiles.conversationId, conversationId),
+        eq(songFiles.kind, 'sheet_music'),
+      ),
+    )
+    .limit(1);
+  if (!row?.storageKey) return null;
+  return streamKey(row.storageKey, rangeHeader);
+}
+
+// ── Per-user sheet-version preference ────────────────────────────────
+
+/** The user's chosen sheet version for a song, if any (raw, unvalidated). */
+export async function getSheetVersionPref(
+  userId: string,
+  conversationId: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ versionId: sheetVersionPrefs.versionId })
+    .from(sheetVersionPrefs)
+    .where(
+      and(
+        eq(sheetVersionPrefs.userId, userId),
+        eq(sheetVersionPrefs.conversationId, conversationId),
+      ),
+    )
+    .limit(1);
+  return row?.versionId ?? null;
+}
+
+/** Upsert the user's chosen sheet version for a song. */
+export async function setSheetVersionPref(
+  userId: string,
+  conversationId: string,
+  versionId: string,
+): Promise<void> {
+  await db
+    .insert(sheetVersionPrefs)
+    .values({ userId, conversationId, versionId })
+    .onConflictDoUpdate({
+      target: [sheetVersionPrefs.userId, sheetVersionPrefs.conversationId],
+      set: { versionId, updatedAt: new Date() },
+    });
+}
+
+/**
+ * Resolve which sheet version the user should see: their preference if it
+ * still exists among `versions`, else the default, else the first, else null.
+ */
+export function resolvePreferredSheetVersionId(
+  versions: SheetVersion[],
+  prefVersionId: string | null,
+): string | null {
+  if (versions.length === 0) return null;
+  if (prefVersionId && versions.some((v) => v.id === prefVersionId))
+    return prefVersionId;
+  return (versions.find((v) => v.isDefault) ?? versions[0]!).id;
 }

@@ -7,6 +7,11 @@ node_modules
 out
 build
 
+# Serwist (service worker is generated from app/sw.ts at build time)
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js
+
 # Env files (never commit these)
 .env
 .env.local

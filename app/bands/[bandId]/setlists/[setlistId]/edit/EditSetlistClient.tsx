@@ -2,7 +2,6 @@
 
 import { ensureOk } from '@/lib/api';
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTrackPending } from '../../../../../PendingActionProvider';
 import { useToast } from '../../../../../ToastProvider';

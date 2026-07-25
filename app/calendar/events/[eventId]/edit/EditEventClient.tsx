@@ -3,7 +3,6 @@
 import { ensureOk } from '@/lib/api';
 import { addHoursToTime, DEFAULT_EVENT_DURATION_HOURS } from '@/lib/format';
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Modal } from '../../../../Modal';
 import { Select } from '../../../../Select';

@@ -8,8 +8,10 @@ import { formatSongMeta } from '@/lib/format';
 import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
 import { ConfirmModal } from '../../ConfirmModal';
 import { usePersistedBoolean } from '../../usePersistedBoolean';
+import { usePersistedStringSet } from '../../usePersistedStringSet';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
+import { useOfflineSetlists } from '../../offline/useOfflineSetlists';
 import {
   MinimizeToggle,
   songCountLabel,
@@ -34,8 +36,9 @@ export function BandSetlistsTab({
   const router = useRouter();
   const trackPending = useTrackPending();
   const showToast = useToast();
-  const [expandedSetlists, setExpandedSetlists] = useState<Set<string>>(
-    new Set(),
+  const offline = useOfflineSetlists();
+  const [expandedSetlists, toggleSetlistExpanded] = usePersistedStringSet(
+    `bandSetlistsExpanded:${bandId}`,
   );
   const [busyId, setBusyId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Setlist | null>(null);
@@ -48,14 +51,6 @@ export function BandSetlistsTab({
     'bandArchivedSetlistsMinimized',
     true,
   );
-
-  const toggleSetlistExpanded = (id: string) =>
-    setExpandedSetlists((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
 
   const setArchived = async (sl: Setlist, archived: boolean) => {
     if (busyId) return;
@@ -105,12 +100,43 @@ export function BandSetlistsTab({
     }
   };
 
+  const downloadOffline = async (sl: Setlist) => {
+    try {
+      const rec = await offline.download({
+        bandId,
+        setlistId: sl.id,
+        name: sl.name,
+        songs: sl.songs,
+      });
+      if (rec)
+        showToast(
+          `“${sl.name}” is available offline (${rec.fileCount} sheet${
+            rec.fileCount === 1 ? '' : 's'
+          }).`,
+          'success',
+        );
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const removeOffline = async (sl: Setlist) => {
+    try {
+      await offline.remove({ bandId, setlistId: sl.id });
+      showToast('Offline copy removed.', 'success');
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   const activeSetlists = setlists.filter((s) => !s.archived);
   const archivedSetlists = setlists.filter((s) => s.archived);
 
   const renderSetlist = (sl: Setlist) => {
     const collapsed = !expandedSetlists.has(sl.id);
     const busy = busyId === sl.id;
+    const offlineRec = offline.records?.get(sl.id);
+    const downloading = offline.busyId === sl.id;
     return (
       <li
         key={sl.id}
@@ -131,6 +157,20 @@ export function BandSetlistsTab({
             </span>
           </button>
           <span className="flex shrink-0 items-center gap-2 pr-1">
+            {downloading ? (
+              <span className="text-xs tabular-nums text-blue-600 dark:text-blue-400">
+                ↓ {Math.round(offline.progress * 100)}%
+              </span>
+            ) : offlineRec ? (
+              <span
+                title={`Downloaded ${new Date(
+                  offlineRec.downloadedAt,
+                ).toLocaleString()}`}
+                className="text-xs font-medium text-green-600 dark:text-green-500"
+              >
+                ✓ Offline
+              </span>
+            ) : null}
             <span className="text-xs text-neutral-500">
               {songCountLabel(sl.songs)}
             </span>
@@ -142,6 +182,34 @@ export function BandSetlistsTab({
               >
                 View setlist
               </ActionMenuItem>
+              <ActionMenuItem
+                onClick={() =>
+                  router.push(`/bands/${bandId}/setlists/${sl.id}/practice`)
+                }
+              >
+                Practice
+              </ActionMenuItem>
+              <ActionMenuItem
+                onClick={() =>
+                  router.push(`/bands/${bandId}/setlists/${sl.id}/practice/live`)
+                }
+              >
+                Live
+              </ActionMenuItem>
+              {offlineRec ? (
+                <>
+                  <ActionMenuItem onClick={() => void downloadOffline(sl)}>
+                    {downloading ? 'Downloading…' : 'Update offline copy'}
+                  </ActionMenuItem>
+                  <ActionMenuItem onClick={() => void removeOffline(sl)}>
+                    Remove offline copy
+                  </ActionMenuItem>
+                </>
+              ) : (
+                <ActionMenuItem onClick={() => void downloadOffline(sl)}>
+                  {downloading ? 'Downloading…' : 'Download for offline'}
+                </ActionMenuItem>
+              )}
               <ActionMenuItem
                 onClick={() =>
                   router.push(`/bands/${bandId}/setlists/${sl.id}/edit`)
