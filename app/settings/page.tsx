@@ -3,12 +3,13 @@ import { redirect } from 'next/navigation';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getUserAccount } from '@/lib/db/accounts';
 import { hasAllDriveScopes } from '@/lib/google';
-import { getMutedKinds } from '@/lib/db/notifications';
+import { getMutedKinds, getPushMutedKinds } from '@/lib/db/notifications';
 import { getOrCreateFeedToken } from '@/lib/db/calendarFeeds';
 import { startGoogleConnect, disconnectGoogle } from '../account-actions';
 import { ThemeToggle } from '../ThemeToggle';
 import { CalendarSubscription } from './CalendarSubscription';
 import { NotificationPreferences } from './NotificationPreferences';
+import { PushNotificationToggle } from './PushNotificationToggle';
 import { SettingsTabs, type SettingsTab } from './SettingsTabs';
 
 const LINK_MESSAGES: Record<string, { text: string; tone: 'ok' | 'error' }> = {
@@ -43,11 +44,13 @@ export default async function SettingsPage({
   const { tab, link } = await searchParams;
 
   const dbUser = await getCurrentDbUser();
-  const [mutedKinds, googleAccount, feedToken] = await Promise.all([
-    getMutedKinds(session.user.sub ?? ''),
-    dbUser ? getUserAccount(dbUser.id, 'google') : Promise.resolve(null),
-    dbUser ? getOrCreateFeedToken(dbUser.id) : Promise.resolve(null),
-  ]);
+  const [mutedKinds, pushMutedKinds, googleAccount, feedToken] =
+    await Promise.all([
+      getMutedKinds(session.user.sub ?? ''),
+      getPushMutedKinds(session.user.sub ?? ''),
+      dbUser ? getUserAccount(dbUser.id, 'google') : Promise.resolve(null),
+      dbUser ? getOrCreateFeedToken(dbUser.id) : Promise.resolve(null),
+    ]);
   const hasPassword = Boolean(dbUser?.passwordHash);
   const driveConnected = hasAllDriveScopes(session.scopes);
   const refreshError = session.error === 'RefreshAccessTokenError';
@@ -207,7 +210,15 @@ export default async function SettingsPage({
     {
       id: 'notifications',
       label: 'Notifications',
-      content: <NotificationPreferences initialMuted={mutedKinds} />,
+      content: (
+        <div className="flex flex-col gap-4">
+          <PushNotificationToggle />
+          <NotificationPreferences
+            initialMuted={mutedKinds}
+            initialPushMuted={pushMutedKinds}
+          />
+        </div>
+      ),
     },
     ...(feedToken
       ? [

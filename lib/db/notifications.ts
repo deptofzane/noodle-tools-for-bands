@@ -6,6 +6,7 @@ import {
   notificationMutes,
   notificationReads,
   notifications,
+  pushMutes,
   users,
 } from './schema';
 
@@ -132,7 +133,60 @@ export async function notify(input: CreateNotificationInput): Promise<void> {
     await createNotification(input);
   } catch (err) {
     console.error('[notifications] create failed', err);
+    return;
   }
+  // Fan out a mobile push in the background — never blocks or breaks the
+  // action. Dynamically imported so `lib/push` (web-push) stays out of this
+  // module's static graph and there's no import cycle.
+  void import('../push')
+    .then((m) => m.sendEventPush(input))
+    .catch((err) => console.error('[push] fan-out failed', err));
+}
+
+/**
+ * Users who should receive a *mobile push* for a notification: the band's
+ * members, minus the actor (unlike the in-app feed, you never get a push for
+ * your own action) and minus anyone who muted this kind. Used by the push
+ * sender; the in-app feed resolves its own recipients at read time.
+ */
+export async function listPushRecipientUserIds(input: {
+  bandId: string;
+  actorId: string;
+  kind: NotificationKind;
+}): Promise<string[]> {
+  const members = await db
+    .select({ userId: bandMembers.userId })
+    .from(bandMembers)
+    .where(eq(bandMembers.bandId, input.bandId));
+  const ids = members
+    .map((m) => m.userId)
+    .filter((id) => id !== input.actorId);
+  if (ids.length === 0) return [];
+
+  // Exclude anyone who muted this kind in the feed (an in-app mute silences
+  // push too) OR push-muted it specifically (kept in feed, no push).
+  const [feedMuted, pushMuted] = await Promise.all([
+    db
+      .select({ userId: notificationMutes.userId })
+      .from(notificationMutes)
+      .where(
+        and(
+          inArray(notificationMutes.userId, ids),
+          eq(notificationMutes.kind, input.kind),
+        ),
+      ),
+    db
+      .select({ userId: pushMutes.userId })
+      .from(pushMutes)
+      .where(
+        and(inArray(pushMutes.userId, ids), eq(pushMutes.kind, input.kind)),
+      ),
+  ]);
+  const silenced = new Set([
+    ...feedMuted.map((m) => m.userId),
+    ...pushMuted.map((m) => m.userId),
+  ]);
+  return ids.filter((id) => !silenced.has(id));
 }
 
 /** Notification kinds the user has muted (default: none). */
@@ -166,6 +220,32 @@ export async function setKindMuted(
           eq(notificationMutes.kind, kind),
         ),
       );
+  }
+}
+
+/** Notification kinds the user has push-muted (kept in feed, no push). */
+export async function getPushMutedKinds(
+  userId: string,
+): Promise<NotificationKind[]> {
+  const rows = await db
+    .select({ kind: pushMutes.kind })
+    .from(pushMutes)
+    .where(eq(pushMutes.userId, userId));
+  return rows.map((r) => r.kind);
+}
+
+/** Push-mute or push-unmute a kind for the user (independent of feed mute). */
+export async function setKindPushMuted(
+  userId: string,
+  kind: NotificationKind,
+  muted: boolean,
+): Promise<void> {
+  if (muted) {
+    await db.insert(pushMutes).values({ userId, kind }).onConflictDoNothing();
+  } else {
+    await db
+      .delete(pushMutes)
+      .where(and(eq(pushMutes.userId, userId), eq(pushMutes.kind, kind)));
   }
 }
 

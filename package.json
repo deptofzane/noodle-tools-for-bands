@@ -39,7 +39,8 @@
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "resend": "^6.17.2",
-    "serwist": "^9.5.12"
+    "serwist": "^9.5.12",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/howler": "^2.2.13",
@@ -47,6 +48,7 @@
     "@types/pg": "^8.20.0",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
+    "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.5.0",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",

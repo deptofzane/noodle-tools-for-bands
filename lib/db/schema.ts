@@ -244,6 +244,21 @@ export const notificationMutes = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.kind] })],
 );
 
+// A kind the user doesn't want pushed to their devices, independent of the
+// in-app feed: it still appears in the feed (unless also in notification_mutes)
+// but no push is sent. An in-app mute already suppresses push, so effective
+// push = kind in NEITHER table.
+export const pushMutes = pgTable(
+  'push_mutes',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    kind: notificationKind('kind').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.kind] })],
+);
+
 // ── Band messages (general chat) ─────────────────────────────────────
 // A flat, band-wide message thread (not tied to a song). Any member can
 // post; authors (or band owners) can soft-delete. Ordered by createdAt.
@@ -592,6 +607,28 @@ export const venues = pgTable(
       .notNull(),
   },
   (t) => [index('venues_band_idx').on(t.bandId)],
+);
+
+// A Web Push subscription for one of a user's installed devices/browsers.
+// Endpoint is the stable identity (unique); a device that re-subscribes just
+// updates its keys. Removed when the user turns push off or the endpoint
+// expires (410/404 on send).
+export const pushSubscriptions = pgTable(
+  'push_subscriptions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    endpoint: text('endpoint').notNull().unique(),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    userAgent: text('user_agent'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index('push_subscriptions_user_idx').on(t.userId)],
 );
 
 // A poll the band's members can be asked to weigh in on: a title, optional

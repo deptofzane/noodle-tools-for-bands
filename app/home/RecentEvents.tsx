@@ -172,7 +172,7 @@ export function RecentEvents({
             maxLength={5000}
             disabled={loading || saving}
             autoFocus
-            placeholder={loading ? 'Loading…' : 'How did it go?'}
+            placeholder={loading ? 'Loading…' : 'But how do you really feel?'}
             className="mt-3 w-full min-h-96 resize-y rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-900"
           />
           <div className="mt-4 flex items-center justify-end gap-2">

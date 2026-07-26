@@ -17,6 +17,8 @@ type Kind =
   | 'setlist-created'
   | 'audio-added';
 
+type Channel = 'feed' | 'push';
+
 const KINDS: { kind: Kind; label: string; description: string }[] = [
   {
     kind: 'song-comment',
@@ -85,28 +87,75 @@ const KINDS: { kind: Kind; label: string; description: string }[] = [
   },
 ];
 
+function Switch({
+  on,
+  disabled,
+  label,
+  onToggle,
+}: {
+  on: boolean;
+  disabled: boolean;
+  label: string;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onToggle}
+      className={
+        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:opacity-40 ' +
+        (on ? 'bg-blue-600' : 'bg-neutral-300 dark:bg-neutral-700')
+      }
+    >
+      <span
+        aria-hidden="true"
+        className={
+          'inline-block h-5 w-5 transform rounded-full bg-white shadow transition ' +
+          (on ? 'translate-x-5' : 'translate-x-0.5')
+        }
+      />
+    </button>
+  );
+}
+
 /**
- * Per-user toggles for which activity reaches the Home notification feed.
- * Muting is applied at read time server-side; this just flips the mute.
+ * Per-user, per-channel notification toggles. "In app" controls the Home feed;
+ * "Push" controls device notifications. They're independent, except turning a
+ * kind off in the feed also disables its push (you can't push what you don't
+ * want to see), so the Push switch is disabled while In app is off.
  */
 export function NotificationPreferences({
   initialMuted,
+  initialPushMuted,
 }: {
   initialMuted: Kind[];
+  initialPushMuted: Kind[];
 }) {
   const [muted, setMuted] = useState<Set<Kind>>(new Set(initialMuted));
-  const [busy, setBusy] = useState<Kind | null>(null);
+  const [pushMuted, setPushMuted] = useState<Set<Kind>>(
+    new Set(initialPushMuted),
+  );
+  const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const toggle = async (kind: Kind) => {
+  const toggle = async (kind: Kind, channel: Channel) => {
+    const key = `${kind}:${channel}`;
     if (busy) return;
-    const enabled = muted.has(kind); // currently muted → we're enabling it
-    setBusy(kind);
+    const [set, setSet] =
+      channel === 'feed'
+        ? ([muted, setMuted] as const)
+        : ([pushMuted, setPushMuted] as const);
+    const enabling = set.has(kind); // currently muted → this toggle enables it
+    setBusy(key);
     setError(null);
-    // Optimistic update.
-    setMuted((prev) => {
+    // Optimistic.
+    setSet((prev) => {
       const next = new Set(prev);
-      if (enabled) next.delete(kind);
+      if (enabling) next.delete(kind);
       else next.add(kind);
       return next;
     });
@@ -114,14 +163,14 @@ export function NotificationPreferences({
       const res = await fetch('/api/notifications/preferences', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind, enabled }),
+        body: JSON.stringify({ kind, enabled: enabling, channel }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch (e) {
-      // Roll back on failure.
-      setMuted((prev) => {
+      // Roll back.
+      setSet((prev) => {
         const next = new Set(prev);
-        if (enabled) next.add(kind);
+        if (enabling) next.add(kind);
         else next.delete(kind);
         return next;
       });
@@ -134,48 +183,51 @@ export function NotificationPreferences({
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm text-neutral-600 dark:text-neutral-400">
-        Choose which activity from your bands shows up in your{' '}
-        notifications. These apply only to you.
+        Choose which activity from your bands reaches you, and how. “In app”
+        shows it in your notification feed; “Push” sends it to your devices.
+        These apply only to you.
       </p>
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-      <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-        {KINDS.map(({ kind, label, description }) => {
-          const on = !muted.has(kind);
-          return (
-            <li
-              key={kind}
-              className="flex items-center justify-between gap-4 px-4 py-3"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-medium">{label}</p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  {description}
-                </p>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={on}
-                aria-label={label}
-                disabled={busy === kind}
-                onClick={() => toggle(kind)}
-                className={
-                  'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:opacity-50 ' +
-                  (on ? 'bg-blue-600' : 'bg-neutral-300 dark:bg-neutral-700')
-                }
+
+      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800">
+        <div className="flex items-center justify-end gap-5 px-4 py-2 text-[11px] font-medium text-neutral-500">
+          <span className="w-11 text-center">In app</span>
+          <span className="w-11 text-center">Push</span>
+        </div>
+        <ul className="divide-y divide-neutral-200 border-t border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+          {KINDS.map(({ kind, label, description }) => {
+            const feedOn = !muted.has(kind);
+            const pushOn = feedOn && !pushMuted.has(kind);
+            return (
+              <li
+                key={kind}
+                className="flex items-center justify-between gap-4 px-4 py-3"
               >
-                <span
-                  aria-hidden="true"
-                  className={
-                    'inline-block h-5 w-5 transform rounded-full bg-white shadow transition ' +
-                    (on ? 'translate-x-5' : 'translate-x-0.5')
-                  }
-                />
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{label}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {description}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-5">
+                  <Switch
+                    on={feedOn}
+                    disabled={busy === `${kind}:feed`}
+                    label={`${label} in app`}
+                    onToggle={() => toggle(kind, 'feed')}
+                  />
+                  <Switch
+                    on={pushOn}
+                    disabled={!feedOn || busy === `${kind}:push`}
+                    label={`${label} push`}
+                    onToggle={() => toggle(kind, 'push')}
+                  />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </div>
   );
 }

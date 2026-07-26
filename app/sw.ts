@@ -118,3 +118,61 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// --- Web Push -------------------------------------------------------------
+// A push carries a small JSON payload ({ title, body, url, tag }) built by
+// lib/push.ts. Show it as a notification; tapping it focuses an existing tab
+// (navigating it to the deep link) or opens a new one.
+
+interface PushPayload {
+  title?: string;
+  body?: string;
+  url?: string;
+  tag?: string;
+}
+
+self.addEventListener('push', (event) => {
+  let data: PushPayload = {};
+  try {
+    data = event.data?.json() ?? {};
+  } catch {
+    // Non-JSON payload — fall back to plain text as the body.
+    data = { body: event.data?.text() };
+  }
+  const title = data.title || 'Sidestage';
+  const url = data.url || '/home';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || '',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: data.tag,
+      data: { url },
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = (event.notification.data as { url?: string } | undefined)?.url;
+  const url = target || '/home';
+  event.waitUntil(
+    (async () => {
+      const clientList = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+      for (const client of clientList) {
+        // Reuse an open app window; steer it to the deep link.
+        if ('focus' in client) {
+          await client.focus();
+          if (client.url !== new URL(url, self.location.origin).href) {
+            await client.navigate(url).catch(() => {});
+          }
+          return;
+        }
+      }
+      await self.clients.openWindow(url);
+    })(),
+  );
+});

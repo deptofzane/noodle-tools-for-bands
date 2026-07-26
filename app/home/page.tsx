@@ -14,6 +14,7 @@ import { NotificationList } from './NotificationList';
 import { OpenPolls } from './OpenPolls';
 import { UpcomingShows } from './UpcomingShows';
 import { RecentEvents } from './RecentEvents';
+import { HomePushNudge } from './HomePushNudge';
 
 /**
  * Home — the signed-in landing. Shows upcoming shows and the notification
@@ -59,6 +60,7 @@ export default async function HomePage() {
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 px-6 py-4">
+      <HomePushNudge />
       <RecentEvents shows={showsBuffer} bandIds={myBandIds} />
       <UpcomingShows
         shows={showsBuffer}
