@@ -165,45 +165,43 @@ export function CalendarClient() {
           <div
             key={i}
             className={
-              'flex min-h-24 flex-col gap-1 p-1 ' +
+              'min-h-24 ' +
               (d === null
                 ? 'bg-neutral-50/60 dark:bg-neutral-900/40'
                 : 'bg-white dark:bg-neutral-950')
             }
           >
             {d !== null && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setSummaryDate(dateStr(d))}
-                  aria-label={`Events on ${dateStr(d)}`}
-                  className="self-start w-full text-left pb-1"
+              // The whole cell is clickable — even with no events — and opens
+              // that day's summary modal.
+              <button
+                type="button"
+                onClick={() => setSummaryDate(dateStr(d))}
+                aria-label={`Events on ${dateStr(d)}`}
+                className="flex h-full w-full flex-col gap-1 p-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-900"
+              >
+                <span
+                  className={
+                    isToday(d)
+                      ? 'inline-flex h-6 w-6 items-center justify-center rounded-full bg-cyan-600 text-xs font-medium text-white'
+                      : 'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs text-neutral-600 dark:text-neutral-400'
+                  }
                 >
-                  <span
-                    className={
-                      isToday(d)
-                        ? 'inline-flex h-6 w-6 items-center justify-center rounded-full bg-cyan-600 text-xs font-medium text-white'
-                        : 'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800'
-                    }
-                  >
-                    {d}
-                  </span>
-                </button>
-                <div className="flex flex-col gap-0.5">
+                  {d}
+                </span>
+                <span className="flex w-full flex-col gap-0.5">
                   {(eventsByDate[dateStr(d)] ?? []).map((ev) => (
-                    <button
+                    <span
                       key={ev.id}
-                      type="button"
-                      onClick={() => setSummaryDate(ev.date)}
                       title={ev.title}
-                      className="truncate rounded bg-cyan-50 px-1 py-0.5 text-left text-[11px] text-cyan-800 hover:bg-cyan-100 dark:bg-cyan-950 dark:text-cyan-300 dark:hover:bg-cyan-900"
+                      className="truncate rounded bg-cyan-50 px-1 py-0.5 text-[11px] text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300"
                     >
                       {ev.title}
                       {ev.time ? ` ${formatTime12h(ev.time)}` : ''}
-                    </button>
+                    </span>
                   ))}
-                </div>
-              </>
+                </span>
+              </button>
             )}
           </div>
         ))}

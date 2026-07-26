@@ -9,6 +9,7 @@ import { Select } from '../../../../Select';
 import { useTrackPending } from '../../../../PendingActionProvider';
 import { useToast } from '../../../../ToastProvider';
 import { useCanGoBack } from '@/app/NavigationHistoryProvider';
+import { AutoTextarea } from '@/app/AutoTextarea';
 import { VenuePickerModal, type PickableVenue } from '../../VenuePickerModal';
 
 interface EventFields {
@@ -293,12 +294,12 @@ export function EditEventClient({
         <label htmlFor="event-details" className="text-sm font-medium">
           Details
         </label>
-        <textarea
+        <AutoTextarea
           id="event-details"
           value={fields.details}
           onChange={(e) => set('details', e.target.value)}
           rows={3}
-          className={field}
+          className={`${field} min-h-20`}
         />
         <p className="text-[11px] text-neutral-500">
           Information about the event.
@@ -309,12 +310,12 @@ export function EditEventClient({
         <label htmlFor="event-notes" className="text-sm font-medium">
           Notes
         </label>
-        <textarea
+        <AutoTextarea
           id="event-notes"
           value={fields.notes}
           onChange={(e) => set('notes', e.target.value)}
           rows={3}
-          className={field}
+          className={`${field} min-h-20`}
         />
         <p className="text-[11px] text-neutral-500">
           The band’s private notes — not shared to the calendar feed.

@@ -8,6 +8,7 @@ import { Modal } from '../../../Modal';
 import { Select } from '../../../Select';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
+import { AutoTextarea } from '@/app/AutoTextarea';
 import { VenuePickerModal, type PickableVenue } from '../VenuePickerModal';
 
 interface BandOption {
@@ -353,12 +354,12 @@ export function NewEventClient({
         <label htmlFor="event-details" className="text-sm font-medium">
           Details
         </label>
-        <textarea
+        <AutoTextarea
           id="event-details"
           value={details}
           onChange={(e) => setDetails(e.target.value)}
           rows={3}
-          className={field}
+          className={`${field} min-h-20`}
         />
         <p className="text-[11px] text-neutral-500">
           Information about the event.
@@ -369,12 +370,12 @@ export function NewEventClient({
         <label htmlFor="event-notes" className="text-sm font-medium">
           Notes
         </label>
-        <textarea
+        <AutoTextarea
           id="event-notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
-          className={field}
+          className={`${field} min-h-20`}
         />
         <p className="text-[11px] text-neutral-500">
           The band’s private notes — not shared to the calendar feed.
