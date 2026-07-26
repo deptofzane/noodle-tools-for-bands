@@ -225,6 +225,27 @@
       "when": 1784864397966,
       "tag": "0031_bizarre_iron_monger",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1785003217765,
+      "tag": "0032_simple_dakota_north",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1785004281976,
+      "tag": "0033_loving_songbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1785085215835,
+      "tag": "0034_worthless_carnage",
+      "breakpoints": true
     }
   ]
 }

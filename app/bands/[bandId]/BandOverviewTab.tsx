@@ -191,6 +191,11 @@ export function BandOverviewTab({
                 <span className="font-medium">Location:</span> {show.location}
               </div>
             )}
+            {show.venueName && (
+              <div>
+                <span className="font-medium">Venue:</span> {show.venueName}
+              </div>
+            )}
             {show.setlistId && (
               <div>
                 <span className="font-medium">Setlist:</span>{' '}
@@ -221,6 +226,14 @@ export function BandOverviewTab({
                 <span className="font-medium">Details:</span>
                 <p className="whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
                   {show.details}
+                </p>
+              </div>
+            )}
+            {show.notes && (
+              <div className="flex flex-col gap-0.5">
+                <span className="font-medium">Notes:</span>
+                <p className="whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+                  {show.notes}
                 </p>
               </div>
             )}

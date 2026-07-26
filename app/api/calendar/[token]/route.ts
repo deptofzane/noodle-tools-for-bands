@@ -26,6 +26,16 @@ function describe(ev: FeedEvent, appUrl: string): string | null {
   return parts.length ? parts.join('\n\n') : null;
 }
 
+/**
+ * The event's LOCATION: prefer its associated venue (name + address), falling
+ * back to the free-text location.
+ */
+function eventLocation(ev: FeedEvent): string | null {
+  if (ev.venueName)
+    return [ev.venueName, ev.venueAddress].filter(Boolean).join(', ');
+  return ev.location;
+}
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ token: string }> },
@@ -53,7 +63,7 @@ export async function GET(
     date: ev.date,
     time: ev.time,
     endTime: ev.endTime,
-    location: ev.location,
+    location: eventLocation(ev),
     description: describe(ev, appUrl),
     url: `${appUrl}/calendar/events/${ev.id}`,
     updatedAt: ev.updatedAt,

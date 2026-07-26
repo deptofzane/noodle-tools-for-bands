@@ -7,6 +7,7 @@ import {
   events,
   setlists,
   users,
+  venues,
 } from './schema';
 
 /**
@@ -28,6 +29,8 @@ export interface EventListItem {
   endTime: string | null;
   location: string | null;
   setlistId: string | null;
+  venueName: string | null;
+  venueAddress: string | null;
 }
 
 export interface BandEvent {
@@ -38,14 +41,20 @@ export interface BandEvent {
   endTime: string | null;
   location: string | null;
   details: string | null;
+  notes: string | null;
   setlistId: string | null;
   setlistName: string | null;
+  venueId: string | null;
+  venueName: string | null;
 }
 
 export interface EventDetail extends EventListItem {
   details: string | null;
+  notes: string | null;
   setlistId: string | null;
   setlistName: string | null;
+  venueId: string | null;
+  venueName: string | null;
 }
 
 export interface EventMember {
@@ -71,7 +80,9 @@ export async function createEvent(input: {
   endTime: string | null;
   location: string | null;
   details: string | null;
+  notes: string | null;
   setlistId: string | null;
+  venueId: string | null;
   createdBy: string;
 }): Promise<{ id: string }> {
   const [row] = await db
@@ -84,7 +95,9 @@ export async function createEvent(input: {
       endTime: input.endTime,
       location: input.location,
       details: input.details,
+      notes: input.notes,
       setlistId: input.setlistId,
+      venueId: input.venueId,
       createdBy: input.createdBy,
     })
     .returning({ id: events.id });
@@ -117,6 +130,8 @@ export async function listEventsForUserInRange(
       endTime: events.endTime,
       location: events.location,
       setlistId: events.setlistId,
+      venueName: venues.name,
+      venueAddress: venues.address,
     })
     .from(events)
     .innerJoin(bands, eq(bands.id, events.bandId))
@@ -128,6 +143,7 @@ export async function listEventsForUserInRange(
         eq(eventMembers.userId, userId),
       ),
     )
+    .leftJoin(venues, eq(venues.id, events.venueId))
     .where(and(gte(events.date, from), lte(events.date, to), visible))
     .orderBy(asc(events.date), asc(events.time));
 
@@ -160,6 +176,8 @@ export async function getNextEventForUser(
       endTime: events.endTime,
       location: events.location,
       setlistId: events.setlistId,
+      venueName: venues.name,
+      venueAddress: venues.address,
     })
     .from(events)
     .innerJoin(bands, eq(bands.id, events.bandId))
@@ -167,6 +185,7 @@ export async function getNextEventForUser(
       eventMembers,
       and(eq(eventMembers.eventId, events.id), eq(eventMembers.userId, userId)),
     )
+    .leftJoin(venues, eq(venues.id, events.venueId))
     .where(and(gte(events.date, from), visible))
     .orderBy(asc(events.date), asc(events.time))
     .limit(1);
@@ -183,6 +202,8 @@ export interface FeedEvent {
   location: string | null;
   details: string | null;
   setlistName: string | null;
+  venueName: string | null;
+  venueAddress: string | null;
   updatedAt: Date;
 }
 
@@ -222,6 +243,8 @@ export async function listEventsForFeed(
       location: events.location,
       details: events.details,
       setlistName: setlists.name,
+      venueName: venues.name,
+      venueAddress: venues.address,
       updatedAt: events.updatedAt,
     })
     .from(events)
@@ -231,6 +254,7 @@ export async function listEventsForFeed(
       and(eq(eventMembers.eventId, events.id), eq(eventMembers.userId, userId)),
     )
     .leftJoin(setlists, eq(setlists.id, events.setlistId))
+    .leftJoin(venues, eq(venues.id, events.venueId))
     .where(and(gte(events.date, from), lte(events.date, to), visible))
     .orderBy(asc(events.date), asc(events.time));
 }
@@ -249,11 +273,15 @@ export async function listBandEvents(bandId: string): Promise<BandEvent[]> {
       endTime: events.endTime,
       location: events.location,
       details: events.details,
+      notes: events.notes,
       setlistId: events.setlistId,
       setlistName: setlists.name,
+      venueId: events.venueId,
+      venueName: venues.name,
     })
     .from(events)
     .leftJoin(setlists, eq(setlists.id, events.setlistId))
+    .leftJoin(venues, eq(venues.id, events.venueId))
     .where(eq(events.bandId, bandId))
     .orderBy(desc(events.date), asc(events.time));
 }
@@ -274,12 +302,17 @@ export async function getEventForUser(
       endTime: events.endTime,
       location: events.location,
       details: events.details,
+      notes: events.notes,
       setlistId: events.setlistId,
       setlistName: setlists.name,
+      venueId: events.venueId,
+      venueName: venues.name,
+      venueAddress: venues.address,
     })
     .from(events)
     .innerJoin(bands, eq(bands.id, events.bandId))
     .leftJoin(setlists, eq(setlists.id, events.setlistId))
+    .leftJoin(venues, eq(venues.id, events.venueId))
     .where(eq(events.id, eventId))
     .limit(1);
   if (!row) return null;
@@ -298,7 +331,9 @@ export async function updateEvent(
     endTime: string | null;
     location: string | null;
     details: string | null;
+    notes: string | null;
     setlistId: string | null;
+    venueId: string | null;
   },
 ): Promise<void> {
   await db
@@ -310,6 +345,33 @@ export async function updateEvent(
 /** Delete an event (its added-member rows cascade). */
 export async function deleteEvent(eventId: string): Promise<void> {
   await db.delete(events).where(eq(events.id, eventId));
+}
+
+/**
+ * An event's owning band + its private notes — for the standalone notes
+ * editor, which gates on band membership (the band id) before revealing or
+ * updating the notes.
+ */
+export async function getEventBandAndNotes(
+  eventId: string,
+): Promise<{ bandId: string; notes: string | null } | null> {
+  const [row] = await db
+    .select({ bandId: events.bandId, notes: events.notes })
+    .from(events)
+    .where(eq(events.id, eventId))
+    .limit(1);
+  return row ?? null;
+}
+
+/** Update only an event's notes (the band's private observations). */
+export async function updateEventNotes(
+  eventId: string,
+  notes: string | null,
+): Promise<void> {
+  await db
+    .update(events)
+    .set({ notes, updatedAt: sql`now()` })
+    .where(eq(events.id, eventId));
 }
 
 /** True if the user is in the event's owning band or is an added member. */

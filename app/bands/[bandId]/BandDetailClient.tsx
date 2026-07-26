@@ -14,12 +14,20 @@ import { BandMembersTab } from './BandMembersTab';
 import { BandAudioTab } from './BandAudioTab';
 import { BandOverviewTab } from './BandOverviewTab';
 import { BandSetlistsTab } from './BandSetlistsTab';
+import { BandVenuesTab } from './BandVenuesTab';
 import { AddToSetlistModal } from './AddToSetlistModal';
 import { AddAudioSourceModal } from './AddAudioSourceModal';
 import { useBandData, useBandChat } from './bandDetailHooks';
 import type { Conversation } from './bandDetailShared';
 
-const BAND_TABS = ['chat', 'events', 'setlists', 'audio', 'polls'] as const;
+const BAND_TABS = [
+  'chat',
+  'events',
+  'setlists',
+  'venues',
+  'audio',
+  'polls',
+] as const;
 type BandTab = (typeof BAND_TABS)[number];
 const ACTIVE_TAB_KEY = 'bandActiveTab';
 
@@ -64,7 +72,7 @@ export function BandDetailClient({
   const showToast = useToast();
   const canUseDrive = useCanUseDrive();
 
-  const { data, conversations, setlists, shows, error, reload } =
+  const { data, conversations, setlists, shows, venues, error, reload } =
     useBandData(bandId);
   const { chatChange, unread } = useBandChat(bandId, activeTab);
 
@@ -417,6 +425,10 @@ export function BandDetailClient({
           setlists={setlists}
           onReload={reload}
         />
+      )}
+
+      {activeTab === 'venues' && (
+        <BandVenuesTab bandId={bandId} venues={venues} onReload={reload} />
       )}
 
       <ConfirmModal

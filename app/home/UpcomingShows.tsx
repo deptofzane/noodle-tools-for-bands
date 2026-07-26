@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { formatDateShort, formatTimeRange } from '@/lib/format';
+import { completionInstant } from './eventTiming';
 
 export interface UpcomingShow {
   id: string;
@@ -53,23 +54,33 @@ export function UpcomingShows({
 }) {
   const [open, setOpen] = useState(true);
   const [today, setToday] = useState(serverToday);
+  // Set on mount so already-finished events drop out (they move to Recent).
+  // Null on the server + first client render → no time filtering yet, so no
+  // hydration mismatch.
+  const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
     const local = localToday();
     if (local !== today) setToday(local);
+    setNow(Date.now());
     // Only correcting to the browser's clock once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const notFinished = (s: UpcomingShow) =>
+    now === null || completionInstant(s).getTime() > now;
+
   const weekOut = addDays(today, 7);
-  const visible = shows.filter((s) => s.date >= today && s.date <= weekOut);
+  const visible = shows.filter(
+    (s) => s.date >= today && s.date <= weekOut && notFinished(s),
+  );
 
   // Fall back to the next event (however far out) when the week is empty.
   const usingFallback = visible.length === 0;
   const items =
     !usingFallback
       ? visible
-      : nextEvent && nextEvent.date >= today
+      : nextEvent && nextEvent.date >= today && notFinished(nextEvent)
         ? [nextEvent]
         : [];
   if (items.length === 0) return null;

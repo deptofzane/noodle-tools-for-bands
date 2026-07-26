@@ -9,6 +9,7 @@ import { Select } from '../../../../Select';
 import { useTrackPending } from '../../../../PendingActionProvider';
 import { useToast } from '../../../../ToastProvider';
 import { useCanGoBack } from '@/app/NavigationHistoryProvider';
+import { VenuePickerModal, type PickableVenue } from '../../VenuePickerModal';
 
 interface EventFields {
   title: string;
@@ -17,7 +18,9 @@ interface EventFields {
   endTime: string;
   location: string;
   details: string;
+  notes: string;
   setlistId: string;
+  venueId: string;
 }
 
 const field =
@@ -32,12 +35,14 @@ export function EditEventClient({
   bandId,
   bandName,
   setlists: initialSetlists,
+  venues,
   initial,
 }: {
   eventId: string;
   bandId: string;
   bandName: string;
   setlists: { id: string; name: string }[];
+  venues: PickableVenue[];
   initial: EventFields;
 }) {
   const router = useRouter();
@@ -51,6 +56,9 @@ export function EditEventClient({
   const [createOpen, setCreateOpen] = useState(false);
   const [newSetlistName, setNewSetlistName] = useState('');
   const [creatingSetlist, setCreatingSetlist] = useState(false);
+  const [venuePickerOpen, setVenuePickerOpen] = useState(false);
+
+  const selectedVenue = venues.find((v) => v.id === fields.venueId) ?? null;
 
   const set = (k: keyof EventFields, v: string) =>
     setFields((prev) => ({ ...prev, [k]: v }));
@@ -221,6 +229,35 @@ export function EditEventClient({
       </div>
 
       <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium">Venue</label>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setVenuePickerOpen(true)}
+            className={`${field} flex-1 text-left`}
+          >
+            {selectedVenue ? (
+              selectedVenue.name
+            ) : (
+              <span className="text-neutral-400">Choose a saved venue…</span>
+            )}
+          </button>
+          {fields.venueId && (
+            <button
+              type="button"
+              onClick={() => set('venueId', '')}
+              className="btn-ghost shrink-0"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <p className="text-[11px] text-neutral-500">
+          Optional — associate one of the band’s saved venues.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-1">
         <label htmlFor="event-setlist" className="text-sm font-medium">
           Setlist
         </label>
@@ -263,7 +300,38 @@ export function EditEventClient({
           rows={3}
           className={field}
         />
+        <p className="text-[11px] text-neutral-500">
+          Information about the event.
+        </p>
       </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="event-notes" className="text-sm font-medium">
+          Notes
+        </label>
+        <textarea
+          id="event-notes"
+          value={fields.notes}
+          onChange={(e) => set('notes', e.target.value)}
+          rows={3}
+          className={field}
+        />
+        <p className="text-[11px] text-neutral-500">
+          The band’s private notes — not shared to the calendar feed.
+        </p>
+      </div>
+
+      {venuePickerOpen && (
+        <VenuePickerModal
+          venues={venues}
+          selectedId={fields.venueId || null}
+          onPick={(id) => {
+            set('venueId', id ?? '');
+            setVenuePickerOpen(false);
+          }}
+          onClose={() => setVenuePickerOpen(false)}
+        />
+      )}
 
       {createOpen && (
         <Modal

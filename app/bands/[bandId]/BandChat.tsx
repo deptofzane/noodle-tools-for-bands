@@ -211,7 +211,7 @@ export function BandChat({
       <div
         ref={scrollRef}
         onScroll={onScroll}
-        className="flex max-h-[60vh] min-h-[16rem] flex-col gap-3 overflow-y-auto rounded-lg border border-neutral-200 p-3 dark:border-neutral-800"
+        className="flex max-h-[50vh] md:max-h-[60vh] min-h-[16rem] flex-col gap-3 overflow-y-auto rounded-lg border border-neutral-200 p-3 dark:border-neutral-800"
       >
         {hasMore && (
           <button

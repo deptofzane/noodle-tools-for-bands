@@ -41,7 +41,9 @@ test('events: band-member + added-member visibility, range filter', async () => 
       endTime: '21:30',
       location: 'The Club',
       details: null,
+      notes: null,
       setlistId: null,
+      venueId: null,
       createdBy: owner.id,
     });
 

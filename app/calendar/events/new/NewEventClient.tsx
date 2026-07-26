@@ -8,6 +8,7 @@ import { Modal } from '../../../Modal';
 import { Select } from '../../../Select';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
+import { VenuePickerModal, type PickableVenue } from '../VenuePickerModal';
 
 interface BandOption {
   id: string;
@@ -51,22 +52,30 @@ export function NewEventClient({
   const [endEdited, setEndEdited] = useState(false);
   const [location, setLocation] = useState('');
   const [details, setDetails] = useState('');
+  const [notes, setNotes] = useState('');
   const [setlistId, setSetlistId] = useState('');
   const [setlists, setSetlists] = useState<BandOption[]>([]);
+  const [venueId, setVenueId] = useState('');
+  const [venues, setVenues] = useState<PickableVenue[]>([]);
+  const [venuePickerOpen, setVenuePickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [newSetlistName, setNewSetlistName] = useState('');
   const [creatingSetlist, setCreatingSetlist] = useState(false);
 
-  // Load the chosen band's setlists for the association picker; reset the
-  // selection whenever the band changes (setlists are per-band).
+  const selectedVenue = venues.find((v) => v.id === venueId) ?? null;
+
+  // Load the chosen band's setlists and venues for the association pickers;
+  // reset both selections whenever the band changes (they're per-band).
   useEffect(() => {
     if (!bandId) {
       setSetlists([]);
+      setVenues([]);
       return;
     }
     let cancelled = false;
     setSetlistId('');
+    setVenueId('');
     fetch(`/api/bands/${bandId}/setlists`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
       .then((d: { setlists: BandOption[] }) => {
@@ -75,6 +84,21 @@ export function NewEventClient({
       })
       .catch(() => {
         if (!cancelled) setSetlists([]);
+      });
+    fetch(`/api/bands/${bandId}/venues`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
+      .then((d: { venues: PickableVenue[] }) => {
+        if (!cancelled)
+          setVenues(
+            d.venues.map((v) => ({
+              id: v.id,
+              name: v.name,
+              address: v.address,
+            })),
+          );
+      })
+      .catch(() => {
+        if (!cancelled) setVenues([]);
       });
     return () => {
       cancelled = true;
@@ -99,7 +123,9 @@ export function NewEventClient({
             endTime,
             location,
             details,
+            notes,
             setlistId,
+            venueId,
           }),
         });
         await ensureOk(r);
@@ -261,6 +287,35 @@ export function NewEventClient({
       </div>
 
       <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium">Venue</label>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setVenuePickerOpen(true)}
+            className={`${field} flex-1 text-left`}
+          >
+            {selectedVenue ? (
+              selectedVenue.name
+            ) : (
+              <span className="text-neutral-400">Choose a saved venue…</span>
+            )}
+          </button>
+          {venueId && (
+            <button
+              type="button"
+              onClick={() => setVenueId('')}
+              className="btn-ghost shrink-0"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <p className="text-[11px] text-neutral-500">
+          Optional — associate one of the band’s saved venues.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-1">
         <label htmlFor="event-setlist" className="text-sm font-medium">
           Setlist
         </label>
@@ -305,7 +360,38 @@ export function NewEventClient({
           rows={3}
           className={field}
         />
+        <p className="text-[11px] text-neutral-500">
+          Information about the event.
+        </p>
       </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="event-notes" className="text-sm font-medium">
+          Notes
+        </label>
+        <textarea
+          id="event-notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
+          className={field}
+        />
+        <p className="text-[11px] text-neutral-500">
+          The band’s private notes — not shared to the calendar feed.
+        </p>
+      </div>
+
+      {venuePickerOpen && (
+        <VenuePickerModal
+          venues={venues}
+          selectedId={venueId || null}
+          onPick={(id) => {
+            setVenueId(id ?? '');
+            setVenuePickerOpen(false);
+          }}
+          onClose={() => setVenuePickerOpen(false)}
+        />
+      )}
 
       {createOpen && (
         <Modal

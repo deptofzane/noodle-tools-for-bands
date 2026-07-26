@@ -3,6 +3,7 @@ import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { getEventForUser } from '@/lib/db/events';
 import { listBandSetlistNames } from '@/lib/db/setlists';
+import { listBandVenues } from '@/lib/db/venues';
 import { EditEventClient } from './EditEventClient';
 
 /**
@@ -24,7 +25,10 @@ export default async function EditEventPage({
   if (!(await getMembership(user.id, event.bandId)))
     redirect(`/calendar/events/${eventId}`);
 
-  const setlists = await listBandSetlistNames(event.bandId);
+  const [setlists, venues] = await Promise.all([
+    listBandSetlistNames(event.bandId),
+    listBandVenues(event.bandId),
+  ]);
 
   return (
     <main className="mx-auto flex h-max max-w-2xl flex-col px-6 pb-4">
@@ -33,6 +37,11 @@ export default async function EditEventPage({
         bandId={event.bandId}
         bandName={event.bandName}
         setlists={setlists}
+        venues={venues.map((v) => ({
+          id: v.id,
+          name: v.name,
+          address: v.address,
+        }))}
         initial={{
           title: event.title,
           date: event.date,
@@ -40,7 +49,9 @@ export default async function EditEventPage({
           endTime: event.endTime ?? '',
           location: event.location ?? '',
           details: event.details ?? '',
+          notes: event.notes ?? '',
           setlistId: event.setlistId ?? '',
+          venueId: event.venueId ?? '',
         }}
       />
     </main>

@@ -536,10 +536,18 @@ export const events = pgTable(
     // after the start. Null for all-day (no start) events.
     endTime: text('end_time'),
     location: text('location'),
+    // Public-facing info about the event.
     details: text('details'),
+    // The band's private observations (not shared to the calendar feed).
+    notes: text('notes'),
     // Optional associated setlist (must belong to the same band). Cleared
     // if that setlist is deleted.
     setlistId: uuid('setlist_id').references(() => setlists.id, {
+      onDelete: 'set null',
+    }),
+    // Optional associated venue (a saved place, must belong to the same band).
+    // Cleared if that venue is deleted.
+    venueId: uuid('venue_id').references(() => venues.id, {
       onDelete: 'set null',
     }),
     createdBy: uuid('created_by')
@@ -556,6 +564,34 @@ export const events = pgTable(
     index('events_band_idx').on(t.bandId),
     index('events_date_idx').on(t.date),
   ],
+);
+
+// A venue a band saves for later (a place they play): a name plus optional
+// contact details and free-form notes. Scoped to the band.
+export const venues = pgTable(
+  'venues',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    bandId: uuid('band_id')
+      .notNull()
+      .references(() => bands.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    address: text('address'),
+    phone: text('phone'),
+    email: text('email'),
+    contactName: text('contact_name'),
+    notes: text('notes'),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index('venues_band_idx').on(t.bandId)],
 );
 
 // A poll the band's members can be asked to weigh in on: a title, optional

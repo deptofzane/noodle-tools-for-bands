@@ -31,6 +31,16 @@ export interface Setlist {
   }[];
 }
 
+export interface Venue {
+  id: string;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  contactName: string | null;
+  notes: string | null;
+}
+
 export interface Show {
   id: string;
   title: string;
@@ -39,8 +49,11 @@ export interface Show {
   endTime: string | null;
   location: string | null;
   details: string | null;
+  notes: string | null;
   setlistId: string | null;
   setlistName: string | null;
+  venueId: string | null;
+  venueName: string | null;
 }
 
 /** "N songs" — counts actual songs, ignoring markers (set breaks etc.). */

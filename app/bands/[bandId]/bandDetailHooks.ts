@@ -4,7 +4,13 @@ import { ensureOk } from '@/lib/api';
 import { useCallback, useEffect, useState } from 'react';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useEventSource } from '../../useEventSource';
-import type { Conversation, Member, Setlist, Show } from './bandDetailShared';
+import type {
+  Conversation,
+  Member,
+  Setlist,
+  Show,
+  Venue,
+} from './bandDetailShared';
 
 export interface BandDetail {
   band: { id: string; name: string };
@@ -24,17 +30,20 @@ export function useBandData(bandId: string) {
   );
   const [setlists, setSetlists] = useState<Setlist[]>([]);
   const [shows, setShows] = useState<Show[]>([]);
+  const [venues, setVenues] = useState<Venue[]>([]);
   const [error, setError] = useState<string | null>(null);
   const trackPending = useTrackPending();
 
   const reload = useCallback(async () => {
     try {
-      const [detailRes, convRes, setlistRes, eventRes] = await Promise.all([
-        fetch(`/api/bands/${bandId}`, { cache: 'no-store' }),
-        fetch(`/api/bands/${bandId}/conversations`, { cache: 'no-store' }),
-        fetch(`/api/bands/${bandId}/setlists`, { cache: 'no-store' }),
-        fetch(`/api/bands/${bandId}/events`, { cache: 'no-store' }),
-      ]);
+      const [detailRes, convRes, setlistRes, eventRes, venueRes] =
+        await Promise.all([
+          fetch(`/api/bands/${bandId}`, { cache: 'no-store' }),
+          fetch(`/api/bands/${bandId}/conversations`, { cache: 'no-store' }),
+          fetch(`/api/bands/${bandId}/setlists`, { cache: 'no-store' }),
+          fetch(`/api/bands/${bandId}/events`, { cache: 'no-store' }),
+          fetch(`/api/bands/${bandId}/venues`, { cache: 'no-store' }),
+        ]);
       await ensureOk(detailRes);
       setData((await detailRes.json()) as BandDetail);
       if (convRes.ok) {
@@ -49,6 +58,10 @@ export function useBandData(bandId: string) {
         const ed = (await eventRes.json()) as { events: Show[] };
         setShows(ed.events);
       }
+      if (venueRes.ok) {
+        const vd = (await venueRes.json()) as { venues: Venue[] };
+        setVenues(vd.venues);
+      }
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -59,7 +72,7 @@ export function useBandData(bandId: string) {
     void trackPending(() => reload());
   }, [reload, trackPending]);
 
-  return { data, conversations, setlists, shows, error, reload };
+  return { data, conversations, setlists, shows, venues, error, reload };
 }
 
 /**

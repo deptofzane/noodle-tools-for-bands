@@ -9,9 +9,11 @@ import {
   listEventsForUserInRange,
 } from '@/lib/db/events';
 import { listOpenPollsForUser } from '@/lib/db/polls';
+import { listMyBands } from '@/lib/db/bands';
 import { NotificationList } from './NotificationList';
 import { OpenPolls } from './OpenPolls';
 import { UpcomingShows } from './UpcomingShows';
+import { RecentEvents } from './RecentEvents';
 
 /**
  * Home — the signed-in landing. Shows upcoming shows and the notification
@@ -35,7 +37,7 @@ export default async function HomePage() {
   const bufferTo = new Date();
   bufferTo.setDate(bufferTo.getDate() + 9);
 
-  const [notifPage, unreadCount, showsBuffer, nextEvent, openPolls] =
+  const [notifPage, unreadCount, showsBuffer, nextEvent, openPolls, myBands] =
     await Promise.all([
       listNotifications(userId),
       getUnreadNotificationCount(userId),
@@ -48,10 +50,16 @@ export default async function HomePage() {
       // however far out. Windowed client-side to the viewer's "today".
       getNextEventForUser(userId, serverToday),
       listOpenPollsForUser(userId),
+      listMyBands(userId),
     ]);
+
+  // The bands the viewer belongs to — used to show the notes editor only on
+  // their own bands' recent events (notes are band-private).
+  const myBandIds = myBands.map((b) => b.id);
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 px-6 py-4">
+      <RecentEvents shows={showsBuffer} bandIds={myBandIds} />
       <UpcomingShows
         shows={showsBuffer}
         nextEvent={nextEvent}

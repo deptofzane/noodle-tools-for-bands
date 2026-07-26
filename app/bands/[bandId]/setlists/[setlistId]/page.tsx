@@ -5,7 +5,8 @@ import { getMembership } from '@/lib/db/bands';
 import { getSetlist } from '@/lib/db/setlists';
 import { formatDuration, formatSongMeta } from '@/lib/format';
 import { PageHeader } from '../../../../PageHeader';
-import { SetlistOfflineButton } from './SetlistOfflineButton';
+import { SetlistActions } from './SetlistActions';
+import { SetlistSongActions } from './SetlistSongActions';
 
 /**
  * View a setlist: its name and songs in order. Server shell — the setlist
@@ -60,6 +61,9 @@ export default async function SetlistPage({
               </span>
             )}
           </span>
+          <span className="ml-auto shrink-0 self-center">
+            <SetlistSongActions conversationId={s.conversationId} />
+          </span>
         </li>
       );
     }
@@ -102,26 +106,12 @@ export default async function SetlistPage({
         </p>
       </div>
           {songCount > 0 && (
-            <span className="mt-2 flex shrink-0 flex-wrap items-center justify-end gap-2">
-              <Link
-                href={`/bands/${bandId}/setlists/${setlistId}/practice`}
-                className="btn-outline h-12 md:h-9"
-              >
-                Practice
-              </Link>
-              <Link
-                href={`/bands/${bandId}/setlists/${setlistId}/practice/live`}
-                className="btn-outline h-12 md:h-9"
-              >
-                Live
-              </Link>
-              <SetlistOfflineButton
-                bandId={bandId}
-                setlistId={setlistId}
-                name={setlist.name}
-                songs={setlist.songs}
-              />
-            </span>
+            <SetlistActions
+              bandId={bandId}
+              setlistId={setlistId}
+              name={setlist.name}
+              songs={setlist.songs}
+            />
           )}
     </span>
 

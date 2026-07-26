@@ -7,6 +7,7 @@ import { getSetlist } from '@/lib/db/setlists';
 import { formatDateLong, formatDuration, formatTimeRange } from '@/lib/format';
 import { PageHeader } from '../../../PageHeader';
 import { EventMembersClient } from './EventMembersClient';
+import { EventSetlistActions } from './EventSetlistActions';
 
 /**
  * Event detail. Server shell — access-guarded via getEventForUser (band
@@ -82,6 +83,21 @@ export default async function EventPage({
             <span className="font-medium">Location:</span> {event.location}
           </div>
         )}
+        {event.venueName && (
+          <div>
+            <span className="font-medium">Venue:</span>{' '}
+            {canManage && event.venueId ? (
+              <Link
+                href={`/bands/${event.bandId}/venues/${event.venueId}/edit`}
+                className="text-blue-600 hover:underline dark:text-blue-400"
+              >
+                {event.venueName}
+              </Link>
+            ) : (
+              event.venueName
+            )}
+          </div>
+        )}
         {event.details && (
           <div className="flex flex-col gap-0.5">
             <span className="font-medium">Details:</span>
@@ -90,17 +106,38 @@ export default async function EventPage({
             </p>
           </div>
         )}
+        {canManage && event.notes && (
+          <div className="flex flex-col gap-0.5">
+            <span className="font-medium">Notes:</span>
+            <p className="whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+              {event.notes}
+            </p>
+          </div>
+        )}
       </section>
 
       {setlist && (
         <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-4 py-2 dark:border-neutral-800 mb-4">
           {canManage && (
-            <Link
-              href={`/bands/${event.bandId}/setlists/${setlist.id}/edit`}
-              className="self-end text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
-            >
-              Edit setlist
-            </Link>
+            <EventSetlistActions
+              bandId={event.bandId}
+              eventId={eventId}
+              setlistId={setlist.id}
+              setlistName={setlist.name}
+              songs={setlist.songs.map((s) => ({
+                conversationId: s.conversationId,
+                name: s.name,
+              }))}
+              fields={{
+                title: event.title,
+                date: event.date,
+                time: event.time,
+                endTime: event.endTime,
+                location: event.location,
+                details: event.details,
+                venueId: event.venueId,
+              }}
+            />
           )}
           <div className="flex items-baseline justify-between gap-2">
             <h2 className="text-sm font-medium">

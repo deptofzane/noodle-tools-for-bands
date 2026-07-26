@@ -30,9 +30,18 @@ interface CalendarEvent {
   endTime: string | null;
   bandName: string;
   location: string | null;
+  venueName: string | null;
+  venueAddress: string | null;
 }
 
 const pad = (n: number) => n.toString().padStart(2, '0');
+
+/** An event's display location: prefer its venue (name + address). */
+function displayLocation(ev: CalendarEvent): string | null {
+  if (ev.venueName)
+    return [ev.venueName, ev.venueAddress].filter(Boolean).join(', ');
+  return ev.location;
+}
 
 /**
  * Month calendar. Navigable by month, today highlighted. Fetches the
@@ -182,15 +191,16 @@ export function CalendarClient() {
                 </button>
                 <div className="flex flex-col gap-0.5">
                   {(eventsByDate[dateStr(d)] ?? []).map((ev) => (
-                    <Link
+                    <button
                       key={ev.id}
-                      href={`/calendar/events/${ev.id}`}
+                      type="button"
+                      onClick={() => setSummaryDate(ev.date)}
                       title={ev.title}
-                      className="truncate rounded bg-cyan-50 px-1 py-0.5 text-[11px] text-cyan-800 hover:bg-cyan-100 dark:bg-cyan-950 dark:text-cyan-300 dark:hover:bg-cyan-900"
+                      className="truncate rounded bg-cyan-50 px-1 py-0.5 text-left text-[11px] text-cyan-800 hover:bg-cyan-100 dark:bg-cyan-950 dark:text-cyan-300 dark:hover:bg-cyan-900"
                     >
                       {ev.title}
-                      {ev.time ? `${formatTime12h(ev.time)} ` : ''}
-                    </Link>
+                      {ev.time ? ` ${formatTime12h(ev.time)}` : ''}
+                    </button>
                   ))}
                 </div>
               </>
@@ -214,27 +224,32 @@ export function CalendarClient() {
               </p>
             ) : (
               <ul className="mt-3 flex max-h-72 flex-col gap-1 overflow-auto">
-                {(eventsByDate[summaryDate] ?? []).map((ev) => (
-                  <li key={ev.id}>
-                    <Link
-                      href={`/calendar/events/${ev.id}`}
-                      className="block rounded-md border border-neutral-200 px-3 py-2 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
-                    >
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="truncate font-medium">{ev.title}</span>
-                        {ev.time && (
-                          <span className="shrink-0 text-xs text-neutral-500">
-                            {formatTimeRange(ev.time, ev.endTime)}
+                {(eventsByDate[summaryDate] ?? []).map((ev) => {
+                  const loc = displayLocation(ev);
+                  return (
+                    <li key={ev.id}>
+                      <Link
+                        href={`/calendar/events/${ev.id}`}
+                        className="block rounded-md border border-neutral-200 px-3 py-2 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
+                      >
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="truncate font-medium">
+                            {ev.title}
                           </span>
-                        )}
-                      </div>
-                      <div className="truncate text-xs text-neutral-500">
-                        {ev.bandName}
-                        {ev.location ? ` · ${ev.location}` : ''}
-                      </div>
-                    </Link>
-                  </li>
-                ))}
+                          {ev.time && (
+                            <span className="shrink-0 text-xs text-neutral-500">
+                              {formatTimeRange(ev.time, ev.endTime)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="truncate text-xs text-neutral-500">
+                          {ev.bandName}
+                          {loc ? ` · ${loc}` : ''}
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             )}
             <div className="mt-4 flex items-center justify-between gap-2">

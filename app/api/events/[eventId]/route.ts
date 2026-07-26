@@ -3,6 +3,7 @@ import { requireUser } from '@/lib/api-guard';
 import { getMembership } from '@/lib/db/bands';
 import { deleteEvent, getEventForUser, updateEvent } from '@/lib/db/events';
 import { getSetlist } from '@/lib/db/setlists';
+import { getVenue } from '@/lib/db/venues';
 import { notify } from '@/lib/db/notifications';
 import { addHoursToTime, DEFAULT_EVENT_DURATION_HOURS } from '@/lib/format';
 
@@ -47,6 +48,7 @@ export async function PATCH(
     return t.length > 0 ? t : null;
   };
   const setlistId = str(body?.setlistId);
+  const venueId = str(body?.venueId);
 
   if (!title || title.length > 255)
     return NextResponse.json(
@@ -69,6 +71,16 @@ export async function PATCH(
       );
   }
 
+  // A chosen venue must belong to this event's band.
+  if (venueId) {
+    const venue = await getVenue(venueId);
+    if (!venue || venue.bandId !== event.bandId)
+      return NextResponse.json(
+        { error: 'bad_venue', message: 'That venue isn’t in this band.' },
+        { status: 400 },
+      );
+  }
+
   const time = str(body?.time);
   await updateEvent(eventId, {
     title,
@@ -77,7 +89,9 @@ export async function PATCH(
     endTime: resolveEndTime(time, str(body?.endTime)),
     location: str(body?.location),
     details: str(body?.details),
+    notes: str(body?.notes),
     setlistId,
+    venueId,
   });
   await notify({
     bandId: event.bandId,

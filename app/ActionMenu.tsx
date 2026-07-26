@@ -56,7 +56,7 @@ export function ActionMenu({
         <div
           role="menu"
           onClick={() => setOpen(false)}
-          className="absolute right-0 z-10 mt-1 min-w-40 overflow-hidden rounded-md border border-neutral-200 bg-white py-1.5 shadow-lg sm:min-w-32 sm:py-1 dark:border-neutral-800 dark:bg-neutral-900"
+          className="absolute right-0 z-10 mt-1 min-w-48 overflow-hidden rounded-md border border-neutral-200 bg-white py-1.5 shadow-lg sm:py-1 dark:border-neutral-800 dark:bg-neutral-900"
         >
           {children}
         </div>
