@@ -24,7 +24,7 @@ export default async function BandDetailPage({
 
   return (
     <main className="main-container">
-      <PageHeader defaultHref="/bands" />
+      <PageHeader defaultHref="/home" defaultHrefName='Home'/>
 
       <BandDetailClient
         bandId={bandId}

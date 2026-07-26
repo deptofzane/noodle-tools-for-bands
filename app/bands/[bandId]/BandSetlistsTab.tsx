@@ -166,6 +166,13 @@ export function BandSetlistsTab({
               </ActionMenuItem>
               <ActionMenuItem
                 onClick={() =>
+                  router.push(`/bands/${bandId}/setlists/${sl.id}/edit`)
+                }
+              >
+                Edit setlist
+              </ActionMenuItem>
+              <ActionMenuItem
+                onClick={() =>
                   router.push(`/bands/${bandId}/setlists/${sl.id}/practice`)
                 }
               >
@@ -173,7 +180,9 @@ export function BandSetlistsTab({
               </ActionMenuItem>
               <ActionMenuItem
                 onClick={() =>
-                  router.push(`/bands/${bandId}/setlists/${sl.id}/practice/live`)
+                  router.push(
+                    `/bands/${bandId}/setlists/${sl.id}/practice/live`,
+                  )
                 }
               >
                 Live
@@ -192,13 +201,6 @@ export function BandSetlistsTab({
                   {downloading ? 'Downloading…' : 'Download for offline'}
                 </ActionMenuItem>
               )}
-              <ActionMenuItem
-                onClick={() =>
-                  router.push(`/bands/${bandId}/setlists/${sl.id}/edit`)
-                }
-              >
-                Edit setlist
-              </ActionMenuItem>
               <ActionMenuItem onClick={() => setArchived(sl, !sl.archived)}>
                 {sl.archived ? 'Unarchive setlist' : 'Archive setlist'}
               </ActionMenuItem>
