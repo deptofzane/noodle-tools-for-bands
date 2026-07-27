@@ -3,14 +3,13 @@ import { eq } from 'drizzle-orm';
 import { db } from './db/index';
 import { bands, users } from './db/schema';
 import {
-  listPushRecipientUserIds,
   type CreateNotificationInput,
   type NotificationKind,
   type NotificationSubject,
 } from './db/notifications';
 import {
   deletePushSubscription,
-  listPushSubscriptionsForUsers,
+  listPushTargets,
 } from './db/push-subscriptions';
 
 /**
@@ -99,34 +98,42 @@ function pushUrl(
 }
 
 /**
- * Send a mobile push to everyone who should hear about `input` (band members
- * minus the actor and anyone who muted the kind). Fire-and-forget from
- * `notify()`; never throws.
+ * Send a mobile push to every device that should hear about `input` (band
+ * members' subscriptions, minus the actor and anyone who feed-/push-muted the
+ * kind — resolved in one query). Fire-and-forget from `notify()`; never throws.
+ * `names` (the actor + band names) are passed through from the notification
+ * insert so this path doesn't re-query them; falls back to a lookup if absent.
  */
-export async function sendEventPush(input: CreateNotificationInput): Promise<void> {
+export async function sendEventPush(
+  input: CreateNotificationInput,
+  names?: { actorName: string | null; bandName: string | null },
+): Promise<void> {
   if (!ensureConfigured()) return;
 
-  const recipients = await listPushRecipientUserIds({
+  const targets = await listPushTargets({
     bandId: input.bandId,
     actorId: input.actorId,
     kind: input.kind,
   });
-  if (recipients.length === 0) return;
+  if (targets.length === 0) return;
 
-  const subs = await listPushSubscriptionsForUsers(recipients);
-  if (subs.length === 0) return;
-
-  const [[actor], [band]] = await Promise.all([
-    db.select({ name: users.name }).from(users).where(eq(users.id, input.actorId)).limit(1),
-    db.select({ name: bands.name }).from(bands).where(eq(bands.id, input.bandId)).limit(1),
-  ]);
+  let actorName = names?.actorName ?? null;
+  let bandName = names?.bandName ?? null;
+  if (!names) {
+    const [[actor], [band]] = await Promise.all([
+      db.select({ name: users.name }).from(users).where(eq(users.id, input.actorId)).limit(1),
+      db.select({ name: bands.name }).from(bands).where(eq(bands.id, input.bandId)).limit(1),
+    ]);
+    actorName = actor?.name ?? null;
+    bandName = band?.name ?? null;
+  }
 
   const payload = JSON.stringify({
-    title: band?.name ?? 'Sidestage',
+    title: bandName ?? 'Sidestage',
     body: pushBody(
       input.kind,
-      actor?.name ?? 'Someone',
-      band?.name ?? 'the band',
+      actorName ?? 'Someone',
+      bandName ?? 'the band',
       input.subjectLabel ?? null,
     ),
     url: pushUrl(input.subjectType, input.subjectId ?? null, input.bandId, input.kind),
@@ -135,7 +142,7 @@ export async function sendEventPush(input: CreateNotificationInput): Promise<voi
   });
 
   await Promise.all(
-    subs.map(async (s) => {
+    targets.map(async (s) => {
       try {
         await webpush.sendNotification(
           { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },

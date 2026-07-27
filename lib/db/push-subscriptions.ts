@@ -1,6 +1,12 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, ne, notExists } from 'drizzle-orm';
 import { db } from './index';
-import { pushSubscriptions } from './schema';
+import {
+  bandMembers,
+  notificationMutes,
+  pushMutes,
+  pushSubscriptions,
+} from './schema';
+import type { NotificationKind } from './notifications';
 
 /**
  * Web Push subscriptions — one row per installed device/browser. The endpoint
@@ -13,6 +19,29 @@ export interface StoredPushSubscription {
   endpoint: string;
   p256dh: string;
   auth: string;
+}
+
+/**
+ * Only accept a subscription whose endpoint is HTTPS on a known push service
+ * host. Otherwise a caller could register an arbitrary or internal URL that
+ * the server would later POST to when sending (an SSRF vector). New browsers'
+ * hosts can be added here as needed.
+ */
+export function isAllowedPushEndpoint(endpoint: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== 'https:') return false;
+  const host = url.hostname.toLowerCase();
+  return (
+    host === 'fcm.googleapis.com' || // Chrome / Edge / Android
+    host.endsWith('.push.apple.com') || // Safari / iOS
+    host.endsWith('.push.services.mozilla.com') || // Firefox
+    host.endsWith('.notify.windows.com') // legacy Edge / WNS
+  );
 }
 
 /** Upsert a device's subscription (keyed by endpoint). */
@@ -60,11 +89,17 @@ export async function deletePushSubscription(
     );
 }
 
-/** All subscriptions for a set of users (for fanning out a push). */
-export async function listPushSubscriptionsForUsers(
-  userIds: string[],
-): Promise<StoredPushSubscription[]> {
-  if (userIds.length === 0) return [];
+/**
+ * The exact set of device subscriptions to push a notification to, in one
+ * query: subscriptions belonging to the band's members, excluding the actor
+ * and anyone who feed-muted or push-muted the kind. Empty result → nobody to
+ * push (the common case), so the caller does no further work.
+ */
+export async function listPushTargets(input: {
+  bandId: string;
+  actorId: string;
+  kind: NotificationKind;
+}): Promise<StoredPushSubscription[]> {
   return db
     .select({
       userId: pushSubscriptions.userId,
@@ -73,5 +108,38 @@ export async function listPushSubscriptionsForUsers(
       auth: pushSubscriptions.auth,
     })
     .from(pushSubscriptions)
-    .where(inArray(pushSubscriptions.userId, userIds));
+    .innerJoin(
+      bandMembers,
+      and(
+        eq(bandMembers.userId, pushSubscriptions.userId),
+        eq(bandMembers.bandId, input.bandId),
+      ),
+    )
+    .where(
+      and(
+        ne(pushSubscriptions.userId, input.actorId),
+        notExists(
+          db
+            .select({ u: notificationMutes.userId })
+            .from(notificationMutes)
+            .where(
+              and(
+                eq(notificationMutes.userId, pushSubscriptions.userId),
+                eq(notificationMutes.kind, input.kind),
+              ),
+            ),
+        ),
+        notExists(
+          db
+            .select({ u: pushMutes.userId })
+            .from(pushMutes)
+            .where(
+              and(
+                eq(pushMutes.userId, pushSubscriptions.userId),
+                eq(pushMutes.kind, input.kind),
+              ),
+            ),
+        ),
+      ),
+    );
 }

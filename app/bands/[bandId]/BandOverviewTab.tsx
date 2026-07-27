@@ -13,6 +13,7 @@ import { usePersistedBoolean } from '../../usePersistedBoolean';
 import { usePersistedStringSet } from '../../usePersistedStringSet';
 import { useOfflineDownload } from '../../offline/useOfflineDownload';
 import { MinimizeToggle, type Setlist, type Show } from './bandDetailShared';
+import { MapLink } from '../../MapLink';
 
 /**
  * The Overview tab: upcoming Shows, Past shows, and (for non-owners) a Leave
@@ -188,7 +189,8 @@ export function BandOverviewTab({
             )}
             {show.location && (
               <div>
-                <span className="font-medium">Location:</span> {show.location}
+                <span className="font-medium">Location:</span>{' '}
+                <MapLink address={show.location} />
               </div>
             )}
             {show.venueName && (

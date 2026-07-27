@@ -16,6 +16,10 @@ interface BandOption {
   name: string;
 }
 
+// The header persists the current band here; the New event page defaults to it
+// (see the mount effect below). Must match app/Header.tsx.
+const SELECTED_BAND_KEY = 'selectedBandId';
+
 const field =
   'rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900';
 
@@ -38,12 +42,28 @@ export function NewEventClient({
   const showToast = useToast();
 
   // Honor the pre-selected band only if the user is actually a member of it;
-  // otherwise fall back to their first band.
+  // otherwise fall back to their first band. (This is the SSR-safe initial
+  // value; the header's current band is applied on mount below.)
   const initialBandId =
     defaultBandId && bands.some((b) => b.id === defaultBandId)
       ? defaultBandId
       : (bands[0]?.id ?? '');
   const [bandId, setBandId] = useState(initialBandId);
+
+  // Unless the user arrived with an explicit band (?bandId=), default to the
+  // band currently selected in the header. Read from localStorage after mount
+  // so the server and first client render still agree.
+  useEffect(() => {
+    if (defaultBandId) return; // explicit intent wins
+    try {
+      const saved = localStorage.getItem(SELECTED_BAND_KEY);
+      if (saved && bands.some((b) => b.id === saved)) setBandId(saved);
+    } catch {
+      // ignore unavailable storage
+    }
+    // Run once on mount; props are stable for this page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(defaultDate);
   const [time, setTime] = useState('');

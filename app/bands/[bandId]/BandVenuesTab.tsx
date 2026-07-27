@@ -11,6 +11,7 @@ import { usePersistedStringSet } from '../../usePersistedStringSet';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
 import { MinimizeToggle, type Venue } from './bandDetailShared';
+import { MapLink } from '../../MapLink';
 
 /**
  * The Venues tab: the band's saved venues (each expandable to reveal its
@@ -113,7 +114,7 @@ export function BandVenuesTab({
                 {venue.address && (
                   <div>
                     <span className="font-medium">Address:</span>{' '}
-                    {venue.address}
+                    <MapLink address={venue.address} />
                   </div>
                 )}
                 {venue.phone && (

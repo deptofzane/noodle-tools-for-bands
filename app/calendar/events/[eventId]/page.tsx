@@ -6,8 +6,10 @@ import { getEventForUser, listEventMembers } from '@/lib/db/events';
 import { getSetlist } from '@/lib/db/setlists';
 import { formatDateLong, formatDuration, formatTimeRange } from '@/lib/format';
 import { PageHeader } from '../../../PageHeader';
+import { MapLink } from '../../../MapLink';
 import { EventMembersClient } from './EventMembersClient';
 import { EventSetlistActions } from './EventSetlistActions';
+import { EventSetlistSongs } from './EventSetlistSongs';
 
 /**
  * Event detail. Server shell — access-guarded via getEventForUser (band
@@ -80,7 +82,8 @@ export default async function EventPage({
         )}
         {event.location && (
           <div>
-            <span className="font-medium">Location:</span> {event.location}
+            <span className="font-medium">Location:</span>{' '}
+            <MapLink address={event.location} />
           </div>
         )}
         {event.venueName && (
@@ -155,31 +158,12 @@ export default async function EventPage({
               </span>
             )}
           </div>
-          {setlist.songs.length === 0 ? (
-            <p className="text-sm text-neutral-500">This setlist has no songs.</p>
-          ) : (
-            <ul className="flex flex-col gap-1 text-sm">
-              {setlist.songs.map((s) =>
-                s.conversationId ? (
-                  <li key={s.id}>
-                    {s.name}
-                    {s.songLength != null && (
-                      <span className="text-neutral-400">
-                        {` - ${formatDuration(s.songLength)}`}
-                      </span>
-                    )}
-                  </li>
-                ) : (
-                  <li
-                    key={s.id}
-                    className="text-xs font-semibold uppercase tracking-wide text-neutral-500"
-                  >
-                    {s.name}
-                  </li>
-                ),
-              )}
-            </ul>
-          )}
+          <EventSetlistSongs
+            bandId={event.bandId}
+            setlistId={setlist.id}
+            canManage={canManage}
+            songs={setlist.songs}
+          />
         </section>
       )}
 

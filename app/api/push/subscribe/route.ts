@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/api-guard';
-import { savePushSubscription } from '@/lib/db/push-subscriptions';
+import {
+  isAllowedPushEndpoint,
+  savePushSubscription,
+} from '@/lib/db/push-subscriptions';
 
 /**
  * POST /api/push/subscribe
@@ -19,6 +22,12 @@ export async function POST(req: Request) {
   if (!endpoint || !p256dh || !auth)
     return NextResponse.json(
       { error: 'bad_subscription', message: 'A valid push subscription is required.' },
+      { status: 400 },
+    );
+  // Reject endpoints that aren't a known HTTPS push service (SSRF guard).
+  if (!isAllowedPushEndpoint(endpoint))
+    return NextResponse.json(
+      { error: 'bad_endpoint', message: 'Unsupported push endpoint.' },
       { status: 400 },
     );
 

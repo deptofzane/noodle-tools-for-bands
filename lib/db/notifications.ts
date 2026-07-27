@@ -107,21 +107,24 @@ export interface CreateNotificationInput {
  */
 export async function createNotification(
   input: CreateNotificationInput,
-): Promise<void> {
+): Promise<{ actorName: string | null; bandName: string | null }> {
   const [[actor], [band]] = await Promise.all([
     db.select({ name: users.name }).from(users).where(eq(users.id, input.actorId)).limit(1),
     db.select({ name: bands.name }).from(bands).where(eq(bands.id, input.bandId)).limit(1),
   ]);
+  const actorName = actor?.name ?? null;
+  const bandName = band?.name ?? null;
   await db.insert(notifications).values({
     bandId: input.bandId,
     actorId: input.actorId,
-    actorName: actor?.name ?? null,
-    bandName: band?.name ?? null,
+    actorName,
+    bandName,
     kind: input.kind,
     subjectType: input.subjectType,
     subjectId: input.subjectId ?? null,
     subjectLabel: input.subjectLabel ?? null,
   });
+  return { actorName, bandName };
 }
 
 /**
@@ -129,64 +132,20 @@ export async function createNotification(
  * break the mutation that triggered it. Failures are logged.
  */
 export async function notify(input: CreateNotificationInput): Promise<void> {
+  let names: { actorName: string | null; bandName: string | null };
   try {
-    await createNotification(input);
+    names = await createNotification(input);
   } catch (err) {
     console.error('[notifications] create failed', err);
     return;
   }
   // Fan out a mobile push in the background — never blocks or breaks the
   // action. Dynamically imported so `lib/push` (web-push) stays out of this
-  // module's static graph and there's no import cycle.
+  // module's static graph and there's no import cycle. Names are reused from
+  // the insert above so the push path doesn't re-query them.
   void import('../push')
-    .then((m) => m.sendEventPush(input))
+    .then((m) => m.sendEventPush(input, names))
     .catch((err) => console.error('[push] fan-out failed', err));
-}
-
-/**
- * Users who should receive a *mobile push* for a notification: the band's
- * members, minus the actor (unlike the in-app feed, you never get a push for
- * your own action) and minus anyone who muted this kind. Used by the push
- * sender; the in-app feed resolves its own recipients at read time.
- */
-export async function listPushRecipientUserIds(input: {
-  bandId: string;
-  actorId: string;
-  kind: NotificationKind;
-}): Promise<string[]> {
-  const members = await db
-    .select({ userId: bandMembers.userId })
-    .from(bandMembers)
-    .where(eq(bandMembers.bandId, input.bandId));
-  const ids = members
-    .map((m) => m.userId)
-    .filter((id) => id !== input.actorId);
-  if (ids.length === 0) return [];
-
-  // Exclude anyone who muted this kind in the feed (an in-app mute silences
-  // push too) OR push-muted it specifically (kept in feed, no push).
-  const [feedMuted, pushMuted] = await Promise.all([
-    db
-      .select({ userId: notificationMutes.userId })
-      .from(notificationMutes)
-      .where(
-        and(
-          inArray(notificationMutes.userId, ids),
-          eq(notificationMutes.kind, input.kind),
-        ),
-      ),
-    db
-      .select({ userId: pushMutes.userId })
-      .from(pushMutes)
-      .where(
-        and(inArray(pushMutes.userId, ids), eq(pushMutes.kind, input.kind)),
-      ),
-  ]);
-  const silenced = new Set([
-    ...feedMuted.map((m) => m.userId),
-    ...pushMuted.map((m) => m.userId),
-  ]);
-  return ids.filter((id) => !silenced.has(id));
 }
 
 /** Notification kinds the user has muted (default: none). */
