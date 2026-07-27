@@ -383,7 +383,7 @@ export function SheetMusic({
                     : undefined
                 }
                 className={
-                  'max-h-[60vh] overflow-auto rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900' +
+                  'overflow-auto rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900' +
                   (zoomEnabled ? '' : ' text-sm')
                 }
               >
