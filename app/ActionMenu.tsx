@@ -70,15 +70,18 @@ export function ActionMenuItem({
   children,
   onClick,
   destructive = false,
+  disabled = false
 }: {
   children: ReactNode;
   onClick: () => void;
   destructive?: boolean;
+  disabled?: boolean
 }) {
   return (
     <button
       type="button"
       role="menuitem"
+      disabled={disabled}
       onClick={onClick}
       className={`block w-full px-4 py-2 sm:py-3 text-left text-base hover:bg-neutral-100 sm:px-3 sm:py-1.5 sm:text-sm dark:hover:bg-neutral-800 ${
         destructive
