@@ -31,7 +31,7 @@ export default async function EditSongPage({
   ]);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col px-6 pb-4">
+    <main className="main-container">
       <EditSongClient
         conversationId={conversationId}
         apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ''}

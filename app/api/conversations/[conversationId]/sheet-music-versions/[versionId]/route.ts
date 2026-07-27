@@ -1,3 +1,4 @@
+import { Readable } from 'node:stream';
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/api-guard';
 import { getConversationMembership } from '@/lib/db/conversations';
@@ -5,19 +6,24 @@ import {
   deleteSheetVersion,
   setDefaultSheetVersion,
   setSheetVersionLabel,
+  updateSheetVersionContent,
 } from '@/lib/db/song-files';
+import { sheetFormatFile, SHEET_TEXT_FORMATS } from '@/lib/sheet-preview';
 
 /**
  * A single sheet-music version.
  *
- *   PATCH { default: true }        → make this the song's default version
- *   PATCH { label: string | null } → set/clear this version's label
- *   DELETE                         → remove it (promotes the newest remaining
- *                                    version to default if this was it)
+ *   PATCH { default: true }            → make this the song's default version
+ *   PATCH { label: string | null }     → set/clear this version's label
+ *   PATCH { content: string, format }  → overwrite a text version's content
+ *   DELETE                             → remove it (promotes the newest
+ *                                        remaining version to default if this
+ *                                        was it)
  *
  * All require band membership.
  */
 const MAX_LABEL_LEN = 100;
+const MAX_CONTENT_BYTES = 1_000_000; // 1 MB — text charts are tiny
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -64,8 +70,41 @@ export async function PATCH(
     return NextResponse.json({ ok: true });
   }
 
+  if (body && typeof body.content === 'string') {
+    const content = body.content;
+    if (!content.trim())
+      return NextResponse.json(
+        { error: 'bad_request', message: 'Content can’t be empty.' },
+        { status: 400 },
+      );
+    const sizeBytes = Buffer.byteLength(content, 'utf8');
+    if (sizeBytes > MAX_CONTENT_BYTES)
+      return NextResponse.json(
+        { error: 'too_large', message: 'That’s too much text to save.' },
+        { status: 413 },
+      );
+    const format = SHEET_TEXT_FORMATS.some((f) => f.id === body.format)
+      ? body.format
+      : 'markdown';
+    const file = sheetFormatFile(format);
+    const version = await updateSheetVersionContent({
+      conversationId,
+      versionId,
+      body: Readable.from(content),
+      sizeBytes,
+      fileName: file.name,
+      mimeType: file.type,
+    });
+    if (!version)
+      return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    return NextResponse.json({ version });
+  }
+
   return NextResponse.json(
-    { error: 'bad_request', message: 'Provide { default: true } or { label }.' },
+    {
+      error: 'bad_request',
+      message: 'Provide { default: true }, { label }, or { content, format }.',
+    },
     { status: 400 },
   );
 }

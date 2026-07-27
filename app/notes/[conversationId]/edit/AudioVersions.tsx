@@ -5,7 +5,23 @@ import { useRef, useState } from 'react';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { Modal } from '../../../Modal';
 import { PickerButton, type PickedFile } from '../../../PickerButton';
+import {
+  DropboxChooserButton,
+  type DropboxPickedFile,
+} from '../../../DropboxChooserButton';
 import { ConnectDriveButton } from '../../../ConnectDriveButton';
+
+const AUDIO_EXTENSIONS = [
+  '.mp3',
+  '.m4a',
+  '.wav',
+  '.aac',
+  '.ogg',
+  '.oga',
+  '.opus',
+  '.flac',
+  '.webm',
+];
 import { useCanUseDrive } from '../../../DriveCapabilityProvider';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
@@ -79,7 +95,7 @@ export function AudioVersions({
     }
   };
 
-  const addDrive = async (file: PickedFile) => {
+  const addFromJson = async (payload: Record<string, unknown>) => {
     if (busy) return;
     setBusy(true);
     try {
@@ -87,7 +103,7 @@ export function AudioVersions({
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ driveFileId: file.id }),
+          body: JSON.stringify(payload),
         });
         await ensureOk(res);
         await refresh();
@@ -99,6 +115,10 @@ export function AudioVersions({
       setBusy(false);
     }
   };
+
+  const addDrive = (file: PickedFile) => addFromJson({ driveFileId: file.id });
+  const addDropbox = (file: DropboxPickedFile) =>
+    addFromJson({ dropboxUrl: file.link, name: file.name, bytes: file.bytes });
 
   const makeDefault = async (id: string) => {
     if (busy) return;
@@ -338,6 +358,16 @@ export function AudioVersions({
             ) : (
               <ConnectDriveButton label="Sign in with Google" />
             )}
+            <DropboxChooserButton
+              label="Choose from Dropbox"
+              multiple={false}
+              extensions={AUDIO_EXTENSIONS}
+              onPick={(files) => {
+                setChooseOpen(false);
+                const file = files[0];
+                if (file) void addDropbox(file);
+              }}
+            />
             <button
               type="button"
               onClick={() => {

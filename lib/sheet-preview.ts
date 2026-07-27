@@ -5,9 +5,9 @@ export type PreviewKind = 'image' | 'pdf' | 'text' | 'other';
 export type SheetTextFormat = 'markdown' | 'chordpro' | 'source';
 
 export const SHEET_TEXT_FORMATS: { id: SheetTextFormat; label: string }[] = [
+  { id: 'source', label: 'Source' },
   { id: 'markdown', label: 'Markdown' },
   { id: 'chordpro', label: 'ChordPro' },
-  { id: 'source', label: 'Source' },
 ];
 
 /** The filename + MIME to save a pasted sheet under, encoding its format. */

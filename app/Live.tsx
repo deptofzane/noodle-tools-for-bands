@@ -500,7 +500,7 @@ function SheetView({
       >
         <div
           style={{ fontSize: `${(zoom / 100) * 0.9}rem` }}
-          className="px-6 py-12 leading-relaxed"
+          className="px-6 py-6 leading-relaxed"
         >
           {text === null ? (
             'Loading…'

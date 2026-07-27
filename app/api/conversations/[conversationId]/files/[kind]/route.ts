@@ -1,5 +1,6 @@
 import { Readable } from 'node:stream';
 import { fileToNodeStream, uploadLimit } from '@/lib/upload-limit';
+import { fetchDropboxFile } from '@/lib/dropbox';
 import { auth } from '@/auth';
 import { getDriveClient } from '@/lib/drive';
 import { getCurrentDbUser } from '@/lib/current-user';
@@ -125,10 +126,77 @@ export async function POST(
     return Response.json({ error: 'forbidden' }, { status: 403 });
   }
 
-  // Import from Google Drive: JSON { driveFileId } → download with the
-  // user's token and store, mirroring the audio-registration import.
+  // Import from Google Drive ({ driveFileId }, downloaded with the user's
+  // token) or Dropbox ({ dropboxUrl }, streamed from its direct link).
   if ((req.headers.get('content-type') ?? '').includes('application/json')) {
     const body = await req.json().catch(() => null);
+
+    // Dropbox: no OAuth — just download the (host-validated) direct link.
+    const dropboxUrl =
+      typeof body?.dropboxUrl === 'string' ? body.dropboxUrl : '';
+    if (dropboxUrl) {
+      const name =
+        typeof body?.name === 'string' && body.name.trim()
+          ? body.name.trim()
+          : 'sheet-music';
+      const clientBytes = Number(body?.bytes ?? 0) || 0;
+      if (clientBytes > MAX_SHEET_BYTES)
+        return Response.json(
+          { error: 'file_too_large', message: 'Sheet music exceeds the 25 MB limit.' },
+          { status: 413 },
+        );
+      const fetched = await fetchDropboxFile(dropboxUrl);
+      if (!fetched)
+        return Response.json(
+          { error: 'bad_source', message: 'Could not download from Dropbox.' },
+          { status: 400 },
+        );
+      const mimeType = normalizeSheetMime(fetched.contentType, name);
+      if (!mimeType) {
+        fetched.body.destroy();
+        return Response.json(
+          {
+            error: 'unsupported_type',
+            message:
+              'Allowed: PDF, plain text/markdown, or a PNG/JPEG/GIF/WEBP image.',
+          },
+          { status: 415 },
+        );
+      }
+      if (!fetched.sizeBytes) {
+        fetched.body.destroy();
+        return Response.json(
+          { error: 'import_failed', message: 'Could not determine the file size.' },
+          { status: 502 },
+        );
+      }
+      if (fetched.sizeBytes > MAX_SHEET_BYTES) {
+        fetched.body.destroy();
+        return Response.json(
+          { error: 'file_too_large', message: 'Sheet music exceeds the 25 MB limit.' },
+          { status: 413 },
+        );
+      }
+      try {
+        const version = await uploadLimit.run(() =>
+          addSheetVersion({
+            conversationId,
+            body: fetched.body,
+            sizeBytes: fetched.sizeBytes,
+            fileName: name,
+            mimeType,
+          }),
+        );
+        return Response.json({ version }, { status: 201 });
+      } catch (err) {
+        console.error('[files] Dropbox sheet-music import failed', err);
+        return Response.json(
+          { error: 'upload_failed', message: 'Could not store the file.' },
+          { status: 502 },
+        );
+      }
+    }
+
     const driveFileId =
       typeof body?.driveFileId === 'string' ? body.driveFileId.trim() : '';
     if (!driveFileId) {

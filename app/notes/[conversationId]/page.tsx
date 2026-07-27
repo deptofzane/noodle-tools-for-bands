@@ -75,7 +75,7 @@ export default async function NotesPage({
     : null;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col px-6 pb-4">
+    <main className="main-container">
       <PageHeader defaultHref={backHref} defaultHrefName='Overview'>
         <Link
           href={`/notes/${conversationId}/edit`}

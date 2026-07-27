@@ -5,11 +5,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ConfirmModal } from '../../ConfirmModal';
-import { type PickedFile } from '../../PickerButton';
 import { BandChat } from './BandChat';
 import { useCanUseDrive } from '../../DriveCapabilityProvider';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
+import { useBeforeUnload } from '../../useBeforeUnload';
 import { BandMembersTab } from './BandMembersTab';
 import { BandAudioTab } from './BandAudioTab';
 import { BandOverviewTab } from './BandOverviewTab';
@@ -56,6 +56,11 @@ export function BandDetailClient({
     current: number;
     total: number;
   } | null>(null);
+
+  // Warn before closing/reloading the tab mid-upload — a real page unload would
+  // cut off a local file upload (and roll it back server-side). In-app
+  // navigation is unaffected; those uploads finish in the background.
+  useBeforeUnload(audioBusy || importProgress !== null);
   const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [archiving, setArchiving] = useState(false);
@@ -115,33 +120,30 @@ export function BandDetailClient({
     }
   }, []);
 
-  const handleRegister = useCallback(
-    async (files: PickedFile[]) => {
-      if (files.length === 0) return;
-      // Register each picked audio file as a conversation. Import each one
-      // independently so a single bad file doesn't abort the rest; report a
-      // summary. Sequential to avoid buffering several large downloads at once.
+  const registerAudio = useCallback(
+    async (bodies: Record<string, unknown>[]) => {
+      if (bodies.length === 0) return;
+      // Register each picked audio file (from Drive or Dropbox) as a
+      // conversation. Import each independently so one bad file doesn't abort
+      // the rest; report a summary. Sequential to avoid buffering several large
+      // downloads at once.
       let added = 0;
       let firstError: string | null = null;
       // For a bulk import, add each file silently and send one batched
       // notification afterwards (a single file keeps its per-file notice).
-      const silent = files.length > 1;
-      setImportProgress({ current: 1, total: files.length });
+      const silent = bodies.length > 1;
+      setImportProgress({ current: 1, total: bodies.length });
       try {
         await trackPending(async () => {
-          for (let i = 0; i < files.length; i++) {
-            const f = files[i]!;
-            setImportProgress({ current: i + 1, total: files.length });
+          for (let i = 0; i < bodies.length; i++) {
+            setImportProgress({ current: i + 1, total: bodies.length });
             try {
               const r = await fetch(
                 `/api/bands/${bandId}/conversations${silent ? '?silent=1' : ''}`,
                 {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    driveAudioFileId: f.id,
-                    audioFileName: f.name,
-                  }),
+                  body: JSON.stringify(bodies[i]),
                 },
               );
               await ensureOk(r);
@@ -165,14 +167,14 @@ export function BandDetailClient({
       }
       await reload();
 
-      const failed = files.length - added;
+      const failed = bodies.length - added;
       if (failed === 0) {
         showToast(`Added ${added} song${added === 1 ? '' : 's'}.`, 'success');
       } else if (added === 0) {
         showToast(firstError ?? 'Could not add the songs.');
       } else {
         showToast(
-          `Added ${added} of ${files.length}. ${failed} failed: ${firstError}`,
+          `Added ${added} of ${bodies.length}. ${failed} failed: ${firstError}`,
         );
       }
     },
@@ -484,7 +486,22 @@ export function BandDetailClient({
           busy={audioBusy}
           onPickDrive={(files) => {
             setChooseOpen(false);
-            void handleRegister(files);
+            void registerAudio(
+              files.map((f) => ({
+                driveAudioFileId: f.id,
+                audioFileName: f.name,
+              })),
+            );
+          }}
+          onPickDropbox={(files) => {
+            setChooseOpen(false);
+            void registerAudio(
+              files.map((f) => ({
+                dropboxUrl: f.link,
+                name: f.name,
+                bytes: f.bytes,
+              })),
+            );
           }}
           onUploadLocal={() => {
             setChooseOpen(false);

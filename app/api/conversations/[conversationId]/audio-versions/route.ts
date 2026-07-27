@@ -7,6 +7,7 @@ import type { Readable } from 'node:stream';
 import { addAudioVersion, listAudioVersions } from '@/lib/db/song-files';
 import { MAX_AUDIO_BYTES, normalizeAudioMime } from '@/lib/audio-mime';
 import { fileToNodeStream, uploadLimit } from '@/lib/upload-limit';
+import { fetchDropboxFile } from '@/lib/dropbox';
 
 /**
  * Audio versions for a song (conversation).
@@ -47,12 +48,76 @@ export async function POST(
 
   const contentType = req.headers.get('content-type') ?? '';
 
-  // Drive import: JSON { driveFileId, label? }.
+  // Drive / Dropbox import: JSON { driveFileId | dropboxUrl, label?, ... }.
   if (contentType.includes('application/json')) {
     const body = await req.json().catch(() => null);
+    const label = typeof body?.label === 'string' ? body.label.trim() : '';
+
+    // Dropbox: stream the direct link server-side (no OAuth token needed).
+    const dropboxUrl =
+      typeof body?.dropboxUrl === 'string' ? body.dropboxUrl : '';
+    if (dropboxUrl) {
+      const name =
+        typeof body?.name === 'string' && body.name.trim()
+          ? body.name.trim()
+          : 'audio';
+      const clientBytes = Number(body?.bytes ?? 0) || 0;
+      if (clientBytes > MAX_AUDIO_BYTES)
+        return NextResponse.json(
+          { error: 'file_too_large', message: 'Audio exceeds the 50 MB limit.' },
+          { status: 413 },
+        );
+      const fetched = await fetchDropboxFile(dropboxUrl);
+      if (!fetched)
+        return NextResponse.json(
+          { error: 'bad_source', message: 'Could not download from Dropbox.' },
+          { status: 400 },
+        );
+      const mimeType = normalizeAudioMime(fetched.contentType, name);
+      if (!mimeType) {
+        fetched.body.destroy();
+        return NextResponse.json(
+          { error: 'unsupported_type', message: 'Please choose an audio file.' },
+          { status: 415 },
+        );
+      }
+      if (!fetched.sizeBytes) {
+        fetched.body.destroy();
+        return NextResponse.json(
+          { error: 'import_failed', message: 'Could not determine the file size.' },
+          { status: 502 },
+        );
+      }
+      if (fetched.sizeBytes > MAX_AUDIO_BYTES) {
+        fetched.body.destroy();
+        return NextResponse.json(
+          { error: 'file_too_large', message: 'Audio exceeds the 50 MB limit.' },
+          { status: 413 },
+        );
+      }
+      try {
+        const version = await uploadLimit.run(() =>
+          addAudioVersion({
+            conversationId,
+            body: fetched.body,
+            sizeBytes: fetched.sizeBytes,
+            fileName: name,
+            mimeType,
+            label: label || null,
+          }),
+        );
+        return NextResponse.json({ version }, { status: 201 });
+      } catch (err) {
+        console.error('[audio-versions] Dropbox import failed', err);
+        return NextResponse.json(
+          { error: 'upload_failed', message: 'Could not store the audio.' },
+          { status: 502 },
+        );
+      }
+    }
+
     const driveFileId =
       typeof body?.driveFileId === 'string' ? body.driveFileId.trim() : '';
-    const label = typeof body?.label === 'string' ? body.label.trim() : '';
     if (!driveFileId) {
       return NextResponse.json({ error: 'bad_request' }, { status: 400 });
     }

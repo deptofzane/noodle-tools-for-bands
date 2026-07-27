@@ -910,6 +910,62 @@ export async function setDefaultSheetVersion(
   });
 }
 
+/**
+ * Overwrite a sheet-music version's file content in place (same storage key,
+ * so the default/label/order and any per-user preference are preserved).
+ * Updates the row's file name, MIME, size, and updatedAt. Returns the updated
+ * version, or null if it doesn't exist for this song.
+ */
+export async function updateSheetVersionContent(input: {
+  conversationId: string;
+  versionId: string;
+  body: Readable;
+  sizeBytes: number;
+  fileName: string;
+  mimeType: string;
+}): Promise<SheetVersion | null> {
+  if (!isUuid(input.versionId)) return null;
+  const [existing] = await db
+    .select({ storageKey: songFiles.storageKey })
+    .from(songFiles)
+    .where(
+      and(
+        eq(songFiles.id, input.versionId),
+        eq(songFiles.conversationId, input.conversationId),
+        eq(songFiles.kind, 'sheet_music'),
+      ),
+    )
+    .limit(1);
+  if (!existing?.storageKey) return null;
+
+  await putObjectStream(
+    existing.storageKey,
+    input.body,
+    input.mimeType,
+    input.sizeBytes,
+  );
+
+  const [row] = await db
+    .update(songFiles)
+    .set({
+      fileName: input.fileName,
+      mimeType: input.mimeType,
+      sizeBytes: input.sizeBytes,
+      updatedAt: new Date(),
+    })
+    .where(eq(songFiles.id, input.versionId))
+    .returning({
+      id: songFiles.id,
+      fileName: songFiles.fileName,
+      mimeType: songFiles.mimeType,
+      sizeBytes: songFiles.sizeBytes,
+      isDefault: songFiles.isDefault,
+      label: songFiles.label,
+      updatedAt: songFiles.updatedAt,
+    });
+  return row ? { ...row, updatedAt: row.updatedAt.toISOString() } : null;
+}
+
 /** Set (or clear) a sheet-music version's label. */
 export async function setSheetVersionLabel(
   conversationId: string,

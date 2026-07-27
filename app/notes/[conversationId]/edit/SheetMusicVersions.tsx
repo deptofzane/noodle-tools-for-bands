@@ -1,19 +1,35 @@
 'use client';
 
 import { ensureOk } from '@/lib/api';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { Modal } from '../../../Modal';
 import { PickerButton, type PickedFile } from '../../../PickerButton';
+import {
+  DropboxChooserButton,
+  type DropboxPickedFile,
+} from '../../../DropboxChooserButton';
 import { ConnectDriveButton } from '../../../ConnectDriveButton';
+import { SHEET_EXTENSIONS } from '../SheetMusic';
+import { SheetText } from '../SheetText';
 import { useCanUseDrive } from '../../../DriveCapabilityProvider';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
 import {
+  previewKind,
   SHEET_TEXT_FORMATS,
   sheetFormatFile,
   type SheetTextFormat,
 } from '@/lib/sheet-preview';
+
+/** The text format a version was saved as, derived from its file name. */
+function formatFromFileName(fileName: string): SheetTextFormat {
+  const ext = fileName.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] ?? '';
+  if (['cho', 'chopro', 'chordpro', 'pro', 'crd'].includes(ext))
+    return 'chordpro';
+  if (['txt', 'text'].includes(ext)) return 'source';
+  return 'markdown';
+}
 
 export interface SheetVersionMeta {
   id: string;
@@ -50,12 +66,50 @@ export function SheetMusicVersions({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  // Inline preview (view) of a version's rendered content.
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [previewText, setPreviewText] = useState<string | null>(null);
+  // Editing a text version's content in place.
+  const [editContentId, setEditContentId] = useState<string | null>(null);
+  const [editContentText, setEditContentText] = useState('');
+  const [editContentFormat, setEditContentFormat] =
+    useState<SheetTextFormat>('markdown');
+  const [editContentLoading, setEditContentLoading] = useState(false);
+  const [savingContent, setSavingContent] = useState(false);
   const canUseDrive = useCanUseDrive();
   const trackPending = useTrackPending();
   const showToast = useToast();
 
   const versionsUrl = `/api/conversations/${conversationId}/sheet-music-versions`;
   const addUrl = `/api/conversations/${conversationId}/files/sheet_music`;
+
+  const isTextVersion = (v: SheetVersionMeta) =>
+    previewKind(v.mimeType, v.fileName) === 'text';
+
+  const preview = versions.find((v) => v.id === previewId) ?? null;
+  const previewUrl = preview
+    ? `${addUrl}?version=${preview.id}&v=${encodeURIComponent(preview.updatedAt)}`
+    : null;
+  const previewKindResolved = preview
+    ? previewKind(preview.mimeType, preview.fileName)
+    : null;
+
+  // Lazily fetch text content when previewing a text version.
+  useEffect(() => {
+    if (!previewUrl || previewKindResolved !== 'text') {
+      setPreviewText(null);
+      return;
+    }
+    let cancelled = false;
+    setPreviewText(null);
+    fetch(previewUrl)
+      .then((r) => (r.ok ? r.text() : Promise.reject(new Error())))
+      .then((t) => !cancelled && setPreviewText(t))
+      .catch(() => !cancelled && setPreviewText('(Could not load file.)'));
+    return () => {
+      cancelled = true;
+    };
+  }, [previewUrl, previewKindResolved]);
 
   const refresh = async () => {
     const r = await fetch(versionsUrl, { cache: 'no-store' });
@@ -85,7 +139,7 @@ export function SheetMusicVersions({
     }
   };
 
-  const addDrive = async (file: PickedFile) => {
+  const addFromJson = async (payload: Record<string, unknown>) => {
     if (busy) return;
     setBusy(true);
     try {
@@ -93,7 +147,7 @@ export function SheetMusicVersions({
         const res = await fetch(addUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ driveFileId: file.id }),
+          body: JSON.stringify(payload),
         });
         await ensureOk(res);
         await refresh();
@@ -105,6 +159,10 @@ export function SheetMusicVersions({
       setBusy(false);
     }
   };
+
+  const addDrive = (file: PickedFile) => addFromJson({ driveFileId: file.id });
+  const addDropbox = (file: DropboxPickedFile) =>
+    addFromJson({ dropboxUrl: file.link, name: file.name, bytes: file.bytes });
 
   const savePaste = async () => {
     const text = pasteText;
@@ -186,6 +244,50 @@ export function SheetMusicVersions({
     }
   };
 
+  const togglePreview = (id: string) =>
+    setPreviewId((cur) => (cur === id ? null : id));
+
+  const openEditContent = async (v: SheetVersionMeta) => {
+    setEditContentId(v.id);
+    setEditContentFormat(formatFromFileName(v.fileName));
+    setEditContentText('');
+    setEditContentLoading(true);
+    try {
+      const url = `${addUrl}?version=${v.id}&v=${encodeURIComponent(v.updatedAt)}`;
+      const r = await fetch(url);
+      setEditContentText(r.ok ? await r.text() : '');
+    } catch {
+      setEditContentText('');
+    } finally {
+      setEditContentLoading(false);
+    }
+  };
+
+  const saveContent = async () => {
+    if (!editContentId || savingContent || !editContentText.trim()) return;
+    setSavingContent(true);
+    try {
+      await trackPending(async () => {
+        const res = await fetch(`${versionsUrl}/${editContentId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: editContentText,
+            format: editContentFormat,
+          }),
+        });
+        await ensureOk(res);
+        await refresh();
+      });
+      showToast('Sheet music updated.', 'success');
+      setEditContentId(null);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSavingContent(false);
+    }
+  };
+
   const isOnlyVersion = versions.length === 1;
 
   return (
@@ -258,7 +360,24 @@ export function SheetMusicVersions({
                       </span>
                     )}
                   </div>
-                  <div className="flex shrink-0 items-center gap-1">
+                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+                    <button
+                      type="button"
+                      onClick={() => togglePreview(v.id)}
+                      className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                    >
+                      {previewId === v.id ? 'Hide' : 'View'}
+                    </button>
+                    {isTextVersion(v) && (
+                      <button
+                        type="button"
+                        onClick={() => void openEditContent(v)}
+                        disabled={busy}
+                        className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                      >
+                        Edit
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => startEdit(v)}
@@ -295,6 +414,53 @@ export function SheetMusicVersions({
         <p className="rounded-md border border-neutral-200 px-3 py-4 text-center text-sm text-neutral-500 dark:border-neutral-800">
           No sheet music yet. Add a version below.
         </p>
+      )}
+
+      {preview && previewUrl && (
+        <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+          <div className="flex items-center justify-between gap-2">
+            <span className="truncate text-xs font-medium text-neutral-500">
+              {preview.label || preview.fileName}
+            </span>
+            <a
+              href={previewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 text-xs text-blue-600 hover:underline dark:text-blue-400"
+            >
+              Open in new tab
+            </a>
+          </div>
+          {previewKindResolved === 'image' && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewUrl}
+              alt={preview.label || preview.fileName}
+              className="max-h-[60vh] w-full rounded-md border border-neutral-200 object-contain dark:border-neutral-800"
+            />
+          )}
+          {previewKindResolved === 'pdf' && (
+            <iframe
+              title={preview.label || preview.fileName}
+              src={previewUrl}
+              className="h-[60vh] w-full rounded-md border border-neutral-200 dark:border-neutral-800"
+            />
+          )}
+          {previewKindResolved === 'text' && (
+            <div className="max-h-[60vh] overflow-auto rounded-md border border-neutral-200 bg-neutral-50 p-3 text-sm dark:border-neutral-800 dark:bg-neutral-900">
+              {previewText === null ? (
+                <span className="text-xs text-neutral-500">Loading…</span>
+              ) : (
+                <SheetText text={previewText} fileName={preview.fileName} />
+              )}
+            </div>
+          )}
+          {previewKindResolved === 'other' && (
+            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+              Preview isn’t available for this file type.
+            </p>
+          )}
+        </div>
       )}
 
       <div>
@@ -338,8 +504,8 @@ export function SheetMusicVersions({
           {pasteMode ? (
             <>
               <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-                Write or paste Markdown, a ChordPro chart ([C]lyrics with{' '}
-                {'{directives}'}), or plain source text.
+                Write or paste or plain source text, Markdown, or a ChordPro chart ([C]lyrics with{' '}
+                {'{directives}'}).
               </p>
               <div className="mt-3 flex items-center gap-2 text-sm">
                 <span className="text-neutral-500">Format:</span>
@@ -412,6 +578,16 @@ export function SheetMusicVersions({
                 ) : (
                   <ConnectDriveButton label="Sign in with Google" />
                 )}
+                <DropboxChooserButton
+                  label="Choose from Dropbox"
+                  multiple={false}
+                  extensions={SHEET_EXTENSIONS}
+                  onPick={(files) => {
+                    setChooseOpen(false);
+                    const file = files[0];
+                    if (file) void addDropbox(file);
+                  }}
+                />
                 <button
                   type="button"
                   onClick={() => {
@@ -462,6 +638,67 @@ export function SheetMusicVersions({
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      {editContentId && (
+        <Modal
+          onClose={() => !savingContent && setEditContentId(null)}
+          busy={savingContent}
+          labelledBy="sheet-edit-content-title"
+          size="lg"
+        >
+          <h2 id="sheet-edit-content-title" className="text-base font-semibold">
+            Edit sheet music
+          </h2>
+          <div className="mt-3 flex items-center gap-2 text-sm">
+            <span className="text-neutral-500">Format:</span>
+            {SHEET_TEXT_FORMATS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setEditContentFormat(f.id)}
+                aria-pressed={editContentFormat === f.id}
+                className={
+                  'rounded-md px-2 py-1 text-xs font-medium ' +
+                  (editContentFormat === f.id
+                    ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100'
+                    : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800')
+                }
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <textarea
+            value={editContentText}
+            onChange={(e) => setEditContentText(e.target.value)}
+            rows={14}
+            disabled={editContentLoading || savingContent}
+            autoFocus
+            placeholder={editContentLoading ? 'Loading…' : 'Lyrics, chords, or Markdown…'}
+            className="mt-3 w-full resize-y rounded-md border border-neutral-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-900"
+          />
+          <div className="mt-4 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setEditContentId(null)}
+              disabled={savingContent}
+              className="btn-ghost"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void saveContent()}
+              disabled={
+                editContentLoading || savingContent || !editContentText.trim()
+              }
+              className="btn-primary"
+            >
+              {savingContent ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </Modal>
+      )}
     </section>
   );
 }

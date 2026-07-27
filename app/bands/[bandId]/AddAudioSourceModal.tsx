@@ -1,18 +1,24 @@
 import { Modal } from '../../Modal';
 import { PickerButton, type PickedFile } from '../../PickerButton';
+import {
+  DropboxChooserButton,
+  type DropboxPickedFile,
+} from '../../DropboxChooserButton';
 import { ConnectDriveButton } from '../../ConnectDriveButton';
 
 /**
  * "Add audio" source chooser: import one or more files from Google Drive (or
- * connect Drive), or upload a local file. The hidden file input itself lives
- * in the parent (it must persist while this modal is closed), so "Upload a
- * local file" calls back via `onUploadLocal`.
+ * connect Drive), from Dropbox, or upload a local file. The hidden file input
+ * itself lives in the parent (it must persist while this modal is closed), so
+ * "Upload a local file" calls back via `onUploadLocal`. The Dropbox option
+ * only appears when Dropbox is configured.
  */
 export function AddAudioSourceModal({
   canUseDrive,
   apiKey,
   busy,
   onPickDrive,
+  onPickDropbox,
   onUploadLocal,
   onClose,
 }: {
@@ -20,6 +26,7 @@ export function AddAudioSourceModal({
   apiKey: string;
   busy: boolean;
   onPickDrive: (files: PickedFile[]) => void;
+  onPickDropbox: (files: DropboxPickedFile[]) => void;
   onUploadLocal: () => void;
   onClose: () => void;
 }) {
@@ -43,6 +50,11 @@ export function AddAudioSourceModal({
         ) : (
           <ConnectDriveButton label="Sign in with Google" />
         )}
+        <DropboxChooserButton
+          label="Choose from Dropbox"
+          extensions={['.mp3', '.m4a', '.wav', '.aac', '.ogg', '.oga', '.opus', '.flac', '.webm']}
+          onPick={onPickDropbox}
+        />
         <button
           type="button"
           onClick={onUploadLocal}

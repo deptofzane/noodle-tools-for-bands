@@ -4,7 +4,29 @@ import { ensureOk } from '@/lib/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal } from '../../Modal';
 import { PickerButton, type PickedFile } from '../../PickerButton';
+import {
+  DropboxChooserButton,
+  type DropboxPickedFile,
+} from '../../DropboxChooserButton';
 import { ConnectDriveButton } from '../../ConnectDriveButton';
+
+export const SHEET_EXTENSIONS = [
+  '.pdf',
+  '.txt',
+  '.md',
+  '.markdown',
+  '.csv',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.cho',
+  '.chopro',
+  '.chordpro',
+  '.pro',
+  '.crd',
+];
 import { useCanUseDrive } from '../../DriveCapabilityProvider';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
@@ -205,6 +227,19 @@ export function SheetMusic({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ driveFileId: file.id }),
+      }),
+    );
+
+  const handleDropboxImport = (file: DropboxPickedFile) =>
+    addVersionFrom(() =>
+      fetch(addUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dropboxUrl: file.link,
+          name: file.name,
+          bytes: file.bytes,
+        }),
       }),
     );
 
@@ -494,6 +529,16 @@ export function SheetMusic({
                 ) : (
                   <ConnectDriveButton label="Sign in with Google" />
                 )}
+                <DropboxChooserButton
+                  label="Choose from Dropbox"
+                  multiple={false}
+                  extensions={SHEET_EXTENSIONS}
+                  onPick={(files) => {
+                    setChooseOpen(false);
+                    const file = files[0];
+                    if (file) void handleDropboxImport(file);
+                  }}
+                />
                 <button
                   type="button"
                   onClick={() => {

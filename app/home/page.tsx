@@ -59,7 +59,8 @@ export default async function HomePage() {
   const myBandIds = myBands.map((b) => b.id);
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-4 px-6 py-4">
+    // <main className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-4">
+    <main className="main-container">
       <HomePushNudge />
       <RecentEvents shows={showsBuffer} bandIds={myBandIds} />
       <UpcomingShows
