@@ -20,6 +20,14 @@ interface BandDetail {
   myRole: 'owner' | 'member';
 }
 
+interface PendingInvite {
+  id: string;
+  email: string;
+  role: 'owner' | 'member';
+  createdAt: string;
+  expiresAt: string;
+}
+
 /**
  * Band management (owner-only): add/remove members and delete the band.
  * The server shell already enforces owner access; the mutation APIs
@@ -36,6 +44,15 @@ export function EditBandClient({ bandId }: { bandId: string }) {
   const [removing, setRemoving] = useState(false);
   const [promoteTarget, setPromoteTarget] = useState<Member | null>(null);
   const [promoting, setPromoting] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [invitingBusy, setInvitingBusy] = useState(false);
+  const [createdLink, setCreatedLink] = useState<{
+    url: string;
+    email: string;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [invites, setInvites] = useState<PendingInvite[] | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const trackPending = useTrackPending();
@@ -55,9 +72,23 @@ export function EditBandClient({ bandId }: { bandId: string }) {
     }
   }, [bandId]);
 
+  const loadInvites = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/bands/${bandId}/invites`, {
+        cache: 'no-store',
+      });
+      if (!res.ok) return;
+      const d = (await res.json()) as { invites: PendingInvite[] };
+      setInvites(d.invites);
+    } catch {
+      // best-effort — the section just stays empty
+    }
+  }, [bandId]);
+
   useEffect(() => {
     void trackPending(() => load());
-  }, [load, trackPending]);
+    void loadInvites();
+  }, [load, loadInvites, trackPending]);
 
   const handleRename = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,6 +140,70 @@ export function EditBandClient({ bandId }: { bandId: string }) {
       showToast(e instanceof Error ? e.message : String(e));
     } finally {
       setPromoting(false);
+    }
+  };
+
+  const handleCreateInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const v = inviteEmail.trim();
+    if (!v || invitingBusy) return;
+    setInvitingBusy(true);
+    try {
+      const invite = await trackPending(async () => {
+        const r = await fetch(`/api/bands/${bandId}/invites`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: v }),
+        });
+        const d = (await r.json().catch(() => ({}))) as {
+          invite?: { path: string; email: string };
+          message?: string;
+        };
+        if (!r.ok) throw new Error(d.message || 'Could not create the invite.');
+        return d.invite ?? null;
+      });
+      if (invite) {
+        setCreatedLink({
+          url: `${window.location.origin}${invite.path}`,
+          email: invite.email,
+        });
+        setCopied(false);
+      }
+      setInviteEmail('');
+      showToast('Invite link created.', 'success');
+      await loadInvites();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setInvitingBusy(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!createdLink) return;
+    try {
+      await navigator.clipboard.writeText(createdLink.url);
+      setCopied(true);
+    } catch {
+      showToast('Couldn’t copy — select the link and copy it manually.');
+    }
+  };
+
+  const handleRevokeInvite = async (id: string) => {
+    if (revokingId) return;
+    setRevokingId(id);
+    try {
+      await trackPending(async () => {
+        const r = await fetch(`/api/bands/${bandId}/invites/${id}`, {
+          method: 'DELETE',
+        });
+        await ensureOk(r);
+      });
+      await loadInvites();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRevokingId(null);
     }
   };
 
@@ -280,9 +375,88 @@ export function EditBandClient({ bandId }: { bandId: string }) {
             </button>
           </div>
           <p className="text-[11px] text-neutral-500">
-            They must have signed in to the app at least once.
+            They must have signed in to the app at least once — otherwise send
+            an invite link below.
           </p>
         </form>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-sm font-medium">Invite by link</h2>
+        <form onSubmit={handleCreateInvite} className="flex flex-col gap-1">
+          <div className="flex gap-2">
+            <input
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder="Invite by email"
+              className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+            />
+            <button
+              type="submit"
+              disabled={!inviteEmail.trim() || invitingBusy}
+              className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+            >
+              {invitingBusy ? 'Creating…' : 'Create invite'}
+            </button>
+          </div>
+          <p className="text-[11px] text-neutral-500">
+            They join {data.band.name} when they open the link and sign in with
+            this email. Links expire in 21 days.
+          </p>
+        </form>
+
+        {createdLink && (
+          <div className="flex flex-col gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 dark:border-blue-900 dark:bg-blue-950/40">
+            <p className="text-xs text-neutral-600 dark:text-neutral-300">
+              Invite link for{' '}
+              <span className="font-medium">{createdLink.email}</span> — copy
+              and share it:
+            </p>
+            <div className="flex gap-2">
+              <input
+                readOnly
+                value={createdLink.url}
+                onFocus={(e) => e.currentTarget.select()}
+                className="min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1.5 font-mono text-xs dark:border-neutral-700 dark:bg-neutral-900"
+              />
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="shrink-0 rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
+              >
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {invites && invites.length > 0 && (
+          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+            {invites.map((inv) => (
+              <li
+                key={inv.id}
+                className="flex items-center justify-between gap-3 px-4 py-2 md:px-3 text-sm"
+              >
+                <div className="min-w-0">
+                  <div className="truncate">{inv.email}</div>
+                  <div className="text-xs text-neutral-500">
+                    Pending · expires{' '}
+                    {new Date(inv.expiresAt).toLocaleDateString()}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRevokeInvite(inv.id)}
+                  disabled={revokingId === inv.id}
+                  className="shrink-0 text-xs text-neutral-500 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
+                >
+                  {revokingId === inv.id ? 'Revoking…' : 'Revoke'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="flex flex-col gap-2 border-t border-neutral-200 pt-4 dark:border-neutral-800">

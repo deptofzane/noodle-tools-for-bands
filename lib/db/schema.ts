@@ -130,6 +130,35 @@ export const bandMembers = pgTable(
   ],
 );
 
+// Pending band invitations keyed to an email address. The raw token lives
+// only in the shared link; we store its SHA-256 hash (like reset tokens).
+// Single-use: `acceptedAt`/`acceptedBy` are set when redeemed. At most one
+// *pending* invite per (band, email) — the data layer refreshes on re-invite.
+export const bandInvites = pgTable(
+  'band_invites',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    bandId: uuid('band_id')
+      .notNull()
+      .references(() => bands.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    role: bandRole('role').notNull().default('member'),
+    invitedBy: uuid('invited_by').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    tokenHash: text('token_hash').notNull().unique(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+    acceptedBy: uuid('accepted_by').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index('band_invites_band_idx').on(t.bandId)],
+);
+
 // ── Conversations ────────────────────────────────────────────────────
 // One row per (band, Drive audio file). The audio bytes stay in Drive;
 // this row owns the conversation-level state (closed, last activity).

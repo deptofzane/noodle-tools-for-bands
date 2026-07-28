@@ -8,10 +8,16 @@ import { signIn } from 'next-auth/react';
 const field =
   'rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900';
 
-export function SignupForm() {
+export function SignupForm({
+  initialEmail = '',
+  callbackUrl = '/home',
+}: {
+  initialEmail?: string;
+  callbackUrl?: string;
+}) {
   const router = useRouter();
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,11 +41,15 @@ export function SignupForm() {
         redirect: false,
       });
       if (res?.error) {
-        // Created but auto-login failed — send them to login.
-        router.push('/login');
+        // Created but auto-login failed — send them to login (keep intent).
+        router.push(
+          `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`,
+        );
         return;
       }
-      router.push('/home');
+      // Let the header's band picker refresh (invites may have added a band).
+      window.dispatchEvent(new Event('bands:changed'));
+      router.push(callbackUrl);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

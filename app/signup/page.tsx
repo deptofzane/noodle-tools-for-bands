@@ -3,9 +3,17 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { SignupForm } from './SignupForm';
 
-export default async function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ email?: string; callbackUrl?: string }>;
+}) {
   const session = await auth();
   if (session) redirect('/');
+  const { email, callbackUrl } = await searchParams;
+  const loginHref = callbackUrl
+    ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
+    : '/login';
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6">
@@ -18,11 +26,11 @@ export default async function SignupPage() {
           Sign up with an email and password.
         </p>
 
-        <SignupForm />
+        <SignupForm initialEmail={email ?? ''} callbackUrl={callbackUrl ?? '/home'} />
 
         <p className="mt-4 text-xs text-neutral-500">
           Already have an account?{' '}
-          <Link href="/login" className="hover:underline">
+          <Link href={loginHref} className="hover:underline">
             Sign in
           </Link>
         </p>

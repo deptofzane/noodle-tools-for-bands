@@ -103,21 +103,27 @@ export default async function EventPage({
             )}
           </div>
         )}
-        {event.details && (
-          <CollapsibleSection title="Details">
-            <p className="whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+      </section>
+
+      {event.details && (
+        <section className="rounded-lg border border-neutral-200 p-4 text-sm dark:border-neutral-800 mb-4">
+          <CollapsibleSection title="Details" persistKey="eventDetailsOpen">
+            <p className="mt-2 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
               {event.details}
             </p>
           </CollapsibleSection>
-        )}
-        {canManage && event.notes && (
-          <CollapsibleSection title="Notes">
-            <p className="whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+        </section>
+      )}
+
+      {canManage && event.notes && (
+        <section className="rounded-lg border border-neutral-200 p-4 text-sm dark:border-neutral-800 mb-4">
+          <CollapsibleSection title="Notes" persistKey="eventNotesOpen">
+            <p className="mt-2 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
               {event.notes}
             </p>
           </CollapsibleSection>
-        )}
-      </section>
+        </section>
+      )}
 
       {setlist && (
         <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-4 py-2 dark:border-neutral-800 mb-4">

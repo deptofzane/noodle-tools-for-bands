@@ -34,12 +34,18 @@ const PUBLIC_PATHS = new Set<string>([
 // stay behind auth.
 const CALENDAR_FEED_RE = /^\/api\/calendar\/[^/]+$/;
 
+// Invite landing: `/invite/<token>` renders for signed-out users (so they can
+// sign up / log in with the invite in hand). Redeeming still requires auth
+// (POST /api/invites/accept is not public).
+const INVITE_RE = /^\/invite\/[^/]+$/;
+
 export default auth((req) => {
   const { pathname } = req.nextUrl;
 
   if (pathname.startsWith('/api/auth')) return;
   if (PUBLIC_PATHS.has(pathname)) return;
   if (CALENDAR_FEED_RE.test(pathname)) return;
+  if (INVITE_RE.test(pathname)) return;
   if (req.auth) return;
 
   const url = new URL('/login', req.nextUrl);

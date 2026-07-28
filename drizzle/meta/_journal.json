@@ -267,6 +267,13 @@
       "when": 1785259840613,
       "tag": "0037_charming_network",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1785277240473,
+      "tag": "0038_powerful_argent",
+      "breakpoints": true
     }
   ]
 }
