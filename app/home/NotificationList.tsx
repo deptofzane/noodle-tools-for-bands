@@ -20,7 +20,8 @@ export interface NotificationItem {
     | 'poll-cancelled'
     | 'poll-auto-closed'
     | 'setlist-created'
-    | 'audio-added';
+    | 'audio-added'
+    | 'song-created';
   subjectType: 'conversation' | 'event' | 'band' | 'poll' | 'setlist';
   subjectId: string | null;
   subjectLabel: string | null;
@@ -86,6 +87,8 @@ function messageFor(n: NotificationItem): string {
       return `${who} created a setlist: ${n.subjectLabel ?? 'Untitled'}`;
     case 'audio-added':
       return `${who} added audio: ${n.subjectLabel ?? 'Untitled'}`;
+    case 'song-created':
+      return `${who} created a song: ${n.subjectLabel ?? 'Untitled'}`;
   }
 }
 

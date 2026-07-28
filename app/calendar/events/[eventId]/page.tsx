@@ -7,6 +7,7 @@ import { getSetlist } from '@/lib/db/setlists';
 import { formatDateLong, formatDuration, formatTimeRange } from '@/lib/format';
 import { PageHeader } from '../../../PageHeader';
 import { MapLink } from '../../../MapLink';
+import { CollapsibleSection } from '../../../CollapsibleSection';
 import { EventMembersClient } from './EventMembersClient';
 import { EventSetlistActions } from './EventSetlistActions';
 import { EventSetlistSongs } from './EventSetlistSongs';
@@ -51,7 +52,7 @@ export default async function EventPage({
           <Link
             href={`/calendar/events/${eventId}/edit`}
             className="hover:text-neutral-900 dark:hover:text-neutral-100"
-            >
+          >
             {/* className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900" */}
             Edit event
           </Link>
@@ -72,7 +73,8 @@ export default async function EventPage({
 
       <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4 text-sm dark:border-neutral-800 mb-4">
         <div>
-          <span className="font-medium">Date:</span> {formatDateLong(event.date)}
+          <span className="font-medium">Date:</span>{' '}
+          {formatDateLong(event.date)}
         </div>
         {event.time && (
           <div>
@@ -102,55 +104,56 @@ export default async function EventPage({
           </div>
         )}
         {event.details && (
-          <div className="flex flex-col gap-0.5">
-            <span className="font-medium">Details:</span>
+          <CollapsibleSection title="Details">
             <p className="whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
               {event.details}
             </p>
-          </div>
+          </CollapsibleSection>
         )}
         {canManage && event.notes && (
-          <div className="flex flex-col gap-0.5">
-            <span className="font-medium">Notes:</span>
+          <CollapsibleSection title="Notes">
             <p className="whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
               {event.notes}
             </p>
-          </div>
+          </CollapsibleSection>
         )}
       </section>
 
       {setlist && (
         <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-4 py-2 dark:border-neutral-800 mb-4">
-          {canManage && (
-            <EventSetlistActions
-              bandId={event.bandId}
-              eventId={eventId}
-              setlistId={setlist.id}
-              setlistName={setlist.name}
-              songs={setlist.songs.map((s) => ({
-                conversationId: s.conversationId,
-                name: s.name,
-              }))}
-              fields={{
-                title: event.title,
-                date: event.date,
-                time: event.time,
-                endTime: event.endTime,
-                location: event.location,
-                details: event.details,
-                venueId: event.venueId,
-              }}
-            />
-          )}
-          <div className="flex items-baseline justify-between gap-2">
-            <h2 className="text-sm font-medium">
+          <span className="flex justify-between items-center">
               <Link
                 href={`/bands/${event.bandId}/setlists/${setlist.id}`}
-                className="hover:underline"
+                className="hover:underline flex gap-1"
               >
-                {setlist.name}
+                <h2 className="text-sm font-normal text-neutral-200">
+                  Setlist:
+                </h2>
+                <h2 className="text-sm font-medium">{setlist.name}</h2>
               </Link>
-            </h2>
+            {canManage && (
+              <EventSetlistActions
+                bandId={event.bandId}
+                eventId={eventId}
+                setlistId={setlist.id}
+                setlistName={setlist.name}
+                songs={setlist.songs.map((s) => ({
+                  conversationId: s.conversationId,
+                  name: s.name,
+                }))}
+                fields={{
+                  title: event.title,
+                  date: event.date,
+                  time: event.time,
+                  endTime: event.endTime,
+                  location: event.location,
+                  details: event.details,
+                  venueId: event.venueId,
+                }}
+              />
+            )}
+          </span>
+          <div className="flex items-baseline justify-between gap-2">
             {setlist.songs.length > 0 && (
               <span className="shrink-0 text-xs text-neutral-500">
                 {setlistAllKnown ? '' : '~'}

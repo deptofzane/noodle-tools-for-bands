@@ -10,6 +10,7 @@ import { useTrackPending } from '../../../../PendingActionProvider';
 import { useToast } from '../../../../ToastProvider';
 import { useCanGoBack } from '@/app/NavigationHistoryProvider';
 import { AutoTextarea } from '@/app/AutoTextarea';
+import { CollapsibleSection } from '@/app/CollapsibleSection';
 import { VenuePickerModal, type PickableVenue } from '../../VenuePickerModal';
 
 interface EventFields {
@@ -290,12 +291,10 @@ export function EditEventClient({
         </div>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="event-details" className="text-sm font-medium">
-          Details
-        </label>
+      <CollapsibleSection title="Details">
         <AutoTextarea
           id="event-details"
+          aria-label="Details"
           value={fields.details}
           onChange={(e) => set('details', e.target.value)}
           rows={3}
@@ -304,14 +303,12 @@ export function EditEventClient({
         <p className="text-[11px] text-neutral-500">
           Information about the event.
         </p>
-      </div>
+      </CollapsibleSection>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="event-notes" className="text-sm font-medium">
-          Notes
-        </label>
+      <CollapsibleSection title="Notes">
         <AutoTextarea
           id="event-notes"
+          aria-label="Notes"
           value={fields.notes}
           onChange={(e) => set('notes', e.target.value)}
           rows={3}
@@ -320,7 +317,7 @@ export function EditEventClient({
         <p className="text-[11px] text-neutral-500">
           The band’s private notes — not shared to the calendar feed.
         </p>
-      </div>
+      </CollapsibleSection>
 
       {venuePickerOpen && (
         <VenuePickerModal

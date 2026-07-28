@@ -499,7 +499,7 @@ function SheetView({
         className="h-full w-full overflow-auto"
       >
         <div
-          style={{ fontSize: `${(zoom / 100) * 0.9}rem` }}
+          style={{ fontSize: `calc(var(--sheet-base) * ${(zoom / 100) * 1.03})` }}
           className="px-6 py-6 leading-relaxed"
         >
           {text === null ? (

@@ -82,6 +82,7 @@ const SELF_VISIBLE_KINDS = [
   'event-added',
   'setlist-created',
   'audio-added',
+  'song-created',
 ] as const;
 
 /** SQL: notification is from someone else, or is a self-visible kind. */

@@ -379,12 +379,12 @@ export function SheetMusic({
               <div
                 style={
                   zoomEnabled
-                    ? { fontSize: `${(zoom / 100) * 0.875}rem` }
+                    ? { fontSize: `calc(var(--sheet-base) * ${zoom / 100})` }
                     : undefined
                 }
                 className={
                   'overflow-auto rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900' +
-                  (zoomEnabled ? '' : ' text-sm')
+                  (zoomEnabled ? '' : ' sheet-base')
                 }
               >
                 {textContent === null ? (

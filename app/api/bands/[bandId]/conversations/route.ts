@@ -29,6 +29,8 @@ function localAudioId(): string {
  * POST /api/bands/[bandId]/conversations
  *   Body: { driveAudioFileId: string, audioFileName?: string }
  *   → registers a Drive audio file under the band (find-or-create).
+ *   Also accepts a multipart `file` (local upload), JSON { dropboxUrl, name? }
+ *   (Dropbox import), or JSON { name } (create a song with no audio yet).
  *
  * Both require band membership.
  */
@@ -193,6 +195,30 @@ export async function POST(
         subjectType: 'conversation',
         subjectId: conversation.id,
         subjectLabel: conversation.audioFileName ?? name,
+      });
+    }
+    return NextResponse.json({ conversation }, { status: 201 });
+  }
+
+  // Create a song with no audio yet: JSON { name }. Mints a synthetic
+  // conversation id (like a local upload) but stores no audio, so members can
+  // start a song from just a name and add audio, sheet music, notes, or drop
+  // it into a setlist later.
+  const songName = typeof body?.name === 'string' ? body.name.trim() : '';
+  if (songName) {
+    const conversation = await findOrCreateConversation(
+      bandId,
+      localAudioId(),
+      songName,
+    );
+    if (!silent) {
+      await notify({
+        bandId,
+        actorId: user.id,
+        kind: 'song-created',
+        subjectType: 'conversation',
+        subjectId: conversation.id,
+        subjectLabel: conversation.audioFileName ?? songName,
       });
     }
     return NextResponse.json({ conversation }, { status: 201 });

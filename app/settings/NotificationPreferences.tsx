@@ -15,7 +15,8 @@ type Kind =
   | 'poll-cancelled'
   | 'poll-auto-closed'
   | 'setlist-created'
-  | 'audio-added';
+  | 'audio-added'
+  | 'song-created';
 
 type Channel = 'feed' | 'push';
 
@@ -84,6 +85,11 @@ const KINDS: { kind: Kind; label: string; description: string }[] = [
     kind: 'audio-added',
     label: 'New audio',
     description: 'When audio is added to one of your bands.',
+  },
+  {
+    kind: 'song-created',
+    label: 'New songs',
+    description: 'When a song is created in one of your bands.',
   },
 ];
 

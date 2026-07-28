@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, exists, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from './index';
 import {
   activityLog,
@@ -58,6 +58,21 @@ export async function listConversationsForUser(
   const archivedFilter =
     filter === 'open' ? eq(conversations.archived, false) : undefined;
 
+  // Only surface songs that are actually conversations — i.e. have at least
+  // one (non-deleted) comment. A freshly uploaded song with no notes isn't a
+  // conversation and would just clutter the list.
+  const hasComment = exists(
+    db
+      .select({ one: sql`1` })
+      .from(notes)
+      .where(
+        and(
+          eq(notes.conversationId, conversations.id),
+          isNull(notes.deletedAt),
+        ),
+      ),
+  );
+
   // Base rows: conversations in the user's bands (+ my read marker).
   const base = await db
     .select({
@@ -86,7 +101,7 @@ export async function listConversationsForUser(
         eq(conversationReads.userId, userId),
       ),
     )
-    .where(and(closedFilter, archivedFilter))
+    .where(and(closedFilter, archivedFilter, hasComment))
     .orderBy(desc(conversations.updatedAt));
 
   if (base.length === 0) return [];

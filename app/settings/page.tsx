@@ -7,6 +7,7 @@ import { getMutedKinds, getPushMutedKinds } from '@/lib/db/notifications';
 import { getOrCreateFeedToken } from '@/lib/db/calendarFeeds';
 import { startGoogleConnect, disconnectGoogle } from '../account-actions';
 import { ThemeToggle } from '../ThemeToggle';
+import { FontSizeControl } from './FontSizeControl';
 import { CalendarSubscription } from './CalendarSubscription';
 import { NotificationPreferences } from './NotificationPreferences';
 import { PushNotificationToggle } from './PushNotificationToggle';
@@ -193,15 +194,28 @@ export default async function SettingsPage({
   );
 
   const appearance = (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-      <div>
-        <p className="font-medium">Theme</p>
-        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-          Choose a light or dark color scheme. Defaults to your system
-          preference until you change it.
-        </p>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+        <div>
+          <p className="font-medium">Theme</p>
+          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+            Choose a light or dark color scheme. Defaults to your system
+            preference until you change it.
+          </p>
+        </div>
+        <ThemeToggle />
       </div>
-      <ThemeToggle />
+
+      <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+        <div>
+          <p className="font-medium">Font size</p>
+          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+            Scale text and controls across the app. Sheet music keeps its own
+            size (use the zoom in Practice or Live to resize charts).
+          </p>
+        </div>
+        <FontSizeControl />
+      </div>
     </div>
   );
 

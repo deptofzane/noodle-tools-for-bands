@@ -6,7 +6,6 @@ import {
   NetworkFirst,
   RangeRequestsPlugin,
   Serwist,
-  StaleWhileRevalidate,
   type PrecacheEntry,
   type RuntimeCaching,
   type SerwistGlobalConfig,
@@ -76,13 +75,15 @@ const offlineRuntimeCaching: RuntimeCaching[] = [
       ],
     }),
   },
-  // Sheet-music version metadata. Not URL-versioned, so revalidate in the
-  // background (new versions appear online) while still serving offline.
+  // Sheet-music version metadata. Network-first so a just-uploaded/edited
+  // version shows immediately online (stale-while-revalidate served the old
+  // list to the post-upload refresh); still cached for offline use.
   {
     matcher: ({ url, sameOrigin }) =>
       sameOrigin && url.pathname.endsWith('/sheet-music-versions'),
-    handler: new StaleWhileRevalidate({
+    handler: new NetworkFirst({
       cacheName: 'sidestage-meta',
+      networkTimeoutSeconds: 3,
       matchOptions: { ignoreVary: true },
       plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
     }),

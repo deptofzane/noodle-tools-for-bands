@@ -140,7 +140,9 @@ export function EditSongClient({
     try {
       await trackPending(() => patch(payload));
       showToast('Song saved.', 'success');
-      router.push(songHref);
+      // Return to wherever the user opened Edit from (setlist, event, the song
+      // page…), falling back to the song on a deep link.
+      leave();
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setBusy(false);

@@ -17,6 +17,7 @@ export function BandAudioTab({
   audioBusy,
   rowsDisabled,
   onOpenChooser,
+  onCreateSong,
   onAddToSetlist,
   onEditSong,
   onToggleArchive,
@@ -28,6 +29,7 @@ export function BandAudioTab({
   audioBusy: boolean;
   rowsDisabled: boolean;
   onOpenChooser: () => void;
+  onCreateSong: () => void;
   onAddToSetlist: (c: Conversation) => void;
   onEditSong: (c: Conversation) => void;
   onToggleArchive: (c: Conversation) => void;
@@ -87,6 +89,14 @@ export function BandAudioTab({
           <div className="flex items-center gap-2">
             <button
               type="button"
+              onClick={onCreateSong}
+              disabled={audioBusy || importProgress !== null}
+              className="btn-outline"
+            >
+              Create song
+            </button>
+            <button
+              type="button"
               onClick={onOpenChooser}
               disabled={audioBusy || importProgress !== null}
               className="btn-outline"
@@ -101,7 +111,8 @@ export function BandAudioTab({
         </div>
         {!audioMinimized && activeSongs && activeSongs.length === 0 && (
           <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
-            No audio yet. Use “Add audio” to add{' '}
+            No songs yet. Use “Create song” to start one from a name, or “Add
+            audio” to add{' '}
             {canUseDrive ? 'from Drive or your device' : 'from your device'}.
           </p>
         )}

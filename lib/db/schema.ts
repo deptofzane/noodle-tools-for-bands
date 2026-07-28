@@ -185,6 +185,7 @@ export const notificationKind = pgEnum('notification_kind', [
   'poll-auto-closed',
   'setlist-created',
   'audio-added',
+  'song-created',
 ]);
 
 // What a notification points at, for building its link.

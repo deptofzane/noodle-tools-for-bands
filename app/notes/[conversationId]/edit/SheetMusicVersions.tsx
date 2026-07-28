@@ -2,6 +2,7 @@
 
 import { ensureOk } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
+import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { Modal } from '../../../Modal';
 import { PickerButton, type PickedFile } from '../../../PickerButton';
@@ -58,6 +59,8 @@ export function SheetMusicVersions({
   const [versions, setVersions] = useState<SheetVersionMeta[]>(initial);
   const [busy, setBusy] = useState(false);
   const [chooseOpen, setChooseOpen] = useState(false);
+  // When set, the chooser replaces this version's file instead of adding one.
+  const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
   const [pasteMode, setPasteMode] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const [pasteFormat, setPasteFormat] = useState<SheetTextFormat>('markdown');
@@ -119,32 +122,42 @@ export function SheetMusicVersions({
     }
   };
 
+  // Where a chosen source is sent: a new version by default, or an overwrite of
+  // `replaceTargetId` (the "Update sheet music" flow).
+  const postUrl = (replacing: string | null) =>
+    replacing ? `${addUrl}?replace=${replacing}` : addUrl;
+  const doneToast = (replacing: string | null) =>
+    replacing ? 'Sheet music updated.' : 'Version added.';
+
   const addLocal = async (file: File) => {
     if (busy) return;
+    const replacing = replaceTargetId;
     setBusy(true);
     try {
       await trackPending(async () => {
         const form = new FormData();
         form.append('file', file);
-        const res = await fetch(addUrl, { method: 'POST', body: form });
+        const res = await fetch(postUrl(replacing), { method: 'POST', body: form });
         await ensureOk(res);
         await refresh();
       });
-      showToast('Version added.', 'success');
+      showToast(doneToast(replacing), 'success');
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
+      setReplaceTargetId(null);
       if (inputRef.current) inputRef.current.value = '';
     }
   };
 
   const addFromJson = async (payload: Record<string, unknown>) => {
     if (busy) return;
+    const replacing = replaceTargetId;
     setBusy(true);
     try {
       await trackPending(async () => {
-        const res = await fetch(addUrl, {
+        const res = await fetch(postUrl(replacing), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -152,12 +165,18 @@ export function SheetMusicVersions({
         await ensureOk(res);
         await refresh();
       });
-      showToast('Version added.', 'success');
+      showToast(doneToast(replacing), 'success');
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
+      setReplaceTargetId(null);
     }
+  };
+
+  const openUpdate = (v: SheetVersionMeta) => {
+    setReplaceTargetId(v.id);
+    setChooseOpen(true);
   };
 
   const addDrive = (file: PickedFile) => addFromJson({ driveFileId: file.id });
@@ -301,10 +320,7 @@ export function SheetMusicVersions({
       {versions.length > 0 ? (
         <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
           {versions.map((v) => (
-            <li
-              key={v.id}
-              className="flex items-center justify-between gap-3 px-3 py-2"
-            >
+            <li key={v.id} className="flex flex-col gap-2 px-3 py-2">
               {editingId === v.id ? (
                 <form
                   className="flex min-w-0 flex-1 items-center gap-2"
@@ -343,68 +359,103 @@ export function SheetMusicVersions({
                 </form>
               ) : (
                 <>
-                  <div className="flex min-w-0 flex-col">
-                    <span className="flex items-center gap-2">
-                      <span className="truncate text-sm">
-                        {v.label || v.fileName}
-                      </span>
-                      {v.isDefault && (
-                        <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                          Default
-                        </span>
-                      )}
-                    </span>
-                    {v.label && (
-                      <span className="truncate text-[11px] text-neutral-500">
-                        {v.fileName}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+                  <div className="flex items-center justify-between gap-2">
                     <button
                       type="button"
                       onClick={() => togglePreview(v.id)}
-                      className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                      aria-expanded={previewId === v.id}
+                      aria-label={previewId === v.id ? 'Hide preview' : 'Show preview'}
+                      className="flex min-w-0 flex-1 items-center gap-2 text-left"
                     >
-                      {previewId === v.id ? 'Hide' : 'View'}
+                      <span aria-hidden="true" className="shrink-0 text-neutral-400">
+                        {previewId === v.id ? '▾' : '▸'}
+                      </span>
+                      <span className="flex min-w-0 flex-col">
+                        <span className="flex items-center gap-2">
+                          <span className="truncate text-sm">
+                            {v.label || v.fileName}
+                          </span>
+                          {v.isDefault && (
+                            <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                              Default
+                            </span>
+                          )}
+                        </span>
+                        {v.label && (
+                          <span className="truncate text-[11px] text-neutral-500">
+                            {v.fileName}
+                          </span>
+                        )}
+                      </span>
                     </button>
-                    {isTextVersion(v) && (
-                      <button
-                        type="button"
-                        onClick={() => void openEditContent(v)}
-                        disabled={busy}
-                        className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
-                      >
-                        Edit
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => startEdit(v)}
-                      disabled={busy}
-                      className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
-                    >
-                      {v.label ? 'Rename' : 'Label'}
-                    </button>
-                    {!v.isDefault && (
-                      <button
-                        type="button"
-                        onClick={() => makeDefault(v.id)}
-                        disabled={busy}
-                        className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
-                      >
-                        Set default
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setDeleteTarget(v)}
-                      disabled={busy}
-                      className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-neutral-700 dark:text-red-400 dark:hover:bg-red-950"
-                    >
-                      Delete
-                    </button>
+                    <ActionMenu label="Version actions" disabled={busy}>
+                      {!v.isDefault && (
+                        <ActionMenuItem onClick={() => void makeDefault(v.id)}>
+                          Set as default
+                        </ActionMenuItem>
+                      )}
+                      <ActionMenuItem onClick={() => openUpdate(v)}>
+                        Update sheet music
+                      </ActionMenuItem>
+                      {isTextVersion(v) && (
+                        <ActionMenuItem onClick={() => void openEditContent(v)}>
+                          Edit content
+                        </ActionMenuItem>
+                      )}
+                      <ActionMenuItem onClick={() => startEdit(v)}>
+                        {v.label ? 'Rename' : 'Add label'}
+                      </ActionMenuItem>
+                      <ActionMenuItem destructive onClick={() => setDeleteTarget(v)}>
+                        Delete
+                      </ActionMenuItem>
+                    </ActionMenu>
                   </div>
+
+                  {previewId === v.id && previewUrl && (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex justify-end">
+                        <a
+                          href={previewUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          Open in new tab
+                        </a>
+                      </div>
+                      {previewKindResolved === 'image' && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={previewUrl}
+                          alt={v.label || v.fileName}
+                          className="max-h-[60vh] w-full rounded-md border border-neutral-200 object-contain dark:border-neutral-800"
+                        />
+                      )}
+                      {previewKindResolved === 'pdf' && (
+                        <iframe
+                          title={v.label || v.fileName}
+                          src={previewUrl}
+                          className="h-[60vh] w-full rounded-md border border-neutral-200 dark:border-neutral-800"
+                        />
+                      )}
+                      {previewKindResolved === 'text' && (
+                        <div className="sheet-base max-h-[60vh] overflow-auto rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900">
+                          {previewText === null ? (
+                            <span className="text-xs text-neutral-500">
+                              Loading…
+                            </span>
+                          ) : (
+                            <SheetText text={previewText} fileName={v.fileName} />
+                          )}
+                        </div>
+                      )}
+                      {previewKindResolved === 'other' && (
+                        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+                          Preview isn’t available for this file type.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
             </li>
@@ -416,57 +467,13 @@ export function SheetMusicVersions({
         </p>
       )}
 
-      {preview && previewUrl && (
-        <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
-          <div className="flex items-center justify-between gap-2">
-            <span className="truncate text-xs font-medium text-neutral-500">
-              {preview.label || preview.fileName}
-            </span>
-            <a
-              href={previewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0 text-xs text-blue-600 hover:underline dark:text-blue-400"
-            >
-              Open in new tab
-            </a>
-          </div>
-          {previewKindResolved === 'image' && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={previewUrl}
-              alt={preview.label || preview.fileName}
-              className="max-h-[60vh] w-full rounded-md border border-neutral-200 object-contain dark:border-neutral-800"
-            />
-          )}
-          {previewKindResolved === 'pdf' && (
-            <iframe
-              title={preview.label || preview.fileName}
-              src={previewUrl}
-              className="h-[60vh] w-full rounded-md border border-neutral-200 dark:border-neutral-800"
-            />
-          )}
-          {previewKindResolved === 'text' && (
-            <div className="max-h-[60vh] overflow-auto rounded-md border border-neutral-200 bg-neutral-50 p-3 text-sm dark:border-neutral-800 dark:bg-neutral-900">
-              {previewText === null ? (
-                <span className="text-xs text-neutral-500">Loading…</span>
-              ) : (
-                <SheetText text={previewText} fileName={preview.fileName} />
-              )}
-            </div>
-          )}
-          {previewKindResolved === 'other' && (
-            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
-              Preview isn’t available for this file type.
-            </p>
-          )}
-        </div>
-      )}
-
       <div>
         <button
           type="button"
-          onClick={() => setChooseOpen(true)}
+          onClick={() => {
+            setReplaceTargetId(null);
+            setChooseOpen(true);
+          }}
           disabled={busy}
           className="btn-outline"
         >
@@ -492,13 +499,14 @@ export function SheetMusicVersions({
             setChooseOpen(false);
             setPasteMode(false);
             setPasteText('');
+            setReplaceTargetId(null);
           }}
           busy={busy}
           labelledBy="sheet-version-source-title"
           size={pasteMode ? 'lg' : 'sm'}
         >
           <h2 id="sheet-version-source-title" className="text-base font-semibold">
-            Add sheet music version
+            {replaceTargetId ? 'Replace sheet music' : 'Add sheet music version'}
           </h2>
 
           {pasteMode ? (
@@ -612,7 +620,10 @@ export function SheetMusicVersions({
               <div className="mt-4 flex justify-end">
                 <button
                   type="button"
-                  onClick={() => setChooseOpen(false)}
+                  onClick={() => {
+                    setChooseOpen(false);
+                    setReplaceTargetId(null);
+                  }}
                   disabled={busy}
                   className="btn-ghost"
                 >

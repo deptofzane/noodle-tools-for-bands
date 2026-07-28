@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ConfirmModal } from '../../ConfirmModal';
+import { Modal } from '../../Modal';
 import { BandChat } from './BandChat';
 import { useCanUseDrive } from '../../DriveCapabilityProvider';
 import { useTrackPending } from '../../PendingActionProvider';
@@ -51,6 +52,9 @@ export function BandDetailClient({
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [chooseOpen, setChooseOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createName, setCreateName] = useState('');
+  const [creating, setCreating] = useState(false);
   const [audioBusy, setAudioBusy] = useState(false);
   const [importProgress, setImportProgress] = useState<{
     current: number;
@@ -200,6 +204,30 @@ export function BandDetailClient({
     } finally {
       setAudioBusy(false);
       if (audioInputRef.current) audioInputRef.current.value = '';
+    }
+  };
+
+  const handleCreateSong = async () => {
+    const name = createName.trim();
+    if (!name || creating) return;
+    setCreating(true);
+    try {
+      await trackPending(async () => {
+        const r = await fetch(`/api/bands/${bandId}/conversations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        });
+        await ensureOk(r);
+      });
+      setCreateOpen(false);
+      setCreateName('');
+      showToast('Song created.', 'success');
+      await reload();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -403,6 +431,7 @@ export function BandDetailClient({
           audioBusy={audioBusy}
           rowsDisabled={deleting || archiving}
           onOpenChooser={() => setChooseOpen(true)}
+          onCreateSong={() => setCreateOpen(true)}
           onAddToSetlist={openAddToSetlist}
           onEditSong={(c) => router.push(`/notes/${c.id}/edit`)}
           onToggleArchive={handleToggleArchive}
@@ -478,6 +507,64 @@ export function BandDetailClient({
           if (file) void handleLocalAudio(file);
         }}
       />
+
+      {createOpen && (
+        <Modal
+          onClose={() => {
+            if (!creating) {
+              setCreateOpen(false);
+              setCreateName('');
+            }
+          }}
+          labelledBy="create-song-title"
+          busy={creating}
+        >
+          <h2 id="create-song-title" className="text-base font-semibold">
+            Create song
+          </h2>
+          <p className="mt-1 text-sm text-neutral-500">
+            Start a song from just a name. You can add audio, sheet music, and
+            notes later.
+          </p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleCreateSong();
+            }}
+          >
+            <input
+              type="text"
+              value={createName}
+              onChange={(e) => setCreateName(e.target.value)}
+              placeholder="Song name"
+              aria-label="Song name"
+              autoFocus
+              disabled={creating}
+              className="mt-4 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-950 dark:placeholder:text-neutral-500"
+            />
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setCreateOpen(false);
+                  setCreateName('');
+                }}
+                disabled={creating}
+                className="btn-outline"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={creating || !createName.trim()}
+                className="btn-primary"
+              >
+                {creating ? 'Creating…' : 'Create song'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {chooseOpen && (
         <AddAudioSourceModal

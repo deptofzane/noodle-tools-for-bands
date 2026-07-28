@@ -69,6 +69,8 @@ function pushBody(
       return `${who} created a setlist: ${subjectLabel ?? 'Untitled'}`;
     case 'audio-added':
       return `${who} added audio: ${subjectLabel ?? 'Untitled'}`;
+    case 'song-created':
+      return `${who} created a song: ${subjectLabel ?? 'Untitled'}`;
   }
 }
 

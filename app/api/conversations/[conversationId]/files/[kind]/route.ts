@@ -14,6 +14,7 @@ import {
   streamAudioVersion,
   streamSheetVersion,
   streamSongFile,
+  updateSheetVersionContent,
   type SongFileKind,
 } from '@/lib/db/song-files';
 
@@ -126,6 +127,30 @@ export async function POST(
     return Response.json({ error: 'forbidden' }, { status: 403 });
   }
 
+  // `?replace=<versionId>` overwrites that version's file in place (keeping its
+  // default/label/order/prefs) instead of adding a new one. Every source
+  // (upload / Drive / Dropbox) flows through storeSheet, which returns null
+  // when the target version doesn't belong to this song.
+  const replaceVersionId = new URL(req.url).searchParams.get('replace');
+  const storeSheet = (v: {
+    body: Readable;
+    sizeBytes: number;
+    fileName: string;
+    mimeType: string;
+    driveFileId?: string | null;
+  }) =>
+    replaceVersionId
+      ? updateSheetVersionContent({
+          conversationId,
+          versionId: replaceVersionId,
+          body: v.body,
+          sizeBytes: v.sizeBytes,
+          fileName: v.fileName,
+          mimeType: v.mimeType,
+        })
+      : addSheetVersion({ conversationId, ...v });
+  const storedStatus = replaceVersionId ? 200 : 201;
+
   // Import from Google Drive ({ driveFileId }, downloaded with the user's
   // token) or Dropbox ({ dropboxUrl }, streamed from its direct link).
   if ((req.headers.get('content-type') ?? '').includes('application/json')) {
@@ -179,15 +204,16 @@ export async function POST(
       }
       try {
         const version = await uploadLimit.run(() =>
-          addSheetVersion({
-            conversationId,
+          storeSheet({
             body: fetched.body,
             sizeBytes: fetched.sizeBytes,
             fileName: name,
             mimeType,
           }),
         );
-        return Response.json({ version }, { status: 201 });
+        if (!version)
+          return Response.json({ error: 'not_found' }, { status: 404 });
+        return Response.json({ version }, { status: storedStatus });
       } catch (err) {
         console.error('[files] Dropbox sheet-music import failed', err);
         return Response.json(
@@ -280,15 +306,16 @@ export async function POST(
         mimeType = normalized;
       }
 
-      const stored = await addSheetVersion({
-        conversationId,
+      const stored = await storeSheet({
         body,
         sizeBytes,
         fileName,
         mimeType,
         driveFileId,
       });
-      return Response.json({ version: stored }, { status: 201 });
+      if (!stored)
+        return Response.json({ error: 'not_found' }, { status: 404 });
+      return Response.json({ version: stored }, { status: storedStatus });
       });
     } catch (err) {
       console.error('[files] sheet-music Drive import failed', err);
@@ -329,15 +356,15 @@ export async function POST(
   }
 
   const version = await uploadLimit.run(() =>
-    addSheetVersion({
-      conversationId,
+    storeSheet({
       body: fileToNodeStream(file),
       sizeBytes: file.size,
       fileName,
       mimeType,
     }),
   );
-  return Response.json({ version }, { status: 201 });
+  if (!version) return Response.json({ error: 'not_found' }, { status: 404 });
+  return Response.json({ version }, { status: storedStatus });
 }
 
 export async function DELETE(

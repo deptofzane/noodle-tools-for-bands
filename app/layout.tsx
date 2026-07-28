@@ -38,8 +38,10 @@ export const viewport: Viewport = {
  * Runs synchronously in <head> before any body content renders, so we
  * never flash the wrong theme. Reads the user's saved choice from
  * localStorage('theme'); when nothing is saved, falls back to the OS
- * `prefers-color-scheme`. Adds/removes the `dark` class on
- * `<html>`, which our `class`-mode Tailwind config keys off of.
+ * `prefers-color-scheme` once and *pins* that result to localStorage, so
+ * later loads (cold PWA launches, service-worker updates, hard navigations)
+ * don't keep re-following the OS and flip the theme. Adds/removes the `dark`
+ * class on `<html>`, which our `class`-mode Tailwind config keys off of.
  */
 const themeInitScript = `
 (function(){try{
@@ -48,6 +50,21 @@ const themeInitScript = `
   var isDark = stored === 'dark' || (!stored && systemDark);
   var root = document.documentElement;
   if (isDark) { root.classList.add('dark'); } else { root.classList.remove('dark'); }
+  // Pin the resolved theme on first run (class already applied above, so a
+  // storage failure can't leave the page unstyled).
+  if (!stored) { try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch(e){} }
+}catch(e){}})();
+`;
+
+/**
+ * Pre-paint font-size script. Sets the html root font-size from the user's
+ * saved choice so `rem`-based UI scales globally, with no size flash on load.
+ * Sheet music is unaffected — it sizes off a fixed px base (`--sheet-base`).
+ */
+const fontInitScript = `
+(function(){try{
+  var px = parseInt(localStorage.getItem('fontSize'), 10);
+  if (px >= 12 && px <= 24) { document.documentElement.style.fontSize = px + 'px'; }
 }catch(e){}})();
 `;
 
@@ -76,6 +93,7 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: fontInitScript }} />
       </head>
       <body className="min-h-screen bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100">
         <PendingActionProvider>

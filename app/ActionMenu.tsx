@@ -1,6 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+
+// Measure before paint on the client (so the menu never flashes in the wrong
+// spot); plain effect on the server avoids the useLayoutEffect SSR warning.
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 /**
  * Small kebab (⋯) dropdown for row-level actions. Closes on outside click
@@ -21,7 +32,9 @@ export function ActionMenu({
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -39,6 +52,20 @@ export function ActionMenu({
     };
   }, [open]);
 
+  // When opening, flip the dropdown above the trigger if it would overflow the
+  // bottom of the viewport and there's more room above (e.g. rows near the
+  // bottom of the screen). Runs before paint, so there's no visible jump.
+  useIsomorphicLayoutEffect(() => {
+    if (!open) return;
+    const menu = menuRef.current;
+    const trigger = ref.current;
+    if (!menu || !trigger) return;
+    const t = trigger.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - t.bottom;
+    const spaceAbove = t.top;
+    setOpenUp(spaceBelow < menu.offsetHeight + 8 && spaceAbove > spaceBelow);
+  }, [open]);
+
   return (
     <div ref={ref} className="relative shrink-0">
       <button
@@ -54,9 +81,13 @@ export function ActionMenu({
       </button>
       {open && (
         <div
+          ref={menuRef}
           role="menu"
           onClick={() => setOpen(false)}
-          className="absolute right-0 z-10 mt-1 min-w-52 overflow-hidden rounded-md border border-neutral-200 bg-white py-1.5 shadow-lg sm:py-1 dark:border-neutral-800 dark:bg-neutral-900"
+          className={
+            'absolute right-0 z-10 min-w-52 overflow-hidden rounded-md border border-neutral-200 bg-white py-1.5 shadow-lg sm:py-1 dark:border-neutral-800 dark:bg-neutral-900 ' +
+            (openUp ? 'bottom-full mb-1' : 'top-full mt-1')
+          }
         >
           {children}
         </div>

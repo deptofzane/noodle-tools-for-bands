@@ -2,8 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Follow the *chosen* theme (the `.dark` class the head script sets), not the
+ * OS. With `color-scheme: light dark` the browser would style native controls
+ * (inputs, scrollbars, date pickers) by the OS preference and flip them live,
+ * diverging from the class-based theme.
+ */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
+  /*
+   * Fixed base size for sheet-music text — in px, so it never scales with the
+   * global font-size setting (which scales the html root). SheetText and
+   * `.sheet-prose` are entirely em-relative, so this single value governs
+   * chart sizing; the Live/Practice zoom multiplies it.
+   */
+  --sheet-base: 14px;
+}
+:root.dark {
+  color-scheme: dark;
+}
+
+/* Sheet-music text containers opt out of global font scaling via this base. */
+.sheet-base {
+  font-size: var(--sheet-base);
 }
 
 html,

@@ -87,21 +87,27 @@ export default async function NotesPage({
 
       <PlayerProvider>
         <div className="flex flex-col gap-6">
-          <AudioPlayer
-            src={`/api/conversations/${conversationId}/files/audio?name=${encodeURIComponent(
-              fileName,
-            )}`}
-            fileName={fileName}
-            mimeType={mimeType}
-            conversationId={conversationId}
-            versions={audioVersions.map((v) => ({
-              id: v.id,
-              fileName: v.fileName,
-              mimeType: v.mimeType,
-              label: v.label,
-              isDefault: v.isDefault,
-            }))}
-          />
+          {audio ? (
+            <AudioPlayer
+              src={`/api/conversations/${conversationId}/files/audio?name=${encodeURIComponent(
+                fileName,
+              )}`}
+              fileName={fileName}
+              mimeType={mimeType}
+              conversationId={conversationId}
+              versions={audioVersions.map((v) => ({
+                id: v.id,
+                fileName: v.fileName,
+                mimeType: v.mimeType,
+                label: v.label,
+                isDefault: v.isDefault,
+              }))}
+            />
+          ) : (
+            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+              No audio yet. Add audio from the Edit song page.
+            </p>
+          )}
           {(conversation.bpm != null || conversation.key || sheetMusic) && (
             <SongDetails>
               <span className="flex justify-around">
