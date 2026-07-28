@@ -24,7 +24,6 @@ export function BandOverviewTab({
   bandId,
   shows,
   setlists,
-  isOwner,
   onLeave,
   onReload,
 }: {
@@ -33,7 +32,6 @@ export function BandOverviewTab({
   /** All the band's setlists (with songs) — to offer offline download on an
    * event whose setlist is associated. */
   setlists: Setlist[];
-  isOwner: boolean;
   onLeave: () => void;
   onReload: () => Promise<void> | void;
 }) {
@@ -296,15 +294,13 @@ export function BandOverviewTab({
         </section>
       )}
 
-      {!isOwner && (
-        <button
-          type="button"
-          onClick={onLeave}
-          className="shrink-0 rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 mt-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
-        >
-          Leave band
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={onLeave}
+        className="shrink-0 rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 mt-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+      >
+        Leave band
+      </button>
 
       {offline.modal}
 

@@ -10,6 +10,7 @@ import { BandsClient } from './BandsClient';
 export default async function BandsPage() {
   const session = await auth();
   if (!session?.user) return null;
+  const currentUserId = session.user.sub ?? '';
 
   return (
     <main className="main-container">
@@ -23,7 +24,7 @@ export default async function BandsPage() {
         </p>
       </div>
 
-      <BandsClient />
+      <BandsClient currentUserId={currentUserId} />
     </main>
   );
 }

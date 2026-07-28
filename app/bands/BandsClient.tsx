@@ -3,8 +3,11 @@
 import { ensureOk } from '@/lib/api';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useTrackPending } from '../PendingActionProvider';
 import { useToast } from '../ToastProvider';
+import { ActionMenu, ActionMenuItem } from '../ActionMenu';
+import { LeaveBandModal } from './LeaveBandModal';
 
 interface BandSummary {
   id: string;
@@ -18,13 +21,15 @@ interface BandSummary {
  * Fetches on mount; refetches after a create. No polling (bands change
  * rarely).
  */
-export function BandsClient() {
+export function BandsClient({ currentUserId }: { currentUserId: string }) {
   const [bands, setBands] = useState<BandSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [leaveTarget, setLeaveTarget] = useState<BandSummary | null>(null);
   const trackPending = useTrackPending();
   const showToast = useToast();
+  const router = useRouter();
 
   const load = useCallback(async () => {
     try {
@@ -105,19 +110,49 @@ export function BandsClient() {
       {bands && bands.length > 0 && (
         <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
           {bands.map((band) => (
-            <li key={band.id}>
+            <li
+              key={band.id}
+              className="flex items-center gap-2 pr-2 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+            >
               <Link
                 href={`/bands/${band.id}`}
-                className="flex items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm"
               >
                 <span className="truncate font-medium">{band.name}</span>
                 <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
                   {band.role}
                 </span>
               </Link>
+              <ActionMenu label="Band actions">
+                {band.role === 'owner' && (
+                  <ActionMenuItem
+                    onClick={() => router.push(`/bands/${band.id}/edit`)}
+                  >
+                    Edit band
+                  </ActionMenuItem>
+                )}
+                <ActionMenuItem
+                  destructive
+                  onClick={() => setLeaveTarget(band)}
+                >
+                  Leave band
+                </ActionMenuItem>
+              </ActionMenu>
             </li>
           ))}
         </ul>
+      )}
+
+      {leaveTarget && (
+        <LeaveBandModal
+          band={leaveTarget}
+          currentUserId={currentUserId}
+          onCancel={() => setLeaveTarget(null)}
+          onLeft={() => {
+            setLeaveTarget(null);
+            void load();
+          }}
+        />
       )}
     </div>
   );

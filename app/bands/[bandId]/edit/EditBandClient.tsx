@@ -28,10 +28,14 @@ interface BandDetail {
 export function EditBandClient({ bandId }: { bandId: string }) {
   const [data, setData] = useState<BandDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [renaming, setRenaming] = useState(false);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<Member | null>(null);
   const [removing, setRemoving] = useState(false);
+  const [promoteTarget, setPromoteTarget] = useState<Member | null>(null);
+  const [promoting, setPromoting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const trackPending = useTrackPending();
@@ -42,7 +46,9 @@ export function EditBandClient({ bandId }: { bandId: string }) {
     try {
       const res = await fetch(`/api/bands/${bandId}`, { cache: 'no-store' });
       await ensureOk(res);
-      setData((await res.json()) as BandDetail);
+      const d = (await res.json()) as BandDetail;
+      setData(d);
+      setName(d.band.name);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -52,6 +58,59 @@ export function EditBandClient({ bandId }: { bandId: string }) {
   useEffect(() => {
     void trackPending(() => load());
   }, [load, trackPending]);
+
+  const handleRename = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const v = name.trim();
+    if (!data || !v || v === data.band.name || renaming) return;
+    setRenaming(true);
+    try {
+      await trackPending(async () => {
+        const r = await fetch(`/api/bands/${bandId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: v }),
+        });
+        await ensureOk(r);
+      });
+      // Refresh the header's band picker (it's mounted separately).
+      window.dispatchEvent(new Event('bands:changed'));
+      showToast('Band name updated.', 'success');
+      await load();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRenaming(false);
+    }
+  };
+
+  const handlePromote = async () => {
+    if (!promoteTarget || promoting) return;
+    setPromoting(true);
+    try {
+      await trackPending(async () => {
+        const r = await fetch(
+          `/api/bands/${bandId}/members/${promoteTarget.userId}`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: 'owner' }),
+          },
+        );
+        await ensureOk(r);
+      });
+      showToast(
+        `${promoteTarget.name ?? promoteTarget.email ?? 'Member'} is now an owner.`,
+        'success',
+      );
+      setPromoteTarget(null);
+      await load();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPromoting(false);
+    }
+  };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,6 +193,30 @@ export function EditBandClient({ bandId }: { bandId: string }) {
       </h1>
 
       <section className="flex flex-col gap-2">
+        <h2 className="text-sm font-medium">Band name</h2>
+        <form onSubmit={handleRename} className="flex gap-2">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={100}
+            placeholder="Band name"
+            aria-label="Band name"
+            className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+          />
+          <button
+            type="submit"
+            disabled={
+              renaming || !name.trim() || name.trim() === data.band.name
+            }
+            className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+          >
+            {renaming ? 'Saving…' : 'Save'}
+          </button>
+        </form>
+      </section>
+
+      <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium">Members</h2>
         <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
           {data.members.map((m) => (
@@ -155,6 +238,16 @@ export function EditBandClient({ bandId }: { bandId: string }) {
                 <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
                   {m.role}
                 </span>
+                {m.role === 'member' && (
+                  <button
+                    type="button"
+                    onClick={() => setPromoteTarget(m)}
+                    disabled={promoting}
+                    className="text-xs text-neutral-500 hover:text-blue-600 disabled:opacity-50 dark:hover:text-blue-400"
+                  >
+                    Make owner
+                  </button>
+                )}
                 {m.role === 'member' && (
                   <button
                     type="button"
@@ -204,6 +297,19 @@ export function EditBandClient({ bandId }: { bandId: string }) {
           Delete band
         </button>
       </section>
+
+      <ConfirmModal
+        open={promoteTarget !== null}
+        title={`Make ${
+          promoteTarget?.name ?? promoteTarget?.email ?? 'this member'
+        } an owner?`}
+        description="Owners can manage members, rename or delete the band, and promote others."
+        confirmLabel="Make owner"
+        busyLabel="Promoting…"
+        busy={promoting}
+        onConfirm={handlePromote}
+        onCancel={() => setPromoteTarget(null)}
+      />
 
       <ConfirmModal
         open={removeTarget !== null}

@@ -16,6 +16,7 @@ import { BandAudioTab } from './BandAudioTab';
 import { BandOverviewTab } from './BandOverviewTab';
 import { BandSetlistsTab } from './BandSetlistsTab';
 import { BandVenuesTab } from './BandVenuesTab';
+import { LeaveBandModal } from '../LeaveBandModal';
 import { AddToSetlistModal } from './AddToSetlistModal';
 import { AddAudioSourceModal } from './AddAudioSourceModal';
 import { useBandData, useBandChat } from './bandDetailHooks';
@@ -50,7 +51,6 @@ export function BandDetailClient({
   initialTab?: BandTab;
 }) {
   const [leaveOpen, setLeaveOpen] = useState(false);
-  const [leaving, setLeaving] = useState(false);
   const [chooseOpen, setChooseOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [createName, setCreateName] = useState('');
@@ -231,25 +231,6 @@ export function BandDetailClient({
     }
   };
 
-  const handleLeave = async () => {
-    if (leaving) return;
-    setLeaving(true);
-    try {
-      await trackPending(async () => {
-        const r = await fetch(`/api/bands/${bandId}/leave`, { method: 'POST' });
-        await ensureOk(r);
-      });
-      // Refresh the header's band picker (it's mounted separately).
-      window.dispatchEvent(new Event('bands:changed'));
-      router.push('/bands');
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : String(e));
-      setLeaveOpen(false);
-    } finally {
-      setLeaving(false);
-    }
-  };
-
   const handleDeleteSong = async () => {
     if (!deleteTarget || deleting) return;
     setDeleting(true);
@@ -420,7 +401,12 @@ export function BandDetailClient({
       )}
 
       {activeTab === 'polls' && (
-        <BandMembersTab bandId={bandId} members={data.members} />
+        <BandMembersTab
+          bandId={bandId}
+          members={data.members}
+          canManage={isOwner}
+          onReload={reload}
+        />
       )}
 
       {activeTab === 'audio' && (
@@ -444,7 +430,6 @@ export function BandDetailClient({
           bandId={bandId}
           shows={shows}
           setlists={setlists}
-          isOwner={isOwner}
           onLeave={() => setLeaveOpen(true)}
           onReload={reload}
         />
@@ -462,16 +447,14 @@ export function BandDetailClient({
         <BandVenuesTab bandId={bandId} venues={venues} onReload={reload} />
       )}
 
-      <ConfirmModal
-        open={leaveOpen}
-        title={`Leave ${data.band.name}?`}
-        description="You’ll lose access to this band’s audio and conversations. An owner can add you back later."
-        confirmLabel="Leave band"
-        busyLabel="Leaving…"
-        busy={leaving}
-        onConfirm={handleLeave}
-        onCancel={() => setLeaveOpen(false)}
-      />
+      {leaveOpen && (
+        <LeaveBandModal
+          band={{ id: bandId, name: data.band.name, role: data.myRole }}
+          currentUserId={currentUserId}
+          onCancel={() => setLeaveOpen(false)}
+          onLeft={() => router.push('/bands')}
+        />
+      )}
 
       <ConfirmModal
         open={deleteTarget !== null}

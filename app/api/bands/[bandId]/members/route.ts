@@ -1,8 +1,18 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/api-guard';
-import { addMember, getMembership } from '@/lib/db/bands';
+import { addMember, getMembership, listMembers } from '@/lib/db/bands';
 import { getUserByEmail } from '@/lib/db/users';
 import { notify } from '@/lib/db/notifications';
+
+/** GET → the band's members (any member may view; used by the leave/transfer flow). */
+export async function GET(_req: Request, { params }: { params: Promise<{ bandId: string }> }) {
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
+  const { bandId } = await params;
+  const membership = await getMembership(user.id, bandId);
+  if (!membership) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  return NextResponse.json({ members: await listMembers(bandId) });
+}
 
 export async function POST(req: Request, { params }: { params: Promise<{ bandId: string }> }) {
   const user = await requireUser();

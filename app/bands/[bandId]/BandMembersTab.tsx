@@ -2,9 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ensureOk } from '@/lib/api';
 import { MinimizeToggle, type Member } from './bandDetailShared';
 import { PollCard } from './PollCard';
 import { usePersistedBoolean } from '../../usePersistedBoolean';
+import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
+import { ConfirmModal } from '../../ConfirmModal';
+import { useTrackPending } from '../../PendingActionProvider';
+import { useToast } from '../../ToastProvider';
 
 interface PollSummary {
   id: string;
@@ -21,11 +26,20 @@ interface PollSummary {
 export function BandMembersTab({
   bandId,
   members,
+  canManage,
+  onReload,
 }: {
   bandId: string;
   members: Member[];
+  /** True for owners — they can promote other members to owner. */
+  canManage: boolean;
+  onReload: () => Promise<void> | void;
 }) {
   const [polls, setPolls] = useState<PollSummary[] | null>(null);
+  const [promoteTarget, setPromoteTarget] = useState<Member | null>(null);
+  const [promoting, setPromoting] = useState(false);
+  const trackPending = useTrackPending();
+  const showToast = useToast();
   const [closedMinimized, setClosedMinimized] = usePersistedBoolean(
     'bandClosedPollsMinimized',
     true,
@@ -53,6 +67,34 @@ export function BandMembersTab({
       cancelled = true;
     };
   }, [bandId]);
+
+  const handlePromote = async () => {
+    if (!promoteTarget || promoting) return;
+    setPromoting(true);
+    try {
+      await trackPending(async () => {
+        const r = await fetch(
+          `/api/bands/${bandId}/members/${promoteTarget.userId}`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: 'owner' }),
+          },
+        );
+        await ensureOk(r);
+      });
+      showToast(
+        `${promoteTarget.name ?? promoteTarget.email ?? 'Member'} is now an owner.`,
+        'success',
+      );
+      setPromoteTarget(null);
+      await onReload();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPromoting(false);
+    }
+  };
 
   const openPolls = polls?.filter((p) => !p.closed) ?? null;
   const closedPolls = polls?.filter((p) => p.closed) ?? [];
@@ -114,9 +156,9 @@ export function BandMembersTab({
             {members.map((m) => (
               <li
                 key={m.userId}
-                className="flex items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm"
+                className="flex items-center gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm"
               >
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">
                     {m.name ?? m.email ?? 'Unknown'}
                   </div>
@@ -129,6 +171,13 @@ export function BandMembersTab({
                 <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
                   {m.role}
                 </span>
+                {canManage && m.role !== 'owner' && (
+                  <ActionMenu label="Member actions">
+                    <ActionMenuItem onClick={() => setPromoteTarget(m)}>
+                      Make owner
+                    </ActionMenuItem>
+                  </ActionMenu>
+                )}
               </li>
             ))}
           </ul>
@@ -152,6 +201,17 @@ export function BandMembersTab({
           {!closedMinimized && renderPollList(closedPolls)}
         </section>
       )}
+
+      <ConfirmModal
+        open={promoteTarget !== null}
+        title={`Make ${promoteTarget?.name ?? promoteTarget?.email ?? 'this member'} an owner?`}
+        description="Owners can manage members, edit the band, and promote others."
+        confirmLabel="Make owner"
+        busyLabel="Promoting…"
+        busy={promoting}
+        onConfirm={handlePromote}
+        onCancel={() => setPromoteTarget(null)}
+      />
     </div>
   );
 }
