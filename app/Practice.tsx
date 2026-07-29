@@ -8,6 +8,7 @@ import {
   SheetMusic,
   type SheetMusicMeta,
 } from './notes/[conversationId]/SheetMusic';
+import Link from 'next/link';
 
 export interface PracticeSong {
   /** Null for a marker step (set break / custom) — shown without a player. */
@@ -87,6 +88,15 @@ export function Practice({
             </span>
           </span>
         </SetlistNav>
+
+        {song.conversationId && (
+          <Link
+            href={`/notes/${song.conversationId}/edit`}
+            className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 p2-4"
+          >
+            Edit song
+          </Link>
+        )}
 
         <button
           type="button"

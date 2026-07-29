@@ -28,13 +28,6 @@ export default async function SongPracticePage({
 
   return (
     <main className="">
-      <div className="px-4 py-0">
-        <PageHeader
-          defaultHref={`/notes/${conversationId}`}
-          defaultHrefName="Song"
-        />
-      </div>
-
       <Practice songs={[song]} apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ''} />
     </main>
   );
