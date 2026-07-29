@@ -225,11 +225,6 @@ export function Header() {
                 ariaLabel="Current band"
                 options={bands.map((b) => ({ value: b.id, label: b.name }))}
               />
-              <Link href={overviewHref}>
-                <span className="rounded-md border border-neutral-300 px-3 py-[0.625rem] text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900">
-                  ➔
-                </span>
-              </Link>
             </span>
           )}
 
