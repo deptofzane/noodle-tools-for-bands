@@ -141,6 +141,15 @@ export function BandOverviewTab({
             >
               Edit event
             </ActionMenuItem>
+            {show.setlistId && (
+              <ActionMenuItem
+                onClick={() =>
+                  router.push(`/bands/${bandId}/setlists/${show.setlistId}`)
+                }
+              >
+                View setlist
+              </ActionMenuItem>
+            )}
             {canDownload &&
               downloadTarget &&
               (offlineRec ? (
@@ -224,12 +233,12 @@ export function BandOverviewTab({
             )}
 
             {show.details && (
-              <section className="rounded-lg py-4 text-sm">
+              <section className="rounded-lg py-2 text-sm">
                 <CollapsibleSection
                   title="Details"
                   persistKey="eventDetailsOpen"
                 >
-                  <p className="mt-2 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+                  <p className="mt-2 ml-3 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
                     {show.details}
                   </p>
                 </CollapsibleSection>
@@ -237,9 +246,9 @@ export function BandOverviewTab({
             )}
 
             {show.notes && (
-              <section className="rounded-lg py-4 text-sm">
+              <section className="rounded-lg py-2 text-sm">
                 <CollapsibleSection title="Notes" persistKey="eventNotesOpen">
-                  <p className="mt-2 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+                  <p className="mt-2 ml-3 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
                     {show.notes}
                   </p>
                 </CollapsibleSection>

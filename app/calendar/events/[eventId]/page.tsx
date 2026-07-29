@@ -109,7 +109,7 @@ export default async function EventPage({
       {event.details && (
         <section className="rounded-lg text-sm mb-4">
           <CollapsibleSection title="Details" persistKey="eventDetailsOpen">
-            <p className="mt-2 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+            <p className="mt-2 ml-3 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
               {event.details}
             </p>
           </CollapsibleSection>
@@ -119,7 +119,7 @@ export default async function EventPage({
       {canManage && event.notes && (
         <section className="rounded-lg text-sm mb-4">
           <CollapsibleSection title="Notes" persistKey="eventNotesOpen">
-            <p className="mt-2 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+            <p className="mt-2 ml-3 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
               {event.notes}
             </p>
           </CollapsibleSection>
