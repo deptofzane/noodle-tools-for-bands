@@ -120,7 +120,6 @@ export function Practice({
               mimeType={song.mimeType ?? 'audio/mpeg'}
               sticky
             />
-            {/* {song.sheetMusic && ( */}
               <SheetMusic
                 conversationId={song.conversationId}
                 apiKey={apiKey}
@@ -128,7 +127,6 @@ export function Practice({
                 startClosed={false}
                 zoomKey={song.conversationId}
               />
-            {/* )} */}
           </div>
         </PlayerProvider>
       ) : (

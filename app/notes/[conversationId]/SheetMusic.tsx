@@ -338,7 +338,7 @@ export function SheetMusic({
                 // Zoom % lives on a wrapper (no max-width cap) inside a scroll
                 // container; the img fills it so zooming isn't fighting
                 // `img { max-width: 100% }`.
-                <div className="max-h-[60vh] overflow-auto rounded-md border border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900">
+                <div className="max-h-[85vh] overflow-auto rounded-md border border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900">
                   <div style={{ width: `${zoom}%` }} className="mx-auto">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -353,14 +353,14 @@ export function SheetMusic({
                 <img
                   src={viewUrl}
                   alt={selected.label || selected.fileName}
-                  className="max-h-[60vh] w-full rounded-md border border-neutral-200 object-contain dark:border-neutral-800"
+                  className="max-h-[85vh] w-full rounded-md border border-neutral-200 object-contain dark:border-neutral-800"
                 />
               ))}
             {kind === 'pdf' &&
               (zoomEnabled ? (
                 // PDF.js renders each page to a canvas that scales with `zoom`
                 // (an <iframe> can't be zoomed and won't scroll on iOS).
-                <div className="h-[60vh] w-full overflow-hidden rounded-md border border-neutral-200 dark:border-neutral-800">
+                <div className="h-[85vh] w-full overflow-hidden rounded-md border border-neutral-200 dark:border-neutral-800">
                   <PdfView
                     url={viewUrl}
                     title={selected.label || selected.fileName}
@@ -372,7 +372,7 @@ export function SheetMusic({
                 <iframe
                   title={selected.label || selected.fileName}
                   src={viewUrl}
-                  className="h-[60vh] w-full rounded-md border border-neutral-200 dark:border-neutral-800"
+                  className="h-[85vh] w-full rounded-md border border-neutral-200 dark:border-neutral-800"
                 />
               ))}
             {kind === 'text' && (
