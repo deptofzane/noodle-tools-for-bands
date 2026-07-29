@@ -207,7 +207,7 @@ export function NotesPanel({
             type="button"
             onClick={() => setConversationClosed(!closed)}
             disabled={stateBusy}
-            className="rounded-md border border-neutral-300 px-2 py-0.5 text-[11px] font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+            className="rounded-md border border-neutral-300 px-2 py-0.5 text-[0.6875rem] font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
             title={
               closed
                 ? 'Reopen this conversation so it shows up in Open Conversations'
@@ -329,7 +329,7 @@ function ActivityHeader({
           <button
             type="button"
             onClick={onToggle}
-            className="shrink-0 text-[11px] text-blue-600 hover:underline dark:text-blue-400"
+            className="shrink-0 text-[0.6875rem] text-blue-600 hover:underline dark:text-blue-400"
           >
             {open ? 'hide log' : `show log (${entries.length})`}
           </button>

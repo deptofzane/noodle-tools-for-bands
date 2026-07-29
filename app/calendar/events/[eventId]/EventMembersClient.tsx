@@ -141,7 +141,7 @@ export function EventMembersClient({
               {busy ? 'Adding…' : 'Add'}
             </button>
           </div>
-          <p className="text-[11px] text-neutral-500">
+          <p className="text-[0.6875rem] text-neutral-500">
             They must have signed in to the app at least once.
           </p>
         </form>

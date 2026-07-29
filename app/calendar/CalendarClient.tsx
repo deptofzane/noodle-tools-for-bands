@@ -194,7 +194,7 @@ export function CalendarClient() {
                     <span
                       key={ev.id}
                       title={ev.title}
-                      className="truncate rounded bg-cyan-50 px-1 py-0.5 text-[11px] text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300"
+                      className="truncate rounded bg-cyan-50 px-1 py-0.5 text-[0.6875rem] text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300"
                     >
                       {ev.title}
                       {ev.time ? ` ${formatTime12h(ev.time)}` : ''}

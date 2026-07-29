@@ -226,7 +226,7 @@ export function EditSongClient({
             </option>
           ))}
         </select>
-        <p className="text-[11px] text-neutral-500">
+        <p className="text-[0.6875rem] text-neutral-500">
           Moving changes who can access this song — only members of the new band
           will see it.
         </p>
@@ -260,7 +260,7 @@ export function EditSongClient({
             />
           </div>
         </div>
-        <p className="text-[11px] text-neutral-500">
+        <p className="text-[0.6875rem] text-neutral-500">
           Optional — tempo and musical key. Leave blank if unknown.
         </p>
       </section>
@@ -282,7 +282,7 @@ export function EditSongClient({
       {/* Archive */}
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium">Archive</h2>
-        <p className="text-[11px] text-neutral-500">
+        <p className="text-[0.6875rem] text-neutral-500">
           {archived
             ? 'This song is archived — it appears under “Archived Audio” on the band page.'
             : 'Archiving moves this song into a separate “Archived Audio” list on the band page. It keeps all of its notes and files.'}

@@ -196,7 +196,7 @@ export function NotificationPreferences({
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
 
       <div className="rounded-lg border border-neutral-200 dark:border-neutral-800">
-        <div className="flex items-center justify-end gap-5 px-4 py-2 text-[11px] font-medium text-neutral-500">
+        <div className="flex items-center justify-end gap-5 px-4 py-2 text-[0.6875rem] font-medium text-neutral-500">
           <span className="w-11 text-center">In app</span>
           <span className="w-11 text-center">Push</span>
         </div>

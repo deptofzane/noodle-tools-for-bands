@@ -150,7 +150,7 @@ export function PollCard({
                 myVote={poll.myVote}
               />
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] text-neutral-500">
+                <span className="text-[0.6875rem] text-neutral-500">
                   {poll.totalVotes} {poll.totalVotes === 1 ? 'vote' : 'votes'}
                 </span>
                 <Link

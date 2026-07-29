@@ -218,7 +218,7 @@ export function NoteForm({
                 >
                   <span className="font-medium">{mentionLabel(m)}</span>
                   {m.email && m.email !== mentionLabel(m) && (
-                    <span className="text-[11px] text-neutral-500">{m.email}</span>
+                    <span className="text-[0.6875rem] text-neutral-500">{m.email}</span>
                   )}
                 </button>
               </li>

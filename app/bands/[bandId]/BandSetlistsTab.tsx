@@ -210,9 +210,9 @@ export function BandSetlistsTab({
             </ActionMenu>
           </span>
         </div>
-        {!collapsed && sl.songs.length > 0 && (
+        {!collapsed && sl.songs.length > 0 ? (
           <ul className="flex flex-col gap-0.5 px-4 pb-3 text-sm text-neutral-600 dark:text-neutral-400">
-            {sl.songs.map((s) => {
+            {sl.songs.map((s, i) => {
               const meta = s.conversationId
                 ? formatSongMeta(s.bpm, s.key)
                 : null;
@@ -227,7 +227,7 @@ export function BandSetlistsTab({
                   }
                 >
                   <ol>
-                    {s.name}
+                    {i + 1} &nbsp; {s.name}
                     {meta && (
                       <span className="text-neutral-400"> · {meta}</span>
                     )}
@@ -236,7 +236,7 @@ export function BandSetlistsTab({
               );
             })}
           </ul>
-        )}
+        ) : !collapsed && <p className="px-4 pb-3 text-sm text-neutral-600 dark:text-neutral-400">No songs in this setlist.</p>}
       </li>
     );
   };

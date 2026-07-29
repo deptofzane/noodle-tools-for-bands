@@ -200,7 +200,11 @@ export function Live({
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-white dark:bg-neutral-950">
       {/* Controls header. */}
-      <header className="flex items-center justify-between border-b border-neutral-200 px-2 py-2 dark:border-neutral-800">
+      {/* <header className="flex items-center justify-between border-b border-neutral-200 px-2 py-2 dark:border-neutral-800"> */}
+      <header className="w-100 flex flex-col">
+        <p className="mt-1 mb-1 text-sm mx-auto ">{song?.title}</p>
+        <span className="flex items-center justify-between border-b border-neutral-200 px-2 pb-2 dark:border-neutral-800">
+
         <button
           type="button"
           onClick={goPrev}
@@ -225,7 +229,7 @@ export function Live({
         </SetlistNav>
 
         <div className="flex items-center gap-2">
-          {zoomable && (
+          {zoomable ? (
             <div className="flex items-center gap-0.5 rounded-md border border-neutral-300 dark:border-neutral-700">
               <button
                 type="button"
@@ -254,6 +258,8 @@ export function Live({
                 +
               </button>
             </div>
+          ) : (
+            <div className="flex items-center gap-0.5 w-[11.75rem] h-[3.125rem]"></div>
           )}
           {sheetVersions && sheetVersions.length > 1 ? (
             <ActionMenu label="Sheet music version">
@@ -281,7 +287,7 @@ export function Live({
               ))}
             </ActionMenu>
           ) : zoomable ? (
-            <span className="rounded-md px-6 py-3 md:px-2 md:py-1 text-neutral-500"></span>
+            <span className="rounded-md px-6 py-3 md:px-2 md:py-1 w-[2rem] h-[2rem]"></span>
           ) : null}
           {/* Exit lives in the header on desktop. */}
           <button
@@ -302,6 +308,7 @@ export function Live({
         >
           ›
         </button>
+        </span>
       </header>
 
       {/* Sheet fills the rest. */}

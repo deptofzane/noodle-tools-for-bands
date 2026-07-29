@@ -93,12 +93,12 @@ export function UpcomingShows({
       >
         <span className="flex min-w-0 flex-col">
           <span className="truncate text-sm font-medium">{s.title}</span>
-          <span className="truncate text-[11px] text-neutral-500">
+          <span className="truncate text-[0.6875rem] text-neutral-500">
             {s.bandName}
             {s.location ? ` · ${s.location}` : ''}
           </span>
         </span>
-        <span className="shrink-0 text-[11px] text-neutral-500">
+        <span className="shrink-0 text-[0.6875rem] text-neutral-500">
           <span className="block font-medium text-neutral-700 dark:text-neutral-300">
             {formatDateShort(s.date)}
           </span>

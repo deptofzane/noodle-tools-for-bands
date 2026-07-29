@@ -225,7 +225,7 @@ export function NewEventClient({
           onChange={setBandId}
           options={bands.map((b) => ({ value: b.id, label: b.name }))}
         />
-        <p className="text-[11px] text-neutral-500">
+        <p className="text-[0.6875rem] text-neutral-500">
           The band that owns this event. Its members can see it; you can add
           others later.
         </p>
@@ -332,7 +332,7 @@ export function NewEventClient({
             </button>
           )}
         </div>
-        <p className="text-[11px] text-neutral-500">
+        <p className="text-[0.6875rem] text-neutral-500">
           Optional — associate one of the band’s saved venues.
         </p>
       </div>
@@ -351,7 +351,7 @@ export function NewEventClient({
           ]}
         />
         {setlists.length === 0 && (
-          <p className="text-[11px] text-neutral-500">
+          <p className="text-[0.6875rem] text-neutral-500">
             This band has no setlists yet.
           </p>
         )}
@@ -380,7 +380,7 @@ export function NewEventClient({
           rows={3}
           className={`${field} min-h-20`}
         />
-        <p className="text-[11px] text-neutral-500">
+        <p className="text-[0.6875rem] text-neutral-500">
           Information about the event.
         </p>
       </CollapsibleSection>
@@ -394,7 +394,7 @@ export function NewEventClient({
           rows={3}
           className={`${field} min-h-20`}
         />
-        <p className="text-[11px] text-neutral-500">
+        <p className="text-[0.6875rem] text-neutral-500">
           The band’s private notes — not shared to the calendar feed.
         </p>
       </CollapsibleSection>

@@ -162,7 +162,7 @@ export default async function EventPage({
           <div className="flex items-baseline justify-between gap-2">
             {setlist.songs.length > 0 && (
               <span className="shrink-0 text-xs text-neutral-500">
-                {setlistAllKnown ? '' : '~'}
+                Total length: &nbsp; {setlistAllKnown ? '' : '~'}
                 {formatDuration(setlistTotal)}
               </span>
             )}

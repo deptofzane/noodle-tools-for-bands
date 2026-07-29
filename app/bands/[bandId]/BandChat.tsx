@@ -262,7 +262,7 @@ export function BandChat({
                   {m.author.name ?? m.author.email ?? 'Unknown'}
                   {mine && <span className="text-neutral-400"> (you)</span>}
                 </span>
-                <span className="text-[11px] text-neutral-400">
+                <span className="text-[0.6875rem] text-neutral-400">
                   {formatRelativeTime(m.createdAt)}
                   {m.editedAt && <span title="Edited"> · edited</span>}
                 </span>
@@ -271,7 +271,7 @@ export function BandChat({
                     <button
                       type="button"
                       onClick={() => setEditingId(m.id)}
-                      className="text-[11px] text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+                      className="text-[0.6875rem] text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
                     >
                       Edit
                     </button>
@@ -280,7 +280,7 @@ export function BandChat({
                     <button
                       type="button"
                       onClick={() => setDeleteTarget(m)}
-                      className="text-[11px] text-neutral-400 hover:text-red-600 dark:hover:text-red-400"
+                      className="text-[0.6875rem] text-neutral-400 hover:text-red-600 dark:hover:text-red-400"
                       aria-label="Delete message"
                     >
                       Delete

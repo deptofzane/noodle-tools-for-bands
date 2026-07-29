@@ -254,7 +254,7 @@ export function EditEventClient({
             </button>
           )}
         </div>
-        <p className="text-[11px] text-neutral-500">
+        <p className="text-[0.6875rem] text-neutral-500">
           Optional — associate one of the band’s saved venues.
         </p>
       </div>
@@ -273,7 +273,7 @@ export function EditEventClient({
           ]}
         />
         {setlists.length === 0 && (
-          <p className="text-[11px] text-neutral-500">
+          <p className="text-[0.6875rem] text-neutral-500">
             This band has no setlists yet.
           </p>
         )}
@@ -300,7 +300,7 @@ export function EditEventClient({
           rows={3}
           className={`${field} min-h-20`}
         />
-        <p className="text-[11px] text-neutral-500">
+        <p className="text-[0.6875rem] text-neutral-500">
           Information about the event.
         </p>
       </CollapsibleSection>
@@ -314,7 +314,7 @@ export function EditEventClient({
           rows={3}
           className={`${field} min-h-20`}
         />
-        <p className="text-[11px] text-neutral-500">
+        <p className="text-[0.6875rem] text-neutral-500">
           The band’s private notes — not shared to the calendar feed.
         </p>
       </CollapsibleSection>

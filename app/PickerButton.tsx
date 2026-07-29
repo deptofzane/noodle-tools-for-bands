@@ -169,12 +169,12 @@ export function PickerButton({
         {label}
       </button>
       {!apiKey && (
-        <p className="text-[11px] text-amber-700 dark:text-amber-400">
+        <p className="text-[0.6875rem] text-amber-700 dark:text-amber-400">
           NEXT_PUBLIC_GOOGLE_API_KEY isn’t set; the Picker won’t open.
         </p>
       )}
       {error && (
-        <p className="text-[11px] text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-[0.6875rem] text-red-600 dark:text-red-400">{error}</p>
       )}
     </div>
   );

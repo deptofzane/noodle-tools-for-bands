@@ -166,7 +166,7 @@ export default async function SettingsPage({
           )}
         </div>
         {googleAccount && !hasPassword && (
-          <p className="mt-2 text-[11px] text-neutral-500">
+          <p className="mt-2 text-[0.6875rem] text-neutral-500">
             Set a password (via “Forgot password”) before disconnecting, so you
             don’t lose access.
           </p>
@@ -177,7 +177,7 @@ export default async function SettingsPage({
         <summary className="cursor-pointer font-medium text-neutral-700 dark:text-neutral-300">
           Session details
         </summary>
-        <pre className="mt-2 overflow-x-auto whitespace-pre-wrap font-mono text-[11px] text-neutral-700 dark:text-neutral-300">
+        <pre className="mt-2 overflow-x-auto whitespace-pre-wrap font-mono text-[0.6875rem] text-neutral-700 dark:text-neutral-300">
           {JSON.stringify(
             {
               sub: session.user.sub,

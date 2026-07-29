@@ -312,7 +312,7 @@ export function SheetMusicVersions({
   return (
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-medium">Sheet music versions</h2>
-      <p className="text-[11px] text-neutral-500">
+      <p className="text-[0.6875rem] text-neutral-500">
         The default is what members see unless they’ve chosen their own version
         to view. Notes are shared across all versions.
       </p>
@@ -382,7 +382,7 @@ export function SheetMusicVersions({
                           )}
                         </span>
                         {v.label && (
-                          <span className="truncate text-[11px] text-neutral-500">
+                          <span className="truncate text-[0.6875rem] text-neutral-500">
                             {v.fileName}
                           </span>
                         )}

@@ -247,7 +247,7 @@ export function NotificationList({
                     />
                     <span className="flex min-w-0 flex-col">
                       <span className="text-sm">{messageFor(n)}</span>
-                      <span className="text-[11px] text-neutral-400">
+                      <span className="text-[0.6875rem] text-neutral-400">
                         {n.bandName ? `${n.bandName} · ` : ''}
                         {formatRelativeTime(n.createdAt)}
                       </span>
