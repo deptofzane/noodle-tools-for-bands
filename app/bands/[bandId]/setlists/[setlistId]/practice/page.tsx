@@ -27,8 +27,7 @@ export default async function PracticeSetlistPage({
   const songs = await getSetlistPracticeSongs(setlistId);
 
   return (
-    // <main className="main-container">
-    <main className="">
+    <main>
       <div className="px-4 py-0">
       <PageHeader
         defaultHref={`/bands/${bandId}/setlists/${setlistId}`}

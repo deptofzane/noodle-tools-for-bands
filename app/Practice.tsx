@@ -92,7 +92,7 @@ export function Practice({
         {song.conversationId && (
           <Link
             href={`/notes/${song.conversationId}/edit`}
-            className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 p2-4"
+            className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
           >
             Edit song
           </Link>

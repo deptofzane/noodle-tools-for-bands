@@ -280,6 +280,13 @@ export function AudioPlayer({
     setCurrentTime(t);
   }, [isReady, duration]);
 
+  const startOver = useCallback(() => {
+    const engine = engineRef.current;
+    if (!engine || !isReady) return;
+    engine?.seek(0);
+    setCurrentTime(0);
+  }, [isReady]);
+
   // Keyboard controls: space = play/pause, → = forward 10s, ← = back 10s.
   // Ignored while a form control is focused, so typing / the seek slider /
   // selects keep their native behavior (and space still activates a focused
@@ -413,10 +420,21 @@ export function AudioPlayer({
         (hasPracticeOptions || (hasVersions && versions!.length > 1)) && (
           <div
             id="audio-player-options"
-            className="mt-3 flex flex-wrap items-center gap-3 border-t border-neutral-200 pt-3 dark:border-neutral-800"
+            className="mt-3 flex flex-wrap items-center gap-4 border-t border-neutral-200 pt-3 dark:border-neutral-800"
           >
             {hasPracticeOptions && (
               <>
+                <button
+                  type="button"
+                  onClick={startOver}
+                  disabled={!isReady}
+                  aria-label="Start over"
+                  title="Start over"
+                  className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+                >
+                  <span aria-hidden="true">Start over</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={back10}
