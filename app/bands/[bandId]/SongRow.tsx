@@ -12,6 +12,7 @@ export function SongRow({
   disabled,
   onAddToSetlist,
   onEdit,
+  onView,
   onToggleArchive,
   onDelete,
 }: {
@@ -19,6 +20,7 @@ export function SongRow({
   disabled: boolean;
   onAddToSetlist: (c: Conversation) => void;
   onEdit: (c: Conversation) => void;
+  onView: (c: Conversation) => void;
   onToggleArchive: (c: Conversation) => void;
   onDelete: (c: Conversation) => void;
 }) {
@@ -47,10 +49,11 @@ export function SongRow({
         </div>
       </Link>
       <ActionMenu label="Song actions" disabled={disabled}>
+        <ActionMenuItem onClick={() => onView(c)}>View song</ActionMenuItem>
+        <ActionMenuItem onClick={() => onEdit(c)}>Edit song</ActionMenuItem>
         <ActionMenuItem onClick={() => onAddToSetlist(c)}>
           Add to setlist
         </ActionMenuItem>
-        <ActionMenuItem onClick={() => onEdit(c)}>Edit song</ActionMenuItem>
         <ActionMenuItem onClick={() => onToggleArchive(c)}>
           {c.archived ? 'Unarchive song' : 'Archive song'}
         </ActionMenuItem>

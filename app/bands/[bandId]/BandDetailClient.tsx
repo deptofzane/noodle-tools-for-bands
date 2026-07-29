@@ -420,6 +420,7 @@ export function BandDetailClient({
           onCreateSong={() => setCreateOpen(true)}
           onAddToSetlist={openAddToSetlist}
           onEditSong={(c) => router.push(`/notes/${c.id}/edit`)}
+          onViewSong={(c) => router.push(`/notes/${c.id}`)}
           onToggleArchive={handleToggleArchive}
           onDelete={(c) => setDeleteTarget(c)}
         />

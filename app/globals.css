@@ -33,7 +33,7 @@ body {
 }
 
 .main-container {
-  @apply mx-auto flex h-max max-w-3xl flex-col px-4 py-4 gap-2
+  @apply mx-auto flex h-max max-w-3xl flex-col px-4 pb-4 gap-2
 }
 
 .title-text {

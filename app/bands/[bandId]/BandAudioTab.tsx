@@ -20,6 +20,7 @@ export function BandAudioTab({
   onCreateSong,
   onAddToSetlist,
   onEditSong,
+  onViewSong,
   onToggleArchive,
   onDelete,
 }: {
@@ -32,6 +33,7 @@ export function BandAudioTab({
   onCreateSong: () => void;
   onAddToSetlist: (c: Conversation) => void;
   onEditSong: (c: Conversation) => void;
+  onViewSong: (c: Conversation) => void;
   onToggleArchive: (c: Conversation) => void;
   onDelete: (c: Conversation) => void;
 }) {
@@ -55,6 +57,7 @@ export function BandAudioTab({
       disabled={rowsDisabled}
       onAddToSetlist={onAddToSetlist}
       onEdit={onEditSong}
+      onView={onViewSong}
       onToggleArchive={onToggleArchive}
       onDelete={onDelete}
     />
