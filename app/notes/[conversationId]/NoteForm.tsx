@@ -228,7 +228,7 @@ export function NoteForm({
       </div>
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] text-neutral-500">⌘ Enter to submit</span>
+        <span className="text-[0.625rem] text-neutral-500">⌘ Enter to submit</span>
         <div className="flex gap-2">
           {onCancel && (
             <button

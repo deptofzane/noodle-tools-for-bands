@@ -183,7 +183,7 @@ export function NoteItem({
           </button>
           <AuthorTag note={note} />
           {isResolved && (
-            <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+            <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[0.625rem] font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
               Resolved
             </span>
           )}
@@ -426,7 +426,7 @@ function AuthorTag({ note }: { note: ApiNote }) {
     >
       {displayName}
       {note.isMine && (
-        <span className="ml-1 rounded bg-blue-100 px-1 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+        <span className="ml-1 rounded bg-blue-100 px-1 py-0.5 text-[0.625rem] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
           you
         </span>
       )}

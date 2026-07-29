@@ -119,7 +119,7 @@ export function BandsClient({ currentUserId }: { currentUserId: string }) {
                 className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm"
               >
                 <span className="truncate font-medium">{band.name}</span>
-                <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+                <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
                   {band.role}
                 </span>
               </Link>

@@ -34,7 +34,7 @@ export function SongRow({
             {c.audioFileName ?? 'Untitled audio'}
           </span>
           {c.closed && (
-            <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+            <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
               closed
             </span>
           )}

@@ -349,7 +349,7 @@ function ActivityHeader({
                 </span>{' '}
                 {describeKind(entry.kind)}
               </span>
-              <span className="shrink-0 font-mono text-[10px] text-neutral-500">
+              <span className="shrink-0 font-mono text-[0.625rem] text-neutral-500">
                 {formatRelativeTime(entry.at)}
               </span>
             </li>

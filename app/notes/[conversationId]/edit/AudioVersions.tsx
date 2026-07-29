@@ -255,7 +255,7 @@ export function AudioVersions({
                         {v.label || v.fileName}
                       </span>
                       {v.isDefault && (
-                        <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                        <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[0.625rem] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
                           Default
                         </span>
                       )}

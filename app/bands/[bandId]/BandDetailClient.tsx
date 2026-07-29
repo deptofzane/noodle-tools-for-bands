@@ -374,7 +374,7 @@ export function BandDetailClient({
               <span
                 aria-label={`${unread.count} unread${unread.mentioned ? ', mentioned' : ''}`}
                 className={
-                  'inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white ' +
+                  'inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-[0.625rem] font-semibold text-white ' +
                   (unread.mentioned ? 'bg-red-600' : 'bg-blue-600')
                 }
               >

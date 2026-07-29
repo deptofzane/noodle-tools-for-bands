@@ -92,11 +92,11 @@ export function AnnotatedList() {
                   {item.audioFileName ?? 'Untitled audio'}
                 </span>
                 {item.mentioned ? (
-                  <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                  <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[0.625rem] font-semibold text-amber-800 dark:bg-amber-950 dark:text-amber-300">
                     @ Mentioned
                   </span>
                 ) : item.unread ? (
-                  <span className="shrink-0 rounded bg-cyan-100 px-1.5 py-0.5 text-[10px] font-semibold text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300">
+                  <span className="shrink-0 rounded bg-cyan-100 px-1.5 py-0.5 text-[0.625rem] font-semibold text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300">
                     New
                   </span>
                 ) : null}

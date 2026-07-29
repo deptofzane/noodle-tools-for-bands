@@ -265,7 +265,7 @@ export function Live({
             <ActionMenu label="Sheet music version">
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="cursor-default px-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-neutral-400 sm:px-3 sm:py-1.5"
+                className="cursor-default px-4 py-2 text-[0.625rem] font-semibold uppercase tracking-wide text-neutral-400 sm:px-3 sm:py-1.5"
               >
                 Select version
               </div>

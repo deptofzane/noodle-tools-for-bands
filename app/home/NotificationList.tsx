@@ -215,7 +215,7 @@ export function NotificationList({
           <h2 className="text-sm font-medium">Notifications</h2>
         </button>
         {unread > 0 && (
-          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[0.625rem] font-semibold text-white">
             {unread} new
           </span>
         )}

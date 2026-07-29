@@ -298,7 +298,7 @@ function NavBadge({ count }: { count: number }) {
   return (
     <span
       aria-label={`${count} unread notifications`}
-      className="ml-1.5 inline-flex min-w-[1.125rem] items-center justify-center rounded-full bg-blue-600 px-1 py-0.5 text-[10px] font-semibold leading-none text-white"
+      className="ml-1.5 inline-flex min-w-[1.125rem] items-center justify-center rounded-full bg-blue-600 px-1 py-0.5 text-[0.625rem] font-semibold leading-none text-white"
     >
       {count > 99 ? '99+' : count}
     </span>
