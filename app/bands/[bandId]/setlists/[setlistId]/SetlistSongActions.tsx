@@ -17,6 +17,11 @@ export function SetlistSongActions({
   return (
     <ActionMenu label="Song actions">
       <ActionMenuItem
+        onClick={() => router.push(`/notes/${conversationId}`)}
+      >
+        View song
+      </ActionMenuItem>
+      <ActionMenuItem
         onClick={() => router.push(`/notes/${conversationId}/edit`)}
       >
         Edit song

@@ -211,32 +211,43 @@ export function BandSetlistsTab({
           </span>
         </div>
         {!collapsed && sl.songs.length > 0 ? (
-          <ul className="flex flex-col gap-0.5 px-4 pb-3 text-sm text-neutral-600 dark:text-neutral-400">
-            {sl.songs.map((s, i) => {
-              const meta = s.conversationId
-                ? formatSongMeta(s.bpm, s.key)
-                : null;
-              return (
-                <li
-                  key={s.id}
-                  className={
-                    'truncate ' +
-                    (s.conversationId
-                      ? ''
-                      : 'text-xs py-1 font-semibold uppercase tracking-wide text-neutral-400')
-                  }
-                >
-                  <ol>
-                    {i + 1} &nbsp; {s.name}
-                    {meta && (
-                      <span className="text-neutral-400"> · {meta}</span>
-                    )}
-                  </ol>
-                </li>
-              );
-            })}
-          </ul>
-        ) : !collapsed && <p className="px-4 pb-3 text-sm text-neutral-600 dark:text-neutral-400">No songs in this setlist.</p>}
+          <Link
+            href={`/bands/${bandId}/setlists/${sl.id}`}
+            className="flex min-w-0 flex-1 items-start flex-col justify-start gap-3 rounded hover:bg-neutral-50 dark:hover:bg-neutral-900"
+          >
+            <ul className="flex flex-col gap-0.5 px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">
+              {sl.songs.map((s, i) => {
+                const meta = s.conversationId
+                  ? formatSongMeta(s.bpm, s.key)
+                  : null;
+                return (
+                  <li
+                    key={s.id}
+                    className={
+                      'truncate ' +
+                      (s.conversationId
+                        ? ''
+                        : 'text-xs py-1 font-semibold uppercase tracking-wide text-neutral-400')
+                    }
+                  >
+                    <ol>
+                      {i + 1} &nbsp; {s.name}
+                      {meta && (
+                        <span className="text-neutral-400"> · {meta}</span>
+                      )}
+                    </ol>
+                  </li>
+                );
+              })}
+            </ul>
+          </Link>
+        ) : (
+          !collapsed && (
+            <p className="px-4 pb-3 text-sm text-neutral-600 dark:text-neutral-400">
+              No songs in this setlist.
+            </p>
+          )
+        )}
       </li>
     );
   };

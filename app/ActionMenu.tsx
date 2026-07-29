@@ -114,7 +114,7 @@ export function ActionMenuItem({
       role="menuitem"
       disabled={disabled}
       onClick={onClick}
-      className={`block w-full px-4 py-2 sm:py-3 text-left text-base hover:bg-neutral-100 sm:px-3 sm:py-1.5 sm:text-sm dark:hover:bg-neutral-800 ${
+      className={`block w-full text-nowrap px-4 py-2 sm:py-3 text-left text-base hover:bg-neutral-100 sm:px-3 sm:py-1.5 sm:text-sm dark:hover:bg-neutral-800 ${
         destructive
           ? 'text-red-600 dark:text-red-400 pt-2 border-t border-gray-700'
           : 'text-neutral-700 dark:text-neutral-200'
