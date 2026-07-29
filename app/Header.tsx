@@ -171,9 +171,7 @@ export function Header() {
               side<span className="text-cyan-600">stage</span>
             </h3>
             <span className="w-8 h-8 flex items-center justify-center lg:hidden border border-cyan-600 rounded-full">
-              <h3 className="font-serif text-2xl text-center mb-1">
-                s
-              </h3>
+              <h3 className="font-serif text-2xl text-center mb-1">s</h3>
             </span>
           </Link>
           {/*
@@ -198,29 +196,41 @@ export function Header() {
 
         {/* Mobile: centered, widened band picker between the logo and menu. */}
         {bands.length > 0 && (
-          <div className="flex flex-1 justify-center lg:hidden">
+          <div className="flex flex-1 gap-1 justify-center items-center lg:hidden">
             <Select
-              className="w-full max-w-[16rem]"
+              className="w-full max-w-[12rem]"
               value={selectedBandId}
               onChange={selectBand}
               placeholder="Select band"
               ariaLabel="Current band"
               options={bands.map((b) => ({ value: b.id, label: b.name }))}
             />
+            <Link href={overviewHref}>
+              <span className="rounded-md border border-neutral-300 px-[0.625rem] py-[0.625rem] text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900">
+                ➔
+              </span>
+            </Link>
           </div>
         )}
 
         {/* Right cluster: band picker + nav (inline on desktop, menu on mobile). */}
         <div className="flex items-center gap-2">
           {bands.length > 0 && (
-            <Select
-              className="hidden w-44 lg:block"
-              value={selectedBandId}
-              onChange={selectBand}
-              placeholder="Select band"
-              ariaLabel="Current band"
-              options={bands.map((b) => ({ value: b.id, label: b.name }))}
-            />
+            <span className="hidden lg:flex flex-nowrap items-center gap-1">
+              <Select
+                className="w-44"
+                value={selectedBandId}
+                onChange={selectBand}
+                placeholder="Select band"
+                ariaLabel="Current band"
+                options={bands.map((b) => ({ value: b.id, label: b.name }))}
+              />
+              <Link href={overviewHref}>
+                <span className="rounded-md border border-neutral-300 px-3 py-[0.625rem] text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900">
+                  ➔
+                </span>
+              </Link>
+            </span>
           )}
 
           {/* Desktop: inline links. */}
