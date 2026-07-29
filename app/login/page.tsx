@@ -1,6 +1,7 @@
 import { auth, signIn } from '@/auth';
 import { redirect } from 'next/navigation';
-import { CredentialsForm } from './CredentialsForm';
+// TODO: comment back in when email is available
+// import { CredentialsForm } from './CredentialsForm';
 
 export default async function LoginPage({
   searchParams,

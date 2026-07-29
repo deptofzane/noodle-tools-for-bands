@@ -53,9 +53,9 @@ export function EventSetlistActions({
   const downloadTarget = { bandId, setlistId, name: setlistName, songs };
 
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [setlists, setSetlists] = useState<{ id: string; name: string }[] | null>(
-    null,
-  );
+  const [setlists, setSetlists] = useState<
+    { id: string; name: string }[] | null
+  >(null);
   const [busy, setBusy] = useState(false);
 
   const openPicker = async () => {
@@ -66,7 +66,9 @@ export function EventSetlistActions({
         cache: 'no-store',
       });
       if (!r.ok) throw new Error();
-      const d = (await r.json()) as { setlists: { id: string; name: string }[] };
+      const d = (await r.json()) as {
+        setlists: { id: string; name: string }[];
+      };
       setSetlists(d.setlists.map((s) => ({ id: s.id, name: s.name })));
     } catch {
       setSetlists([]);
@@ -89,7 +91,10 @@ export function EventSetlistActions({
         await ensureOk(r);
       });
       setPickerOpen(false);
-      showToast(newSetlistId ? 'Setlist updated.' : 'Setlist removed.', 'success');
+      showToast(
+        newSetlistId ? 'Setlist updated.' : 'Setlist removed.',
+        'success',
+      );
       router.refresh();
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
@@ -115,9 +120,23 @@ export function EventSetlistActions({
         >
           Live
         </ActionMenuItem>
+        <ActionMenuItem
+          onClick={() => router.push(`/bands/${bandId}/setlists/${setlistId}`)}
+        >
+          View setlist
+        </ActionMenuItem>
+        <ActionMenuItem
+          onClick={() =>
+            router.push(`/bands/${bandId}/setlists/${setlistId}/edit`)
+          }
+        >
+          Edit setlist
+        </ActionMenuItem>
         {offlineRec ? (
           <>
-            <ActionMenuItem onClick={() => offline.openDownload(downloadTarget)}>
+            <ActionMenuItem
+              onClick={() => offline.openDownload(downloadTarget)}
+            >
               {downloading ? 'Downloading…' : 'Update offline copy'}
             </ActionMenuItem>
             <ActionMenuItem
@@ -133,13 +152,6 @@ export function EventSetlistActions({
             {downloading ? 'Downloading…' : 'Download for offline'}
           </ActionMenuItem>
         )}
-        <ActionMenuItem
-          onClick={() =>
-            router.push(`/bands/${bandId}/setlists/${setlistId}/edit`)
-          }
-        >
-          Edit setlist
-        </ActionMenuItem>
         <ActionMenuItem onClick={() => void openPicker()}>
           Choose different setlist
         </ActionMenuItem>

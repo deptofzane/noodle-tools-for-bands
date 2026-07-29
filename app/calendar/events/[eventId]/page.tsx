@@ -71,7 +71,8 @@ export default async function EventPage({
         </p>
       </div>
 
-      <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4 text-sm dark:border-neutral-800 mb-4">
+      {/* <section className="flex flex-col gap-2 rounded-lg text-sm mb-4"> */}
+      <section className="flex flex-col gap-2 rounded-lg text-sm mb-4">
         <div>
           <span className="font-medium">Date:</span>{' '}
           {formatDateLong(event.date)}
@@ -106,7 +107,7 @@ export default async function EventPage({
       </section>
 
       {event.details && (
-        <section className="rounded-lg border border-neutral-200 p-4 text-sm dark:border-neutral-800 mb-4">
+        <section className="rounded-lg text-sm mb-4">
           <CollapsibleSection title="Details" persistKey="eventDetailsOpen">
             <p className="mt-2 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
               {event.details}
@@ -116,7 +117,7 @@ export default async function EventPage({
       )}
 
       {canManage && event.notes && (
-        <section className="rounded-lg border border-neutral-200 p-4 text-sm dark:border-neutral-800 mb-4">
+        <section className="rounded-lg text-sm mb-4">
           <CollapsibleSection title="Notes" persistKey="eventNotesOpen">
             <p className="mt-2 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
               {event.notes}
@@ -126,16 +127,16 @@ export default async function EventPage({
       )}
 
       {setlist && (
-        <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-4 py-2 dark:border-neutral-800 mb-4">
+        <section className="flex flex-col gap-2 border-t border-b border-neutral-200 py-2 dark:border-neutral-800 mt-2 mb-4">
           <span className="flex justify-between items-center">
               <Link
                 href={`/bands/${event.bandId}/setlists/${setlist.id}`}
                 className="hover:underline flex gap-1"
               >
-                <h2 className="text-sm font-normal text-neutral-200">
+                <h2 className="text-default font-normal text-neutral-200">
                   Setlist:
                 </h2>
-                <h2 className="text-sm font-medium">{setlist.name}</h2>
+                <h2 className="text-default font-medium">{setlist.name}</h2>
               </Link>
             {canManage && (
               <EventSetlistActions

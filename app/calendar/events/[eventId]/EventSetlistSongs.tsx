@@ -112,7 +112,7 @@ export function EventSetlistSongs({
                   >
                     {expanded.has(s.id) ? '▾' : '▸'}
                   </span>
-                  <span className="min-w-0 truncate">
+                  <span className="min-w-0 truncate py-3">
                     {s.name}
                     {s.songLength != null && (
                       <span className="text-neutral-400">
@@ -160,7 +160,7 @@ export function EventSetlistSongs({
           ) : (
             <li
               key={s.id}
-              className="text-xs font-semibold uppercase tracking-wide text-neutral-500"
+              className="text-xs font-semibold uppercase tracking-wide text-neutral-500 pl-4"
             >
               {s.name}
             </li>

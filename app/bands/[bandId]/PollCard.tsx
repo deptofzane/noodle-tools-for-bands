@@ -133,14 +133,14 @@ export function PollCard({
 
       {expanded && (
         <div className="flex flex-col gap-2 px-4 pb-3 md:px-3 mt-1">
-          {loading && <p className="text-xs text-neutral-500">Loading…</p>}
+          {loading && <p className="text-xs text-neutral-500 mt-2">Loading…</p>}
           {error && (
             <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
           )}
           {poll && (
             <>
               {poll.description && (
-                <p className="whitespace-pre-wrap text-sm text-neutral-600 dark:text-neutral-400">
+                <p className="whitespace-pre-wrap text-sm text-neutral-600 dark:text-neutral-400 mt-2">
                   {poll.description}
                 </p>
               )}

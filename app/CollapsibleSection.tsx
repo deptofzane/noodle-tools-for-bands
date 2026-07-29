@@ -91,7 +91,7 @@ function CollapsibleShell({
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        className="flex items-center gap-1.5 self-start text-left text-sm font-medium"
+        className="flex items-center gap-1.5 self-start text-left text-sm font-medium w-full"
       >
         <span
           aria-hidden="true"

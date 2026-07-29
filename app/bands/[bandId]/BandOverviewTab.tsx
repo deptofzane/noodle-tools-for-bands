@@ -14,6 +14,7 @@ import { usePersistedStringSet } from '../../usePersistedStringSet';
 import { useOfflineDownload } from '../../offline/useOfflineDownload';
 import { MinimizeToggle, type Setlist, type Show } from './bandDetailShared';
 import { MapLink } from '../../MapLink';
+import { CollapsibleSection } from '@/app/CollapsibleSection';
 
 /**
  * The Overview tab: upcoming Shows, Past shows, and (for non-owners) a Leave
@@ -179,10 +180,9 @@ export function BandOverviewTab({
               <span className="font-medium">Date:</span>{' '}
               {formatDateLong(show.date)}
             </div>
-            {show.time && (
+            {show.venueName && (
               <div>
-                <span className="font-medium">Time:</span>{' '}
-                {formatTimeRange(show.time, show.endTime)}
+                <span className="font-medium">Venue:</span> {show.venueName}
               </div>
             )}
             {show.location && (
@@ -191,9 +191,10 @@ export function BandOverviewTab({
                 <MapLink address={show.location} />
               </div>
             )}
-            {show.venueName && (
+            {show.time && (
               <div>
-                <span className="font-medium">Venue:</span> {show.venueName}
+                <span className="font-medium">Time:</span>{' '}
+                {formatTimeRange(show.time, show.endTime)}
               </div>
             )}
             {show.setlistId && (
@@ -221,21 +222,28 @@ export function BandOverviewTab({
                 ) : null}
               </div>
             )}
+
             {show.details && (
-              <div className="flex flex-col gap-0.5">
-                <span className="font-medium">Details:</span>
-                <p className="whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
-                  {show.details}
-                </p>
-              </div>
+              <section className="rounded-lg py-4 text-sm">
+                <CollapsibleSection
+                  title="Details"
+                  persistKey="eventDetailsOpen"
+                >
+                  <p className="mt-2 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+                    {show.details}
+                  </p>
+                </CollapsibleSection>
+              </section>
             )}
+
             {show.notes && (
-              <div className="flex flex-col gap-0.5">
-                <span className="font-medium">Notes:</span>
-                <p className="whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
-                  {show.notes}
-                </p>
-              </div>
+              <section className="rounded-lg py-4 text-sm">
+                <CollapsibleSection title="Notes" persistKey="eventNotesOpen">
+                  <p className="mt-2 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+                    {show.notes}
+                  </p>
+                </CollapsibleSection>
+              </section>
             )}
           </div>
         )}
