@@ -124,6 +124,11 @@ export function BandsClient({ currentUserId }: { currentUserId: string }) {
                 </span>
               </Link>
               <ActionMenu label="Band actions">
+                <ActionMenuItem
+                  onClick={() => router.push(`/bands/${band.id}`)}
+                >
+                  View band
+                </ActionMenuItem>
                 {band.role === 'owner' && (
                   <ActionMenuItem
                     onClick={() => router.push(`/bands/${band.id}/edit`)}

@@ -4,10 +4,7 @@ import {
   getUnreadNotificationCount,
   listNotifications,
 } from '@/lib/db/notifications';
-import {
-  getNextEventForUser,
-  listEventsForUserInRange,
-} from '@/lib/db/events';
+import { getNextEventForUser, listEventsForUserInRange } from '@/lib/db/events';
 import { listOpenPollsForUser } from '@/lib/db/polls';
 import { listMyBands } from '@/lib/db/bands';
 import { NotificationList } from './NotificationList';
@@ -59,7 +56,6 @@ export default async function HomePage() {
   const myBandIds = myBands.map((b) => b.id);
 
   return (
-    // <main className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-4">
     <main className="main-container pt-2">
       <HomePushNudge />
       <RecentEvents shows={showsBuffer} bandIds={myBandIds} />
@@ -76,12 +72,15 @@ export default async function HomePage() {
       />
 
       <div className="rounded-lg border border-neutral-200 p-4 text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">
-        Audio and conversations are organized by band now. Open a{' '}
-        <Link href="/bands" className="text-blue-600 underline dark:text-blue-400">
+        Audio and conversations are organized by band. Open or create a{' '}
+        <Link
+          href="/bands"
+          className="text-blue-600 underline dark:text-blue-400"
+        >
           band
         </Link>{' '}
-        to register audio (via the Drive picker) and open its conversations,
-        or jump to your{' '}
+        to register audio (via the Drive picker) and open its conversations, or
+        jump to your{' '}
         <Link
           href="/open-conversations"
           className="text-blue-600 underline dark:text-blue-400"

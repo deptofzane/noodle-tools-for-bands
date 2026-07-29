@@ -36,6 +36,7 @@ export function BandMembersTab({
   onReload: () => Promise<void> | void;
 }) {
   const [polls, setPolls] = useState<PollSummary[] | null>(null);
+  const [pollsLoaded, setPollsLoaded] = useState(false)
   const [promoteTarget, setPromoteTarget] = useState<Member | null>(null);
   const [promoting, setPromoting] = useState(false);
   const trackPending = useTrackPending();
@@ -58,7 +59,10 @@ export function BandMembersTab({
         });
         if (!res.ok) return;
         const data = (await res.json()) as { polls: PollSummary[] };
-        if (!cancelled) setPolls(data.polls);
+        if (!cancelled) {
+          setPolls(data.polls);
+          setPollsLoaded(true);
+        }
       } catch {
         // best-effort; the section just stays empty
       }
@@ -122,6 +126,11 @@ export function BandMembersTab({
             New poll
           </Link>
         </div>
+        {!pollsLoaded && (
+          <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+            Loading polls...
+          </p>
+        )}
         {polls && polls.length === 0 && (
           <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
             No polls yet. Use “New poll” to ask the band something.
