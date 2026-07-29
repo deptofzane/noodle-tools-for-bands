@@ -29,17 +29,19 @@ export default async function SetlistPage({
   // Count / duration reflect actual songs, not markers (set breaks etc.).
   const playable = setlist.songs.filter((s) => s.conversationId);
   const songCount = playable.length;
-  const totalSeconds = playable.reduce((sum, s) => sum + (s.songLength ?? 0), 0);
+  const totalSeconds = playable.reduce(
+    (sum, s) => sum + (s.songLength ?? 0),
+    0,
+  );
   // Whether every song contributed a known length (else the total is partial).
   const allKnown = playable.every((s) => s.songLength != null);
 
   // Render rows with manual song numbering so markers aren't numbered.
-  let songNo = 0;
-  const itemRows = setlist.songs.map((s) => {
+  const itemRows = setlist.songs.map((s, i) => {
+    const songNo = i + 1;
     if (s.conversationId) {
-      songNo += 1;
       return (
-        <li key={s.id} className="flex items-baseline gap-3 text-sm">
+        <li key={s.id} className="flex items-center gap-3 text-sm">
           <span className="w-5 shrink-0 text-right text-xs text-neutral-400">
             {songNo}
           </span>
@@ -68,8 +70,12 @@ export default async function SetlistPage({
       );
     }
     return (
-      <li key={s.id} className="flex items-baseline gap-3">
-        <span className="w-5 shrink-0" aria-hidden="true" />
+      <li key={s.id} className="flex items-center gap-3 py-3">
+        {/* <span className="w-5 shrink-0" aria-hidden="true" /> */}
+        {/* TODO: SETBREAK MARKER */}
+        <span className="w-5 shrink-0 text-right text-xs text-neutral-400">
+          {songNo}
+        </span>
         <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
           {s.name}
         </span>
@@ -89,38 +95,36 @@ export default async function SetlistPage({
           </Link>
         </span>
       </PageHeader>
-    <span className="flex justify-between">
-      <div className="flex flex-col gap-1">
-        <h1 className="title-text">
-          {setlist.name}
-        </h1>
-        <p className="text-sm text-neutral-500 pb-4">
-          {songCount} {songCount === 1 ? 'song' : 'songs'}
-          {songCount > 0 && (
-            <>
-              {' · '}
-              {allKnown ? '' : '~'}
-              {formatDuration(totalSeconds)}
-            </>
-          )}
-        </p>
-      </div>
-          {songCount > 0 && (
-            <SetlistActions
-              bandId={bandId}
-              setlistId={setlistId}
-              name={setlist.name}
-              songs={setlist.songs}
-            />
-          )}
-    </span>
+      <span className="flex justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="title-text">{setlist.name}</h1>
+          <p className="text-sm text-neutral-500 pb-4">
+            {songCount} {songCount === 1 ? 'song' : 'songs'}
+            {songCount > 0 && (
+              <>
+                {' · '}
+                {allKnown ? '' : '~'}
+                {formatDuration(totalSeconds)}
+              </>
+            )}
+          </p>
+        </div>
+        {songCount > 0 && (
+          <SetlistActions
+            bandId={bandId}
+            setlistId={setlistId}
+            name={setlist.name}
+            songs={setlist.songs}
+          />
+        )}
+      </span>
 
       {setlist.songs.length === 0 ? (
-        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+        <p className="rounded-md border border-neutral-200 px-1 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
           This setlist has no songs.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-4 py-3 dark:border-neutral-800">
+        <ul className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-1 py-3 dark:border-neutral-800">
           {itemRows}
         </ul>
       )}

@@ -257,7 +257,7 @@ export function SheetMusic({
   const hasSheet = (versions?.length ?? 0) > 0;
 
   return (
-    <section className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-4 py-2 dark:border-neutral-800">
+    <section className="flex flex-col gap-2 border-b border-neutral-200 py-2 dark:border-neutral-800">
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-2">
           <button
@@ -265,11 +265,11 @@ export function SheetMusic({
             onClick={() => setIsMinimized((v) => !v)}
             aria-label={isMinimized ? 'Expand sheet music' : 'Minimize sheet music'}
             aria-expanded={!isMinimized}
-            className="-mr-1 px-2 py-2 text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+            className="-mr-1 flex gap-2 w-full px-2 py-2 text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
           >
             <span aria-hidden="true">{isMinimized ? '▸' : '▾'}</span>
+            <h2 className="text-sm text-nowrap font-medium">Sheet music</h2>
           </button>
-          <h2 className="text-sm font-medium">Sheet music</h2>
           {isMinimized && !hasSheet && versions !== null && (
             <span className="truncate text-xs text-red-300">
               <span aria-hidden="true">·</span> None available

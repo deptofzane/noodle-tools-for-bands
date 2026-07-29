@@ -223,7 +223,7 @@ export function BandSetlistsTab({
                     'truncate ' +
                     (s.conversationId
                       ? ''
-                      : 'text-xs font-semibold uppercase tracking-wide text-neutral-400')
+                      : 'text-xs py-1 font-semibold uppercase tracking-wide text-neutral-400')
                   }
                 >
                   <ol>

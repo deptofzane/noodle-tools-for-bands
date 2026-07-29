@@ -75,7 +75,7 @@ export function ActionMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={label}
-        className="rounded-md px-4 py-3 md:px-2 md:py-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 disabled:opacity-50 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+        className="rounded-md px-4 py-3 md:px-2 md:py-1 my-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 disabled:opacity-50 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
       >
         <span aria-hidden="true">⋯</span>
       </button>

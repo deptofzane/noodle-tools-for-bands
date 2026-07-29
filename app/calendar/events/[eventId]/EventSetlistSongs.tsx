@@ -153,6 +153,7 @@ export function EventSetlistSongs({
                     )}`}
                     fileName={s.name}
                     mimeType="audio/mpeg"
+                    hasPracticeOptions={false}
                   />
                 </PlayerProvider>
               )}

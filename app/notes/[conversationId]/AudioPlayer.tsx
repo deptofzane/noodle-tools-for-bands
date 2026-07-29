@@ -35,6 +35,8 @@ type AudioPlayerProps = {
    */
   conversationId?: string;
   versions?: PlayerVersion[];
+  // Practice options refer to the 10s forward and backup, as well as the ability to adjust speed
+  hasPracticeOptions?: boolean;
 };
 
 const SPEEDS = [0.5, 0.6, 0.7, 0.8, 0.9, 1] as const;
@@ -61,6 +63,7 @@ export function AudioPlayer({
   sticky = false,
   conversationId,
   versions,
+  hasPracticeOptions = true,
 }: AudioPlayerProps) {
   const { setEngine } = usePlayer();
   const engineRef = useRef<AudioEngine | null>(null);
@@ -78,7 +81,9 @@ export function AudioPlayer({
   // Version switching. When versions are supplied, the player streams the
   // selected one (defaulting to the version flagged `isDefault`); otherwise
   // it falls back to the `src`/`fileName`/`mimeType` props.
-  const hasVersions = Boolean(conversationId && versions && versions.length > 0);
+  const hasVersions = Boolean(
+    conversationId && versions && versions.length > 0,
+  );
   const [selectedVersionId, setSelectedVersionId] = useState(
     () => versions?.find((v) => v.isDefault)?.id ?? versions?.[0]?.id ?? '',
   );
@@ -94,7 +99,9 @@ export function AudioPlayer({
   const effectiveFileName = selectedVersion
     ? selectedVersion.label || selectedVersion.fileName
     : fileName;
-  const effectiveMimeType = selectedVersion ? selectedVersion.mimeType : mimeType;
+  const effectiveMimeType = selectedVersion
+    ? selectedVersion.mimeType
+    : mimeType;
 
   // Hydrate the panel's open/closed state from localStorage after mount.
   // Reading in a `useEffect` (rather than a lazy initializer) keeps the
@@ -372,99 +379,107 @@ export function AudioPlayer({
           aria-label="Seek"
         />
 
-        <button
-          type="button"
-          onClick={toggleOptions}
-          aria-expanded={optionsOpen}
-          aria-controls="audio-player-options"
-          aria-label="Playback options"
-          title="Playback options"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-            className={
-              'transition-transform' + (optionsOpen ? ' rotate-180' : '')
-            }
+        {(hasPracticeOptions || hasVersions) && (
+          <button
+            type="button"
+            onClick={toggleOptions}
+            aria-expanded={optionsOpen}
+            aria-controls="audio-player-options"
+            aria-label="Playback options"
+            title="Playback options"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
           >
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </button>
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className={
+                'transition-transform' + (optionsOpen ? ' rotate-180' : '')
+              }
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        )}
       </div>
 
-      {optionsOpen && (
-        <div
-          id="audio-player-options"
-          className="mt-3 flex flex-wrap items-center gap-3 border-t border-neutral-200 pt-3 dark:border-neutral-800"
-        >
-          <button
-            type="button"
-            onClick={back10}
-            disabled={!isReady}
-            aria-label="Back 10 seconds"
-            title="Back 10 seconds"
-            className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+      {optionsOpen &&
+        (hasPracticeOptions || (hasVersions && versions!.length > 1)) && (
+          <div
+            id="audio-player-options"
+            className="mt-3 flex flex-wrap items-center gap-3 border-t border-neutral-200 pt-3 dark:border-neutral-800"
           >
-            <span aria-hidden="true">↺</span>10s
-          </button>
+            {hasPracticeOptions && (
+              <>
+                <button
+                  type="button"
+                  onClick={back10}
+                  disabled={!isReady}
+                  aria-label="Back 10 seconds"
+                  title="Back 10 seconds"
+                  className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+                >
+                  <span aria-hidden="true">↺</span>10s
+                </button>
 
-          <button
-            type="button"
-            onClick={forward10}
-            disabled={!isReady}
-            aria-label="Forward 10 seconds"
-            title="Forward 10 seconds"
-            className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
-          >
-            10s<span aria-hidden="true">↻</span>
-          </button>
+                <button
+                  type="button"
+                  onClick={forward10}
+                  disabled={!isReady}
+                  aria-label="Forward 10 seconds"
+                  title="Forward 10 seconds"
+                  className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+                >
+                  10s<span aria-hidden="true">↻</span>
+                </button>
 
-          <label className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
-            Speed
-            <select
-              value={rate}
-              onChange={(e) => setRate(parseFloat(e.target.value))}
-              disabled={!isReady}
-              aria-label="Playback speed"
-              title="Playback speed"
-              className="shrink-0 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900"
-            >
-              {SPEEDS.map((s) => (
-                <option key={s} value={s}>
-                  {s === 1 ? '100%' : `${Math.round(s * 100)}%`}
-                </option>
-              ))}
-            </select>
-          </label>
+                <label className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+                  Speed
+                  <select
+                    value={rate}
+                    onChange={(e) => setRate(parseFloat(e.target.value))}
+                    disabled={!isReady}
+                    aria-label="Playback speed"
+                    title="Playback speed"
+                    className="shrink-0 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900"
+                  >
+                    {SPEEDS.map((s) => (
+                      <option key={s} value={s}>
+                        {s === 1 ? '100%' : `${Math.round(s * 100)}%`}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            )}
 
-          {hasVersions && versions!.length > 1 && (
-            <label className="flex min-w-0 items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
-              Version
-              <select
-                value={selectedVersionId}
-                onChange={(e) => setSelectedVersionId(e.target.value)}
-                aria-label="Audio version"
-                title="Audio version"
-                className="min-w-0 max-w-[10rem] truncate rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
-              >
-                {versions!.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {(v.label || v.fileName) + (v.isDefault ? ' (default)' : '')}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-        </div>
-      )}
+            {hasVersions && versions!.length > 1 && (
+              <label className="flex min-w-0 items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+                Version
+                <select
+                  value={selectedVersionId}
+                  onChange={(e) => setSelectedVersionId(e.target.value)}
+                  aria-label="Audio version"
+                  title="Audio version"
+                  className="min-w-0 max-w-[10rem] truncate rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+                >
+                  {versions!.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {(v.label || v.fileName) +
+                        (v.isDefault ? ' (default)' : '')}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+        )}
 
       {!isReady && !error && (
         <p className="mt-3 text-xs text-neutral-500">Loading audio…</p>
