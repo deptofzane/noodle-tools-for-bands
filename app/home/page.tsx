@@ -60,7 +60,7 @@ export default async function HomePage() {
 
   return (
     // <main className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-4">
-    <main className="main-container">
+    <main className="main-container pt-2">
       <HomePushNudge />
       <RecentEvents shows={showsBuffer} bandIds={myBandIds} />
       <UpcomingShows
