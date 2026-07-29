@@ -141,28 +141,26 @@ export function BandOverviewTab({
             >
               Edit event
             </ActionMenuItem>
-            {show.setlistId && (
-              <>
-                <ActionMenuItem
-                  onClick={() =>
-                    router.push(`/bands/${bandId}/setlists/${show.setlistId}`)
-                  }
-                >
-                  View setlist
-                </ActionMenuItem>
-                <ActionMenuItem
-                  onClick={() =>
-                    router.push(`/bands/${bandId}/setlists/${show.setlistId}/edit`)
-                  }
-                >
-                  Edit setlist
-                </ActionMenuItem>
-              </>
-            )}
             {canDownload &&
               downloadTarget &&
               (offlineRec ? (
                 <>
+                  <ActionMenuItem
+                    onClick={() =>
+                      router.push(`/bands/${bandId}/setlists/${show.setlistId}`)
+                    }
+                  >
+                    View setlist
+                  </ActionMenuItem>
+                  <ActionMenuItem
+                    onClick={() =>
+                      router.push(
+                        `/bands/${bandId}/setlists/${show.setlistId}/edit`,
+                      )
+                    }
+                  >
+                    Edit setlist
+                  </ActionMenuItem>
                   <ActionMenuItem
                     onClick={() =>
                       router.push(
