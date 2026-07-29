@@ -247,7 +247,7 @@ export default async function SettingsPage({
   ];
 
   return (
-    <main className="main-container">
+    <main className="main-container pt-2">
       <div>
         <h1 className="title-text">Settings</h1>
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">

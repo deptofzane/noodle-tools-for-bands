@@ -32,7 +32,7 @@ export default async function EditSetlistPage({
     }));
 
   return (
-    <main className="main-container">
+    <main className="main-container pt-2">
       <EditSetlistClient
         bandId={bandId}
         setlistId={setlistId}
