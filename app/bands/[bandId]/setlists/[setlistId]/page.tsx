@@ -71,8 +71,6 @@ export default async function SetlistPage({
     }
     return (
       <li key={s.id} className="flex items-center gap-3 py-3">
-        {/* <span className="w-5 shrink-0" aria-hidden="true" /> */}
-        {/* TODO: SETBREAK MARKER */}
         <span className="w-5 shrink-0 text-right text-xs text-neutral-400">
           {songNo}
         </span>

@@ -71,32 +71,34 @@ export function Practice({
           <span aria-hidden="true">‹</span>
         </button>
 
-        <SetlistNav
-          songs={songs.map((s) => ({
-            title: s.title,
-            isMarker: !s.conversationId,
-          }))}
-          current={current}
-          onSelect={setIndex}
-          align="center"
-        >
-          <span className="text-sm">
-            <span className="font-medium">{song.title}</span>
-            <span className="text-neutral-500">
-              {' '}
-              - {current + 1}/{total}
-            </span>
-          </span>
-        </SetlistNav>
-
-        {song.conversationId && (
-          <Link
-            href={`/notes/${song.conversationId}/edit`}
-            className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+        <span className="flex gap-3 items-center">
+          <SetlistNav
+            songs={songs.map((s) => ({
+              title: s.title,
+              isMarker: !s.conversationId,
+            }))}
+            current={current}
+            onSelect={setIndex}
+            align="center"
           >
-            Edit song
-          </Link>
-        )}
+            <span className="text-sm">
+              <span className="font-medium">{song.title}</span>
+              <span className="text-neutral-500">
+                {' '}
+                - {current + 1}/{total}
+              </span>
+            </span>
+          </SetlistNav>
+
+          {song.conversationId && (
+            <Link
+              href={`/notes/${song.conversationId}/edit`}
+              className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+            >
+              Edit song
+            </Link>
+          )}
+        </span>
 
         <button
           type="button"
@@ -120,13 +122,13 @@ export function Practice({
               mimeType={song.mimeType ?? 'audio/mpeg'}
               sticky
             />
-              <SheetMusic
-                conversationId={song.conversationId}
-                apiKey={apiKey}
-                initial={song.sheetMusic}
-                startClosed={false}
-                zoomKey={song.conversationId}
-              />
+            <SheetMusic
+              conversationId={song.conversationId}
+              apiKey={apiKey}
+              initial={song.sheetMusic}
+              startClosed={false}
+              zoomKey={song.conversationId}
+            />
           </div>
         </PlayerProvider>
       ) : (
