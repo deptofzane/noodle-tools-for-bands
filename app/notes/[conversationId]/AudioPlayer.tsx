@@ -437,7 +437,7 @@ export function AudioPlayerView({
   return (
     <div
       className={
-        'rounded-lg border border-neutral-200 p-4 dark:border-neutral-800' +
+        'border border-neutral-200 p-4 dark:border-neutral-800' +
         (sticky ? ' sticky top-0 z-30 bg-white dark:bg-neutral-950' : '')
       }
     >

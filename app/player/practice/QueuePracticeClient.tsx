@@ -2,10 +2,23 @@
 
 import { useCallback, useEffect, useState, type SetStateAction } from 'react';
 import Link from 'next/link';
+import { PageHeader } from '../../PageHeader';
 import { Practice, type PracticeSong } from '../../Practice';
 import { LoadingBlock } from '../../Spinner';
 import { usePlaylistPlayer, type PlaylistTrack } from '../PlaylistPlayer';
 import { QueuePlayerBar } from '../QueuePlayerBar';
+
+/** Where back goes from here — the queue can be reached from anywhere. */
+const BACK = { href: '/home', name: 'Home' };
+
+/** The header for the states Practice isn't rendering (loading / nothing queued). */
+function PracticeHeader() {
+  return (
+    <div className="px-4 py-0">
+      <PageHeader defaultHref={BACK.href} defaultHrefName={BACK.name} />
+    </div>
+  );
+}
 
 /**
  * Practice whatever is in the player's queue: the same songs in the same
@@ -57,19 +70,30 @@ export function QueuePracticeClient({ apiKey }: { apiKey: string }) {
 
   // On a cold load the queue arrives from localStorage a beat after mount —
   // wait for it rather than flashing "nothing queued" at someone who has a set
-  // waiting.
-  if (!hydrated) return <LoadingBlock />;
+  // waiting. Practice renders the header once it takes over, so these two
+  // states carry their own — the page has none of its own to show.
+  if (!hydrated) {
+    return (
+      <>
+        <PracticeHeader />
+        <LoadingBlock />
+      </>
+    );
+  }
 
   if (tracks.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-md border border-neutral-200 px-3 py-10 text-center dark:border-neutral-800">
-        <p className="text-sm text-neutral-500">
-          Nothing is queued to practice.
-        </p>
-        <Link href="/home" className="btn-outline">
-          Find something to play
-        </Link>
-      </div>
+      <>
+        <PracticeHeader />
+        <div className="mx-4 flex flex-col items-center gap-3 rounded-md border border-neutral-200 px-3 py-10 text-center dark:border-neutral-800">
+          <p className="text-sm text-neutral-500">
+            Nothing is queued to practice.
+          </p>
+          <Link href="/home" className="btn-outline">
+            Find something to play
+          </Link>
+        </div>
+      </>
     );
   }
 
@@ -94,6 +118,7 @@ export function QueuePracticeClient({ apiKey }: { apiKey: string }) {
           onIdlePlay={requeue}
         />
       }
+      back={BACK}
     />
   );
 }

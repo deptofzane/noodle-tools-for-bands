@@ -2,7 +2,6 @@ import { notFound, redirect } from 'next/navigation';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getConversationMembership } from '@/lib/db/conversations';
 import { getConversationPracticeSong } from '@/lib/db/setlists';
-import { PageHeader } from '../../../PageHeader';
 import { Practice } from '../../../Practice';
 
 /**
@@ -28,14 +27,13 @@ export default async function SongPracticePage({
 
   return (
     <main className="">
-      <div className="px-4 py-0">
-        <PageHeader
-          defaultHref={`/notes/${conversationId}`}
-          defaultHrefName="Song"
-        />
-      </div>
-
-      <Practice songs={[song]} apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ''} />
+      {/* Practice renders the page header — "Edit song" in it has to follow
+          whichever song you've stepped to. */}
+      <Practice
+        songs={[song]}
+        apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ''}
+        back={{ href: `/notes/${conversationId}`, name: 'Song' }}
+      />
     </main>
   );
 }

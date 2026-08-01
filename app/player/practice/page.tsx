@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
 import { getCurrentDbUser } from '@/lib/current-user';
-import { PageHeader } from '../../PageHeader';
 import { QueuePracticeClient } from './QueuePracticeClient';
 
 /**
@@ -14,10 +13,8 @@ export default async function QueuePracticePage() {
 
   return (
     <main>
-      <div className="px-4 py-0">
-        <PageHeader defaultHref="/home" defaultHrefName="Home" />
-      </div>
-
+      {/* The header is the client's — Practice puts "Edit song" in it, and it
+          has to follow whichever song you've stepped to. */}
       <QueuePracticeClient
         apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ''}
       />

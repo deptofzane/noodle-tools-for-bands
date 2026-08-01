@@ -2,6 +2,7 @@
 
 import { PlayerProvider } from './notes/[conversationId]/PlayerContext';
 import { AudioPlayer } from './notes/[conversationId]/AudioPlayer';
+import { PageHeader } from './PageHeader';
 import { SetlistNav } from './SetlistNav';
 import { usePersistedIndex } from './usePersistedIndex';
 import {
@@ -31,9 +32,11 @@ export interface PracticeSong {
 /**
  * Step through a setlist one song at a time for practice: a nav bar with
  * back/forward plus "{title} - {n}/{total}", the music player, and the song's
- * sheet music (if any). Narrow screens stack those top to bottom; from `lg`
- * up (unless `wideLayout` is off) the nav and player move into a sticky left
- * rail and the sheet music takes the rest of the width.
+ * sheet music (if any). Narrow screens stack those top to bottom, with the nav
+ * and player pinned to the top of the viewport while the sheet music scrolls
+ * under them; from `lg` up (unless `wideLayout` is off) the nav and player
+ * move into a sticky left rail and the sheet music takes the rest of the
+ * width.
  *
  * By default each song gets a fresh player (the provider is keyed by
  * conversation id), so switching tears down the old audio engine and spins up
@@ -50,6 +53,7 @@ export function Practice({
   onNavigate,
   wideLayout = true,
   playerSlot,
+  back,
 }: {
   songs: PracticeSong[];
   apiKey: string;
@@ -76,6 +80,12 @@ export function Practice({
    * one, and stepping songs is the caller's business (see `onIndexChange`).
    */
   playerSlot?: ReactNode;
+  /**
+   * Where the page's back link goes. Given one, Practice renders the page
+   * header itself so "Edit song" can sit in it — the link points at whichever
+   * song you've stepped to, which only this component knows.
+   */
+  back?: { href: string; name?: string };
 }) {
   const [ownIndex, setOwnIndex] = usePersistedIndex(
     persistKey ?? null,
@@ -85,11 +95,25 @@ export function Practice({
   const index = controlled ? controlledIndex : ownIndex;
   const setIndex = controlled ? onIndexChange : setOwnIndex;
 
+  // The page header, when we own it. `song` isn't resolved yet at the empty
+  // check below, so the Edit link is passed in by each caller of this.
+  const header = (action?: ReactNode) =>
+    back && (
+      <div className="px-4 py-0">
+        <PageHeader defaultHref={back.href} defaultHrefName={back.name}>
+          {action}
+        </PageHeader>
+      </div>
+    );
+
   if (songs.length === 0) {
     return (
-      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
-        This setlist has no songs to practice.
-      </p>
+      <>
+        {header()}
+        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+          This setlist has no songs to practice.
+        </p>
+      </>
     );
   }
 
@@ -121,106 +145,119 @@ export function Practice({
       : '');
   const mainCls = 'min-w-0' + (wideLayout ? ' lg:flex-1' : '');
 
+  // Mobile: pin the whole control group — song nav and player — to the top so
+  // it's still there once you've scrolled into the sheet music. It has to be
+  // this element rather than the player itself: a sticky box can only travel
+  // inside its parent, and the player is the last thing in this one. `top-0`
+  // is clear on mobile (the app's nav bar is pinned to the bottom there).
+  // Desktop is unaffected — the rail inside does its own sticking.
+  const colCls =
+    'sticky top-0 z-40 bg-white dark:bg-neutral-950' +
+    (wideLayout ? ' lg:static lg:z-auto lg:bg-transparent' : '');
+
   const layout = (
-    <div className={rowCls}>
-      <div>
-        <div className={railCls}>
-          <div className="flex items-center justify-between gap-2 px-2">
-            <button
-              type="button"
-              onClick={() => setIndex((i) => Math.max(0, i - 1))}
-              disabled={!canBack}
-              aria-label="Previous song"
-              className={navBtn}
-            >
-              <span aria-hidden="true">‹</span>
-            </button>
+    <>
+      {header(
+        song.conversationId && (
+          <Link
+            href={`/notes/${song.conversationId}/edit`}
+            onClick={onNavigate}
+            className="py-4 hover:text-neutral-900 dark:hover:text-neutral-100"
+          >
+            Edit song
+          </Link>
+        ),
+      )}
 
-            {/* In the rail the title and Edit stack, so the title keeps its
+      <div className={rowCls}>
+        <div className={colCls}>
+          <div className={railCls}>
+            <div className="flex items-center justify-between gap-2 px-2">
+              <button
+                type="button"
+                onClick={() => setIndex((i) => Math.max(0, i - 1))}
+                disabled={!canBack}
+                aria-label="Previous song"
+                className={navBtn}
+              >
+                <span aria-hidden="true">‹</span>
+              </button>
+
+              {/* In the rail the title and Edit stack, so the title keeps its
               width instead of fighting the button for it. */}
-            <span
-              className={
-                'flex min-w-0 gap-3 items-center' +
-                (wideLayout ? ' lg:flex-col lg:items-start lg:gap-1' : '')
-              }
-            >
-              <SetlistNav
-                songs={songs.map((s) => ({
-                  title: s.title,
-                  isMarker: !s.conversationId,
-                }))}
-                current={current}
-                onSelect={setIndex}
-                align="center"
+              <span
+                className={
+                  'flex min-w-0 gap-3 items-center' +
+                  (wideLayout ? ' lg:flex-col lg:items-start lg:gap-1' : '')
+                }
               >
-                <span className="text-sm">
-                  <span className="font-medium">{song.title}</span>
-                  <span className="text-neutral-500">
-                    {' '}
-                    - {current + 1}/{total}
+                <SetlistNav
+                  songs={songs.map((s) => ({
+                    title: s.title,
+                    isMarker: !s.conversationId,
+                  }))}
+                  current={current}
+                  onSelect={setIndex}
+                  align="center"
+                >
+                  <span className="text-sm">
+                    <span className="font-medium">{song.title}</span>
+                    <span className="text-neutral-500">
+                      {' '}
+                      - {current + 1}/{total}
+                    </span>
                   </span>
-                </span>
-              </SetlistNav>
-            </span>
+                </SetlistNav>
+              </span>
 
-            <button
-              type="button"
-              onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}
-              disabled={!canForward}
-              aria-label="Next song"
-              className={navBtn}
-            >
-              <span aria-hidden="true">›</span>
-            </button>
-          </div>
-          <div className="w-[6rem] m-auto h-[4rem]">
-            {song.conversationId && (
-              <Link
-                href={`/notes/${song.conversationId}/edit`}
-                onClick={onNavigate}
-                className="shrink-0 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+              <button
+                type="button"
+                onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}
+                disabled={!canForward}
+                aria-label="Next song"
+                className={navBtn}
               >
-                Edit song
-              </Link>
-            )}
+                <span aria-hidden="true">›</span>
+              </button>
+            </div>
           </div>
+
+          {song.conversationId &&
+            (playerSlot ?? (
+              <AudioPlayer
+                src={
+                  song.src ??
+                  `/api/conversations/${song.conversationId}/files/audio?name=${encodeURIComponent(
+                    song.title,
+                  )}`
+                }
+                fileName={song.title}
+                mimeType={song.mimeType ?? 'audio/mpeg'}
+                sticky
+              />
+            ))}
         </div>
 
-        {song.conversationId &&
-          (playerSlot ?? (
-            <AudioPlayer
-              src={
-                song.src ??
-                `/api/conversations/${song.conversationId}/files/audio?name=${encodeURIComponent(
-                  song.title,
-                )}`
-              }
-              fileName={song.title}
-              mimeType={song.mimeType ?? 'audio/mpeg'}
-              sticky
+        <div className={mainCls}>
+          {song.conversationId ? (
+            <SheetMusic
+              conversationId={song.conversationId}
+              apiKey={apiKey}
+              initial={song.sheetMusic}
+              startClosed={false}
+              zoomKey={song.conversationId}
             />
-          ))}
+          ) : (
+            <div className="flex flex-col items-center justify-center border-t border-b border-dashed border-neutral-300 py-16 text-center dark:border-neutral-700 lg:mr-4 lg:ml-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                Break
+              </p>
+              <p className="mt-1 text-lg font-medium">{song.title}</p>
+            </div>
+          )}
+        </div>
       </div>
-
-      <div className={mainCls}>
-        {song.conversationId ? (
-          <SheetMusic
-            conversationId={song.conversationId}
-            apiKey={apiKey}
-            initial={song.sheetMusic}
-            startClosed={false}
-            zoomKey={song.conversationId}
-          />
-        ) : (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-neutral-300 py-16 text-center dark:border-neutral-700 mr-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
-              Break
-            </p>
-            <p className="mt-1 text-lg font-medium">{song.title}</p>
-          </div>
-        )}
-      </div>
-    </div>
+    </>
   );
 
   // The provider owns the audio engine our player registers; keyed by song so

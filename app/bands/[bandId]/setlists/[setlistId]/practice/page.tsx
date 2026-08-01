@@ -2,7 +2,6 @@ import { notFound, redirect } from 'next/navigation';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { getSetlist, getSetlistPracticeSongs } from '@/lib/db/setlists';
-import { PageHeader } from '../../../../../PageHeader';
 import { Practice } from '../../../../../Practice';
 
 /**
@@ -28,18 +27,16 @@ export default async function PracticeSetlistPage({
 
   return (
     <main>
-      <div className="px-4 py-0">
-      <PageHeader
-        defaultHref={`/bands/${bandId}/setlists/${setlistId}`}
-        defaultHrefName="Setlist"
-      />
-
-      </div>
-
+      {/* Practice renders the page header — "Edit song" in it has to follow
+          whichever song you've stepped to. */}
       <Practice
         songs={songs}
         apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ''}
         persistKey={`practice:setlist:${setlistId}`}
+        back={{
+          href: `/bands/${bandId}/setlists/${setlistId}`,
+          name: 'Setlist',
+        }}
       />
     </main>
   );
