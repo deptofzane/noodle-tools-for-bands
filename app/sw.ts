@@ -116,6 +116,19 @@ const serwist = new Serwist({
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: [...offlineRuntimeCaching, ...defaultCache],
+  // Last resort for a page we can't produce: rather than the browser's dinosaur,
+  // show `/offline`, which lists what this device can still do (see
+  // app/offline/OfflineClient.tsx). Downloaded Practice/Live shells are matched
+  // by the rules above and never reach this. `/offline` itself is precached —
+  // see `additionalPrecacheEntries` in next.config.ts.
+  fallbacks: {
+    entries: [
+      {
+        url: '/offline',
+        matcher: ({ request }) => request.destination === 'document',
+      },
+    ],
+  },
 });
 
 serwist.addEventListeners();

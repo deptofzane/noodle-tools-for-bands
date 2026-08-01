@@ -11,7 +11,8 @@ import authConfig from './auth.config';
  * keeps webpack from throwing `UnhandledSchemeError: node:process`.
  *
  * Routing rules:
- *   - `/login`, `/signup`, `/forgot`, `/reset`, and `/api/health` are public
+ *   - `/login`, `/signup`, `/forgot`, `/reset`, `/offline`, and `/api/health`
+ *     are public
  *   - `/api/auth/*` (Auth.js handlers + register/forgot/reset) are always allowed
  *   - `/api/calendar/<token>` (the iCalendar feed) is public — calendar apps
  *     fetch it with no session; the unguessable token is its credential. Only
@@ -27,6 +28,11 @@ const PUBLIC_PATHS = new Set<string>([
   '/forgot',
   '/reset',
   '/api/health',
+  // The offline screen. It holds no server data — what it lists comes from the
+  // device's own IndexedDB — and the service worker precaches it to serve when
+  // a navigation fails. Behind auth, that precache would be a login redirect,
+  // which is the last thing to show someone whose network just died.
+  '/offline',
 ]);
 
 // The unauthenticated calendar feed: exactly `/api/calendar/<token>` (one

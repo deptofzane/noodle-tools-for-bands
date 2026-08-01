@@ -68,6 +68,13 @@ export interface OfflineRecord {
   fileCount: number;
   /** Audio files successfully cached across all songs. */
   audioCount: number;
+  /**
+   * The songs whose audio actually made it into the cache, in setlist order —
+   * enough to build a player queue with no network (see the offline screen).
+   * Absent on records written before this was tracked; those setlists offer
+   * playback again after the next download.
+   */
+  audioTracks?: { conversationId: string; name: string; url: string }[];
   /** What the user chose to include on the last download. */
   choices: DownloadChoices;
   /**
@@ -189,6 +196,7 @@ export async function downloadSetlistOffline(input: {
   let fileCount = 0;
   let audioCount = 0;
   const urls: string[] = [];
+  const audioTracks: NonNullable<OfflineRecord['audioTracks']> = [];
   for (const song of playable) {
     const cid = song.conversationId!;
 
@@ -234,6 +242,7 @@ export async function downloadSetlistOffline(input: {
         if (ares.ok) {
           audioCount++;
           urls.push(aurl);
+          audioTracks.push({ conversationId: cid, name: song.name, url: aurl });
         }
       } catch {
         // skip this song's audio
@@ -250,6 +259,7 @@ export async function downloadSetlistOffline(input: {
     songCount: playable.length,
     fileCount,
     audioCount,
+    audioTracks,
     choices,
     urls,
     downloadedAt: Date.now(),
@@ -289,9 +299,7 @@ export async function removeSetlistOffline(input: {
   const mine = record?.urls;
   if (!mine?.length) return;
   const stillReferenced = new Set(
-    all
-      .filter((r) => r.setlistId !== setlistId)
-      .flatMap((r) => r.urls ?? []),
+    all.filter((r) => r.setlistId !== setlistId).flatMap((r) => r.urls ?? []),
   );
   const byCache = new Map<string, string[]>();
   for (const url of mine) {

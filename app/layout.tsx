@@ -6,6 +6,7 @@ import { Header } from './Header';
 import { CurrentBandProvider } from './CurrentBandProvider';
 import { DriveCapabilityProvider } from './DriveCapabilityProvider';
 import { NavigationHistoryProvider } from './NavigationHistoryProvider';
+import { OfflineBanner } from './OfflineBanner';
 import { PendingActionProvider } from './PendingActionProvider';
 import { PlaylistPlayerProvider } from './player/PlaylistPlayer';
 import { RouteProgress } from './RouteProgress';
@@ -119,6 +120,7 @@ export default async function RootLayout({
                   <PlaylistPlayerProvider userKey={session?.user?.sub ?? null}>
                     {children}
                     {isSignedIn && <Header />}
+                    <OfflineBanner />
                   </PlaylistPlayerProvider>
                 </CurrentBandProvider>
               </DriveCapabilityProvider>

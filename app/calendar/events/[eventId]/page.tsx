@@ -87,7 +87,12 @@ export default async function EventPage({
         {event.venueName && (
           <div>
             <span className="font-medium">Venue:</span>{' '}
-            {canManage && event.venueId ? (
+            {/* Where the name takes you depends on what's most useful: to the
+                venue in maps when we know where it is, otherwise to the venue
+                itself, where someone can fill the address in. */}
+            {event.venueAddress ? (
+              <MapLink address={event.venueAddress} label={event.venueName} />
+            ) : canManage && event.venueId ? (
               <Link
                 href={`/bands/${event.bandId}/venues/${event.venueId}/edit`}
                 className="text-blue-600 hover:underline dark:text-blue-400"

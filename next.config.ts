@@ -20,6 +20,10 @@ const withSerwist = withSerwistInit({
   swSrc: 'app/sw.ts',
   swDest: 'public/sw.js',
   disable: process.env.NODE_ENV === 'development',
+  // The offline screen has to be in the cache before the network goes away,
+  // and it's a rendered route rather than a build asset, so the manifest
+  // doesn't pick it up on its own. Bump `revision` when the page changes.
+  additionalPrecacheEntries: [{ url: '/offline', revision: 'offline-v1' }],
 });
 
 export default withSerwist(nextConfig);

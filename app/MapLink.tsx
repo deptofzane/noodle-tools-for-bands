@@ -6,9 +6,15 @@
  */
 export function MapLink({
   address,
+  label,
   className,
 }: {
   address: string;
+  /**
+   * Link text, when the address isn't what you want to show — a venue's name,
+   * say. The address still goes to maps, and shows up as the tooltip.
+   */
+  label?: string;
   className?: string;
 }) {
   const href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
@@ -19,11 +25,12 @@ export function MapLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      title={label ? address : undefined}
       className={
         className ?? 'text-blue-600 hover:underline dark:text-blue-400'
       }
     >
-      {address}
+      {label ?? address}
     </a>
   );
 }
