@@ -10,6 +10,7 @@ import { useEventSource } from '../../useEventSource';
 import { usePlayer } from './PlayerContext';
 import { NoteForm, type Mentionable } from './NoteForm';
 import { NoteItem } from './NoteItem';
+import { LoadingBlock } from '../../Spinner';
 
 /**
  * The notes side panel (Postgres conversations).
@@ -214,7 +215,11 @@ export function NotesPanel({
                 : 'Mark this conversation closed (moves it to History)'
             }
           >
-            {stateBusy ? '…' : closed ? 'Reopen conversation' : 'Close conversation'}
+            {stateBusy
+              ? '…'
+              : closed
+                ? 'Reopen conversation'
+                : 'Close conversation'}
           </button>
         </div>
       </header>
@@ -240,7 +245,9 @@ export function NotesPanel({
             header={
               <>
                 Adding note at{' '}
-                <span className="font-mono">{formatDuration(composerTime)}</span>
+                <span className="font-mono">
+                  {formatDuration(composerTime)}
+                </span>
               </>
             }
             placeholder="What stood out at this moment? Use @ to tag someone."
@@ -266,12 +273,12 @@ export function NotesPanel({
         </p>
       )}
 
-      {notes === null && !error && (
-        <p className="text-sm text-neutral-500">Loading notes…</p>
-      )}
+      {notes === null && !error && <LoadingBlock label="Loading notes" />}
 
       {notes && notes.length === 0 && (
-        <p className="text-sm text-neutral-500">No notes yet. Add the first one.</p>
+        <p className="text-sm text-neutral-500">
+          No notes yet. Add the first one.
+        </p>
       )}
 
       {notes && notes.length > 0 && (

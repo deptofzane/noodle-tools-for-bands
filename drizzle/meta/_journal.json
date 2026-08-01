@@ -274,6 +274,13 @@
       "when": 1785277240473,
       "tag": "0038_powerful_argent",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1785612652780,
+      "tag": "0039_loose_true_believers",
+      "breakpoints": true
     }
   ]
 }

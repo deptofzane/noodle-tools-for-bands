@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTrackPending } from '../PendingActionProvider';
 import { actorLabel, formatRelativeTime } from '@/lib/format';
+import { LoadingBlock } from '../Spinner';
 
 /**
  * History list — closed conversations only.
@@ -37,7 +38,9 @@ export function HistoryList() {
           const body = await r.json().catch(() => ({}));
           throw new Error(body.message ?? body.error ?? `HTTP ${r.status}`);
         }
-        const data = (await r.json()) as { conversations: ConversationListItem[] };
+        const data = (await r.json()) as {
+          conversations: ConversationListItem[];
+        };
         if (!cancelled) setItems(data.conversations);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -57,14 +60,14 @@ export function HistoryList() {
   }
 
   if (items === null) {
-    return <p className="text-sm text-neutral-500">Loading…</p>;
+    return <LoadingBlock />;
   }
 
   if (items.length === 0) {
     return (
       <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
-        Nothing in history yet. Conversations show up here when you close
-        them from the notes page.
+        Nothing in history yet. Conversations show up here when you close them
+        from the notes page.
       </p>
     );
   }
@@ -89,7 +92,9 @@ export function HistoryList() {
                 <div className="mt-0.5 text-xs text-neutral-500">
                   {item.bandName} · Closed · last activity{' '}
                   {formatRelativeTime(item.lastActivityAt)}
-                  {item.lastActivityBy && <> by {actorLabel(item.lastActivityBy)}</>}
+                  {item.lastActivityBy && (
+                    <> by {actorLabel(item.lastActivityBy)}</>
+                  )}
                 </div>
               </div>
             </Link>

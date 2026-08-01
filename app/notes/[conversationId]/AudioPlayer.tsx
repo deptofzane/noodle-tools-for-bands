@@ -1,16 +1,12 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createAudioEngine, type AudioEngine } from '@/lib/audio';
 import { formatDuration } from '@/lib/format';
 import { useTrackBoolean } from '../../PendingActionProvider';
+import { claimAudioFocus, subscribeAudioFocus } from '../../player/audioFocus';
 import { usePlayer } from './PlayerContext';
+import { LoadingBlock } from '../../Spinner';
 
 /** One selectable audio version, for the in-player version switcher. */
 export type PlayerVersion = {
@@ -40,6 +36,9 @@ type AudioPlayerProps = {
 };
 
 const SPEEDS = [0.5, 0.6, 0.7, 0.8, 0.9, 1] as const;
+
+/** Name this player claims when it takes over playback (see `audioFocus`). */
+const FOCUS_OWNER = 'song';
 
 /** Remembers whether the playback-options panel is expanded, across pages. */
 const OPTIONS_OPEN_KEY = 'audioPlayer.optionsOpen';
@@ -76,7 +75,6 @@ export function AudioPlayer({
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rate, setRate] = useState(1);
-  const [optionsOpen, setOptionsOpen] = useState(false);
 
   // Version switching. When versions are supplied, the player streams the
   // selected one (defaulting to the version flagged `isDefault`); otherwise
@@ -102,29 +100,6 @@ export function AudioPlayer({
   const effectiveMimeType = selectedVersion
     ? selectedVersion.mimeType
     : mimeType;
-
-  // Hydrate the panel's open/closed state from localStorage after mount.
-  // Reading in a `useEffect` (rather than a lazy initializer) keeps the
-  // server-rendered markup deterministic, avoiding a hydration mismatch.
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(OPTIONS_OPEN_KEY) === '1') setOptionsOpen(true);
-    } catch {
-      // localStorage may be unavailable (private mode / SSR); ignore.
-    }
-  }, []);
-
-  const toggleOptions = useCallback(() => {
-    setOptionsOpen((open) => {
-      const next = !open;
-      try {
-        localStorage.setItem(OPTIONS_OPEN_KEY, next ? '1' : '0');
-      } catch {
-        // Ignore persistence failures; state still updates in-memory.
-      }
-      return next;
-    });
-  }, []);
 
   // Show the global pending indicator while the audio is loading. The
   // condition flips off as soon as Howler reports readiness or an
@@ -249,16 +224,29 @@ export function AudioPlayer({
       engine.pause();
       setIsPlaying(false);
     } else {
+      // Take over playback so the global playlist player pauses.
+      claimAudioFocus(FOCUS_OWNER);
       engine.play();
       setIsPlaying(true);
     }
   }, [isReady]);
 
-  const handleSeek = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+  // The playlist player (or another song) started — pause so they don't
+  // overlap.
+  useEffect(
+    () =>
+      subscribeAudioFocus(FOCUS_OWNER, () => {
+        if (engineRef.current?.isPlaying()) {
+          engineRef.current.pause();
+          setIsPlaying(false);
+        }
+      }),
+    [],
+  );
+
+  const seekTo = useCallback((t: number) => {
     const engine = engineRef.current;
-    if (!engine) return;
-    const t = parseFloat(e.target.value);
-    if (!Number.isFinite(t)) return;
+    if (!engine || !Number.isFinite(t)) return;
     engine.seek(t);
     setCurrentTime(t);
   }, []);
@@ -287,10 +275,64 @@ export function AudioPlayer({
     setCurrentTime(0);
   }, [isReady]);
 
-  // Keyboard controls: space = play/pause, → = forward 10s, ← = back 10s.
-  // Ignored while a form control is focused, so typing / the seek slider /
-  // selects keep their native behavior (and space still activates a focused
-  // button natively — that path is debounced too via togglePlay).
+  useTransportKeys({ togglePlay, forward10, back10 });
+
+  // Apply the selected speed — on change, and again after each (re)load,
+  // since a new engine starts at 1x.
+  useEffect(() => {
+    if (isReady) engineRef.current?.setRate(rate);
+  }, [isReady, rate]);
+
+  return (
+    <AudioPlayerView
+      fileName={effectiveFileName}
+      currentTime={currentTime}
+      duration={duration}
+      isPlaying={isPlaying}
+      isReady={isReady}
+      error={error}
+      sticky={sticky}
+      onTogglePlay={togglePlay}
+      onSeek={seekTo}
+      practice={
+        hasPracticeOptions
+          ? {
+              rate,
+              onRateChange: setRate,
+              onStartOver: startOver,
+              onBack10: back10,
+              onForward10: forward10,
+            }
+          : undefined
+      }
+      versions={
+        hasVersions
+          ? {
+              list: versions!,
+              selectedId: selectedVersionId,
+              onSelect: setSelectedVersionId,
+            }
+          : undefined
+      }
+    />
+  );
+}
+
+/**
+ * Space = play/pause, ← / → = 10s back/forward. Ignored while a form control
+ * is focused, so typing / the seek slider / selects keep their native
+ * behavior (and space still activates a focused button natively — that path
+ * is debounced too via `togglePlay`).
+ */
+export function useTransportKeys({
+  togglePlay,
+  forward10,
+  back10,
+}: {
+  togglePlay: () => void;
+  forward10: () => void;
+  back10: () => void;
+}) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
@@ -319,12 +361,78 @@ export function AudioPlayer({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [togglePlay, forward10, back10]);
+}
 
-  // Apply the selected speed — on change, and again after each (re)load,
-  // since a new engine starts at 1x.
+/**
+ * The player's controls, with no audio engine of its own — the caller owns
+ * playback and passes state down. Used by `AudioPlayer` (one song, its own
+ * engine) and by the full-screen player's Practice tab, which drives the
+ * shared queue engine instead, so both show the same bar.
+ */
+export function AudioPlayerView({
+  fileName,
+  currentTime,
+  duration,
+  isPlaying,
+  isReady,
+  error,
+  sticky = false,
+  onTogglePlay,
+  onSeek,
+  practice,
+  versions,
+}: {
+  fileName: string;
+  currentTime: number;
+  duration: number;
+  isPlaying: boolean;
+  /** False while the audio is still loading — controls stay disabled. */
+  isReady: boolean;
+  error: string | null;
+  sticky?: boolean;
+  onTogglePlay: () => void;
+  onSeek: (seconds: number) => void;
+  /** Start over / ±10s / speed. Omit to hide the practice options entirely. */
+  practice?: {
+    rate: number;
+    onRateChange: (rate: number) => void;
+    onStartOver: () => void;
+    onBack10: () => void;
+    onForward10: () => void;
+  };
+  /** In-player version switcher; only shown when there's more than one. */
+  versions?: {
+    list: PlayerVersion[];
+    selectedId: string;
+    onSelect: (id: string) => void;
+  };
+}) {
+  const [optionsOpen, setOptionsOpen] = useState(false);
+
+  // Hydrate the panel's open/closed state from localStorage after mount.
+  // Reading in a `useEffect` (rather than a lazy initializer) keeps the
+  // server-rendered markup deterministic, avoiding a hydration mismatch.
   useEffect(() => {
-    if (isReady) engineRef.current?.setRate(rate);
-  }, [isReady, rate]);
+    try {
+      if (localStorage.getItem(OPTIONS_OPEN_KEY) === '1') setOptionsOpen(true);
+    } catch {
+      // localStorage may be unavailable (private mode / SSR); ignore.
+    }
+  }, []);
+
+  const toggleOptions = useCallback(() => {
+    setOptionsOpen((open) => {
+      const next = !open;
+      try {
+        localStorage.setItem(OPTIONS_OPEN_KEY, next ? '1' : '0');
+      } catch {
+        // Ignore persistence failures; state still updates in-memory.
+      }
+      return next;
+    });
+  }, []);
+
+  const hasVersionSwitcher = Boolean(versions && versions.list.length > 1);
 
   return (
     <div
@@ -334,7 +442,7 @@ export function AudioPlayer({
       }
     >
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="truncate text-sm font-medium">{effectiveFileName}</h2>
+        <h2 className="truncate text-sm font-medium lg:max-w-[16rem] ">{fileName}</h2>
         <span className="shrink-0 font-mono text-xs tabular-nums text-neutral-500">
           {formatDuration(currentTime)} / {formatDuration(duration)}
         </span>
@@ -343,7 +451,7 @@ export function AudioPlayer({
       <div className="mt-4 flex items-center gap-3">
         <button
           type="button"
-          onClick={togglePlay}
+          onClick={onTogglePlay}
           disabled={!isReady}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-500 disabled:opacity-50"
           aria-label={isPlaying ? 'Pause' : 'Play'}
@@ -380,13 +488,16 @@ export function AudioPlayer({
           max={duration || 0}
           step={0.1}
           value={currentTime}
-          onChange={handleSeek}
+          onChange={(e) => {
+            const t = parseFloat(e.target.value);
+            if (Number.isFinite(t)) onSeek(t);
+          }}
           disabled={!isReady || duration <= 0}
           className="flex-1 accent-blue-600"
           aria-label="Seek"
         />
 
-        {(hasPracticeOptions || hasVersions) && (
+        {(practice || hasVersionSwitcher) && (
           <button
             type="button"
             onClick={toggleOptions}
@@ -416,91 +527,91 @@ export function AudioPlayer({
         )}
       </div>
 
-      {optionsOpen &&
-        (hasPracticeOptions || (hasVersions && versions!.length > 1)) && (
-          <div
-            id="audio-player-options"
-            className="mt-3 flex flex-wrap items-center gap-4 border-t border-neutral-200 pt-3 dark:border-neutral-800"
-          >
-            {hasPracticeOptions && (
-              <>
-                <button
-                  type="button"
-                  onClick={startOver}
-                  disabled={!isReady}
-                  aria-label="Start over"
-                  title="Start over"
-                  className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
-                >
-                  <span aria-hidden="true">Start over</span>
-                </button>
+      {optionsOpen && (practice || hasVersionSwitcher) && (
+        <div
+          id="audio-player-options"
+          className="mt-3 flex flex-wrap items-center gap-4 border-t border-neutral-200 pt-3 dark:border-neutral-800"
+        >
+          {practice && (
+            <>
+              <button
+                type="button"
+                onClick={practice.onStartOver}
+                disabled={!isReady}
+                aria-label="Start over"
+                title="Start over"
+                className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+              >
+                <span aria-hidden="true">Start over</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={back10}
-                  disabled={!isReady}
-                  aria-label="Back 10 seconds"
-                  title="Back 10 seconds"
-                  className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
-                >
-                  <span aria-hidden="true">↺</span>10s
-                </button>
+              <button
+                type="button"
+                onClick={practice.onBack10}
+                disabled={!isReady}
+                aria-label="Back 10 seconds"
+                title="Back 10 seconds"
+                className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+              >
+                <span aria-hidden="true">↺</span>10s
+              </button>
 
-                <button
-                  type="button"
-                  onClick={forward10}
-                  disabled={!isReady}
-                  aria-label="Forward 10 seconds"
-                  title="Forward 10 seconds"
-                  className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
-                >
-                  10s<span aria-hidden="true">↻</span>
-                </button>
+              <button
+                type="button"
+                onClick={practice.onForward10}
+                disabled={!isReady}
+                aria-label="Forward 10 seconds"
+                title="Forward 10 seconds"
+                className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+              >
+                10s<span aria-hidden="true">↻</span>
+              </button>
 
-                <label className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
-                  Speed
-                  <select
-                    value={rate}
-                    onChange={(e) => setRate(parseFloat(e.target.value))}
-                    disabled={!isReady}
-                    aria-label="Playback speed"
-                    title="Playback speed"
-                    className="shrink-0 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900"
-                  >
-                    {SPEEDS.map((s) => (
-                      <option key={s} value={s}>
-                        {s === 1 ? '100%' : `${Math.round(s * 100)}%`}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </>
-            )}
-
-            {hasVersions && versions!.length > 1 && (
-              <label className="flex min-w-0 items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
-                Version
+              <label className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+                Speed
                 <select
-                  value={selectedVersionId}
-                  onChange={(e) => setSelectedVersionId(e.target.value)}
-                  aria-label="Audio version"
-                  title="Audio version"
-                  className="min-w-0 max-w-[10rem] truncate rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+                  value={practice.rate}
+                  onChange={(e) =>
+                    practice.onRateChange(parseFloat(e.target.value))
+                  }
+                  disabled={!isReady}
+                  aria-label="Playback speed"
+                  title="Playback speed"
+                  className="shrink-0 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900"
                 >
-                  {versions!.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {(v.label || v.fileName) +
-                        (v.isDefault ? ' (default)' : '')}
+                  {SPEEDS.map((s) => (
+                    <option key={s} value={s}>
+                      {s === 1 ? '100%' : `${Math.round(s * 100)}%`}
                     </option>
                   ))}
                 </select>
               </label>
-            )}
-          </div>
-        )}
+            </>
+          )}
+
+          {hasVersionSwitcher && (
+            <label className="flex min-w-0 items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+              Version
+              <select
+                value={versions!.selectedId}
+                onChange={(e) => versions!.onSelect(e.target.value)}
+                aria-label="Audio version"
+                title="Audio version"
+                className="min-w-0 max-w-[10rem] truncate rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+              >
+                {versions!.list.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {(v.label || v.fileName) + (v.isDefault ? ' (default)' : '')}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
+      )}
 
       {!isReady && !error && (
-        <p className="mt-3 text-xs text-neutral-500">Loading audio…</p>
+        <LoadingBlock size="sm" className="mt-3 py-2" label="Loading audio" />
       )}
       {error && (
         <p className="mt-3 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">

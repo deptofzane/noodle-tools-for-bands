@@ -11,14 +11,15 @@ import { useToast } from '../../../ToastProvider';
 import { AutoTextarea } from '@/app/AutoTextarea';
 import { CollapsibleSection } from '@/app/CollapsibleSection';
 import { VenuePickerModal, type PickableVenue } from '../VenuePickerModal';
+import { EventTypeField } from '../EventTypeField';
 
 interface BandOption {
   id: string;
   name: string;
 }
 
-// The header persists the current band here; the New event page defaults to it
-// (see the mount effect below). Must match app/Header.tsx.
+// The current band is persisted here; the New event page defaults to it (see
+// the mount effect below). Must match app/CurrentBandProvider.tsx.
 const SELECTED_BAND_KEY = 'selectedBandId';
 
 const field =
@@ -66,6 +67,7 @@ export function NewEventClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [title, setTitle] = useState('');
+  const [eventType, setEventType] = useState('');
   const [date, setDate] = useState(defaultDate);
   const [time, setTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -140,6 +142,7 @@ export function NewEventClient({
           body: JSON.stringify({
             bandId,
             title: title.trim(),
+            eventType,
             date,
             time,
             endTime,
@@ -244,6 +247,12 @@ export function NewEventClient({
         />
       </div>
 
+      <EventTypeField
+        value={eventType}
+        onChange={setEventType}
+        fieldClass={field}
+      />
+
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="flex flex-1 flex-col gap-1">
           <label htmlFor="event-date" className="text-sm font-medium">
@@ -271,7 +280,9 @@ export function NewEventClient({
               // Auto-fill the end (+2h) until the user sets one themselves.
               if (!endEdited)
                 setEndTime(
-                  v ? (addHoursToTime(v, DEFAULT_EVENT_DURATION_HOURS) ?? '') : '',
+                  v
+                    ? (addHoursToTime(v, DEFAULT_EVENT_DURATION_HOURS) ?? '')
+                    : '',
                 );
             }}
             className={field}

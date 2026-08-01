@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
+import { LoadingBlock } from '../../../Spinner';
 
 interface Member {
   userId: string;
@@ -278,14 +279,12 @@ export function EditBandClient({ bandId }: { bandId: string }) {
   }
 
   if (!data) {
-    return <p className="text-sm text-neutral-500">Loading…</p>;
+    return <LoadingBlock />;
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="title-text">
-        Edit {data.band.name}
-      </h1>
+      <h1 className="title-text">Edit {data.band.name}</h1>
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium">Band name</h2>

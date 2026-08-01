@@ -36,6 +36,7 @@ test('events: band-member + added-member visibility, range filter', async () => 
     const { id: eventId } = await createEvent({
       bandId: band.id,
       title: 'Gig',
+      eventType: 'Show',
       date: '2026-07-15',
       time: '19:30',
       endTime: '21:30',

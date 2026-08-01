@@ -45,13 +45,16 @@ export default async function NotesPage({
   if (!membership) notFound();
   const conversation = membership.conversation;
 
-  // Back to the band page, reopening the tab the user came from (songs are
-  // linked from the Audio tab) so the same tab appears on return.
-  const bandTabs = ['overview', 'chat', 'polls', 'audio'];
+  // Back to where the user came from: the band's Audio page (songs are linked
+  // from there), or the band page reopening the tab they came from.
+  const bandTabs = ['overview', 'chat', 'polls'];
   const backHref =
-    from && bandTabs.includes(from)
-      ? `/bands/${conversation.bandId}?tab=${from}`
-      : `/bands/${conversation.bandId}`;
+    from === 'audio'
+      ? `/bands/${conversation.bandId}/audio`
+      : from && bandTabs.includes(from)
+        ? `/bands/${conversation.bandId}?tab=${from}`
+        : `/bands/${conversation.bandId}`;
+  const backName = from === 'audio' ? 'Audio' : 'Overview';
 
   // Player metadata from the stored audio file, falling back to the
   // conversation's name if the audio hasn't been imported yet. Sheet
@@ -76,7 +79,7 @@ export default async function NotesPage({
 
   return (
     <main className="main-container">
-      <PageHeader defaultHref={backHref} defaultHrefName='Overview'>
+      <PageHeader defaultHref={backHref} defaultHrefName={backName}>
         <Link
           href={`/notes/${conversationId}/edit`}
           className="hover:text-neutral-900 dark:hover:text-neutral-100 py-4"
@@ -84,6 +87,9 @@ export default async function NotesPage({
           Edit song
         </Link>
       </PageHeader>
+      {audio && (
+        <p className="text-sm text-neutral-200 mx-auto">{audio?.fileName}</p>
+      )}
 
       <PlayerProvider>
         <div className="flex flex-col gap-6">

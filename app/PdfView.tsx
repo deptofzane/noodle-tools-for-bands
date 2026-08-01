@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
+import { LoadingBlock } from './Spinner';
 
 /**
  * pdfjs v6 relies on Promise.withResolvers, which older Safari/iOS lacks.
@@ -41,7 +42,9 @@ export function PdfView({
   containerRef: RefObject<HTMLDivElement | null>;
 }) {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
+    'loading',
+  );
   const [targetPx, setTargetPx] = useState(1600);
 
   useEffect(() => {
@@ -65,8 +68,10 @@ export function PdfView({
         // Rasterize at ~1.5× the display width (capped) so zooming in stays
         // crisp without blowing up memory on a phone.
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        const base = containerRef.current?.clientWidth || window.innerWidth || 800;
-        if (!cancelled) setTargetPx(Math.min(Math.round(base * dpr * 1.5), 2600));
+        const base =
+          containerRef.current?.clientWidth || window.innerWidth || 800;
+        if (!cancelled)
+          setTargetPx(Math.min(Math.round(base * dpr * 1.5), 2600));
 
         task = pdfjs.getDocument({ url });
         const doc = await task.promise;
@@ -108,9 +113,7 @@ export function PdfView({
               />
             ))
           : null}
-        {status === 'loading' && (
-          <p className="py-8 text-center text-sm text-neutral-500">Loading PDF…</p>
-        )}
+        {status === 'loading' && <LoadingBlock label="Loading PDF" />}
         {status === 'error' && (
           <p className="py-8 text-center text-sm text-neutral-500">
             Could not display this PDF.

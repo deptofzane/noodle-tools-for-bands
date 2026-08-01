@@ -12,9 +12,11 @@ import { useCanGoBack } from '@/app/NavigationHistoryProvider';
 import { AutoTextarea } from '@/app/AutoTextarea';
 import { CollapsibleSection } from '@/app/CollapsibleSection';
 import { VenuePickerModal, type PickableVenue } from '../../VenuePickerModal';
+import { EventTypeField } from '../../EventTypeField';
 
 interface EventFields {
   title: string;
+  eventType: string;
   date: string;
   time: string;
   endTime: string;
@@ -88,7 +90,6 @@ export function EditEventClient({
     if (canGoBack()) router.back();
     else router.push(eventHref);
   };
-
 
   const canSave = Boolean(fields.title.trim() && fields.date && !busy);
 
@@ -176,6 +177,12 @@ export function EditEventClient({
           className={field}
         />
       </div>
+
+      <EventTypeField
+        value={fields.eventType}
+        onChange={(v) => set('eventType', v)}
+        fieldClass={field}
+      />
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="flex flex-1 flex-col gap-1">

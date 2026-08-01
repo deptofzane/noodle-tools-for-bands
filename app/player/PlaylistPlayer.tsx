@@ -1,0 +1,611 @@
+'use client';
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import { createAudioEngine, type AudioEngine } from '@/lib/audio';
+import { claimAudioFocus, subscribeAudioFocus } from './audioFocus';
+import { MiniPlayer } from './MiniPlayer';
+
+/** One queued item. Any page can build these and call `play`. */
+export type PlaylistTrack = {
+  /** Stable id (the conversation id for songs) — used to highlight the row. */
+  id: string;
+  /** What the player displays. */
+  title: string;
+  /** Range-capable audio URL. */
+  src: string;
+  /** Original file name — the engine's most reliable format hint. */
+  fileName?: string;
+  mimeType?: string;
+  /** Where clicking the title in the player goes, if anywhere. */
+  href?: string;
+  /** Optional line under the title (e.g. the band or upload day). */
+  subtitle?: string;
+  /** Known length in seconds, shown in the queue list when available. */
+  durationSec?: number;
+};
+
+type PlaylistPlayerValue = {
+  queue: PlaylistTrack[];
+  index: number;
+  /** The playing (or paused) track; null when nothing is queued. */
+  track: PlaylistTrack | null;
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  error: string | null;
+  /** Load `tracks` and start at `startIndex`. Replaces any current queue. */
+  play: (tracks: PlaylistTrack[], startIndex?: number) => void;
+  /**
+   * Append `tracks` to the end of the queue without interrupting playback.
+   * With nothing queued they become the queue, loaded but paused.
+   */
+  enqueue: (tracks: PlaylistTrack[]) => void;
+  /**
+   * Move the track at `from` to `to`, keeping whatever is playing playing —
+   * the position of the current track follows it.
+   */
+  reorder: (from: number, to: number) => void;
+  /**
+   * Drop the track at `index`. Removing one that isn't playing doesn't disturb
+   * playback; removing the playing one moves on to what followed it (or the
+   * new last track), and emptying the queue dismisses the player.
+   */
+  remove: (index: number) => void;
+  toggle: () => void;
+  next: () => void;
+  /** Restart the track, or step back when already near its start. */
+  previous: () => void;
+  seek: (sec: number) => void;
+  /**
+   * Jump to a queue position without changing what the player is doing — a
+   * paused queue stays paused, a playing one keeps playing on the new track.
+   * (`play` always starts playback; this is for stepping through a set.)
+   */
+  goTo: (index: number) => void;
+  /** Playback speed, 1 = normal. Carries across tracks until changed. */
+  rate: number;
+  setRate: (rate: number) => void;
+  /** False until the current track's duration is known (i.e. still loading). */
+  isReady: boolean;
+  /**
+   * False for the first render only, until the queue saved by the last session
+   * has been restored (or found absent). An empty queue means nothing is
+   * queued only once this is true.
+   */
+  hydrated: boolean;
+  /**
+   * Stop playback and take the bar off the screen. The queue is kept — playing
+   * anything (here or from another surface's controls) brings the bar back.
+   */
+  close: () => void;
+};
+
+const PlaylistPlayerContext = createContext<PlaylistPlayerValue | null>(null);
+
+/** Name this player claims when it takes over playback. */
+const FOCUS_OWNER = 'playlist';
+
+/** Pressing "previous" past this point restarts the track instead. */
+const RESTART_THRESHOLD_SEC = 3;
+
+/** Where the queue is kept between sessions. */
+const SAVED_QUEUE_KEY = 'playlistQueue';
+/** Bump when `PlaylistTrack` changes shape; older payloads are then dropped. */
+const SAVED_QUEUE_VERSION = 1;
+/**
+ * Upper bound on what we'll write. A queue this long is already unusual, and
+ * the cap keeps one runaway "add everything" from filling the origin's quota.
+ */
+const MAX_SAVED_TRACKS = 300;
+
+interface SavedQueue {
+  v: number;
+  /** Whose queue this is — see `readSavedQueue`. */
+  u: string | null;
+  index: number;
+  queue: PlaylistTrack[];
+  /** 1 when the bar was dismissed — the queue survives, hidden. */
+  d?: 1;
+}
+
+/** A stored entry is only usable if it still has what the engine needs. */
+function isPlayableTrack(t: unknown): t is PlaylistTrack {
+  const o = t as PlaylistTrack | null;
+  return (
+    !!o &&
+    typeof o.id === 'string' &&
+    typeof o.title === 'string' &&
+    typeof o.src === 'string' &&
+    o.src.length > 0
+  );
+}
+
+/**
+ * The queue `userKey` last left behind, or null. Anything unreadable, stale,
+ * or malformed is treated as "no saved queue" — a broken payload should cost
+ * the user a queue, never a crash on app open.
+ *
+ * The queue is scoped to the user it belongs to. localStorage is per-origin,
+ * not per-account, so on a shared browser someone else's saved queue would
+ * otherwise show up (with song titles) after they signed out. A key mismatch
+ * both refuses the queue and deletes it.
+ */
+function readSavedQueue(
+  userKey: string | null,
+): { queue: PlaylistTrack[]; index: number; dismissed: boolean } | null {
+  try {
+    const raw = localStorage.getItem(SAVED_QUEUE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SavedQueue;
+    if (!parsed || parsed.v !== SAVED_QUEUE_VERSION) return null;
+    if (!userKey) return null; // signed out — nothing here is ours to restore
+    if (parsed.u !== userKey) {
+      localStorage.removeItem(SAVED_QUEUE_KEY);
+      return null;
+    }
+    const queue = Array.isArray(parsed.queue)
+      ? parsed.queue.filter(isPlayableTrack)
+      : [];
+    if (queue.length === 0) return null;
+    // Clamp rather than reject: dropping an unplayable entry shifts the rest.
+    const index =
+      Number.isInteger(parsed.index) && parsed.index >= 0
+        ? Math.min(parsed.index, queue.length - 1)
+        : 0;
+    return { queue, index, dismissed: parsed.d === 1 };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Global playlist player.
+ *
+ * Owns one audio engine for the current track and rebuilds it whenever the
+ * track changes, auto-advancing through the queue on end. Mounted once in the
+ * root layout: any page can queue tracks through `usePlaylistPlayer()`, and
+ * the `MiniPlayer` bar appears at the bottom of the screen while something is
+ * queued and the bar hasn't been dismissed — playback survives navigation
+ * because the provider lives above the router's children.
+ *
+ * The queue also survives the app closing: it's mirrored to localStorage on
+ * every change and restored (paused, on the same track, and still dismissed if
+ * it was) at the next open. Dismissing stops playback and hides the bar but
+ * keeps the queue; it only empties when its last track is removed.
+ */
+export function PlaylistPlayerProvider({
+  userKey,
+  children,
+}: {
+  /**
+   * Stable id of the signed-in user (`session.user.sub`), or null when signed
+   * out. Scopes the saved queue so it only ever comes back for its owner.
+   */
+  userKey: string | null;
+  children: ReactNode;
+}) {
+  const [queue, setQueue] = useState<PlaylistTrack[]>([]);
+  const [index, setIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [rate, setRateState] = useState(1);
+  const [hydrated, setHydrated] = useState(false);
+  // Bar dismissed by the user. The queue is untouched and still playable from
+  // anywhere that has its own controls — this only takes the bar off screen.
+  const [dismissed, setDismissed] = useState(false);
+
+  const engineRef = useRef<AudioEngine | null>(null);
+  // Read from `onReady`, which outlives the render that set the speed: each
+  // new engine starts at 1x and has to be told the speed the user picked.
+  const rateRef = useRef(1);
+  // Src the live engine was built for, so `play` can tell "resume this track"
+  // from "load a different one".
+  const currentSrcRef = useRef<string | null>(null);
+  // Whether to start playing as soon as the engine reports ready. Set when the
+  // user asked for playback (pressed play, skipped, or auto-advanced).
+  const wantPlayRef = useRef(false);
+  // Latest queue/end handler, read from engine callbacks that outlive renders.
+  const queueRef = useRef<PlaylistTrack[]>([]);
+  const onEndRef = useRef<() => void>(() => {});
+  // Don't let the mount pass — when the queue is still empty — erase what the
+  // last session saved before the restore below has had a chance to read it.
+  const skipSaveRef = useRef(true);
+
+  const track = queue[index] ?? null;
+  const src = track?.src ?? null;
+
+  useEffect(() => {
+    queueRef.current = queue;
+  }, [queue]);
+
+  // Bring back the queue the app was closed with, once, on mount.
+  //
+  // Read here rather than in a lazy `useState` initializer: localStorage
+  // doesn't exist on the server, and a queue present at first client render
+  // but absent in the server's HTML would be a hydration mismatch (the bar
+  // renders only when something is queued).
+  //
+  // Restoring never starts audio — `wantPlayRef` stays false. Browsers block
+  // autoplay without a gesture anyway, and a phone that starts playing on its
+  // own when the app opens would be worse than useless on stage.
+  useEffect(() => {
+    // Batched with whatever this pass restores, so consumers never see the
+    // "settled but empty" state for a frame.
+    setHydrated(true);
+    // A page that queued something in its own mount effect wins: child effects
+    // run before the parent's, so this would otherwise clobber a fresh queue.
+    if (queueRef.current.length > 0) return;
+    const saved = readSavedQueue(userKey);
+    if (!saved) return;
+    queueRef.current = saved.queue;
+    setQueue(saved.queue);
+    setIndex(saved.index);
+    // A bar dismissed last session stays dismissed — restoring it would undo
+    // the one thing the user asked for.
+    setDismissed(saved.dismissed);
+    // Mount-only: a `userKey` change means a different session entirely, which
+    // arrives as a fresh page load anyway.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save on every change, so the queue survives however the app goes away —
+  // a swipe-closed PWA and a crashed tab never get an unload event.
+  useEffect(() => {
+    if (skipSaveRef.current) {
+      skipSaveRef.current = false;
+      return;
+    }
+    try {
+      if (queue.length === 0) {
+        // Emptied (the last track removed) — nothing left worth restoring.
+        localStorage.removeItem(SAVED_QUEUE_KEY);
+        return;
+      }
+      const payload: SavedQueue = {
+        v: SAVED_QUEUE_VERSION,
+        u: userKey,
+        index,
+        queue: queue.slice(0, MAX_SAVED_TRACKS),
+        ...(dismissed ? { d: 1 as const } : {}),
+      };
+      localStorage.setItem(SAVED_QUEUE_KEY, JSON.stringify(payload));
+    } catch {
+      // Private mode or a full quota — playback carries on regardless.
+    }
+  }, [queue, index, userKey, dismissed]);
+
+  // Build an engine per track. The cleanup destroys it, so changing tracks (or
+  // closing the player) never leaves a Howl holding an HTML5 audio slot.
+  useEffect(() => {
+    if (!src) {
+      currentSrcRef.current = null;
+      return;
+    }
+    setError(null);
+    setCurrentTime(0);
+    setDuration(0);
+
+    const engine = createAudioEngine({
+      url: src,
+      mimeType: track?.mimeType ?? 'audio/mpeg',
+      fileName: track?.fileName ?? track?.title,
+      onReady: (dur) => {
+        setDuration(dur);
+        engine.setRate(rateRef.current);
+        if (wantPlayRef.current) {
+          engine.play();
+          setIsPlaying(true);
+        }
+      },
+      onEnd: () => onEndRef.current(),
+      onError: (err) => {
+        setError(
+          err instanceof Error
+            ? err.message
+            : typeof err === 'string'
+              ? err
+              : 'Playback error',
+        );
+        setIsPlaying(false);
+      },
+      onSeek: (sec) => setCurrentTime(sec),
+    });
+    engineRef.current = engine;
+    currentSrcRef.current = src;
+
+    let destroyed = false;
+    const teardown = () => {
+      if (destroyed) return;
+      destroyed = true;
+      engine.destroy();
+      if (engineRef.current === engine) {
+        engineRef.current = null;
+        currentSrcRef.current = null;
+      }
+    };
+    // Mobile browsers can unload the page without running React cleanup;
+    // `pagehide` (non-bfcache) forces teardown so the audio slot is released.
+    const handlePageHide = (e: PageTransitionEvent) => {
+      if (!e.persisted) teardown();
+    };
+    window.addEventListener('pagehide', handlePageHide);
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+      teardown();
+    };
+    // `track` is only read for its format hints, which belong to this src.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src]);
+
+  // Tick the elapsed time while playing. Like the single-song player, this
+  // loop never reads `engine.isPlaying()` — a seek briefly reports paused.
+  useEffect(() => {
+    if (!isPlaying) return;
+    let raf = 0;
+    const loop = () => {
+      const engine = engineRef.current;
+      if (!engine) return;
+      setCurrentTime(engine.getCurrentTime());
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [isPlaying]);
+
+  const next = useCallback(() => {
+    setIndex((i) => {
+      if (i + 1 >= queueRef.current.length) return i;
+      wantPlayRef.current = true;
+      return i + 1;
+    });
+  }, []);
+
+  // End of a track: roll on, or stop on the last one (leaving the bar up so
+  // the queue can be replayed).
+  useEffect(() => {
+    onEndRef.current = () => {
+      setIndex((i) => {
+        if (i + 1 >= queueRef.current.length) {
+          wantPlayRef.current = false;
+          setIsPlaying(false);
+          return i;
+        }
+        wantPlayRef.current = true;
+        return i + 1;
+      });
+    };
+  }, []);
+
+  const play = useCallback((tracks: PlaylistTrack[], startIndex = 0) => {
+    const target = tracks[startIndex];
+    if (!target) return;
+    claimAudioFocus(FOCUS_OWNER);
+    // Audio the user can't see the controls for is worse than no bar.
+    setDismissed(false);
+    queueRef.current = tracks;
+    setQueue(tracks);
+    setIndex(startIndex);
+    wantPlayRef.current = true;
+    // Same audio as the live engine — the song we land on is the one already
+    // loaded (playing this track again, or picking a set whose first song is
+    // the one playing). The src effect won't re-run, so start it here, from
+    // the top: `play` means "start this list", not "adopt whatever this song
+    // was already doing 2:30 in".
+    if (engineRef.current && currentSrcRef.current === target.src) {
+      engineRef.current.seek(0);
+      setCurrentTime(0);
+      engineRef.current.play();
+      setIsPlaying(true);
+    }
+  }, []);
+
+  const enqueue = useCallback((tracks: PlaylistTrack[]) => {
+    if (tracks.length === 0) return;
+    // Adding to a hidden queue should show it — otherwise the action looks
+    // like it did nothing.
+    setDismissed(false);
+    setQueue((prev) => {
+      const nextQueue = [...prev, ...tracks];
+      // Keep the ref in step for the callbacks that read it (end-of-track,
+      // next) before the next render commits.
+      queueRef.current = nextQueue;
+      return nextQueue;
+    });
+  }, []);
+
+  const reorder = useCallback((from: number, to: number) => {
+    setQueue((prev) => {
+      if (
+        from === to ||
+        from < 0 ||
+        to < 0 ||
+        from >= prev.length ||
+        to >= prev.length
+      ) {
+        return prev;
+      }
+      const nextQueue = [...prev];
+      const moved = nextQueue.splice(from, 1)[0];
+      if (!moved) return prev;
+      nextQueue.splice(to, 0, moved);
+      queueRef.current = nextQueue;
+      return nextQueue;
+    });
+    // Follow the playing track to its new slot. The track object (and so its
+    // src) is unchanged, so the engine isn't rebuilt and audio keeps going.
+    setIndex((i) => {
+      if (from === to) return i;
+      if (i === from) return to;
+      if (from < i && to >= i) return i - 1;
+      if (from > i && to <= i) return i + 1;
+      return i;
+    });
+  }, []);
+
+  const toggle = useCallback(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    if (engine.isPlaying()) {
+      engine.pause();
+      wantPlayRef.current = false;
+      setIsPlaying(false);
+    } else {
+      claimAudioFocus(FOCUS_OWNER);
+      setDismissed(false);
+      engine.play();
+      wantPlayRef.current = true;
+      setIsPlaying(true);
+    }
+  }, []);
+
+  const previous = useCallback(() => {
+    const engine = engineRef.current;
+    const elapsed = engine?.getCurrentTime() ?? 0;
+    if (elapsed > RESTART_THRESHOLD_SEC) {
+      engine?.seek(0);
+      setCurrentTime(0);
+      return;
+    }
+    setIndex((i) => {
+      if (i === 0) {
+        engine?.seek(0);
+        setCurrentTime(0);
+        return i;
+      }
+      wantPlayRef.current = true;
+      return i - 1;
+    });
+  }, []);
+
+  const seek = useCallback((sec: number) => {
+    const engine = engineRef.current;
+    if (!engine || !Number.isFinite(sec)) return;
+    engine.seek(sec);
+    setCurrentTime(sec);
+  }, []);
+
+  const remove = useCallback((target: number) => {
+    const prev = queueRef.current;
+    if (target < 0 || target >= prev.length) return;
+    const nextQueue = prev.filter((_, i) => i !== target);
+    queueRef.current = nextQueue;
+    setQueue(nextQueue);
+    if (nextQueue.length === 0) {
+      // Nothing left to play — same end state as dismissing the player.
+      wantPlayRef.current = false;
+      setIsPlaying(false);
+      setIndex(0);
+      setCurrentTime(0);
+      setDuration(0);
+      setError(null);
+      return;
+    }
+    // Keep pointing at the same track. Removing the one that's playing lands
+    // on whatever followed it, and the src change starts it if we were playing
+    // (`wantPlayRef` is untouched either way).
+    setIndex((i) => {
+      if (target > i) return i;
+      if (target < i) return i - 1;
+      return Math.min(i, nextQueue.length - 1);
+    });
+  }, []);
+
+  // Step to another track in place. Unlike `play`, this leaves `wantPlayRef`
+  // alone, so the new track picks up whatever the player was already doing.
+  const goTo = useCallback((target: number) => {
+    setIndex((i) => {
+      if (target === i || target < 0 || target >= queueRef.current.length) {
+        return i;
+      }
+      return target;
+    });
+  }, []);
+
+  const setRate = useCallback((r: number) => {
+    rateRef.current = r;
+    setRateState(r);
+    engineRef.current?.setRate(r);
+  }, []);
+
+  // Stop and get off the screen — but keep the queue. What was lined up is
+  // still lined up (the Practice screen, the Song queue tab), and playing any
+  // of it brings the bar back.
+  const close = useCallback(() => {
+    wantPlayRef.current = false;
+    engineRef.current?.pause();
+    setIsPlaying(false);
+    setDismissed(true);
+  }, []);
+
+  // Another player took over (a song page hit play) — yield and pause.
+  useEffect(
+    () =>
+      subscribeAudioFocus(FOCUS_OWNER, () => {
+        wantPlayRef.current = false;
+        engineRef.current?.pause();
+        setIsPlaying(false);
+      }),
+    [],
+  );
+
+  const value: PlaylistPlayerValue = {
+    queue,
+    index,
+    track,
+    isPlaying,
+    currentTime,
+    duration,
+    error,
+    play,
+    enqueue,
+    reorder,
+    remove,
+    toggle,
+    next,
+    previous,
+    seek,
+    goTo,
+    rate,
+    setRate,
+    isReady: duration > 0,
+    hydrated,
+    close,
+  };
+
+  return (
+    <PlaylistPlayerContext.Provider value={value}>
+      {children}
+      {track && !dismissed && (
+        <>
+          {/* Keeps the fixed bar from covering the end of the page. */}
+          <div aria-hidden="true" className="h-28" />
+          <MiniPlayer />
+        </>
+      )}
+    </PlaylistPlayerContext.Provider>
+  );
+}
+
+/**
+ * Queue and control the global player. Safe to call from any client component
+ * under the root layout.
+ */
+export function usePlaylistPlayer(): PlaylistPlayerValue {
+  const ctx = useContext(PlaylistPlayerContext);
+  if (!ctx) {
+    throw new Error(
+      'usePlaylistPlayer must be used within PlaylistPlayerProvider',
+    );
+  }
+  return ctx;
+}

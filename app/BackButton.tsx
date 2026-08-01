@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useCanGoBack } from './NavigationHistoryProvider';
+import { startRouteProgress } from './RouteProgress';
 
 /**
  * "← Back" control. Returns to the last in-app page via `router.back()` when
@@ -23,11 +24,12 @@ export function BackButton({
   return (
     <button
       type="button"
-      onClick={() =>
-        checkUseCanGoBack() && !!canGoBack
-          ? router.back()
-          : router.push(defaultHref)
-      }
+      onClick={() => {
+        // A button, so the route bar's link-click listener can't see this one.
+        startRouteProgress();
+        if (checkUseCanGoBack() && !!canGoBack) router.back();
+        else router.push(defaultHref);
+      }}
       className="hover:text-neutral-900 dark:hover:text-neutral-100 py-4"
     >
       ← {!canGoBack && !!defaultHrefName ? defaultHrefName : 'Back'}

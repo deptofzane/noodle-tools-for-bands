@@ -1,16 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { MinimizeToggle, type Conversation } from './bandDetailShared';
+import { MinimizeToggle, type Conversation } from '../bandDetailShared';
 import { SongRow } from './SongRow';
 
 /**
- * The Audio tab: a search box that filters both the active Audio list and the
- * Archived Audio list (each within its own collapsible container). Owns its
- * search and minimize UI state; the parent supplies the songs and the row
+ * The Audio page's body: a search box that filters both the active Audio list
+ * and the Archived Audio list (each within its own collapsible container). Owns
+ * its search and minimize UI state; the parent supplies the songs and the row
  * action handlers, and owns the "Add audio" source modal.
  */
-export function BandAudioTab({
+export function BandAudioList({
   conversations,
   canUseDrive,
   importProgress,

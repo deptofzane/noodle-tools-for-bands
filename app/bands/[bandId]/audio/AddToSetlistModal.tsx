@@ -1,5 +1,5 @@
-import { Modal } from '../../Modal';
-import { songCountLabel, type Conversation, type Setlist } from './bandDetailShared';
+import { Modal } from '../../../Modal';
+import { songCountLabel, type Conversation, type Setlist } from '../bandDetailShared';
 
 /**
  * "Add to setlist" modal: pick one or more setlists to add the given song to.

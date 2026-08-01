@@ -19,15 +19,12 @@ export interface BandDetail {
 }
 
 /**
- * Loads the band's detail, conversations, setlists, and events in one shot.
- * Returns the data plus a `reload` used after mutations. The initial load runs
- * through the pending tracker so the global busy indicator reflects it.
+ * Loads the band's detail, setlists, events, and venues in one shot. Returns
+ * the data plus a `reload` used after mutations. The initial load runs through
+ * the pending tracker so the global busy indicator reflects it.
  */
 export function useBandData(bandId: string) {
   const [data, setData] = useState<BandDetail | null>(null);
-  const [conversations, setConversations] = useState<Conversation[] | null>(
-    null,
-  );
   const [setlists, setSetlists] = useState<Setlist[]>([]);
   const [shows, setShows] = useState<Show[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -36,20 +33,14 @@ export function useBandData(bandId: string) {
 
   const reload = useCallback(async () => {
     try {
-      const [detailRes, convRes, setlistRes, eventRes, venueRes] =
-        await Promise.all([
-          fetch(`/api/bands/${bandId}`, { cache: 'no-store' }),
-          fetch(`/api/bands/${bandId}/conversations`, { cache: 'no-store' }),
-          fetch(`/api/bands/${bandId}/setlists`, { cache: 'no-store' }),
-          fetch(`/api/bands/${bandId}/events`, { cache: 'no-store' }),
-          fetch(`/api/bands/${bandId}/venues`, { cache: 'no-store' }),
-        ]);
+      const [detailRes, setlistRes, eventRes, venueRes] = await Promise.all([
+        fetch(`/api/bands/${bandId}`, { cache: 'no-store' }),
+        fetch(`/api/bands/${bandId}/setlists`, { cache: 'no-store' }),
+        fetch(`/api/bands/${bandId}/events`, { cache: 'no-store' }),
+        fetch(`/api/bands/${bandId}/venues`, { cache: 'no-store' }),
+      ]);
       await ensureOk(detailRes);
       setData((await detailRes.json()) as BandDetail);
-      if (convRes.ok) {
-        const cd = (await convRes.json()) as { conversations: Conversation[] };
-        setConversations(cd.conversations);
-      }
       if (setlistRes.ok) {
         const sd = (await setlistRes.json()) as { setlists: Setlist[] };
         setSetlists(sd.setlists);
@@ -72,7 +63,51 @@ export function useBandData(bandId: string) {
     void trackPending(() => reload());
   }, [reload, trackPending]);
 
-  return { data, conversations, setlists, shows, venues, error, reload };
+  return { data, setlists, shows, venues, error, reload };
+}
+
+/**
+ * The Audio page's slice of the same data: the band itself (for the heading
+ * and the membership check), its songs, and its setlists (for "Add to
+ * setlist"). Same contract as `useBandData` — data plus a `reload`.
+ */
+export function useBandAudioData(bandId: string) {
+  const [data, setData] = useState<BandDetail | null>(null);
+  const [conversations, setConversations] = useState<Conversation[] | null>(
+    null,
+  );
+  const [setlists, setSetlists] = useState<Setlist[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const trackPending = useTrackPending();
+
+  const reload = useCallback(async () => {
+    try {
+      const [detailRes, convRes, setlistRes] = await Promise.all([
+        fetch(`/api/bands/${bandId}`, { cache: 'no-store' }),
+        fetch(`/api/bands/${bandId}/conversations`, { cache: 'no-store' }),
+        fetch(`/api/bands/${bandId}/setlists`, { cache: 'no-store' }),
+      ]);
+      await ensureOk(detailRes);
+      setData((await detailRes.json()) as BandDetail);
+      if (convRes.ok) {
+        const cd = (await convRes.json()) as { conversations: Conversation[] };
+        setConversations(cd.conversations);
+      }
+      if (setlistRes.ok) {
+        const sd = (await setlistRes.json()) as { setlists: Setlist[] };
+        setSetlists(sd.setlists);
+      }
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }, [bandId]);
+
+  useEffect(() => {
+    void trackPending(() => reload());
+  }, [reload, trackPending]);
+
+  return { data, conversations, setlists, error, reload };
 }
 
 /**

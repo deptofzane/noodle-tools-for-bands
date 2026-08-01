@@ -24,6 +24,7 @@ export function Select({
   className = '',
   placeholder = '',
   ariaLabel,
+  openUp = false,
 }: {
   id?: string;
   value: string;
@@ -35,6 +36,8 @@ export function Select({
   placeholder?: string;
   /** Accessible name when there's no associated <label>. */
   ariaLabel?: string;
+  /** Open the list above the field — for fields near the bottom of the screen. */
+  openUp?: boolean;
 }) {
   const listId = useId();
   const [open, setOpen] = useState(false);
@@ -148,7 +151,10 @@ export function Select({
           ref={listRef}
           id={listId}
           role="listbox"
-          className="absolute left-0 right-0 top-full z-20 mt-1 max-h-60 overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-sm shadow-lg dark:border-neutral-700 dark:bg-neutral-900"
+          className={
+            'absolute left-0 right-0 z-20 max-h-60 overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-sm shadow-lg dark:border-neutral-700 dark:bg-neutral-900 ' +
+            (openUp ? 'bottom-full mb-1' : 'top-full mt-1')
+          }
         >
           {options.map((o, i) => {
             const isSelected = o.value === value;

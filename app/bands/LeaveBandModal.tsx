@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Modal } from '../Modal';
 import { useTrackPending } from '../PendingActionProvider';
 import { useToast } from '../ToastProvider';
+import { LoadingBlock } from '../Spinner';
 
 interface Other {
   userId: string;
@@ -121,7 +122,7 @@ export function LeaveBandModal({
 
       {loadingOwner ? (
         <>
-          <p className="mt-4 text-sm text-neutral-500">Loading members…</p>
+          <LoadingBlock className="mt-4 py-6" label="Loading members" />
           <div className="mt-4 flex justify-end">
             <button type="button" onClick={onCancel} className="btn-ghost">
               Cancel
@@ -142,8 +143,8 @@ export function LeaveBandModal({
       ) : soleOwner ? (
         <>
           <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-            You’re the only member. To leave, delete the band from its Edit
-            page instead.
+            You’re the only member. To leave, delete the band from its Edit page
+            instead.
           </p>
           <div className="mt-4 flex justify-end">
             <button type="button" onClick={onCancel} className="btn-ghost">

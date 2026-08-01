@@ -17,6 +17,13 @@
    * chart sizing; the Live/Practice zoom multiplies it.
    */
   --sheet-base: 14px;
+  /*
+   * Height of the pinned nav bar. The bar measures itself and updates this
+   * after mount; the value here is the pre-hydration estimate that keeps the
+   * reserved space (and the player bar sitting above it) from jumping. Routes
+   * with no nav (the login page) never set it, and opt out via `.has-app-nav`.
+   */
+  --app-nav-h: 4.5rem;
 }
 :root.dark {
   color-scheme: dark;
@@ -25,6 +32,29 @@
 /* Sheet-music text containers opt out of global font scaling via this base. */
 .sheet-base {
   font-size: var(--sheet-base);
+}
+
+/*
+ * The nav bar is fixed — to the bottom on mobile, the top on desktop — so it
+ * covers page content unless the body reserves its height on the matching
+ * side. Set on <body> only for signed-in routes, which are the ones that
+ * render it. The player bar rides just above the mobile nav, and drops to the
+ * bottom edge on desktop where the nav has moved to the top.
+ */
+body.has-app-nav {
+  padding-bottom: var(--app-nav-h);
+}
+.player-bar {
+  bottom: var(--app-nav-h, 0px);
+}
+@media (min-width: 1024px) {
+  body.has-app-nav {
+    padding-top: var(--app-nav-h);
+    padding-bottom: 0;
+  }
+  .player-bar {
+    bottom: 0;
+  }
 }
 
 html,

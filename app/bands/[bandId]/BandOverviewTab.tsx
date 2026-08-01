@@ -12,7 +12,13 @@ import { useToast } from '../../ToastProvider';
 import { usePersistedBoolean } from '../../usePersistedBoolean';
 import { usePersistedStringSet } from '../../usePersistedStringSet';
 import { useOfflineDownload } from '../../offline/useOfflineDownload';
-import { MinimizeToggle, type Setlist, type Show } from './bandDetailShared';
+import { usePlaylistPlayer } from '../../player/PlaylistPlayer';
+import {
+  MinimizeToggle,
+  setlistQueue,
+  type Setlist,
+  type Show,
+} from './bandDetailShared';
 import { MapLink } from '../../MapLink';
 import { CollapsibleSection } from '@/app/CollapsibleSection';
 
@@ -40,6 +46,7 @@ export function BandOverviewTab({
   const trackPending = useTrackPending();
   const showToast = useToast();
   const offline = useOfflineDownload();
+  const player = usePlaylistPlayer();
   const [showsMinimized, setShowsMinimized] = usePersistedBoolean(
     'bandShowsMinimized',
     false,
@@ -72,6 +79,21 @@ export function BandOverviewTab({
     } finally {
       setDeleting(false);
     }
+  };
+
+  // Append an event's setlist to the player queue — whatever is playing keeps
+  // playing. `undefined` when the event points at a setlist we didn't load.
+  const queueSetlist = (sl: Setlist | undefined) => {
+    const tracks = sl ? setlistQueue(sl) : [];
+    if (tracks.length === 0) {
+      showToast('No songs with audio in this setlist.');
+      return;
+    }
+    player.enqueue(tracks);
+    showToast(
+      `Added ${tracks.length} song${tracks.length === 1 ? '' : 's'} to the queue.`,
+      'success',
+    );
   };
 
   // Split shows by today's local date. Upcoming soonest-first; past kept
@@ -158,6 +180,9 @@ export function BandOverviewTab({
                   }
                 >
                   Edit setlist
+                </ActionMenuItem>
+                <ActionMenuItem onClick={() => queueSetlist(setlist)}>
+                  Add setlist songs to queue
                 </ActionMenuItem>
                 <ActionMenuItem
                   onClick={() =>

@@ -40,9 +40,11 @@ import { SheetText } from './SheetText';
 import { PdfView } from '../../PdfView';
 import {
   usePersistedZoom,
+  useDefaultSheetZoom,
   ZOOM_MIN,
   ZOOM_MAX,
 } from '../../usePersistedZoom';
+import { LoadingBlock } from '../../Spinner';
 
 /** Kept for callers that still pass a default-version meta as `initial`. */
 export interface SheetMusicMeta {
@@ -123,9 +125,12 @@ export function SheetMusic({
           preferredId: string | null;
         };
         setVersions(d.versions);
-        setSelectedId((prev) =>
-          selectId ??
-          (prev && d.versions.some((v) => v.id === prev) ? prev : d.preferredId),
+        setSelectedId(
+          (prev) =>
+            selectId ??
+            (prev && d.versions.some((v) => v.id === prev)
+              ? prev
+              : d.preferredId),
         );
       } catch {
         setVersions([]);
@@ -142,19 +147,23 @@ export function SheetMusic({
   const viewUrl = selected
     ? `${addUrl}?version=${selected.id}&v=${encodeURIComponent(selected.updatedAt)}`
     : addUrl;
-  const kind = selected ? previewKind(selected.mimeType, selected.fileName) : 'other';
+  const kind = selected
+    ? previewKind(selected.mimeType, selected.fileName)
+    : 'other';
 
   // Opt-in per-song zoom (Practice passes a stable `zoomKey`). Persisted under
   // that key and shared with Live, so a song keeps its zoom across modes.
   const zoomEnabled = zoomKey != null;
-  const [zoom, setZoom] = usePersistedZoom(zoomKey ?? null);
+  // Only the starting point — a song's saved zoom, once it has one, wins.
+  const defaultZoom = useDefaultSheetZoom(kind);
+  const [zoom, setZoom] = usePersistedZoom(zoomKey ?? null, defaultZoom);
   const zoomable =
     zoomEnabled &&
     !!selected &&
     (kind === 'image' || kind === 'pdf' || kind === 'text');
   const zoomIn = () => setZoom((z) => z + 10);
   const zoomOut = () => setZoom((z) => z - 10);
-  const resetZoom = () => setZoom(100);
+  const resetZoom = () => setZoom(defaultZoom);
 
   // Lazily fetch text content when the panel is open and the file is text.
   useEffect(() => {
@@ -165,7 +174,9 @@ export function SheetMusic({
     let cancelled = false;
     setTextContent(null);
     fetch(viewUrl)
-      .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((r) =>
+        r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`)),
+      )
       .then((t) => !cancelled && setTextContent(t))
       .catch(() => !cancelled && setTextContent('(Could not load file.)'));
     return () => {
@@ -258,12 +269,14 @@ export function SheetMusic({
 
   return (
     <section className="flex flex-col gap-2 border-b border-neutral-200 py-2 dark:border-neutral-800">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 mr-2">
         <span className="flex min-w-0 items-center gap-2">
           <button
             type="button"
             onClick={() => setIsMinimized((v) => !v)}
-            aria-label={isMinimized ? 'Expand sheet music' : 'Minimize sheet music'}
+            aria-label={
+              isMinimized ? 'Expand sheet music' : 'Minimize sheet music'
+            }
             aria-expanded={!isMinimized}
             className="-mr-1 flex gap-2 w-full px-2 py-2 text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
           >
@@ -319,7 +332,8 @@ export function SheetMusic({
               >
                 {versions!.map((v) => (
                   <option key={v.id} value={v.id}>
-                    {(v.label || v.fileName) + (v.isDefault ? ' (default)' : '')}
+                    {(v.label || v.fileName) +
+                      (v.isDefault ? ' (default)' : '')}
                   </option>
                 ))}
               </select>
@@ -330,7 +344,11 @@ export function SheetMusic({
 
       {!isMinimized &&
         (versions === null ? (
-          <p className="text-xs text-neutral-500">Loading…</p>
+          <LoadingBlock
+            size="sm"
+            className="py-6"
+            label="Loading sheet music"
+          />
         ) : hasSheet && selected ? (
           <div className="flex flex-col gap-2">
             {kind === 'image' &&
@@ -388,7 +406,11 @@ export function SheetMusic({
                 }
               >
                 {textContent === null ? (
-                  <span className="text-xs text-neutral-500">Loading…</span>
+                  <LoadingBlock
+                    size="sm"
+                    className="py-6"
+                    label="Loading sheet music"
+                  />
                 ) : (
                   <SheetText text={textContent} fileName={selected.fileName} />
                 )}

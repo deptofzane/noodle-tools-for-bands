@@ -35,19 +35,9 @@ export default async function EventPage({
   ]);
   const canManage = bandMembership !== null;
 
-  // Duration reflects actual songs, not markers (set breaks etc.).
-  const setlistPlayable = setlist
-    ? setlist.songs.filter((s) => s.conversationId)
-    : [];
-  const setlistTotal = setlistPlayable.reduce(
-    (sum, s) => sum + (s.songLength ?? 0),
-    0,
-  );
-  const setlistAllKnown = setlistPlayable.every((s) => s.songLength != null);
-
   return (
     <main className="mx-auto flex h-max max-w-2xl flex-col px-6 pb-4">
-      <PageHeader defaultHref="/calendar" defaultHrefName='Calendar'>
+      <PageHeader defaultHref="/calendar" defaultHrefName="Calendar">
         {canManage && (
           <Link
             href={`/calendar/events/${eventId}/edit`}
@@ -73,6 +63,11 @@ export default async function EventPage({
 
       {/* <section className="flex flex-col gap-2 rounded-lg text-sm mb-4"> */}
       <section className="flex flex-col gap-2 rounded-lg text-sm mb-4">
+        {event.eventType && (
+          <div>
+            <span className="font-medium">Type:</span> {event.eventType}
+          </div>
+        )}
         <div>
           <span className="font-medium">Date:</span>{' '}
           {formatDateLong(event.date)}
@@ -129,15 +124,15 @@ export default async function EventPage({
       {setlist && (
         <section className="flex flex-col gap-2 border-t border-b border-neutral-200 py-2 dark:border-neutral-800 mt-2 mb-4">
           <span className="flex justify-between items-center">
-              <Link
-                href={`/bands/${event.bandId}/setlists/${setlist.id}`}
-                className="hover:underline flex gap-1"
-              >
-                <h2 className="text-default font-normal text-neutral-200">
-                  Setlist:
-                </h2>
-                <h2 className="text-default font-medium">{setlist.name}</h2>
-              </Link>
+            <Link
+              href={`/bands/${event.bandId}/setlists/${setlist.id}`}
+              className="hover:underline flex gap-1"
+            >
+              <h2 className="text-default font-normal text-neutral-200">
+                Setlist:
+              </h2>
+              <h2 className="text-default font-medium">{setlist.name}</h2>
+            </Link>
             {canManage && (
               <EventSetlistActions
                 bandId={event.bandId}
@@ -160,17 +155,10 @@ export default async function EventPage({
               />
             )}
           </span>
-          <div className="flex items-baseline justify-between gap-2">
-            {setlist.songs.length > 0 && (
-              <span className="shrink-0 text-xs text-neutral-500">
-                Total length: &nbsp; {setlistAllKnown ? '' : '~'}
-                {formatDuration(setlistTotal)}
-              </span>
-            )}
-          </div>
           <EventSetlistSongs
             bandId={event.bandId}
             setlistId={setlist.id}
+            setlistName={setlist.name}
             canManage={canManage}
             songs={setlist.songs}
           />

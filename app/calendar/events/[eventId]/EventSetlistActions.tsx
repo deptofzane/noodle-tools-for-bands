@@ -9,6 +9,7 @@ import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
 import { useOfflineDownload } from '../../../offline/useOfflineDownload';
 import type { OfflineSong } from '../../../offline/offlineSetlists';
+import { LoadingBlock } from '../../../Spinner';
 
 /** The event's current fields, resent on PATCH (which replaces all of them). */
 export interface EventSetlistPatchFields {
@@ -172,7 +173,7 @@ export function EventSetlistActions({
           </h2>
 
           {setlists === null ? (
-            <p className="mt-3 text-sm text-neutral-500">Loading…</p>
+            <LoadingBlock className="mt-3 py-6" label="Loading setlists" />
           ) : (
             <ul className="mt-3 flex max-h-[50vh] flex-col overflow-y-auto">
               <li>

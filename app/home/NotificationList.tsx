@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { formatRelativeTime } from '@/lib/format';
 import { usePersistedBoolean } from '../usePersistedBoolean';
+import { Spinner } from '../Spinner';
 
 export interface NotificationItem {
   id: string;
@@ -261,9 +262,15 @@ export function NotificationList({
                 type="button"
                 onClick={() => void loadMore()}
                 disabled={loadingMore}
-                className="self-center rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-900"
+                // Fixed min-width so swapping the label for the spinner
+                // doesn't make the button jump.
+                className="flex min-w-[6.5rem] items-center justify-center self-center rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-900"
               >
-                {loadingMore ? 'Loading…' : 'Load older'}
+                {loadingMore ? (
+                  <Spinner size="xs" label="Loading older notifications" />
+                ) : (
+                  'Load older'
+                )}
               </button>
             )}
           </>

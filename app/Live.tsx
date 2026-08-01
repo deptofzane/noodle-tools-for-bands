@@ -12,8 +12,9 @@ import { previewKind } from '@/lib/sheet-preview';
 import { ActionMenu, ActionMenuItem } from './ActionMenu';
 import { SetlistNav } from './SetlistNav';
 import { usePersistedIndex } from './usePersistedIndex';
-import { usePersistedZoom } from './usePersistedZoom';
+import { usePersistedZoom, useDefaultSheetZoom } from './usePersistedZoom';
 import { PdfView } from './PdfView';
+import { LoadingBlock, Spinner } from './Spinner';
 import { SheetText } from './notes/[conversationId]/SheetText';
 import type { PracticeSong } from './Practice';
 
@@ -62,13 +63,25 @@ export function Live({
   );
   const exit = useCallback(() => router.push(exitHref), [router, exitHref]);
 
+  const sheet = song?.sheetMusic ?? null;
+  const kind =
+    song?.conversationId && sheet
+      ? previewKind(sheet.mimeType, sheet.fileName)
+      : null;
+  const zoomable = kind === 'image' || kind === 'pdf' || kind === 'text';
+
   // Zoom (percent) drives image width, PDF viewer zoom, and text font size.
   // It's per-song and persisted (keyed by the song's conversation id), so each
-  // song keeps its own zoom as you flip through the set and come back.
-  const [zoom, setZoom] = usePersistedZoom(convId);
+  // song keeps its own zoom as you flip through the set and come back. Until
+  // it has one, it starts where Practice starts it.
+  const defaultZoom = useDefaultSheetZoom(kind);
+  const [zoom, setZoom] = usePersistedZoom(convId, defaultZoom);
   const zoomIn = useCallback(() => setZoom((z) => z + 10), [setZoom]);
   const zoomOut = useCallback(() => setZoom((z) => z - 10), [setZoom]);
-  const resetZoom = useCallback(() => setZoom(100), [setZoom]);
+  const resetZoom = useCallback(
+    () => setZoom(defaultZoom),
+    [setZoom, defaultZoom],
+  );
 
   // For pinch-to-zoom: read the live value without re-subscribing.
   const zoomRef = useRef(zoom);
@@ -76,13 +89,6 @@ export function Live({
     zoomRef.current = zoom;
   }, [zoom]);
   const getZoom = useCallback(() => zoomRef.current, []);
-
-  const sheet = song?.sheetMusic ?? null;
-  const kind =
-    song?.conversationId && sheet
-      ? previewKind(sheet.mimeType, sheet.fileName)
-      : null;
-  const zoomable = kind === 'image' || kind === 'pdf' || kind === 'text';
 
   // Sheet-music versions for the current song + this user's preferred one.
   // Chosen from the header kebab; the choice persists per-user.
@@ -204,110 +210,109 @@ export function Live({
       <header className="w-100 flex flex-col">
         <p className="mt-1 mb-1 text-sm mx-auto ">{song?.title}</p>
         <span className="flex items-center justify-between border-b border-neutral-200 px-2 pb-2 dark:border-neutral-800">
-
-        <button
-          type="button"
-          onClick={goPrev}
-          disabled={!canBack}
-          aria-label="Previous"
-          className={navBtn}
-        >
-          ‹
-        </button>
-        <SetlistNav
-          songs={songs.map((s) => ({
-            title: s.title,
-            isMarker: !s.conversationId,
-          }))}
-          current={current}
-          onSelect={setIndex}
-          align="left"
-        >
-          <span className="text-xs tabular-nums text-neutral-300">
-            {total === 0 ? '0 / 0' : `${current + 1} / ${total}`}
-          </span>
-        </SetlistNav>
-
-        <div className="flex items-center gap-2">
-          {zoomable ? (
-            <div className="flex items-center gap-0.5 rounded-md border border-neutral-300 dark:border-neutral-700">
-              <button
-                type="button"
-                onClick={zoomOut}
-                disabled={zoom <= 50}
-                aria-label="Zoom out"
-                className="flex h-12 w-9 items-center justify-center rounded-l-md text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:hover:bg-neutral-900"
-              >
-                −
-              </button>
-              <button
-                type="button"
-                onClick={resetZoom}
-                aria-label="Reset zoom"
-                className="min-w-[3.25rem] px-1 text-center text-xs font-medium tabular-nums hover:bg-neutral-50 dark:hover:bg-neutral-900"
-              >
-                {zoom}%
-              </button>
-              <button
-                type="button"
-                onClick={zoomIn}
-                disabled={zoom >= 400}
-                aria-label="Zoom in"
-                className="flex h-12 w-9 items-center justify-center rounded-r-md text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:hover:bg-neutral-900"
-              >
-                +
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-0.5 w-[11.75rem] h-[3.125rem]"></div>
-          )}
-          {sheetVersions && sheetVersions.length > 1 ? (
-            <ActionMenu label="Sheet music version">
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className="cursor-default px-4 py-2 text-[0.625rem] font-semibold uppercase tracking-wide text-neutral-400 sm:px-3 sm:py-1.5"
-              >
-                Select version
-              </div>
-              {sheetVersions.map((v) => (
-                <ActionMenuItem
-                  key={v.id}
-                  onClick={() => selectSheetVersion(v.id)}
-                >
-                  <span className="flex items-center gap-2">
-                    <span className="w-3 shrink-0 text-blue-600 dark:text-blue-400">
-                      {v.id === sheetSelectedId ? '✓' : ''}
-                    </span>
-                    <span className="truncate">
-                      {(v.label || v.fileName) +
-                        (v.isDefault ? ' (default)' : '')}
-                    </span>
-                  </span>
-                </ActionMenuItem>
-              ))}
-            </ActionMenu>
-          ) : zoomable ? (
-            <span className="rounded-md px-6 py-3 md:px-2 md:py-1 w-[2rem] h-[2rem]"></span>
-          ) : null}
-          {/* Exit lives in the header on desktop. */}
           <button
             type="button"
-            onClick={exit}
-            aria-label="Exit live mode"
-            className="hidden h-9 items-center rounded-md border border-neutral-300 px-3 text-sm font-medium hover:bg-neutral-50 lg:inline-flex dark:border-neutral-700 dark:hover:bg-neutral-900"
+            onClick={goPrev}
+            disabled={!canBack}
+            aria-label="Previous"
+            className={navBtn}
           >
-            ✕ Exit
+            ‹
           </button>
-        </div>
-        <button
-          type="button"
-          onClick={goNext}
-          disabled={!canForward}
-          aria-label="Next"
-          className={navBtn}
-        >
-          ›
-        </button>
+          <SetlistNav
+            songs={songs.map((s) => ({
+              title: s.title,
+              isMarker: !s.conversationId,
+            }))}
+            current={current}
+            onSelect={setIndex}
+            align="left"
+          >
+            <span className="text-xs tabular-nums text-neutral-300">
+              {total === 0 ? '0 / 0' : `${current + 1} / ${total}`}
+            </span>
+          </SetlistNav>
+
+          <div className="flex items-center gap-2">
+            {zoomable ? (
+              <div className="flex items-center gap-0.5 rounded-md border border-neutral-300 dark:border-neutral-700">
+                <button
+                  type="button"
+                  onClick={zoomOut}
+                  disabled={zoom <= 50}
+                  aria-label="Zoom out"
+                  className="flex h-12 w-9 items-center justify-center rounded-l-md text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:hover:bg-neutral-900"
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  onClick={resetZoom}
+                  aria-label="Reset zoom"
+                  className="min-w-[3.25rem] px-1 text-center text-xs font-medium tabular-nums hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                >
+                  {zoom}%
+                </button>
+                <button
+                  type="button"
+                  onClick={zoomIn}
+                  disabled={zoom >= 400}
+                  aria-label="Zoom in"
+                  className="flex h-12 w-9 items-center justify-center rounded-r-md text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:hover:bg-neutral-900"
+                >
+                  +
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-0.5 w-[11.75rem] h-[3.125rem]"></div>
+            )}
+            {sheetVersions && sheetVersions.length > 1 ? (
+              <ActionMenu label="Sheet music version">
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="cursor-default px-4 py-2 text-[0.625rem] font-semibold uppercase tracking-wide text-neutral-400 sm:px-3 sm:py-1.5"
+                >
+                  Select version
+                </div>
+                {sheetVersions.map((v) => (
+                  <ActionMenuItem
+                    key={v.id}
+                    onClick={() => selectSheetVersion(v.id)}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="w-3 shrink-0 text-blue-600 dark:text-blue-400">
+                        {v.id === sheetSelectedId ? '✓' : ''}
+                      </span>
+                      <span className="truncate">
+                        {(v.label || v.fileName) +
+                          (v.isDefault ? ' (default)' : '')}
+                      </span>
+                    </span>
+                  </ActionMenuItem>
+                ))}
+              </ActionMenu>
+            ) : zoomable ? (
+              <span className="rounded-md px-6 py-3 md:px-2 md:py-1 w-[2rem] h-[2rem]"></span>
+            ) : null}
+            {/* Exit lives in the header on desktop. */}
+            <button
+              type="button"
+              onClick={exit}
+              aria-label="Exit live mode"
+              className="hidden h-9 items-center rounded-md border border-neutral-300 px-3 text-sm font-medium hover:bg-neutral-50 lg:inline-flex dark:border-neutral-700 dark:hover:bg-neutral-900"
+            >
+              ✕ Exit
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={goNext}
+            disabled={!canForward}
+            aria-label="Next"
+            className={navBtn}
+          >
+            ›
+          </button>
         </span>
       </header>
 
@@ -462,7 +467,7 @@ function SheetView({
   if (versions === null) {
     content = (
       <Centered>
-        <p className="text-sm text-neutral-500">Loading…</p>
+        <Spinner size="lg" />
       </Centered>
     );
   } else if (!selected || !url) {
@@ -506,11 +511,13 @@ function SheetView({
         className="h-full w-full overflow-auto"
       >
         <div
-          style={{ fontSize: `calc(var(--sheet-base) * ${(zoom / 100) * 1.03})` }}
+          style={{
+            fontSize: `calc(var(--sheet-base) * ${(zoom / 100) * 1.03})`,
+          }}
           className="px-6 py-6 leading-relaxed"
         >
           {text === null ? (
-            'Loading…'
+            <LoadingBlock label="Loading sheet music" />
           ) : (
             <SheetText
               text={text}

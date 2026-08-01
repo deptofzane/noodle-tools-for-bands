@@ -9,13 +9,17 @@ import { addHoursToTime, DEFAULT_EVENT_DURATION_HOURS } from '@/lib/format';
 
 /**
  * PATCH /api/events/[eventId]
- *   Body: { title, date, time?, endTime?, location?, details?, setlistId? }
+ *   Body: { title, eventType?, date, time?, endTime?, location?, details?,
+ *     setlistId? }
  *   → edit the event. Only members of the owning band. If a start `time` is
  *     given, `endTime` defaults to two hours later. A setlistId, if given, must
  *     belong to that band.
  */
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^\d{2}:\d{2}$/;
+
+/** Matches the create route — event kinds are free text, loosely bounded. */
+const MAX_EVENT_TYPE = 40;
 
 /** End time only applies with a start; defaults to +2h when not provided. */
 function resolveEndTime(time: string | null, rawEnd: string | null): string | null {
@@ -61,6 +65,16 @@ export async function PATCH(
       { status: 400 },
     );
 
+  const eventType = str(body?.eventType);
+  if (eventType && eventType.length > MAX_EVENT_TYPE)
+    return NextResponse.json(
+      {
+        error: 'bad_event_type',
+        message: `Event type must be ${MAX_EVENT_TYPE} characters or fewer.`,
+      },
+      { status: 400 },
+    );
+
   // A chosen setlist must belong to this event's band.
   if (setlistId) {
     const setlist = await getSetlist(setlistId);
@@ -84,6 +98,7 @@ export async function PATCH(
   const time = str(body?.time);
   await updateEvent(eventId, {
     title,
+    eventType,
     date,
     time,
     endTime: resolveEndTime(time, str(body?.endTime)),

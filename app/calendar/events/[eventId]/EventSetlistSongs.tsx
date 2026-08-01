@@ -8,49 +8,70 @@ import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
-import { PlayerProvider } from '../../../notes/[conversationId]/PlayerContext';
-import { AudioPlayer } from '../../../notes/[conversationId]/AudioPlayer';
+import {
+  usePlaylistPlayer,
+  type PlaylistTrack,
+} from '../../../player/PlaylistPlayer';
 
 interface SongItem {
   id: string;
   conversationId: string | null;
   name: string;
   songLength: number | null;
+  audioStoredName: string | null;
+  audioMimeType: string | null;
 }
 
 /**
- * The event's setlist songs, each (real songs, not set-break markers) with a
- * kebab to view/edit the song or remove it from the setlist. Removal PATCHes
- * the setlist to its remaining items, then refreshes. Kebab shows only for
- * band members (`canManage`) — songs and edits require band access.
+ * The event's setlist songs, in order. Each song with audio gets a play button
+ * that hands the whole setlist to the global player (queued from that song on),
+ * so playback continues through the set and survives leaving the page. A kebab
+ * offers view/edit/remove for band members (`canManage`); removal PATCHes the
+ * setlist to its remaining items, then refreshes.
  */
 export function EventSetlistSongs({
   bandId,
   setlistId,
+  setlistName,
   canManage,
   songs,
 }: {
   bandId: string;
   setlistId: string;
+  setlistName: string;
   canManage: boolean;
   songs: SongItem[];
 }) {
   const router = useRouter();
   const trackPending = useTrackPending();
   const showToast = useToast();
+  const player = usePlaylistPlayer();
   const [removeTarget, setRemoveTarget] = useState<SongItem | null>(null);
   const [removing, setRemoving] = useState(false);
-  // Songs whose audio player is expanded. The player mounts (and only then
-  // fetches audio) on expand, and unmounts (stopping playback) on collapse.
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-  const togglePlayer = (id: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  // Length/duration reflect actual songs, not markers (set breaks etc.).
+  const playableSongs = songs.filter((s) => s.conversationId);
+  const totalSeconds = playableSongs.reduce(
+    (sum, s) => sum + (s.songLength ?? 0),
+    0,
+  );
+  const allLengthsKnown = playableSongs.every((s) => s.songLength != null);
+
+  // The queue skips songs with no audio, so a song's queue position isn't its
+  // position in the setlist.
+  const withAudio = songs.filter((s) => s.conversationId && s.audioStoredName);
+  const queue: PlaylistTrack[] = withAudio.map((s) => ({
+    id: s.conversationId!,
+    title: s.name,
+    src: `/api/conversations/${s.conversationId}/files/audio?name=${encodeURIComponent(
+      s.audioStoredName!,
+    )}`,
+    fileName: s.audioStoredName!,
+    mimeType: s.audioMimeType ?? undefined,
+    href: `/notes/${s.conversationId}`,
+    subtitle: setlistName,
+    durationSec: s.songLength ?? undefined,
+  }));
 
   const handleRemove = async () => {
     if (!removeTarget || removing) return;
@@ -90,83 +111,129 @@ export function EventSetlistSongs({
 
   return (
     <>
+      <div className="flex flex-col items-start justify-between gap-2">
+        {queue.length > 0 && (
+          <button
+            type="button"
+            onClick={() => player.play(queue, 0)}
+            className="shrink-0 btn-outline"
+          >
+            Play all
+          </button>
+        )}
+        <span className="shrink-0 text-sm text-neutral-500">
+          Total length: &nbsp; {allLengthsKnown ? '' : '~'}
+          {formatDuration(totalSeconds)}
+        </span>
+      </div>
+
       <ul className="flex flex-col gap-1 text-sm">
-        {songs.map((s) =>
-          s.conversationId ? (
-            <li key={s.id} className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
+        {songs.map((s) => {
+          if (!s.conversationId) {
+            return (
+              <li
+                key={s.id}
+                className="text-xs font-semibold uppercase tracking-wide text-neutral-500 pl-4"
+              >
+                {s.name}
+              </li>
+            );
+          }
+          const hasAudio = Boolean(s.audioStoredName);
+          const isCurrent = player.track?.id === s.conversationId;
+          const queueIndex = withAudio.findIndex((w) => w.id === s.id);
+          return (
+            <li key={s.id} className="flex items-center gap-2">
+              {hasAudio ? (
                 <button
                   type="button"
-                  onClick={() => togglePlayer(s.id)}
-                  aria-expanded={expanded.has(s.id)}
-                  aria-label={
-                    expanded.has(s.id)
-                      ? 'Hide audio player'
-                      : 'Show audio player'
+                  onClick={() =>
+                    isCurrent ? player.toggle() : player.play(queue, queueIndex)
                   }
-                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                  aria-label={
+                    isCurrent && player.isPlaying
+                      ? `Pause ${s.name}`
+                      : `Play ${s.name}`
+                  }
+                  title={
+                    isCurrent && player.isPlaying
+                      ? `Pause ${s.name}`
+                      : `Play ${s.name}`
+                  }
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-900"
                 >
-                  <span
-                    aria-hidden="true"
-                    className="shrink-0 text-neutral-400"
-                  >
-                    {expanded.has(s.id) ? '▾' : '▸'}
-                  </span>
-                  <span className="min-w-0 truncate py-3">
-                    {s.name}
-                    {s.songLength != null && (
-                      <span className="text-neutral-400">
-                        {` - ${formatDuration(s.songLength)}`}
-                      </span>
-                    )}
-                  </span>
+                  {isCurrent && player.isPlaying ? (
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="12"
+                      height="12"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <rect x="6" y="5" width="4" height="14" rx="1" />
+                      <rect x="14" y="5" width="4" height="14" rx="1" />
+                    </svg>
+                  ) : (
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="12"
+                      height="12"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  )}
                 </button>
-                {canManage && (
-                  <ActionMenu label="Song actions">
-                    <ActionMenuItem
-                      onClick={() => router.push(`/notes/${s.conversationId}`)}
-                    >
-                      View song
-                    </ActionMenuItem>
-                    <ActionMenuItem
-                      onClick={() =>
-                        router.push(`/notes/${s.conversationId}/edit`)
-                      }
-                    >
-                      Edit song
-                    </ActionMenuItem>
-                    <ActionMenuItem
-                      destructive
-                      onClick={() => setRemoveTarget(s)}
-                    >
-                      Remove song from setlist
-                    </ActionMenuItem>
-                  </ActionMenu>
-                )}
-              </div>
+              ) : (
+                // Keeps names aligned with the playable rows.
+                <span
+                  aria-hidden="true"
+                  className="h-8 w-8 shrink-0 rounded-full border border-dashed border-neutral-300 dark:border-neutral-700"
+                />
+              )}
 
-              {expanded.has(s.id) && (
-                <PlayerProvider key={s.conversationId}>
-                  <AudioPlayer
-                    src={`/api/conversations/${s.conversationId}/files/audio?name=${encodeURIComponent(
-                      s.name,
-                    )}`}
-                    fileName={s.name}
-                    mimeType="audio/mpeg"
-                    hasPracticeOptions={false}
-                  />
-                </PlayerProvider>
+              <span
+                className={
+                  'min-w-0 flex-1 truncate py-3 ml-2' +
+                  (isCurrent
+                    ? 'font-medium text-blue-700 dark:text-blue-400'
+                    : '')
+                }
+              >
+                {s.name}
+                {s.songLength != null && (
+                  <span className="text-neutral-400">
+                    {` - ${formatDuration(s.songLength)}`}
+                  </span>
+                )}
+              </span>
+
+              {canManage && (
+                <ActionMenu label="Song actions">
+                  <ActionMenuItem
+                    onClick={() => router.push(`/notes/${s.conversationId}`)}
+                  >
+                    View song
+                  </ActionMenuItem>
+                  <ActionMenuItem
+                    onClick={() =>
+                      router.push(`/notes/${s.conversationId}/edit`)
+                    }
+                  >
+                    Edit song
+                  </ActionMenuItem>
+                  <ActionMenuItem
+                    destructive
+                    onClick={() => setRemoveTarget(s)}
+                  >
+                    Remove song from setlist
+                  </ActionMenuItem>
+                </ActionMenu>
               )}
             </li>
-          ) : (
-            <li
-              key={s.id}
-              className="text-xs font-semibold uppercase tracking-wide text-neutral-500 pl-4"
-            >
-              {s.name}
-            </li>
-          ),
-        )}
+          );
+        })}
       </ul>
 
       <ConfirmModal

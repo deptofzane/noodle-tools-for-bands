@@ -5,18 +5,20 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
 import { formatSongMeta } from '@/lib/format';
-import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
-import { ConfirmModal } from '../../ConfirmModal';
-import { usePersistedBoolean } from '../../usePersistedBoolean';
-import { usePersistedStringSet } from '../../usePersistedStringSet';
-import { useTrackPending } from '../../PendingActionProvider';
-import { useToast } from '../../ToastProvider';
-import { useOfflineDownload } from '../../offline/useOfflineDownload';
+import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { ConfirmModal } from '../../../ConfirmModal';
+import { usePersistedBoolean } from '../../../usePersistedBoolean';
+import { usePersistedStringSet } from '../../../usePersistedStringSet';
+import { useTrackPending } from '../../../PendingActionProvider';
+import { useToast } from '../../../ToastProvider';
+import { useOfflineDownload } from '../../../offline/useOfflineDownload';
+import { usePlaylistPlayer } from '../../../player/PlaylistPlayer';
 import {
   MinimizeToggle,
+  setlistQueue,
   songCountLabel,
   type Setlist,
-} from './bandDetailShared';
+} from '../bandDetailShared';
 
 /**
  * The Setlists tab: the band's active setlists (each expandable to reveal its
@@ -37,6 +39,7 @@ export function BandSetlistsTab({
   const trackPending = useTrackPending();
   const showToast = useToast();
   const offline = useOfflineDownload();
+  const player = usePlaylistPlayer();
   const [expandedSetlists, toggleSetlistExpanded] = usePersistedStringSet(
     `bandSetlistsExpanded:${bandId}`,
   );
@@ -114,6 +117,31 @@ export function BandSetlistsTab({
   const activeSetlists = setlists.filter((s) => !s.archived);
   const archivedSetlists = setlists.filter((s) => s.archived);
 
+  // Hand the whole setlist to the global player, so it keeps playing as you
+  // move around the app.
+  const playAll = (sl: Setlist) => {
+    const queue = setlistQueue(sl);
+    if (queue.length === 0) {
+      showToast('No songs with audio in this setlist.');
+      return;
+    }
+    player.play(queue, 0);
+  };
+
+  // Same songs, but appended — whatever is playing keeps playing.
+  const queueAll = (sl: Setlist) => {
+    const tracks = setlistQueue(sl);
+    if (tracks.length === 0) {
+      showToast('No songs with audio in this setlist.');
+      return;
+    }
+    player.enqueue(tracks);
+    showToast(
+      `Added ${tracks.length} song${tracks.length === 1 ? '' : 's'} to the queue.`,
+      'success',
+    );
+  };
+
   const renderSetlist = (sl: Setlist) => {
     const collapsed = !expandedSetlists.has(sl.id);
     const busy = busyId === sl.id;
@@ -157,6 +185,12 @@ export function BandSetlistsTab({
               {songCountLabel(sl.songs)}
             </span>
             <ActionMenu label="Setlist actions" disabled={busy}>
+              <ActionMenuItem onClick={() => playAll(sl)}>
+                Play all songs
+              </ActionMenuItem>
+              <ActionMenuItem onClick={() => queueAll(sl)}>
+                Add songs to queue
+              </ActionMenuItem>
               <ActionMenuItem
                 onClick={() =>
                   router.push(`/bands/${bandId}/setlists/${sl.id}`)
@@ -224,7 +258,7 @@ export function BandSetlistsTab({
                   <li
                     key={s.id}
                     className={
-                      'truncate ' +
+                      'truncate text-wrap ' +
                       (s.conversationId
                         ? ''
                         : 'text-xs py-1 font-semibold uppercase tracking-wide text-neutral-400')

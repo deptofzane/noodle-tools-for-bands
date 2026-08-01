@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { PageHeader } from '../../PageHeader';
 import { auth } from '@/auth';
 import { BandDetailClient } from './BandDetailClient';
@@ -19,25 +20,22 @@ export default async function BandDetailPage({
 
   const { bandId } = await params;
   const { tab } = await searchParams;
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? '';
   const currentUserId = session.user.sub ?? '';
+
+  // Audio and Setlists used to be tabs here; keep old links and bookmarks
+  // working. Both now live on the Audio page.
+  if (tab === 'audio') redirect(`/bands/${bandId}/audio`);
+  if (tab === 'setlists') redirect(`/bands/${bandId}/audio?tab=setlists`);
 
   return (
     <main className="main-container">
-      <PageHeader defaultHref="/home" defaultHrefName='Home'/>
+      <PageHeader defaultHref="/home" defaultHrefName="Home" />
 
       <BandDetailClient
         bandId={bandId}
-        apiKey={apiKey}
         currentUserId={currentUserId}
         initialTab={
-          tab === 'chat'
-            ? 'chat'
-            : tab === 'polls'
-              ? 'polls'
-              : tab === 'audio'
-                ? 'audio'
-                : 'events'
+          tab === 'chat' ? 'chat' : tab === 'polls' ? 'polls' : 'events'
         }
       />
     </main>

@@ -1,6 +1,6 @@
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, getTableColumns, sql } from 'drizzle-orm';
 import { db, type DbExecutor } from './index';
-import { bandMembers, conversations } from './schema';
+import { bandMembers, conversations, songFiles } from './schema';
 import { recordActivity } from './activity';
 import { deleteObjects, storageKeysForConversation } from './song-files';
 
@@ -100,12 +100,42 @@ export async function assertConversationMember(
   return m;
 }
 
+/**
+ * A band's conversation plus its default audio version's metadata. The audio
+ * fields are null for songs created from just a name (no audio yet), which is
+ * what callers use to tell playable songs from the rest.
+ */
+export interface BandConversation extends Conversation {
+  /** Duration in whole seconds; null when unknown or there's no audio. */
+  songLength: number | null;
+  /** Stored file name of the default audio version; null with no audio. */
+  audioStoredName: string | null;
+  /** MIME type of the default audio version; null with no audio. */
+  audioMimeType: string | null;
+}
+
 export async function listBandConversations(
   bandId: string,
-): Promise<Conversation[]> {
+): Promise<BandConversation[]> {
   return db
-    .select()
+    .select({
+      ...getTableColumns(conversations),
+      songLength: songFiles.songLength,
+      audioStoredName: songFiles.fileName,
+      audioMimeType: songFiles.mimeType,
+    })
     .from(conversations)
+    // Left join: songs without audio still belong in the list. Matched to the
+    // default version only, else a multi-version song would appear once per
+    // version.
+    .leftJoin(
+      songFiles,
+      and(
+        eq(songFiles.conversationId, conversations.id),
+        eq(songFiles.kind, 'audio'),
+        eq(songFiles.isDefault, true),
+      ),
+    )
     .where(eq(conversations.bandId, bandId))
     .orderBy(desc(conversations.updatedAt));
 }

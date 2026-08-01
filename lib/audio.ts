@@ -99,8 +99,17 @@ export function createAudioEngine(opts: AudioEngineOptions): AudioEngine {
   });
 
   return {
+    /**
+     * Idempotent by design. `Howl.play()` with no sound id doesn't resume an
+     * already-playing Howl — it allocates a *second* sound (a second <audio>
+     * element in html5 mode) and plays it alongside the first, a fraction of a
+     * second offset. That's Howler behaving as documented (it's how sound
+     * effects overlap), but for a single track it just sounds like distortion.
+     * Callers can't always know whether they're already playing, so the guard
+     * lives here rather than in each of them.
+     */
     play: () => {
-      sound.play();
+      if (!sound.playing()) sound.play();
     },
     pause: () => sound.pause(),
     seek: (sec: number) => {

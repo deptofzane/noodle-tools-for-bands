@@ -49,6 +49,8 @@ export interface BandEvent {
 }
 
 export interface EventDetail extends EventListItem {
+  /** Free-text kind ("Show", "Practice", …); null when unset. */
+  eventType: string | null;
   details: string | null;
   notes: string | null;
   setlistId: string | null;
@@ -75,6 +77,7 @@ async function userBandIds(userId: string): Promise<string[]> {
 export async function createEvent(input: {
   bandId: string;
   title: string;
+  eventType: string | null;
   date: string;
   time: string | null;
   endTime: string | null;
@@ -90,6 +93,7 @@ export async function createEvent(input: {
     .values({
       bandId: input.bandId,
       title: input.title,
+      eventType: input.eventType,
       date: input.date,
       time: input.time,
       endTime: input.endTime,
@@ -297,6 +301,7 @@ export async function getEventForUser(
       bandId: events.bandId,
       bandName: bands.name,
       title: events.title,
+      eventType: events.eventType,
       date: events.date,
       time: events.time,
       endTime: events.endTime,
@@ -326,6 +331,7 @@ export async function updateEvent(
   eventId: string,
   fields: {
     title: string;
+    eventType: string | null;
     date: string;
     time: string | null;
     endTime: string | null;

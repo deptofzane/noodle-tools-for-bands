@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTrackPending } from '../PendingActionProvider';
 import { actorLabel, formatRelativeTime } from '@/lib/format';
+import { LoadingBlock } from '../Spinner';
 
 /**
  * Open Conversations list (Postgres).
@@ -43,7 +44,9 @@ export function AnnotatedList() {
           const body = await r.json().catch(() => ({}));
           throw new Error(body.message ?? body.error ?? `HTTP ${r.status}`);
         }
-        const data = (await r.json()) as { conversations: ConversationListItem[] };
+        const data = (await r.json()) as {
+          conversations: ConversationListItem[];
+        };
         if (!cancelled) setItems(data.conversations);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -63,7 +66,7 @@ export function AnnotatedList() {
   }
 
   if (items === null) {
-    return <p className="text-sm text-neutral-500">Loading…</p>;
+    return <LoadingBlock />;
   }
 
   if (items.length === 0) {
@@ -102,8 +105,11 @@ export function AnnotatedList() {
                 ) : null}
               </div>
               <div className="mt-0.5 text-xs text-neutral-500">
-                {item.bandName} · Updated {formatRelativeTime(item.lastActivityAt)}
-                {item.lastActivityBy && <> by {actorLabel(item.lastActivityBy)}</>}
+                {item.bandName} · Updated{' '}
+                {formatRelativeTime(item.lastActivityAt)}
+                {item.lastActivityBy && (
+                  <> by {actorLabel(item.lastActivityBy)}</>
+                )}
               </div>
             </div>
           </Link>

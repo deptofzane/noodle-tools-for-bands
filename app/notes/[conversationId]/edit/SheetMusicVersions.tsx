@@ -22,6 +22,7 @@ import {
   sheetFormatFile,
   type SheetTextFormat,
 } from '@/lib/sheet-preview';
+import { LoadingBlock } from '../../../Spinner';
 
 /** The text format a version was saved as, derived from its file name. */
 function formatFromFileName(fileName: string): SheetTextFormat {
@@ -64,7 +65,9 @@ export function SheetMusicVersions({
   const [pasteMode, setPasteMode] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const [pasteFormat, setPasteFormat] = useState<SheetTextFormat>('markdown');
-  const [deleteTarget, setDeleteTarget] = useState<SheetVersionMeta | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<SheetVersionMeta | null>(
+    null,
+  );
   const [deleting, setDeleting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -137,7 +140,10 @@ export function SheetMusicVersions({
       await trackPending(async () => {
         const form = new FormData();
         form.append('file', file);
-        const res = await fetch(postUrl(replacing), { method: 'POST', body: form });
+        const res = await fetch(postUrl(replacing), {
+          method: 'POST',
+          body: form,
+        });
         await ensureOk(res);
         await refresh();
       });
@@ -206,7 +212,9 @@ export function SheetMusicVersions({
         });
         await ensureOk(res);
       });
-      setVersions((prev) => prev.map((v) => ({ ...v, isDefault: v.id === id })));
+      setVersions((prev) =>
+        prev.map((v) => ({ ...v, isDefault: v.id === id })),
+      );
       showToast('Default version updated.', 'success');
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
@@ -233,7 +241,9 @@ export function SheetMusicVersions({
         });
         await ensureOk(res);
       });
-      setVersions((prev) => prev.map((v) => (v.id === id ? { ...v, label } : v)));
+      setVersions((prev) =>
+        prev.map((v) => (v.id === id ? { ...v, label } : v)),
+      );
       setEditingId(null);
       showToast('Label updated.', 'success');
     } catch (e) {
@@ -364,10 +374,15 @@ export function SheetMusicVersions({
                       type="button"
                       onClick={() => togglePreview(v.id)}
                       aria-expanded={previewId === v.id}
-                      aria-label={previewId === v.id ? 'Hide preview' : 'Show preview'}
+                      aria-label={
+                        previewId === v.id ? 'Hide preview' : 'Show preview'
+                      }
                       className="flex min-w-0 flex-1 items-center gap-2 text-left"
                     >
-                      <span aria-hidden="true" className="shrink-0 text-neutral-400">
+                      <span
+                        aria-hidden="true"
+                        className="shrink-0 text-neutral-400"
+                      >
                         {previewId === v.id ? '▾' : '▸'}
                       </span>
                       <span className="flex min-w-0 flex-col">
@@ -405,7 +420,10 @@ export function SheetMusicVersions({
                       <ActionMenuItem onClick={() => startEdit(v)}>
                         {v.label ? 'Rename' : 'Add label'}
                       </ActionMenuItem>
-                      <ActionMenuItem destructive onClick={() => setDeleteTarget(v)}>
+                      <ActionMenuItem
+                        destructive
+                        onClick={() => setDeleteTarget(v)}
+                      >
                         Delete
                       </ActionMenuItem>
                     </ActionMenu>
@@ -441,11 +459,16 @@ export function SheetMusicVersions({
                       {previewKindResolved === 'text' && (
                         <div className="sheet-base max-h-[60vh] overflow-auto rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900">
                           {previewText === null ? (
-                            <span className="text-xs text-neutral-500">
-                              Loading…
-                            </span>
+                            <LoadingBlock
+                              size="sm"
+                              className="py-6"
+                              label="Loading preview"
+                            />
                           ) : (
-                            <SheetText text={previewText} fileName={v.fileName} />
+                            <SheetText
+                              text={previewText}
+                              fileName={v.fileName}
+                            />
                           )}
                         </div>
                       )}
@@ -505,15 +528,20 @@ export function SheetMusicVersions({
           labelledBy="sheet-version-source-title"
           size={pasteMode ? 'lg' : 'sm'}
         >
-          <h2 id="sheet-version-source-title" className="text-base font-semibold">
-            {replaceTargetId ? 'Replace sheet music' : 'Add sheet music version'}
+          <h2
+            id="sheet-version-source-title"
+            className="text-base font-semibold"
+          >
+            {replaceTargetId
+              ? 'Replace sheet music'
+              : 'Add sheet music version'}
           </h2>
 
           {pasteMode ? (
             <>
               <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-                Write or paste or plain source text, Markdown, or a ChordPro chart ([C]lyrics with{' '}
-                {'{directives}'}).
+                Write or paste or plain source text, Markdown, or a ChordPro
+                chart ([C]lyrics with {'{directives}'}).
               </p>
               <div className="mt-3 flex items-center gap-2 text-sm">
                 <span className="text-neutral-500">Format:</span>
@@ -685,7 +713,9 @@ export function SheetMusicVersions({
             rows={14}
             disabled={editContentLoading || savingContent}
             autoFocus
-            placeholder={editContentLoading ? 'Loading…' : 'Lyrics, chords, or Markdown…'}
+            placeholder={
+              editContentLoading ? 'Loading…' : 'Lyrics, chords, or Markdown…'
+            }
             className="mt-3 w-full resize-y rounded-md border border-neutral-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-900"
           />
           <div className="mt-4 flex items-center justify-end gap-2">

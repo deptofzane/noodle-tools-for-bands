@@ -8,6 +8,7 @@ import { useTrackPending } from '../PendingActionProvider';
 import { useToast } from '../ToastProvider';
 import { ActionMenu, ActionMenuItem } from '../ActionMenu';
 import { LeaveBandModal } from './LeaveBandModal';
+import { LoadingBlock } from '../Spinner';
 
 interface BandSummary {
   id: string;
@@ -97,9 +98,7 @@ export function BandsClient({ currentUserId }: { currentUserId: string }) {
         </p>
       )}
 
-      {bands === null && !error && (
-        <p className="text-sm text-neutral-500">Loading…</p>
-      )}
+      {bands === null && !error && <LoadingBlock />}
 
       {bands && bands.length === 0 && (
         <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">

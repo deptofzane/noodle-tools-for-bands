@@ -1,10 +1,10 @@
-import { Modal } from '../../Modal';
-import { PickerButton, type PickedFile } from '../../PickerButton';
+import { Modal } from '../../../Modal';
+import { PickerButton, type PickedFile } from '../../../PickerButton';
 import {
   DropboxChooserButton,
   type DropboxPickedFile,
-} from '../../DropboxChooserButton';
-import { ConnectDriveButton } from '../../ConnectDriveButton';
+} from '../../../DropboxChooserButton';
+import { ConnectDriveButton } from '../../../ConnectDriveButton';
 
 /**
  * "Add audio" source chooser: import one or more files from Google Drive (or

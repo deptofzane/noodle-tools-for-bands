@@ -23,6 +23,13 @@ export interface SetlistSong {
   bpm: number | null;
   /** Optional song key; null for markers / unset. */
   key: string | null;
+  /**
+   * Stored file name / MIME of the song's default audio version — null for
+   * markers and for songs with no audio yet, which is how callers tell what
+   * can actually be played.
+   */
+  audioStoredName: string | null;
+  audioMimeType: string | null;
 }
 
 /** One item to persist: a song (conversationId) or a marker (label). */
@@ -110,6 +117,8 @@ export async function getSetlist(
       key: conversations.key,
       label: setlistSongs.label,
       songLength: songFiles.songLength,
+      audioStoredName: songFiles.fileName,
+      audioMimeType: songFiles.mimeType,
     })
     .from(setlistSongs)
     // Left join: marker items have no conversation.
@@ -134,6 +143,8 @@ export async function getSetlist(
     songLength: r.songLength,
     bpm: r.bpm,
     key: r.key,
+    audioStoredName: r.audioStoredName,
+    audioMimeType: r.audioMimeType,
   }));
   return { id: row.id, bandId: row.bandId, name: row.name, songs };
 }
@@ -228,6 +239,8 @@ export async function listBandSetlists(
       key: conversations.key,
       label: setlistSongs.label,
       songLength: songFiles.songLength,
+      audioStoredName: songFiles.fileName,
+      audioMimeType: songFiles.mimeType,
     })
     .from(setlistSongs)
     // Left join: marker items have no conversation.
@@ -254,6 +267,8 @@ export async function listBandSetlists(
       songLength: s.songLength,
       bpm: s.bpm,
       key: s.key,
+      audioStoredName: s.audioStoredName,
+      audioMimeType: s.audioMimeType,
     });
     byList.set(s.setlistId, arr);
   }

@@ -26,12 +26,18 @@ function resolveEndTime(time: string | null, rawEnd: string | null): string | nu
  *     with a date in the range.
  *
  * POST /api/events
- *   Body: { bandId, title, date, time?, endTime?, location?, details?,
- *     setlistId? } → create an event owned by a band the user belongs to. If a
- *     start `time` is given, `endTime` defaults to two hours later. A setlistId,
- *     if given, must belong to that band.
+ *   Body: { bandId, title, eventType?, date, time?, endTime?, location?,
+ *     details?, setlistId? } → create an event owned by a band the user
+ *     belongs to. If a start `time` is given, `endTime` defaults to two hours
+ *     later. A setlistId, if given, must belong to that band.
  */
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Event kinds are free text (bands name their own), so this is only a sanity
+ * bound — long enough for "Writing session", short enough to stay a label.
+ */
+const MAX_EVENT_TYPE = 40;
 
 export async function GET(req: Request) {
   const user = await requireUser();
@@ -80,6 +86,16 @@ export async function POST(req: Request) {
       { status: 400 },
     );
 
+  const eventType = str(body?.eventType);
+  if (eventType && eventType.length > MAX_EVENT_TYPE)
+    return NextResponse.json(
+      {
+        error: 'bad_event_type',
+        message: `Event type must be ${MAX_EVENT_TYPE} characters or fewer.`,
+      },
+      { status: 400 },
+    );
+
   // You can only create events under a band you belong to.
   if (!(await getMembership(user.id, bandId)))
     return NextResponse.json(
@@ -113,6 +129,7 @@ export async function POST(req: Request) {
   const { id } = await createEvent({
     bandId,
     title,
+    eventType,
     date,
     time,
     endTime: resolveEndTime(time, str(body?.endTime)),

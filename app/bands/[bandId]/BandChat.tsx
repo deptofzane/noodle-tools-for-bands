@@ -1,12 +1,22 @@
 'use client';
 
 import { ensureOk } from '@/lib/api';
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { ConfirmModal } from '../../ConfirmModal';
-import { NoteForm, type Mentionable } from '../../notes/[conversationId]/NoteForm';
+import {
+  NoteForm,
+  type Mentionable,
+} from '../../notes/[conversationId]/NoteForm';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
 import { formatRelativeTime } from '@/lib/format';
+import { Spinner } from '../../Spinner';
 
 interface Message {
   id: string;
@@ -96,7 +106,10 @@ export function BandChat({
   const fetchLatest = useCallback(async () => {
     const res = await fetch(base, { cache: 'no-store' });
     if (!res.ok) return;
-    const data = (await res.json()) as { messages: Message[]; hasMore: boolean };
+    const data = (await res.json()) as {
+      messages: Message[];
+      hasMore: boolean;
+    };
     setMessages((prev) => {
       const earliest = data.messages[0]?.createdAt;
       const kept = earliest ? prev.filter((m) => m.createdAt < earliest) : prev;
@@ -117,7 +130,10 @@ export function BandChat({
         { cache: 'no-store' },
       );
       if (res.ok) {
-        const data = (await res.json()) as { messages: Message[]; hasMore: boolean };
+        const data = (await res.json()) as {
+          messages: Message[];
+          hasMore: boolean;
+        };
         setMessages((prev) => [...data.messages, ...prev]);
         setHasMore(data.hasMore);
       }
@@ -218,9 +234,15 @@ export function BandChat({
             type="button"
             onClick={loadOlder}
             disabled={loadingOlder}
-            className="mx-auto rounded-md border border-neutral-300 px-3 py-1 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+            // Fixed min-width so swapping the label for the spinner doesn't
+            // make the button jump.
+            className="mx-auto flex min-w-[10rem] items-center justify-center rounded-md border border-neutral-300 px-3 py-1 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
           >
-            {loadingOlder ? 'Loading…' : 'Load older messages'}
+            {loadingOlder ? (
+              <Spinner size="xs" label="Loading older messages" />
+            ) : (
+              'Load older messages'
+            )}
           </button>
         )}
 
@@ -235,7 +257,10 @@ export function BandChat({
           const mentionsMe = m.mentions.includes(currentUserId);
           if (editingId === m.id) {
             return (
-              <div key={m.id} className="rounded-md bg-neutral-50 p-2 dark:bg-neutral-900">
+              <div
+                key={m.id}
+                className="rounded-md bg-neutral-50 p-2 dark:bg-neutral-900"
+              >
                 <NoteForm
                   initialBody={m.body}
                   mentionables={mentionables}

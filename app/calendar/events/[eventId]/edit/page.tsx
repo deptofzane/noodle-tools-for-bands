@@ -44,6 +44,7 @@ export default async function EditEventPage({
         }))}
         initial={{
           title: event.title,
+          eventType: event.eventType ?? '',
           date: event.date,
           time: event.time ?? '',
           endTime: event.endTime ?? '',

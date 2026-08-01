@@ -54,15 +54,21 @@ export function ActionMenu({
 
   // When opening, flip the dropdown above the trigger if it would overflow the
   // bottom of the viewport and there's more room above (e.g. rows near the
-  // bottom of the screen). Runs before paint, so there's no visible jump.
+  // bottom of the screen). The fixed nav bar covers one edge of the viewport
+  // (bottom on mobile, top on desktop), so whichever edge it's on doesn't
+  // count as usable space. Runs before paint, so there's no visible jump.
   useIsomorphicLayoutEffect(() => {
     if (!open) return;
     const menu = menuRef.current;
     const trigger = ref.current;
     if (!menu || !trigger) return;
     const t = trigger.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - t.bottom;
-    const spaceAbove = t.top;
+    const nav = document.getElementById('app-nav')?.getBoundingClientRect();
+    const topEdge = nav && nav.top <= 0 ? nav.bottom : 0;
+    const bottomEdge =
+      nav && nav.bottom >= window.innerHeight ? nav.top : window.innerHeight;
+    const spaceBelow = bottomEdge - t.bottom;
+    const spaceAbove = t.top - topEdge;
     setOpenUp(spaceBelow < menu.offsetHeight + 8 && spaceAbove > spaceBelow);
   }, [open]);
 

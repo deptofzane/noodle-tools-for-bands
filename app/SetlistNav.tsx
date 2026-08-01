@@ -55,10 +55,10 @@ export function SetlistNav({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Jump to song"
-        className="flex min-w-0 max-w-[40vw] md:max-w-[60vw] lg:max-w-none h-12 items-center gap-1 rounded-md px-2 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+        className="flex min-w-0 max-w-[40vw] md:max-w-[60vw] lg:max-w-[20vw] h-12 items-center gap-1 rounded-md px-2 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800"
       >
         <span className="min-w-0 truncate">{children}</span>
-        <span aria-hidden="true" className="shrink-0 text-neutral-400">
+        <span aria-hidden="true" className="text-neutral-400">
           ▾
         </span>
       </button>

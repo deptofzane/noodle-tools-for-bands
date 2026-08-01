@@ -10,6 +10,7 @@ import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
 import { ConfirmModal } from '../../ConfirmModal';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
+import { LoadingBlock } from '../../Spinner';
 
 interface PollSummary {
   id: string;
@@ -36,7 +37,7 @@ export function BandMembersTab({
   onReload: () => Promise<void> | void;
 }) {
   const [polls, setPolls] = useState<PollSummary[] | null>(null);
-  const [pollsLoaded, setPollsLoaded] = useState(false)
+  const [pollsLoaded, setPollsLoaded] = useState(false);
   const [promoteTarget, setPromoteTarget] = useState<Member | null>(null);
   const [promoting, setPromoting] = useState(false);
   const trackPending = useTrackPending();
@@ -127,9 +128,10 @@ export function BandMembersTab({
           </Link>
         </div>
         {!pollsLoaded && (
-          <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
-            Loading polls...
-          </p>
+          <LoadingBlock
+            label="Loading polls"
+            className="rounded-md border border-neutral-200 py-6 dark:border-neutral-800"
+          />
         )}
         {polls && polls.length === 0 && (
           <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
@@ -201,7 +203,9 @@ export function BandMembersTab({
               onToggle={() => setClosedMinimized((v) => !v)}
               label="Closed polls"
             >
-              <h2 className="text-sm font-medium text-neutral-500">Closed polls</h2>
+              <h2 className="text-sm font-medium text-neutral-500">
+                Closed polls
+              </h2>
             </MinimizeToggle>
             <span className="text-xs text-neutral-500">
               <span aria-hidden="true">·</span> {closedPolls.length}

@@ -575,6 +575,10 @@ export const events = pgTable(
       .notNull()
       .references(() => bands.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
+    // What kind of event this is — "Show", "Practice", … The UI offers a few
+    // presets, but it's free text so a band can name its own; null on events
+    // created before types existed, and whenever none is chosen.
+    eventType: text('event_type'),
     date: date('date', { mode: 'string' }).notNull(), // YYYY-MM-DD
     time: text('time'), // HH:MM start, optional
     // HH:MM end. Only meaningful with a start `time`; defaults to two hours

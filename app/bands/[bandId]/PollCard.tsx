@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ensureOk } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/format';
+import { LoadingBlock } from '../../Spinner';
 
 interface FullPoll {
   id: string;
@@ -133,7 +134,7 @@ export function PollCard({
 
       {expanded && (
         <div className="flex flex-col gap-2 px-4 pb-3 md:px-3 mt-1">
-          {loading && <p className="text-xs text-neutral-500 mt-2">Loading…</p>}
+          {loading && <LoadingBlock size="sm" className="py-4" />}
           {error && (
             <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
           )}

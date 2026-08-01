@@ -1,10 +1,14 @@
+import { Suspense } from 'react';
 import type { Metadata, Viewport } from 'next';
 import { auth } from '@/auth';
 import { hasAllDriveScopes } from '@/lib/google';
 import { Header } from './Header';
+import { CurrentBandProvider } from './CurrentBandProvider';
 import { DriveCapabilityProvider } from './DriveCapabilityProvider';
 import { NavigationHistoryProvider } from './NavigationHistoryProvider';
 import { PendingActionProvider } from './PendingActionProvider';
+import { PlaylistPlayerProvider } from './player/PlaylistPlayer';
+import { RouteProgress } from './RouteProgress';
 import { ToastProvider } from './ToastProvider';
 import './globals.css';
 
@@ -95,13 +99,28 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <script dangerouslySetInnerHTML={{ __html: fontInitScript }} />
       </head>
-      <body className="min-h-screen bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100">
+      <body
+        className={
+          'min-h-screen bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100' +
+          // Reserves room for the fixed nav bar on the side it's pinned to.
+          (isSignedIn ? ' has-app-nav' : '')
+        }
+      >
+        {/* Suspense: `RouteProgress` reads the query string, which opts its
+            subtree out of prerendering. */}
+        <Suspense fallback={null}>
+          <RouteProgress />
+        </Suspense>
         <PendingActionProvider>
           <ToastProvider>
             <NavigationHistoryProvider>
               <DriveCapabilityProvider canUseDrive={canUseDrive}>
-                {isSignedIn && <Header />}
-                {children}
+                <CurrentBandProvider enabled={isSignedIn}>
+                  <PlaylistPlayerProvider userKey={session?.user?.sub ?? null}>
+                    {children}
+                    {isSignedIn && <Header />}
+                  </PlaylistPlayerProvider>
+                </CurrentBandProvider>
               </DriveCapabilityProvider>
             </NavigationHistoryProvider>
           </ToastProvider>

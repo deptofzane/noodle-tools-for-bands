@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { PlaylistTrack } from '../../player/PlaylistPlayer';
 
 export interface Member {
   userId: string;
@@ -14,7 +15,23 @@ export interface Conversation {
   archived: boolean;
   bpm: number | null;
   key: string | null;
+  /** When the song was added to the band — the Uploads history's sort key. */
+  createdAt: string;
   updatedAt: string;
+  /** Default audio version's duration in seconds; null when unknown. */
+  songLength: number | null;
+  /** Stored audio file name; null when the song has no audio yet. */
+  audioStoredName: string | null;
+  /** Stored audio MIME type; null when the song has no audio yet. */
+  audioMimeType: string | null;
+}
+
+/** A song's streaming URL, or null when it has no audio to play. */
+export function audioSrc(c: Conversation): string | null {
+  if (!c.audioStoredName) return null;
+  return `/api/conversations/${c.id}/files/audio?name=${encodeURIComponent(
+    c.audioStoredName,
+  )}`;
 }
 
 export interface Setlist {
@@ -28,7 +45,37 @@ export interface Setlist {
     name: string;
     bpm: number | null;
     key: string | null;
+    /** Duration in seconds; null for markers / unknown. */
+    songLength: number | null;
+    /**
+     * Stored file name / MIME of the song's default audio version — null for
+     * markers and songs with no audio yet, which is how callers tell what can
+     * be played.
+     */
+    audioStoredName: string | null;
+    audioMimeType: string | null;
   }[];
+}
+
+/**
+ * A setlist's songs as a player queue, in order. Markers (set breaks) and
+ * songs with no audio drop out — a queue position isn't a setlist position.
+ */
+export function setlistQueue(sl: Setlist): PlaylistTrack[] {
+  return sl.songs
+    .filter((s) => s.conversationId && s.audioStoredName)
+    .map((s) => ({
+      id: s.conversationId!,
+      title: s.name,
+      src: `/api/conversations/${s.conversationId}/files/audio?name=${encodeURIComponent(
+        s.audioStoredName!,
+      )}`,
+      fileName: s.audioStoredName!,
+      mimeType: s.audioMimeType ?? undefined,
+      href: `/notes/${s.conversationId}`,
+      subtitle: sl.name,
+      durationSec: s.songLength ?? undefined,
+    }));
 }
 
 export interface Venue {
