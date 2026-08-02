@@ -1,9 +1,48 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { listOfflineSetlists, type OfflineRecord } from './offlineSetlists';
+import {
+  isPageShellCached,
+  listOfflineSetlists,
+  type OfflineRecord,
+} from './offlineSetlists';
 import { usePlaylistPlayer } from '../player/PlaylistPlayer';
 import { LoadingBlock } from '../Spinner';
+
+/**
+ * A link to a downloaded page. Online it's always live — the server can render
+ * it. Offline it depends on the page being in the cache, and saying so beats a
+ * button that bounces straight back here.
+ */
+function PageLink({
+  href,
+  label,
+  cached,
+  online,
+}: {
+  href: string;
+  label: string;
+  cached: boolean;
+  online: boolean;
+}) {
+  if (online || cached) {
+    // A hard navigation, so the service worker can answer it — see below.
+    return (
+      <a href={href} className="btn-outline">
+        {label}
+      </a>
+    );
+  }
+  return (
+    <span
+      title="This page wasn’t saved on this device. Download the setlist again while online."
+      className="btn-outline cursor-not-allowed opacity-40"
+      aria-disabled="true"
+    >
+      {label}
+    </span>
+  );
+}
 
 /** What a downloaded setlist can still do without a network. */
 function capabilities(rec: OfflineRecord): string[] {
@@ -35,10 +74,34 @@ export function OfflineClient() {
   // real value lands on mount.
   const [online, setOnline] = useState(true);
 
+  // Which Practice/Live URLs will actually open with no network. A record can
+  // outlive its cached page (a failed save, or eviction under storage
+  // pressure); without this the buttons look fine and go nowhere.
+  const [openable, setOpenable] = useState<Set<string>>(new Set());
+
   useEffect(() => {
-    void listOfflineSetlists().then((list) =>
-      setRecords([...list].sort((a, b) => b.downloadedAt - a.downloadedAt)),
-    );
+    let cancelled = false;
+    void listOfflineSetlists().then(async (list) => {
+      if (cancelled) return;
+      const sorted = [...list].sort((a, b) => b.downloadedAt - a.downloadedAt);
+      setRecords(sorted);
+
+      const urls = sorted.flatMap((rec) => {
+        const base = `/bands/${rec.bandId}/setlists/${rec.setlistId}/practice`;
+        return [base, `${base}/live`];
+      });
+      const checked = await Promise.all(
+        urls.map(async (url) => [url, await isPageShellCached(url)] as const),
+      );
+      if (!cancelled) {
+        setOpenable(
+          new Set(checked.filter(([, ok]) => ok).map(([url]) => url)),
+        );
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -99,12 +162,18 @@ export function OfflineClient() {
                   )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <a href={base} className="btn-outline">
-                    Practice
-                  </a>
-                  <a href={`${base}/live`} className="btn-outline">
-                    Live
-                  </a>
+                  <PageLink
+                    href={base}
+                    label="Practice"
+                    cached={openable.has(base)}
+                    online={online}
+                  />
+                  <PageLink
+                    href={`${base}/live`}
+                    label="Live"
+                    cached={openable.has(`${base}/live`)}
+                    online={online}
+                  />
                   {/* The cached bytes are what the player streams, so this
                       works with no network. */}
                   {rec.audioTracks && rec.audioTracks.length > 0 && (

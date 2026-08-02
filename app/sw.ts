@@ -133,6 +133,54 @@ const serwist = new Serwist({
 
 serwist.addEventListeners();
 
+// --- Keeping downloaded page shells usable across deploys -------------------
+
+/** Cache holding the downloaded Practice/Live documents. Matches the rule above. */
+const PAGES_CACHE = 'sidestage-pages';
+
+/**
+ * Re-fetch every cached page shell when a new service worker takes over.
+ *
+ * A downloaded Practice/Live page is a rendered HTML document that references
+ * this build's content-hashed JS chunks. Those chunks are precached under
+ * filenames that change every deploy, and the old ones are cleaned up when the
+ * new worker installs — so a shell cached against an earlier build points at
+ * files that no longer exist anywhere. Offline, it can't load them and the
+ * page dies on the way up, which reads as "my downloaded setlist is gone".
+ *
+ * By activation the new precache is already in place, so re-fetching each
+ * shell now re-points it at chunks that are actually present. Best-effort:
+ * activating while offline leaves the existing entries alone (stale beats
+ * nothing), and the next activation online repairs them.
+ */
+async function refreshCachedPageShells(): Promise<void> {
+  try {
+    const cache = await caches.open(PAGES_CACHE);
+    const requests = await cache.keys();
+    await Promise.all(
+      requests.map(async (request) => {
+        try {
+          const fresh = await fetch(request.url, {
+            cache: 'reload',
+            credentials: 'same-origin',
+          });
+          // Only replace on a clean hit. A redirect means the session lapsed —
+          // caching the login page over a setlist would be worse than stale.
+          if (fresh.ok && !fresh.redirected) await cache.put(request, fresh);
+        } catch {
+          // Offline or the page is gone: keep what we have.
+        }
+      }),
+    );
+  } catch {
+    // No Cache Storage — nothing to keep fresh.
+  }
+}
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(refreshCachedPageShells());
+});
+
 // --- Web Push -------------------------------------------------------------
 // A push carries a small JSON payload ({ title, body, url, tag }) built by
 // lib/push.ts. Show it as a notification; tapping it focuses an existing tab

@@ -124,6 +124,21 @@ function tx<T>(
   );
 }
 
+/**
+ * Whether a Practice/Live document is in the cache — i.e. whether that page
+ * will actually open with no network. A record can exist while its shell
+ * doesn't: caching the shells is best-effort at download time, and a browser
+ * under storage pressure can evict them later.
+ */
+export async function isPageShellCached(url: string): Promise<boolean> {
+  try {
+    const cache = await caches.open(PAGES_CACHE);
+    return (await cache.match(url, { ignoreVary: true })) !== undefined;
+  } catch {
+    return false;
+  }
+}
+
 export async function listOfflineSetlists(): Promise<OfflineRecord[]> {
   if (typeof indexedDB === 'undefined') return [];
   try {
