@@ -4,7 +4,7 @@ import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { getEventForUser, listEventMembers } from '@/lib/db/events';
 import { getSetlist } from '@/lib/db/setlists';
-import { formatDateLong, formatDuration, formatTimeRange } from '@/lib/format';
+import { formatDateLong, formatTimeRange } from '@/lib/format';
 import { PageHeader } from '../../../PageHeader';
 import { MapLink } from '../../../MapLink';
 import { CollapsibleSection } from '../../../CollapsibleSection';
