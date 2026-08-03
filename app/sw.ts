@@ -88,8 +88,23 @@ const offlineRuntimeCaching: RuntimeCaching[] = [
       plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
     }),
   },
-  // The Practice / Live page shells (hard navigations). Network-first so an
-  // online launch is always fresh; falls back to the cached shell offline.
+  // A setlist's songs — what Practice and Live render. Network-first so an
+  // online open reflects edits; the cached copy is what makes them work
+  // offline, and "Download for offline" is what puts it there.
+  {
+    matcher: ({ url, sameOrigin }) =>
+      sameOrigin &&
+      /^\/api\/setlists\/[^/]+\/practice-songs$/.test(url.pathname),
+    handler: new NetworkFirst({
+      cacheName: 'sidestage-meta',
+      networkTimeoutSeconds: 3,
+      matchOptions: { ignoreVary: true },
+      plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
+    }),
+  },
+  // Legacy: Practice/Live documents cached per setlist by downloads made
+  // before those screens moved to `/practice?setlist=…`. Nothing writes here
+  // any more; the rule keeps older downloads working until they're refreshed.
   {
     matcher: ({ request, url, sameOrigin }) =>
       sameOrigin &&

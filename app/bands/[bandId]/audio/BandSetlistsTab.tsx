@@ -13,6 +13,7 @@ import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
 import { useOfflineDownload } from '../../../offline/useOfflineDownload';
 import { usePlaylistPlayer } from '../../../player/PlaylistPlayer';
+import { liveHref, practiceHref } from '@/lib/routes';
 import {
   MinimizeToggle,
   setlistQueue,
@@ -205,20 +206,10 @@ export function BandSetlistsTab({
               >
                 Edit setlist
               </ActionMenuItem>
-              <ActionMenuItem
-                onClick={() =>
-                  router.push(`/bands/${bandId}/setlists/${sl.id}/practice`)
-                }
-              >
+              <ActionMenuItem onClick={() => router.push(practiceHref(sl.id))}>
                 Practice
               </ActionMenuItem>
-              <ActionMenuItem
-                onClick={() =>
-                  router.push(
-                    `/bands/${bandId}/setlists/${sl.id}/practice/live`,
-                  )
-                }
-              >
+              <ActionMenuItem onClick={() => router.push(liveHref(sl.id))}>
                 Live
               </ActionMenuItem>
               {offlineRec ? (

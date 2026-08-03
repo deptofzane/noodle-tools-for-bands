@@ -112,32 +112,46 @@ export interface BandConversation extends Conversation {
   audioStoredName: string | null;
   /** MIME type of the default audio version; null with no audio. */
   audioMimeType: string | null;
+  /**
+   * Whether the song has any sheet music at all — what callers use to tell
+   * whether the sheet-reading views (Live, Practice) have anything to show.
+   */
+  hasSheetMusic: boolean;
 }
 
 export async function listBandConversations(
   bandId: string,
 ): Promise<BandConversation[]> {
-  return db
-    .select({
-      ...getTableColumns(conversations),
-      songLength: songFiles.songLength,
-      audioStoredName: songFiles.fileName,
-      audioMimeType: songFiles.mimeType,
-    })
-    .from(conversations)
-    // Left join: songs without audio still belong in the list. Matched to the
-    // default version only, else a multi-version song would appear once per
-    // version.
-    .leftJoin(
-      songFiles,
-      and(
-        eq(songFiles.conversationId, conversations.id),
-        eq(songFiles.kind, 'audio'),
-        eq(songFiles.isDefault, true),
-      ),
-    )
-    .where(eq(conversations.bandId, bandId))
-    .orderBy(desc(conversations.updatedAt));
+  return (
+    db
+      .select({
+        ...getTableColumns(conversations),
+        songLength: songFiles.songLength,
+        audioStoredName: songFiles.fileName,
+        audioMimeType: songFiles.mimeType,
+        // A subquery rather than another join: a song can have several sheet
+        // versions, and joining them would duplicate its row.
+        hasSheetMusic: sql<boolean>`exists (
+        select 1 from ${songFiles} sheets
+        where sheets.conversation_id = ${conversations.id}
+          and sheets.kind = 'sheet_music'
+      )`,
+      })
+      .from(conversations)
+      // Left join: songs without audio still belong in the list. Matched to the
+      // default version only, else a multi-version song would appear once per
+      // version.
+      .leftJoin(
+        songFiles,
+        and(
+          eq(songFiles.conversationId, conversations.id),
+          eq(songFiles.kind, 'audio'),
+          eq(songFiles.isDefault, true),
+        ),
+      )
+      .where(eq(conversations.bandId, bandId))
+      .orderBy(desc(conversations.updatedAt))
+  );
 }
 
 /**
@@ -277,7 +291,9 @@ function pgErrorCode(err: unknown): string | undefined {
  * state, file rows) via FK cascade. FK cascade can't reach object storage,
  * so we collect the object keys first and best-effort delete them after.
  */
-export async function deleteConversation(conversationId: string): Promise<void> {
+export async function deleteConversation(
+  conversationId: string,
+): Promise<void> {
   const keys = await storageKeysForConversation(conversationId);
   await db.delete(conversations).where(eq(conversations.id, conversationId));
   await deleteObjects(keys);

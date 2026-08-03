@@ -37,14 +37,31 @@ export function Live({
   songs,
   exitHref,
   persistKey,
+  startIndex,
+  shareHref,
 }: {
   songs: PracticeSong[];
   exitHref: string;
   /** localStorage key to remember the last-viewed song (per set). */
   persistKey?: string;
+  /**
+   * Open on this position instead of wherever you last left off — a shared
+   * link naming a song. Only read on mount.
+   */
+  startIndex?: number | null;
+  /**
+   * The URL for a given position, mirrored into the address as you move so a
+   * copied link points at the song on screen. No button for it here: Live is
+   * chrome-free on purpose.
+   */
+  shareHref?: (index: number) => string;
 }) {
   const router = useRouter();
-  const [index, setIndex] = usePersistedIndex(persistKey ?? null, songs.length);
+  const [index, setIndex] = usePersistedIndex(
+    persistKey ?? null,
+    songs.length,
+    startIndex,
+  );
 
   const total = songs.length;
   const current = Math.min(index, Math.max(0, total - 1));
@@ -62,6 +79,14 @@ export function Live({
     [total, setIndex],
   );
   const exit = useCallback(() => router.push(exitHref), [router, exitHref]);
+
+  // Mirror the position into the address (no navigation, no history entry) so
+  // a link copied or shared from here opens on the same song.
+  const shareUrl = shareHref?.(current);
+  useEffect(() => {
+    if (!shareUrl || typeof window === 'undefined') return;
+    window.history.replaceState(window.history.state, '', shareUrl);
+  }, [shareUrl]);
 
   const sheet = song?.sheetMusic ?? null;
   const kind =

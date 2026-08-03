@@ -10,7 +10,13 @@ import {
   type SheetMusicMeta,
 } from './notes/[conversationId]/SheetMusic';
 import Link from 'next/link';
-import type { Dispatch, ReactNode, SetStateAction } from 'react';
+import {
+  useEffect,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from 'react';
 
 export interface PracticeSong {
   /** Null for a marker step (set break / custom) — shown without a player. */
@@ -54,6 +60,8 @@ export function Practice({
   wideLayout = true,
   playerSlot,
   back,
+  startIndex,
+  shareHref,
 }: {
   songs: PracticeSong[];
   apiKey: string;
@@ -86,14 +94,51 @@ export function Practice({
    * song you've stepped to, which only this component knows.
    */
   back?: { href: string; name?: string };
+  /**
+   * Open on this position instead of wherever you last left off — a shared
+   * link naming a song. Only read on mount.
+   */
+  startIndex?: number | null;
+  /**
+   * The URL for a given position. Supplying it makes the current song part of
+   * the address (so the link in the bar is always the song on screen) and adds
+   * a "Copy link" action — a PWA has no address bar to copy from.
+   */
+  shareHref?: (index: number) => string;
 }) {
   const [ownIndex, setOwnIndex] = usePersistedIndex(
     persistKey ?? null,
     songs.length,
+    startIndex,
   );
+  const [copied, setCopied] = useState(false);
   const controlled = controlledIndex != null && onIndexChange != null;
   const index = controlled ? controlledIndex : ownIndex;
   const setIndex = controlled ? onIndexChange : setOwnIndex;
+
+  // Keep the address in step with the song on screen, so whatever gets copied
+  // — from the bar, or by the button below — points where the user is looking.
+  // `replaceState`: no navigation, and no history entry per song.
+  const position = Math.min(index, Math.max(0, songs.length - 1));
+  const shareUrl = shareHref?.(position);
+  useEffect(() => {
+    if (!shareUrl || typeof window === 'undefined') return;
+    window.history.replaceState(window.history.state, '', shareUrl);
+  }, [shareUrl]);
+
+  const copyLink = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(
+        new URL(shareUrl, window.location.origin).toString(),
+      );
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard blocked (insecure context / denied) — the address bar and
+      // the share sheet are still there.
+    }
+  };
 
   // The page header, when we own it. `song` isn't resolved yet at the empty
   // check below, so the Edit link is passed in by each caller of this.
@@ -158,15 +203,27 @@ export function Practice({
   const layout = (
     <>
       {header(
-        song.conversationId && (
-          <Link
-            href={`/notes/${song.conversationId}/edit`}
-            onClick={onNavigate}
-            className="py-4 hover:text-neutral-900 dark:hover:text-neutral-100"
-          >
-            Edit song
-          </Link>
-        ),
+        <span className="flex shrink-0 items-center gap-3">
+          {shareUrl && (
+            <button
+              type="button"
+              onClick={() => void copyLink()}
+              title="Copy a link to this song for a bandmate"
+              className="py-4 hover:text-neutral-900 dark:hover:text-neutral-100"
+            >
+              {copied ? 'Copied' : 'Copy link'}
+            </button>
+          )}
+          {song.conversationId && (
+            <Link
+              href={`/notes/${song.conversationId}/edit`}
+              onClick={onNavigate}
+              className="py-4 hover:text-neutral-900 dark:hover:text-neutral-100"
+            >
+              Edit song
+            </Link>
+          )}
+        </span>,
       )}
 
       <div className={rowCls}>

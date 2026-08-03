@@ -33,6 +33,13 @@ const PUBLIC_PATHS = new Set<string>([
   // a navigation fails. Behind auth, that precache would be a login redirect,
   // which is the last thing to show someone whose network just died.
   '/offline',
+  // The Practice and Live shells, for the same reason: empty documents that
+  // fetch their setlist client-side, precached so they open with no network.
+  // The data behind them is guarded by GET /api/setlists/[id]/practice-songs,
+  // and a shell that gets a 401 sends the visitor to log in and returns them
+  // to the URL they were given.
+  '/practice',
+  '/live',
 ]);
 
 // The unauthenticated calendar feed: exactly `/api/calendar/<token>` (one
@@ -55,7 +62,10 @@ export default auth((req) => {
   if (req.auth) return;
 
   const url = new URL('/login', req.nextUrl);
-  url.searchParams.set('callbackUrl', pathname);
+  // Path *and* query: shared links carry their subject in the query string
+  // (`/practice?setlist=…`, `/bands/x?tab=chat`), and dropping it would land
+  // people on a bare screen after signing in instead of where they were sent.
+  url.searchParams.set('callbackUrl', pathname + req.nextUrl.search);
   return NextResponse.redirect(url);
 });
 

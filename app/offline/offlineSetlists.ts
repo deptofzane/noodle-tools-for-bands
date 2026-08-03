@@ -9,9 +9,13 @@
  * "remove"). Everything here is browser-only; call from client components.
  */
 
+import { practiceSongsApi } from '@/lib/routes';
+
 const DB_NAME = 'sidestage-offline';
 const STORE = 'setlists';
+/** Legacy: per-setlist Practice/Live documents from before the shared shells. */
 const PAGES_CACHE = 'sidestage-pages'; // must match app/sw.ts
+const DATA_CACHE = 'sidestage-meta'; // must match app/sw.ts
 const SHEET_CACHE = 'sidestage-files'; // must match app/sw.ts
 const AUDIO_CACHE = 'sidestage-audio'; // must match app/sw.ts
 
@@ -125,15 +129,18 @@ function tx<T>(
 }
 
 /**
- * Whether a Practice/Live document is in the cache — i.e. whether that page
- * will actually open with no network. A record can exist while its shell
- * doesn't: caching the shells is best-effort at download time, and a browser
- * under storage pressure can evict them later.
+ * Whether a setlist's songs are in the cache — i.e. whether Practice and Live
+ * have anything to open with no network. A record can exist while the data
+ * doesn't: caching is best-effort at download time, and a browser under
+ * storage pressure can evict it later.
  */
-export async function isPageShellCached(url: string): Promise<boolean> {
+export async function isSetlistDataCached(setlistId: string): Promise<boolean> {
   try {
-    const cache = await caches.open(PAGES_CACHE);
-    return (await cache.match(url, { ignoreVary: true })) !== undefined;
+    const cache = await caches.open(DATA_CACHE);
+    const hit = await cache.match(practiceSongsApi(setlistId), {
+      ignoreVary: true,
+    });
+    return hit !== undefined;
   } catch {
     return false;
   }
@@ -187,26 +194,22 @@ export async function downloadSetlistOffline(input: {
   }
 
   const playable = songs.filter((s) => s.conversationId);
-  // Two extra steps for the page shells.
-  const total = playable.length + 2;
+  // One extra step for the setlist's songs.
+  const total = playable.length + 1;
   let step = 0;
   const tick = () => onProgress?.(++step / total);
 
-  // Cache the page shells so a hard navigation / PWA launch works offline.
+  // The songs themselves. The Practice/Live documents aren't cached here any
+  // more — they're precached once per build (see next.config.ts), one document
+  // for every setlist, so what's per-setlist is just this data.
+  const songsUrl = practiceSongsApi(setlistId);
   try {
-    const cache = await caches.open(PAGES_CACHE);
-    await cache
-      .add(`/bands/${bandId}/setlists/${setlistId}/practice`)
-      .catch(() => {});
-    tick();
-    await cache
-      .add(`/bands/${bandId}/setlists/${setlistId}/practice/live`)
-      .catch(() => {});
-    tick();
+    const cache = await caches.open(DATA_CACHE);
+    await cache.add(songsUrl).catch(() => {});
   } catch {
-    step = 2;
-    onProgress?.(step / total);
+    // best-effort
   }
+  tick();
 
   let fileCount = 0;
   let audioCount = 0;
@@ -301,7 +304,14 @@ export async function removeSetlistOffline(input: {
   const record = all.find((r) => r.setlistId === setlistId);
   await deleteRecord(setlistId);
 
-  // Page shells are unique to this setlist — always safe to drop.
+  // This setlist's songs, and the page shells older downloads cached under
+  // the old per-setlist URLs. All unique to it, so always safe to drop.
+  try {
+    const data = await caches.open(DATA_CACHE);
+    await data.delete(practiceSongsApi(setlistId));
+  } catch {
+    // best-effort
+  }
   try {
     const cache = await caches.open(PAGES_CACHE);
     await cache.delete(`/bands/${bandId}/setlists/${setlistId}/practice`);

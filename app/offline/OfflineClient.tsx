@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import {
-  isPageShellCached,
+  isSetlistDataCached,
   listOfflineSetlists,
   type OfflineRecord,
 } from './offlineSetlists';
+import { liveHref, practiceHref } from '@/lib/routes';
 import { usePlaylistPlayer } from '../player/PlaylistPlayer';
 import { LoadingBlock } from '../Spinner';
 
@@ -74,9 +75,9 @@ export function OfflineClient() {
   // real value lands on mount.
   const [online, setOnline] = useState(true);
 
-  // Which Practice/Live URLs will actually open with no network. A record can
-  // outlive its cached page (a failed save, or eviction under storage
-  // pressure); without this the buttons look fine and go nowhere.
+  // Which setlists will actually open with no network. A record can outlive
+  // its cached songs (a failed save, or eviction under storage pressure);
+  // without this the buttons look fine and go nowhere.
   const [openable, setOpenable] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -91,7 +92,7 @@ export function OfflineClient() {
         return [base, `${base}/live`];
       });
       const checked = await Promise.all(
-        urls.map(async (url) => [url, await isPageShellCached(url)] as const),
+        urls.map(async (url) => [url, await isSetlistDataCached(url)] as const),
       );
       if (!cancelled) {
         setOpenable(
@@ -142,8 +143,8 @@ export function OfflineClient() {
       ) : (
         <ul className="flex flex-col gap-2">
           {records.map((rec) => {
-            const base = `/bands/${rec.bandId}/setlists/${rec.setlistId}/practice`;
             const parts = capabilities(rec);
+            const cached = openable.has(rec.setlistId);
             return (
               <li
                 key={rec.setlistId}
@@ -163,15 +164,15 @@ export function OfflineClient() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <PageLink
-                    href={base}
+                    href={practiceHref(rec.setlistId)}
                     label="Practice"
-                    cached={openable.has(base)}
+                    cached={cached}
                     online={online}
                   />
                   <PageLink
-                    href={`${base}/live`}
+                    href={liveHref(rec.setlistId)}
                     label="Live"
-                    cached={openable.has(`${base}/live`)}
+                    cached={cached}
                     online={online}
                   />
                   {/* The cached bytes are what the player streams, so this

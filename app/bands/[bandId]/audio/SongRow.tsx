@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
 import { formatRelativeTime, formatSongMeta } from '@/lib/format';
 import { useToast } from '../../../ToastProvider';
@@ -34,6 +35,7 @@ export function SongRow({
   onToggleArchive: (c: Conversation) => void;
   onDelete: (c: Conversation) => void;
 }) {
+  const router = useRouter();
   const player = usePlaylistPlayer();
   const showToast = useToast();
 
@@ -74,12 +76,24 @@ export function SongRow({
           className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
         >
           {isCurrent && player.isPlaying ? (
-            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="12"
+              height="12"
+              fill="currentColor"
+              aria-hidden="true"
+            >
               <rect x="6" y="5" width="4" height="14" rx="1" />
               <rect x="14" y="5" width="4" height="14" rx="1" />
             </svg>
           ) : (
-            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="12"
+              height="12"
+              fill="currentColor"
+              aria-hidden="true"
+            >
               <path d="M8 5v14l11-7z" />
             </svg>
           )}
@@ -110,9 +124,7 @@ export function SongRow({
             </span>
           )}
         </div>
-        {meta && (
-          <div className="mt-0.5 text-xs text-neutral-500">{meta}</div>
-        )}
+        {meta && <div className="mt-0.5 text-xs text-neutral-500">{meta}</div>}
         <div className="mt-0.5 text-xs text-neutral-500">
           Updated {formatRelativeTime(c.updatedAt)}
         </div>
@@ -126,6 +138,21 @@ export function SongRow({
             }}
           >
             Add song to queue
+          </ActionMenuItem>
+        )}
+        {/* Live is sheet music on screen and nothing else, so it needs some.
+            Practice pairs the player with the sheet, and is worth opening with
+            either one. */}
+        {c.hasSheetMusic && (
+          <ActionMenuItem onClick={() => router.push(`/notes/${c.id}/live`)}>
+            Live
+          </ActionMenuItem>
+        )}
+        {(c.hasSheetMusic || track) && (
+          <ActionMenuItem
+            onClick={() => router.push(`/notes/${c.id}/practice`)}
+          >
+            Practice
           </ActionMenuItem>
         )}
         <ActionMenuItem onClick={() => onView(c)}>View song</ActionMenuItem>

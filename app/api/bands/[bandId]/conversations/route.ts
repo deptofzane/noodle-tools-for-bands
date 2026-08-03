@@ -41,7 +41,9 @@ export async function GET(
   const { bandId } = await params;
   const guard = await requireBandMember(bandId);
   if (guard instanceof NextResponse) return guard;
-  return NextResponse.json({ conversations: await listBandConversations(bandId) });
+  return NextResponse.json({
+    conversations: await listBandConversations(bandId),
+  });
 }
 
 export async function POST(
@@ -122,7 +124,8 @@ export async function POST(
   // Dropbox import: JSON { dropboxUrl, name?, bytes? }. Like a local upload
   // (synthetic conversation id), but the server streams the file straight from
   // Dropbox's direct link — no OAuth, no Drive round-trip.
-  const dropboxUrl = typeof body?.dropboxUrl === 'string' ? body.dropboxUrl : '';
+  const dropboxUrl =
+    typeof body?.dropboxUrl === 'string' ? body.dropboxUrl : '';
   if (dropboxUrl) {
     const name =
       typeof body?.name === 'string' && body.name.trim()
@@ -152,7 +155,10 @@ export async function POST(
     if (!fetched.sizeBytes) {
       fetched.body.destroy();
       return NextResponse.json(
-        { error: 'import_failed', message: 'Could not determine the file size.' },
+        {
+          error: 'import_failed',
+          message: 'Could not determine the file size.',
+        },
         { status: 502 },
       );
     }
@@ -225,7 +231,9 @@ export async function POST(
   }
 
   const driveAudioFileId =
-    typeof body?.driveAudioFileId === 'string' ? body.driveAudioFileId.trim() : '';
+    typeof body?.driveAudioFileId === 'string'
+      ? body.driveAudioFileId.trim()
+      : '';
   const audioFileName =
     typeof body?.audioFileName === 'string' ? body.audioFileName.trim() : null;
   if (!driveAudioFileId)
@@ -249,7 +257,10 @@ export async function POST(
     const session = await auth();
     if (!session?.accessToken) {
       return NextResponse.json(
-        { error: 'no_token', message: 'Drive access is required to import audio.' },
+        {
+          error: 'no_token',
+          message: 'Drive access is required to import audio.',
+        },
         { status: 401 },
       );
     }
@@ -262,16 +273,41 @@ export async function POST(
       const declaredSize = Number(metaRes.data.size ?? 0);
       if (declaredSize > MAX_AUDIO_BYTES) {
         return NextResponse.json(
-          { error: 'file_too_large', message: 'Audio exceeds the 50 MB limit.' },
+          {
+            error: 'file_too_large',
+            message: 'Audio exceeds the 50 MB limit.',
+          },
           { status: 413 },
         );
       }
       if (!declaredSize) {
         return NextResponse.json(
-          { error: 'import_failed', message: 'Could not determine the file size.' },
+          {
+            error: 'import_failed',
+            message: 'Could not determine the file size.',
+          },
           { status: 502 },
         );
       }
+      // Same check the upload and Dropbox paths make. Drive's label is the
+      // picker's word for what the file is, and the picker's own filter is
+      // client-side — so an arbitrary type could otherwise be stored here and
+      // later served back as the file's Content-Type.
+      const driveName = metaRes.data.name ?? audioFileName ?? 'audio';
+      const driveMime = normalizeAudioMime(
+        metaRes.data.mimeType ?? '',
+        driveName,
+      );
+      if (!driveMime) {
+        return NextResponse.json(
+          {
+            error: 'unsupported_type',
+            message: 'Please choose an audio file.',
+          },
+          { status: 415 },
+        );
+      }
+
       const mediaRes = await drive.files.get(
         { fileId: driveAudioFileId, alt: 'media' },
         { responseType: 'stream' },
@@ -281,8 +317,8 @@ export async function POST(
           conversationId: conversation.id,
           body: mediaRes.data as unknown as Readable,
           sizeBytes: declaredSize,
-          fileName: metaRes.data.name ?? audioFileName ?? 'audio',
-          mimeType: metaRes.data.mimeType ?? 'application/octet-stream',
+          fileName: driveName,
+          mimeType: driveMime,
           driveFileId: driveAudioFileId,
         }),
       );
@@ -290,7 +326,10 @@ export async function POST(
     } catch (err) {
       console.error('[conversations] audio import failed', err);
       return NextResponse.json(
-        { error: 'import_failed', message: 'Could not import the audio from Drive.' },
+        {
+          error: 'import_failed',
+          message: 'Could not import the audio from Drive.',
+        },
         { status: 502 },
       );
     }

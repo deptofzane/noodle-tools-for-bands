@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../../../ActionMenu';
 import { useOfflineDownload } from '../../../../offline/useOfflineDownload';
 import type { OfflineSong } from '../../../../offline/offlineSetlists';
+import { liveHref, practiceHref } from '@/lib/routes';
 
 /**
  * The setlist's top actions — Practice, Live, and offline download. On desktop
@@ -29,8 +30,8 @@ export function SetlistActions({
   const rec = offline.records?.get(setlistId);
   const downloading = offline.busyId === setlistId;
   const target = { bandId, setlistId, name, songs };
-  const practiceHref = `/bands/${bandId}/setlists/${setlistId}/practice`;
-  const liveHref = `/bands/${bandId}/setlists/${setlistId}/practice/live`;
+  const practice = practiceHref(setlistId);
+  const live = liveHref(setlistId);
 
   const downloadLabel = downloading
     ? `↓ ${Math.round(offline.progress * 100)}%`
@@ -57,10 +58,10 @@ export function SetlistActions({
 
       {/* Desktop: individual buttons. */}
       <span className="hidden items-center gap-2 md:flex">
-        <Link href={practiceHref} className="btn-outline h-9">
+        <Link href={practice} className="btn-outline h-9">
           Practice
         </Link>
-        <Link href={liveHref} className="btn-outline h-9">
+        <Link href={live} className="btn-outline h-9">
           Live
         </Link>
         <button
@@ -89,10 +90,10 @@ export function SetlistActions({
       {/* Mobile: one kebab holding all three. */}
       <span className="md:hidden">
         <ActionMenu label="Setlist actions">
-          <ActionMenuItem onClick={() => router.push(practiceHref)}>
+          <ActionMenuItem onClick={() => router.push(practice)}>
             Practice
           </ActionMenuItem>
-          <ActionMenuItem onClick={() => router.push(liveHref)}>
+          <ActionMenuItem onClick={() => router.push(live)}>
             Live
           </ActionMenuItem>
           {rec ? (

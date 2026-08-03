@@ -1,43 +1,17 @@
-import { notFound, redirect } from 'next/navigation';
-import { getCurrentDbUser } from '@/lib/current-user';
-import { getMembership } from '@/lib/db/bands';
-import { getSetlist, getSetlistPracticeSongs } from '@/lib/db/setlists';
-import { Practice } from '../../../../../Practice';
+import { redirect } from 'next/navigation';
+import { practiceHref } from '@/lib/routes';
 
 /**
- * Practice a setlist — step through its songs one at a time. Server shell:
- * the setlist must exist, belong to this band, and the viewer must be a
- * band member; then it loads the songs (with audio + sheet metadata).
+ * The old path-based Practice URL. Kept permanently, not transitionally:
+ * links to it are out in chat threads, calendar invites and bookmarks, and
+ * they should keep landing in the right place. The screen itself now lives at
+ * `/practice?setlist=…` (see lib/routes.ts).
  */
-export default async function PracticeSetlistPage({
+export default async function PracticeSetlistRedirect({
   params,
 }: {
   params: Promise<{ bandId: string; setlistId: string }>;
 }) {
-  const { bandId, setlistId } = await params;
-
-  const user = await getCurrentDbUser();
-  if (!user) redirect('/login');
-
-  const setlist = await getSetlist(setlistId);
-  if (!setlist || setlist.bandId !== bandId) notFound();
-  if (!(await getMembership(user.id, bandId))) notFound();
-
-  const songs = await getSetlistPracticeSongs(setlistId);
-
-  return (
-    <main>
-      {/* Practice renders the page header — "Edit song" in it has to follow
-          whichever song you've stepped to. */}
-      <Practice
-        songs={songs}
-        apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ''}
-        persistKey={`practice:setlist:${setlistId}`}
-        back={{
-          href: `/bands/${bandId}/setlists/${setlistId}`,
-          name: 'Setlist',
-        }}
-      />
-    </main>
-  );
+  const { setlistId } = await params;
+  redirect(practiceHref(setlistId));
 }

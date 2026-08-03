@@ -20,6 +20,7 @@ import {
   type Show,
 } from './bandDetailShared';
 import { MapLink } from '../../MapLink';
+import { liveHref, practiceHref } from '@/lib/routes';
 import { CollapsibleSection } from '@/app/CollapsibleSection';
 
 /**
@@ -185,20 +186,12 @@ export function BandOverviewTab({
                   Add setlist songs to queue
                 </ActionMenuItem>
                 <ActionMenuItem
-                  onClick={() =>
-                    router.push(
-                      `/bands/${bandId}/setlists/${show.setlistId}/practice`,
-                    )
-                  }
+                  onClick={() => router.push(practiceHref(show.setlistId!))}
                 >
                   Practice
                 </ActionMenuItem>
                 <ActionMenuItem
-                  onClick={() =>
-                    router.push(
-                      `/bands/${bandId}/setlists/${show.setlistId}/practice/live`,
-                    )
-                  }
+                  onClick={() => router.push(liveHref(show.setlistId!))}
                 >
                   Live
                 </ActionMenuItem>

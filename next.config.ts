@@ -32,10 +32,15 @@ const withSerwist = withSerwistInit({
   swSrc: 'app/sw.ts',
   swDest: 'public/sw.js',
   disable: process.env.NODE_ENV === 'development',
-  // The offline screen has to be in the cache before the network goes away,
-  // and it's a rendered route rather than a build asset, so the manifest
-  // doesn't pick it up on its own.
-  additionalPrecacheEntries: [{ url: '/offline', revision: htmlRevision }],
+  // Rendered routes the manifest doesn't pick up on its own, and that have to
+  // be in the cache before the network goes away. One document each, serving
+  // every setlist — the ids ride in the query string (see lib/routes.ts), so
+  // these three entries cover offline use of the whole app.
+  additionalPrecacheEntries: [
+    { url: '/offline', revision: htmlRevision },
+    { url: '/practice', revision: htmlRevision },
+    { url: '/live', revision: htmlRevision },
+  ],
 });
 
 export default withSerwist(nextConfig);

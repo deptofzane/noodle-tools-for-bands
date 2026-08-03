@@ -24,6 +24,8 @@ export interface Conversation {
   audioStoredName: string | null;
   /** Stored audio MIME type; null when the song has no audio yet. */
   audioMimeType: string | null;
+  /** Whether the song has sheet music — i.e. whether Live has anything to show. */
+  hasSheetMusic: boolean;
 }
 
 /** A song's streaming URL, or null when it has no audio to play. */

@@ -182,10 +182,15 @@ export function Header() {
   }, [menuOpen, bandsOpen]);
 
   return (
+    // z-[45] sits above the player bar (z-40): on mobile the menu opens upward
+    // out of this bar and over the player, and being positioned, this bar is a
+    // stacking context the menu can't escape however high its own z-index
+    // goes. Still below modals, the full-screen player and Live (z-50+), which
+    // are meant to cover the nav.
     <div
       id="app-nav"
       ref={barRef}
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] lg:bottom-auto lg:top-0 lg:border-b lg:border-t-0 lg:pb-0 dark:border-neutral-800 dark:bg-neutral-950"
+      className="fixed inset-x-0 bottom-0 z-[45] border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] lg:bottom-auto lg:top-0 lg:border-b lg:border-t-0 lg:pb-0 dark:border-neutral-800 dark:bg-neutral-950"
     >
       <nav className="mx-auto flex max-w-5xl flex-row items-center justify-between gap-1 px-3 py-3 lg:px-6">
         <span className="flex flex-row items-center gap-2">

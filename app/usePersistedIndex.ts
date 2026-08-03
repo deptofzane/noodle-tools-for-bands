@@ -1,6 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 
 /**
  * A position index (like the current song in a setlist) that persists to
@@ -12,6 +18,11 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 export function usePersistedIndex(
   key: string | null,
   count: number,
+  /**
+   * Where to start regardless of what's stored — a position that came from the
+   * URL (a shared link to a particular song). Null defers to storage.
+   */
+  startAt?: number | null,
 ): [number, Dispatch<SetStateAction<number>>] {
   const [index, setIndex] = useState(0);
   const storageKey = key ? `setlistPos:${key}` : null;
@@ -21,6 +32,12 @@ export function usePersistedIndex(
 
   // Restore once on mount.
   useEffect(() => {
+    // An explicit starting point wins: someone followed a link to this song,
+    // and where they'd got to on their own last time isn't what they asked for.
+    if (startAt != null && startAt >= 0 && startAt < count) {
+      setIndex(startAt);
+      return;
+    }
     if (!storageKey) return;
     try {
       const saved = localStorage.getItem(storageKey);

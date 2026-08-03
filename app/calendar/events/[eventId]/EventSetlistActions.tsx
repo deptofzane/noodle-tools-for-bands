@@ -10,6 +10,7 @@ import { useToast } from '../../../ToastProvider';
 import { useOfflineDownload } from '../../../offline/useOfflineDownload';
 import type { OfflineSong } from '../../../offline/offlineSetlists';
 import { LoadingBlock } from '../../../Spinner';
+import { liveHref, practiceHref } from '@/lib/routes';
 
 /** The event's current fields, resent on PATCH (which replaces all of them). */
 export interface EventSetlistPatchFields {
@@ -107,18 +108,10 @@ export function EventSetlistActions({
   return (
     <div className="self-end">
       <ActionMenu label="Setlist actions" disabled={busy}>
-        <ActionMenuItem
-          onClick={() =>
-            router.push(`/bands/${bandId}/setlists/${setlistId}/practice`)
-          }
-        >
+        <ActionMenuItem onClick={() => router.push(practiceHref(setlistId))}>
           Practice
         </ActionMenuItem>
-        <ActionMenuItem
-          onClick={() =>
-            router.push(`/bands/${bandId}/setlists/${setlistId}/practice/live`)
-          }
-        >
+        <ActionMenuItem onClick={() => router.push(liveHref(setlistId))}>
           Live
         </ActionMenuItem>
         <ActionMenuItem

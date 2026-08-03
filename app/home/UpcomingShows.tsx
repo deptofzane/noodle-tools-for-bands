@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { formatDateShort, formatTimeRange } from '@/lib/format';
 import { completionInstant } from './eventTiming';
+import { liveHref, practiceHref } from '@/lib/routes';
 
 export interface UpcomingShow {
   id: string;
@@ -77,12 +78,11 @@ export function UpcomingShows({
 
   // Fall back to the next event (however far out) when the week is empty.
   const usingFallback = visible.length === 0;
-  const items =
-    !usingFallback
-      ? visible
-      : nextEvent && nextEvent.date >= today && notFinished(nextEvent)
-        ? [nextEvent]
-        : [];
+  const items = !usingFallback
+    ? visible
+    : nextEvent && nextEvent.date >= today && notFinished(nextEvent)
+      ? [nextEvent]
+      : [];
   if (items.length === 0) return null;
 
   const renderShow = (s: UpcomingShow) => (
@@ -108,14 +108,14 @@ export function UpcomingShows({
       {s.setlistId && (
         <div className="flex shrink-0 flex-col gap-2 ml-2">
           <Link
-            href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice`}
+            href={practiceHref(s.setlistId!)}
             title="Practice this event’s setlist"
             className="rounded-md border border-neutral-300 px-2.5 py-2 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
           >
             Practice
           </Link>
           <Link
-            href={`/bands/${s.bandId}/setlists/${s.setlistId}/practice/live`}
+            href={liveHref(s.setlistId!)}
             title="Perform this event’s setlist live"
             className="rounded-md border border-neutral-300 px-2.5 py-2 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
           >
