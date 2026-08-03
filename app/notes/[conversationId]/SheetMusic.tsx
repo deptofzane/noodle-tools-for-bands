@@ -194,6 +194,37 @@ export function SheetMusic({
     }).catch(() => {});
   };
 
+  /**
+   * Overwrite the selected version's text in place, from the inline editor.
+   * Reloading the versions is what refreshes the panel: the new `updatedAt`
+   * changes `viewUrl`, which re-fetches the content — so by the time this
+   * resolves, the editor is closing over the saved text.
+   */
+  const saveSheetText = async ({
+    text,
+    format,
+  }: {
+    text: string;
+    format: SheetTextFormat;
+  }) => {
+    if (!selected) return;
+    try {
+      await trackPending(async () => {
+        const res = await fetch(`${versionsUrl}/${selected.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: text, format }),
+        });
+        await ensureOk(res);
+        await loadVersions(selected.id);
+      });
+      showToast('Sheet music updated.', 'success');
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+      throw e; // keeps the editor open with the user's draft intact
+    }
+  };
+
   const openChooser = () => setChooseOpen(true);
   const closeChooser = () => {
     if (busy) return;
@@ -412,7 +443,11 @@ export function SheetMusic({
                     label="Loading sheet music"
                   />
                 ) : (
-                  <SheetText text={textContent} fileName={selected.fileName} />
+                  <SheetText
+                    text={textContent}
+                    fileName={selected.fileName}
+                    onSave={saveSheetText}
+                  />
                 )}
               </div>
             )}

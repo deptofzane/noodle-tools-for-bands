@@ -141,7 +141,11 @@ export function NewPollClient({ bandId }: { bandId: string }) {
             </li>
           ))}
         </ul>
-        <button type="button" onClick={addOption} className="self-start btn-outline">
+        <button
+          type="button"
+          onClick={addOption}
+          className="self-start btn-outline"
+        >
           Add option
         </button>
       </div>

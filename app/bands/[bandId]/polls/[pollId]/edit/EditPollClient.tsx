@@ -79,7 +79,9 @@ export function EditPollClient({
             // Send the real id for existing options (so their votes survive);
             // omit it for new ones.
             options: options.map((o) =>
-              o.id.startsWith('tmp-') ? { text: o.text } : { id: o.id, text: o.text },
+              o.id.startsWith('tmp-')
+                ? { text: o.text }
+                : { id: o.id, text: o.text },
             ),
           }),
         });
@@ -198,7 +200,11 @@ export function EditPollClient({
             </li>
           ))}
         </ul>
-        <button type="button" onClick={addOption} className="self-start btn-outline">
+        <button
+          type="button"
+          onClick={addOption}
+          className="self-start btn-outline"
+        >
           Add option
         </button>
       </div>

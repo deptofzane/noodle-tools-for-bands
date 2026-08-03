@@ -56,9 +56,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
+      {/*
+        Anchored on both sides below `sm`, so the width comes from the space
+        available rather than being fixed: a `w-full` on a fixed element means
+        the whole viewport, which `max-w-sm` then pinned to 384px — and with
+        `right-4` also honored, the left edge went negative on anything
+        narrower than 400px (most phones). Bottom-right from `sm` up, where
+        there's room for it, and clear of the nav bar on mobile, where the
+        Header publishes its height as `--app-nav-h`.
+      */}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed bottom-4 right-4 z-[100] flex w-full max-w-sm flex-col gap-2 px-4 sm:px-0"
+        className="pointer-events-none fixed inset-x-4 bottom-[calc(var(--app-nav-h)_+_1rem)] z-[100] mx-auto flex max-w-sm flex-col gap-2 sm:inset-x-auto sm:right-4 sm:bottom-4"
       >
         {toasts.map((t) => (
           <div

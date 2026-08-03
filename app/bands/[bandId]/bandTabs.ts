@@ -1,0 +1,21 @@
+/**
+ * The band page's tabs. Kept out of the client component so the server page
+ * can validate `?tab=` too — every export of a 'use client' module becomes a
+ * client reference and can't be called during the server render.
+ */
+export const BAND_TABS = [
+  'chat',
+  'events',
+  'venues',
+  'polls',
+  'notes',
+] as const;
+
+export type BandTab = (typeof BAND_TABS)[number];
+
+/** The tab a bare `/bands/[id]` opens on. */
+export const DEFAULT_BAND_TAB: BandTab = 'events';
+
+export function isBandTab(v: string | null | undefined): v is BandTab {
+  return BAND_TABS.includes(v as BandTab);
+}

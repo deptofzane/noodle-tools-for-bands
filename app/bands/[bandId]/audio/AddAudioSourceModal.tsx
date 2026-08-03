@@ -31,7 +31,12 @@ export function AddAudioSourceModal({
   onClose: () => void;
 }) {
   return (
-    <Modal onClose={onClose} busy={busy} labelledBy="audio-source-title" size="sm">
+    <Modal
+      onClose={onClose}
+      busy={busy}
+      labelledBy="audio-source-title"
+      size="sm"
+    >
       <h2 id="audio-source-title" className="text-base font-semibold">
         Add audio
       </h2>
@@ -52,14 +57,20 @@ export function AddAudioSourceModal({
         )}
         <DropboxChooserButton
           label="Choose from Dropbox"
-          extensions={['.mp3', '.m4a', '.wav', '.aac', '.ogg', '.oga', '.opus', '.flac', '.webm']}
+          extensions={[
+            '.mp3',
+            '.m4a',
+            '.wav',
+            '.aac',
+            '.ogg',
+            '.oga',
+            '.opus',
+            '.flac',
+            '.webm',
+          ]}
           onPick={onPickDropbox}
         />
-        <button
-          type="button"
-          onClick={onUploadLocal}
-          className="btn-outline"
-        >
+        <button type="button" onClick={onUploadLocal} className="btn-outline">
           Upload a local file
         </button>
       </div>

@@ -769,3 +769,70 @@ export const calendarFeeds = pgTable(
     uniqueIndex('calendar_feeds_user_unique').on(t.userId),
   ],
 );
+// A member's own note within a band: a title, free text, and any number of
+// links out to the band's other objects. Private to its author by default;
+// `shared` opens it to the rest of the band, which is the only way anyone
+// else ever sees it.
+//
+// Named `user_notes` to stay clear of `notes`, which is the per-song comment
+// thread and unrelated.
+export const userNotes = pgTable(
+  'user_notes',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    bandId: uuid('band_id')
+      .notNull()
+      .references(() => bands.id, { onDelete: 'cascade' }),
+    authorId: uuid('author_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    body: text('body'),
+    // False = only the author. True = everyone in the band can read it;
+    // editing and deleting stay with the author either way.
+    shared: boolean('shared').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    // The tab's query: this band's notes, mine plus the band's shared ones.
+    index('user_notes_band_author_idx').on(t.bandId, t.authorId),
+    index('user_notes_band_shared_idx').on(t.bandId, t.shared),
+  ],
+);
+
+export const userNoteLinkKind = pgEnum('user_note_link_kind', [
+  'song',
+  'event',
+  'venue',
+  'setlist',
+  'poll',
+  'other',
+]);
+
+// One thing a note points at. Every kind but `other` names a row in a
+// different table, so there's no single foreign key to declare — `target_id`
+// is unconstrained on purpose. `label` is the target's name as it read when
+// the link was made, which keeps a link legible after its target is renamed
+// or deleted; `url` carries the free-form `other` kind.
+export const userNoteLinks = pgTable(
+  'user_note_links',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    noteId: uuid('note_id')
+      .notNull()
+      .references(() => userNotes.id, { onDelete: 'cascade' }),
+    kind: userNoteLinkKind('kind').notNull(),
+    /** The linked row's id. Null for `other`. */
+    targetId: uuid('target_id'),
+    /** Free-form destination for `other` — a pasted URL or reference. */
+    url: text('url'),
+    label: text('label').notNull(),
+    position: integer('position').notNull().default(0),
+  },
+  (t) => [index('user_note_links_note_idx').on(t.noteId)],
+);

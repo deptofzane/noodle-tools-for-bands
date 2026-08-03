@@ -45,8 +45,7 @@ export const makeSetlistRowId = () =>
     ? crypto.randomUUID()
     : `tmp-${Math.random().toString(36).slice(2)}`;
 
-const addBtnClass =
-  'btn-outline';
+const addBtnClass = 'btn-outline';
 
 /**
  * The shared body of the New/Edit setlist screens: the "Add songs / set break /
@@ -76,7 +75,9 @@ export function SetlistItemsEditor({
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -250,7 +251,9 @@ export function SetlistItemsEditor({
             <div className="min-h-0 flex-1 overflow-auto px-2">
               {candidates.length === 0 ? (
                 <p className="px-2 py-10 text-center text-sm text-neutral-500">
-                  {search.trim() ? 'No matching songs.' : 'No more songs to add.'}
+                  {search.trim()
+                    ? 'No matching songs.'
+                    : 'No more songs to add.'}
                 </p>
               ) : (
                 <ul className="flex flex-col gap-1 pb-2">
@@ -357,8 +360,14 @@ function SortableRow({
   isMarker: boolean;
   onRemove: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
 
   const style = { transform: CSS.Transform.toString(transform), transition };
 

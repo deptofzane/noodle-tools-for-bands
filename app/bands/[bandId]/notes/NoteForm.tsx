@@ -1,0 +1,201 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ensureOk } from '@/lib/api';
+import { AutoTextarea } from '../../../AutoTextarea';
+import { PageHeader } from '../../../PageHeader';
+import { useTrackPending } from '../../../PendingActionProvider';
+import { useToast } from '../../../ToastProvider';
+import { NoteLinkModal } from './NoteLinkModal';
+import { NOTE_LINK_KINDS } from '@/lib/note-links';
+import type { NoteLinkInput } from '@/lib/db/user-notes';
+
+const field =
+  'rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900';
+
+function kindLabel(kind: NoteLinkInput['kind']): string {
+  return NOTE_LINK_KINDS.find((k) => k.id === kind)?.label ?? kind;
+}
+
+/**
+ * The New note / Edit note screen. One component for both: `noteId` decides
+ * whether saving POSTs or PATCHes, which keeps the two forms from drifting.
+ *
+ * Links are edited entirely client-side and submitted with the note, so
+ * adding three and then cancelling leaves nothing behind.
+ */
+export function NoteForm({
+  bandId,
+  bandName,
+  noteId,
+  initial,
+}: {
+  bandId: string;
+  bandName: string;
+  /** Omitted when creating. */
+  noteId?: string;
+  initial?: {
+    title: string;
+    body: string;
+    shared: boolean;
+    links: NoteLinkInput[];
+  };
+}) {
+  const router = useRouter();
+  const trackPending = useTrackPending();
+  const showToast = useToast();
+
+  const [title, setTitle] = useState(initial?.title ?? '');
+  const [body, setBody] = useState(initial?.body ?? '');
+  const [shared, setShared] = useState(initial?.shared ?? false);
+  const [links, setLinks] = useState<NoteLinkInput[]>(initial?.links ?? []);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const backHref = `/bands/${bandId}?tab=notes`;
+  const canSave = Boolean(title.trim() && !busy);
+
+  const save = async () => {
+    if (!canSave) return;
+    setBusy(true);
+    try {
+      await trackPending(async () => {
+        const res = await fetch(
+          noteId
+            ? `/api/bands/${bandId}/notes/${noteId}`
+            : `/api/bands/${bandId}/notes`,
+          {
+            method: noteId ? 'PATCH' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: title.trim(), body, shared, links }),
+          },
+        );
+        await ensureOk(res, [200, 201]);
+      });
+      showToast(noteId ? 'Note saved.' : 'Note created.', 'success');
+      router.push(backHref);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader defaultHref={backHref} defaultHrefName="Notes" />
+
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="title-text">{noteId ? 'Edit note' : 'New note'}</h1>
+        <button
+          type="button"
+          onClick={() => void save()}
+          disabled={!canSave}
+          className="shrink-0 btn-primary"
+        >
+          {busy ? 'Saving…' : 'Save'}
+        </button>
+      </div>
+
+      <p className="text-sm text-neutral-500">{bandName}</p>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="note-title" className="text-sm font-medium">
+          Title
+        </label>
+        <input
+          id="note-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          maxLength={200}
+          autoFocus={!noteId}
+          className={field}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="note-body" className="text-sm font-medium">
+          Note
+        </label>
+        <AutoTextarea
+          id="note-body"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          className={`${field} min-h-40`}
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium">Links</span>
+          <button
+            type="button"
+            onClick={() => setLinkOpen(true)}
+            className="btn-outline"
+          >
+            New link
+          </button>
+        </div>
+        {links.length === 0 ? (
+          <p className="text-[0.6875rem] text-neutral-500">
+            Optional — point this note at a song, event, venue, setlist, poll,
+            or anything else.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-1">
+            {links.map((l, i) => (
+              <li
+                key={`${l.kind}-${l.targetId ?? l.url}-${i}`}
+                className="flex items-center justify-between gap-2 rounded-md border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide text-neutral-500 dark:bg-neutral-800">
+                    {kindLabel(l.kind)}
+                  </span>
+                  <span className="truncate">{l.label}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setLinks((prev) => prev.filter((_, j) => j !== i))
+                  }
+                  aria-label={`Remove link to ${l.label}`}
+                  className="shrink-0 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+                >
+                  <span aria-hidden="true">✕</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <label className="flex items-start gap-3 rounded-md border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800">
+        <input
+          type="checkbox"
+          checked={shared}
+          onChange={(e) => setShared(e.target.checked)}
+          className="mt-0.5 h-4 w-4"
+        />
+        <span>
+          <span className="font-medium">Share with the band</span>
+          <span className="block text-[0.6875rem] text-neutral-500">
+            Off by default — only you can see this note. Sharing lets the band
+            read it; editing and deleting stay with you.
+          </span>
+        </span>
+      </label>
+
+      {linkOpen && (
+        <NoteLinkModal
+          bandId={bandId}
+          onAdd={(link) => {
+            setLinks((prev) => [...prev, link]);
+            setLinkOpen(false);
+          }}
+          onClose={() => setLinkOpen(false)}
+        />
+      )}
+    </div>
+  );
+}

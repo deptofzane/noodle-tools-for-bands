@@ -35,6 +35,31 @@
 }
 
 /*
+ * The sweep for `LoadingBar` (app/Spinner.tsx). The fill is 40% of the track,
+ * so translating it 250% of its own width carries it from just off the left
+ * edge to just off the right. Reduced motion gets a dimmed static bar instead
+ * — still "busy", without the movement.
+ */
+@keyframes loading-bar-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+.loading-bar-fill {
+  animation: loading-bar-sweep 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-bar-fill {
+    width: 100%;
+    animation: none;
+    opacity: 0.5;
+  }
+}
+
+/*
  * The nav bar is fixed — to the bottom on mobile, the top on desktop — so it
  * covers page content unless the body reserves its height on the matching
  * side. Set on <body> only for signed-in routes, which are the ones that
@@ -63,11 +88,11 @@ body {
 }
 
 .main-container {
-  @apply mx-auto flex h-max max-w-3xl flex-col px-4 pb-4 gap-2
+  @apply mx-auto flex h-max max-w-3xl flex-col px-4 pb-20 lg:pb-4 gap-2;
 }
 
 .title-text {
-  @apply text-2xl font-semibold tracking-tight
+  @apply text-2xl font-semibold tracking-tight;
 }
 
 /*
@@ -75,15 +100,15 @@ body {
  * desktop (md:px-3 md:py-1.5). `disabled:opacity-50` is a no-op on links.
  */
 .btn-outline {
-  @apply rounded-md border border-neutral-300 px-4 py-3 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 md:px-3 md:py-1.5 dark:border-neutral-700 dark:hover:bg-neutral-900
+  @apply rounded-md border border-neutral-300 px-4 py-3 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 md:px-3 md:py-1.5 dark:border-neutral-700 dark:hover:bg-neutral-900;
 }
 
 .btn-primary {
-  @apply rounded-md bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 md:px-3 md:py-1.5
+  @apply rounded-md bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 md:px-3 md:py-1.5;
 }
 
 .btn-ghost {
-  @apply rounded-md px-4 py-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 md:px-3 md:py-1.5 dark:text-neutral-400 dark:hover:bg-neutral-800
+  @apply rounded-md px-4 py-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 md:px-3 md:py-1.5 dark:text-neutral-400 dark:hover:bg-neutral-800;
 }
 /*
  * Rendered sheet-music text (Markdown / ChordPro). Sizes use `em` so the
@@ -94,19 +119,53 @@ body {
   line-height: 1.6;
   word-break: break-word;
 }
-.sheet-prose h1 { font-size: 1.6em; font-weight: 700; margin: 0.6em 0 0.3em; }
-.sheet-prose h2 { font-size: 1.35em; font-weight: 700; margin: 0.6em 0 0.3em; }
-.sheet-prose h3 { font-size: 1.15em; font-weight: 600; margin: 0.6em 0 0.3em; }
-.sheet-prose h4 { font-size: 1em; font-weight: 600; margin: 0.6em 0 0.3em; }
-.sheet-prose p { margin: 0.5em 0; }
+.sheet-prose h1 {
+  font-size: 1.6em;
+  font-weight: 700;
+  margin: 0.6em 0 0.3em;
+}
+.sheet-prose h2 {
+  font-size: 1.35em;
+  font-weight: 700;
+  margin: 0.6em 0 0.3em;
+}
+.sheet-prose h3 {
+  font-size: 1.15em;
+  font-weight: 600;
+  margin: 0.6em 0 0.3em;
+}
+.sheet-prose h4 {
+  font-size: 1em;
+  font-weight: 600;
+  margin: 0.6em 0 0.3em;
+}
+.sheet-prose p {
+  margin: 0.5em 0;
+}
 .sheet-prose ul,
-.sheet-prose ol { margin: 0.5em 0; padding-left: 1.5em; }
-.sheet-prose ul { list-style: disc; }
-.sheet-prose ol { list-style: decimal; }
-.sheet-prose li { margin: 0.15em 0; }
-.sheet-prose a { color: #2563eb; text-decoration: underline; }
-.sheet-prose strong { font-weight: 700; }
-.sheet-prose em { font-style: italic; }
+.sheet-prose ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+.sheet-prose ul {
+  list-style: disc;
+}
+.sheet-prose ol {
+  list-style: decimal;
+}
+.sheet-prose li {
+  margin: 0.15em 0;
+}
+.sheet-prose a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+.sheet-prose strong {
+  font-weight: 700;
+}
+.sheet-prose em {
+  font-style: italic;
+}
 .sheet-prose code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.9em;
@@ -123,21 +182,44 @@ body {
   overflow-x: auto;
   white-space: pre;
 }
-.sheet-prose pre code { background: none; padding: 0; font-size: 1em; }
+.sheet-prose pre code {
+  background: none;
+  padding: 0;
+  font-size: 1em;
+}
 .sheet-prose blockquote {
   border-left: 3px solid rgb(0 0 0 / 0.2);
   padding-left: 0.75em;
   margin: 0.5em 0;
   color: rgb(0 0 0 / 0.7);
 }
-.sheet-prose hr { border: 0; border-top: 1px solid rgb(0 0 0 / 0.15); margin: 1em 0; }
-.sheet-prose table { border-collapse: collapse; margin: 0.5em 0; }
+.sheet-prose hr {
+  border: 0;
+  border-top: 1px solid rgb(0 0 0 / 0.15);
+  margin: 1em 0;
+}
+.sheet-prose table {
+  border-collapse: collapse;
+  margin: 0.5em 0;
+}
 .sheet-prose th,
-.sheet-prose td { border: 1px solid rgb(0 0 0 / 0.15); padding: 0.3em 0.6em; }
-.dark .sheet-prose a { color: #60a5fa; }
+.sheet-prose td {
+  border: 1px solid rgb(0 0 0 / 0.15);
+  padding: 0.3em 0.6em;
+}
+.dark .sheet-prose a {
+  color: #60a5fa;
+}
 .dark .sheet-prose code,
-.dark .sheet-prose pre { background: rgb(255 255 255 / 0.08); }
-.dark .sheet-prose blockquote { border-left-color: rgb(255 255 255 / 0.25); color: rgb(255 255 255 / 0.75); }
+.dark .sheet-prose pre {
+  background: rgb(255 255 255 / 0.08);
+}
+.dark .sheet-prose blockquote {
+  border-left-color: rgb(255 255 255 / 0.25);
+  color: rgb(255 255 255 / 0.75);
+}
 .dark .sheet-prose hr,
 .dark .sheet-prose th,
-.dark .sheet-prose td { border-color: rgb(255 255 255 / 0.18); }
+.dark .sheet-prose td {
+  border-color: rgb(255 255 255 / 0.18);
+}

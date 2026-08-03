@@ -139,7 +139,9 @@ export function SongQueue() {
               >
                 <button
                   type="button"
-                  onClick={() => (isCurrent && track ? toggle() : play(queue, i))}
+                  onClick={() =>
+                    isCurrent && track ? toggle() : play(queue, i)
+                  }
                   aria-label={
                     isCurrent && isPlaying
                       ? `Pause ${t.title}`
@@ -153,12 +155,24 @@ export function SongQueue() {
                   className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
                 >
                   {isCurrent && isPlaying ? (
-                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="12"
+                      height="12"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
                       <rect x="6" y="5" width="4" height="14" rx="1" />
                       <rect x="14" y="5" width="4" height="14" rx="1" />
                     </svg>
                   ) : (
-                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="12"
+                      height="12"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
                       <path d="M8 5v14l11-7z" />
                     </svg>
                   )}

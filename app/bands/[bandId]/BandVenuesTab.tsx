@@ -66,10 +66,10 @@ export function BandVenuesTab({
     const collapsed = !expanded.has(venue.id);
     const hasDetails = Boolean(
       venue.address ||
-        venue.phone ||
-        venue.email ||
-        venue.contactName ||
-        venue.notes,
+      venue.phone ||
+      venue.email ||
+      venue.contactName ||
+      venue.notes,
     );
     return (
       <li

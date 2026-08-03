@@ -281,6 +281,13 @@
       "when": 1785612652780,
       "tag": "0039_loose_true_believers",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1785777115818,
+      "tag": "0040_wakeful_praxagora",
+      "breakpoints": true
     }
   ]
 }

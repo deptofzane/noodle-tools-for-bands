@@ -6,7 +6,7 @@ import { formatDuration } from '@/lib/format';
 import { useTrackBoolean } from '../../PendingActionProvider';
 import { claimAudioFocus, subscribeAudioFocus } from '../../player/audioFocus';
 import { usePlayer } from './PlayerContext';
-import { LoadingBlock } from '../../Spinner';
+import { LoadingBar } from '../../Spinner';
 
 /** One selectable audio version, for the in-player version switcher. */
 export type PlayerVersion = {
@@ -442,7 +442,9 @@ export function AudioPlayerView({
       }
     >
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="truncate text-sm font-medium lg:max-w-[16rem] ">{fileName}</h2>
+        <h2 className="truncate text-sm font-medium lg:max-w-[16rem] ">
+          {fileName}
+        </h2>
         <span className="shrink-0 font-mono text-xs tabular-nums text-neutral-500">
           {formatDuration(currentTime)} / {formatDuration(duration)}
         </span>
@@ -601,7 +603,8 @@ export function AudioPlayerView({
               >
                 {versions!.list.map((v) => (
                   <option key={v.id} value={v.id}>
-                    {(v.label || v.fileName) + (v.isDefault ? ' (default)' : '')}
+                    {(v.label || v.fileName) +
+                      (v.isDefault ? ' (default)' : '')}
                   </option>
                 ))}
               </select>
@@ -611,7 +614,7 @@ export function AudioPlayerView({
       )}
 
       {!isReady && !error && (
-        <LoadingBlock size="sm" className="mt-3 py-2" label="Loading audio" />
+        <LoadingBar className="mt-4" label="Loading audio" />
       )}
       {error && (
         <p className="mt-3 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">

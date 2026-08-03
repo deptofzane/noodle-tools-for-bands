@@ -16,9 +16,7 @@ export function SetlistSongActions({
   const router = useRouter();
   return (
     <ActionMenu label="Song actions">
-      <ActionMenuItem
-        onClick={() => router.push(`/notes/${conversationId}`)}
-      >
+      <ActionMenuItem onClick={() => router.push(`/notes/${conversationId}`)}>
         View song
       </ActionMenuItem>
       <ActionMenuItem

@@ -1,5 +1,9 @@
 import { Modal } from '../../../Modal';
-import { songCountLabel, type Conversation, type Setlist } from '../bandDetailShared';
+import {
+  songCountLabel,
+  type Conversation,
+  type Setlist,
+} from '../bandDetailShared';
 
 /**
  * "Add to setlist" modal: pick one or more setlists to add the given song to.
@@ -23,7 +27,12 @@ export function AddToSetlistModal({
   onConfirm: () => void;
 }) {
   return (
-    <Modal onClose={onCancel} busy={busy} labelledBy="add-setlist-title" size="sm">
+    <Modal
+      onClose={onCancel}
+      busy={busy}
+      labelledBy="add-setlist-title"
+      size="sm"
+    >
       <h2 id="add-setlist-title" className="text-base font-semibold">
         Add to setlist
       </h2>

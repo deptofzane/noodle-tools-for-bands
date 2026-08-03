@@ -87,8 +87,10 @@ export default async function NotesPage({
           Edit song
         </Link>
       </PageHeader>
+      {/* The song, not the version being played — the player's own title
+          shows which version that is. */}
       {audio && (
-        <p className="text-sm text-neutral-200 mx-auto">{audio?.fileName}</p>
+        <p className="text-sm text-neutral-200 mx-auto">{fileName}</p>
       )}
 
       <PlayerProvider>

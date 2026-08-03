@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { PageHeader } from '../../PageHeader';
 import { auth } from '@/auth';
 import { BandDetailClient } from './BandDetailClient';
+import { DEFAULT_BAND_TAB, isBandTab } from './bandTabs';
 
 /**
  * Band detail. Server shell only — membership/authorization is enforced
@@ -34,9 +35,7 @@ export default async function BandDetailPage({
       <BandDetailClient
         bandId={bandId}
         currentUserId={currentUserId}
-        initialTab={
-          tab === 'chat' ? 'chat' : tab === 'polls' ? 'polls' : 'events'
-        }
+        initialTab={isBandTab(tab) ? tab : DEFAULT_BAND_TAB}
       />
     </main>
   );

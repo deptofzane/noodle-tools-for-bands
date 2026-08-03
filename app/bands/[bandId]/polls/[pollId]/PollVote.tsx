@@ -95,7 +95,9 @@ export function PollVote({
                   (mine
                     ? 'border-blue-500 dark:border-blue-500'
                     : 'border-neutral-200 dark:border-neutral-800 ' +
-                      (closed ? '' : 'hover:bg-neutral-50 dark:hover:bg-neutral-900'))
+                      (closed
+                        ? ''
+                        : 'hover:bg-neutral-50 dark:hover:bg-neutral-900'))
                 }
               >
                 <span
@@ -124,11 +126,7 @@ export function PollVote({
       </ul>
       <p className="text-xs text-neutral-500">
         {total} {total === 1 ? 'vote' : 'votes'}
-        {closed
-          ? ' · final results'
-          : myVote
-            ? ''
-            : ' · tap an option to vote'}
+        {closed ? ' · final results' : myVote ? '' : ' · tap an option to vote'}
       </p>
     </div>
   );

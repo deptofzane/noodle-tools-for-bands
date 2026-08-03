@@ -31,7 +31,7 @@ export default async function EditEventPage({
   ]);
 
   return (
-    <main className="mx-auto flex h-max max-w-2xl flex-col px-6 pb-4">
+    <main className="main-container">
       <EditEventClient
         eventId={eventId}
         bandId={event.bandId}

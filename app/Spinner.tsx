@@ -35,6 +35,36 @@ export function Spinner({
 }
 
 /**
+ * An indeterminate progress bar: a short fill sweeping a thin track.
+ *
+ * Deliberately indeterminate — the audio engine reports *readiness*, not bytes
+ * transferred, so there's no honest percentage to show. It reads as a loading
+ * bar rather than a spinner while claiming no more than the spinner did, and
+ * it sits in a fraction of the vertical space, which suits a player card.
+ *
+ * `role="progressbar"` with no `aria-valuenow` is the ARIA form for "busy,
+ * amount unknown".
+ */
+export function LoadingBar({
+  label = 'Loading',
+  className = '',
+}: {
+  /** Announced to screen readers; name the thing when it's not obvious. */
+  label?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      role="progressbar"
+      aria-label={label}
+      className={`h-1 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800 ${className}`}
+    >
+      <div className="loading-bar-fill h-full w-2/5 rounded-full bg-cyan-600 dark:bg-cyan-400" />
+    </div>
+  );
+}
+
+/**
  * A `Spinner` centered in its own row — the standard "this panel hasn't loaded
  * yet" placeholder, in place of a line of muted text.
  */

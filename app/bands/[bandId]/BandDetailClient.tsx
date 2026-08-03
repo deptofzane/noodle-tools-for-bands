@@ -7,12 +7,12 @@ import { BandChat } from './BandChat';
 import { BandMembersTab } from './BandMembersTab';
 import { BandOverviewTab } from './BandOverviewTab';
 import { BandVenuesTab } from './BandVenuesTab';
+import { BandNotesTab } from './BandNotesTab';
+import { BAND_TABS, isBandTab, type BandTab } from './bandTabs';
 import { LeaveBandModal } from '../LeaveBandModal';
 import { useBandData, useBandChat } from './bandDetailHooks';
 import { LoadingBlock } from '../../Spinner';
 
-const BAND_TABS = ['chat', 'events', 'venues', 'polls'] as const;
-type BandTab = (typeof BAND_TABS)[number];
 const ACTIVE_TAB_KEY = 'bandActiveTab';
 
 /**
@@ -63,15 +63,13 @@ export function BandDetailClient({
   // explicit ?tab= (deep link / back-nav) always wins and is remembered.
   useEffect(() => {
     const urlTab = new URLSearchParams(window.location.search).get('tab');
-    const isTab = (v: string | null): v is BandTab =>
-      v !== null && (BAND_TABS as readonly string[]).includes(v);
     try {
       if (urlTab) {
-        if (isTab(urlTab)) localStorage.setItem(ACTIVE_TAB_KEY, urlTab);
+        if (isBandTab(urlTab)) localStorage.setItem(ACTIVE_TAB_KEY, urlTab);
         return;
       }
       const saved = localStorage.getItem(ACTIVE_TAB_KEY);
-      if (isTab(saved)) setActiveTab(saved);
+      if (isBandTab(saved)) setActiveTab(saved);
     } catch {
       // ignore
     }
@@ -174,6 +172,10 @@ export function BandDetailClient({
 
       {activeTab === 'venues' && (
         <BandVenuesTab bandId={bandId} venues={venues} onReload={reload} />
+      )}
+
+      {activeTab === 'notes' && (
+        <BandNotesTab bandId={bandId} currentUserId={currentUserId} />
       )}
 
       {leaveOpen && (
