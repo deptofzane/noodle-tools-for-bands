@@ -41,11 +41,11 @@ export interface PracticeSong {
 /**
  * Step through a setlist one song at a time for practice: a nav bar with
  * back/forward plus "{title} - {n}/{total}", the music player, and the song's
- * sheet music (if any). Narrow screens stack those top to bottom, with the nav
- * and player pinned to the top of the viewport while the sheet music scrolls
- * under them; from `lg` up (unless `wideLayout` is off) the nav and player
- * move into a sticky left rail and the sheet music takes the rest of the
- * width.
+ * sheet music (if any). Narrow screens stack those top to bottom; from `lg` up
+ * (unless `wideLayout` is off) the nav and player move into a left rail and
+ * the sheet music takes the rest of the width. Either way the player alone
+ * stays pinned to the top of the viewport while the sheet music scrolls under
+ * it — the nav scrolls away with the page.
  *
  * By default each song gets a fresh player (the provider is keyed by
  * conversation id), so switching tears down the old audio engine and spins up
@@ -175,33 +175,44 @@ export function Practice({
   const navBtn =
     'shrink-0 rounded-md border border-neutral-300 px-3 py-2 text-lg leading-none font-medium hover:bg-neutral-50 disabled:opacity-40 dark:border-neutral-700 dark:hover:bg-neutral-900';
 
-  // Desktop (`lg`+): nav + player in a fixed-width sticky rail on the left,
-  // sheet music filling the rest. Below `lg` — and whenever `wideLayout` is
-  // off — everything stacks in one column, as it always has.
+  // Desktop (`lg`+): nav + player in a fixed-width rail on the left, sheet
+  // music filling the rest. Below `lg` — and whenever `wideLayout` is off —
+  // everything stacks in one column, as it always has.
+  //
+  // No `items-start`: the rail has to stretch to the row's full height, since
+  // that's the box the sticky player travels inside (see `playerCls`).
   const rowCls =
-    'flex flex-col gap-2' +
-    (wideLayout ? ' lg:flex-row lg:items-start lg:gap-4' : '');
-  // z-50 keeps the sticky player above the sheet music it scrolls over.
-  // The rail pins below the desktop nav bar (which is `fixed` at the top and
-  // 4.5rem tall) rather than at top-0, where it would slide up underneath it.
-  // Capping its height keeps a tall rail — options panel open — reachable.
-  const railCls =
-    'flex flex-col gap-2 z-50' +
-    (wideLayout
-      ? ' lg:sticky lg:top-[var(--app-nav-h)] lg:max-h-[calc(100vh_-_var(--app-nav-h))]' +
-        ' lg:overflow-y-auto lg:w-[22rem] lg:shrink-0 xl:w-[26rem]'
-      : '');
+    'flex flex-col gap-2' + (wideLayout ? ' lg:flex-row lg:gap-4' : '');
   const mainCls = 'min-w-0' + (wideLayout ? ' lg:flex-1' : '');
 
-  // Mobile: pin the whole control group — song nav and player — to the top so
-  // it's still there once you've scrolled into the sheet music. It has to be
-  // this element rather than the player itself: a sticky box can only travel
-  // inside its parent, and the player is the last thing in this one. `top-0`
-  // is clear on mobile (the app's nav bar is pinned to the bottom there).
-  // Desktop is unaffected — the rail inside does its own sticking.
+  // The left rail on desktop; nothing at all on mobile.
+  //
+  // `contents` takes this wrapper out of the box tree below `lg`, promoting
+  // the song nav and the player to direct children of `rowCls` — the tall
+  // column that also holds the sheet music, which is what the sticky player
+  // needs as its parent. At `lg` it re-forms as the fixed-width rail, and
+  // being a flex child of a stretch-aligned row, it runs the row's full
+  // height for the same reason.
   const colCls =
-    'sticky top-0 z-40 bg-white dark:bg-neutral-950' +
-    (wideLayout ? ' lg:static lg:z-auto lg:bg-transparent' : '');
+    'contents' +
+    (wideLayout
+      ? ' lg:flex lg:flex-col lg:gap-2 lg:w-[22rem] lg:shrink-0 xl:w-[26rem]'
+      : '');
+
+  // Only the player stays put — at both sizes the song nav scrolls away with
+  // the page.
+  //
+  // On mobile this wrapper vanishes (`contents`) and the player's own
+  // `sticky top-0` does the work; it brings an opaque background with it (see
+  // AudioPlayerView's `sticky` prop), and `top-0` is clear because the app's
+  // nav bar is pinned to the bottom there. On desktop the offset has to clear
+  // the nav bar instead — `fixed` at the top and 4.5rem tall — so the wrapper
+  // takes over the sticking at that offset, which also makes the player's own
+  // `top-0` inert (it has a box its exact size to travel in). z-50 keeps it
+  // above the sheet music it scrolls across.
+  const playerCls =
+    'contents' +
+    (wideLayout ? ' lg:block lg:z-50 lg:sticky lg:top-[var(--app-nav-h)]' : '');
 
   const layout = (
     <>
@@ -231,73 +242,74 @@ export function Practice({
 
       <div className={rowCls}>
         <div className={colCls}>
-          <div className={railCls}>
-            <div className="flex items-center justify-between gap-2 px-2">
-              <button
-                type="button"
-                onClick={() => setIndex((i) => Math.max(0, i - 1))}
-                disabled={!canBack}
-                aria-label="Previous song"
-                className={navBtn}
-              >
-                <span aria-hidden="true">‹</span>
-              </button>
+          <div className="flex items-center justify-between gap-2 px-2">
+            <button
+              type="button"
+              onClick={() => setIndex((i) => Math.max(0, i - 1))}
+              disabled={!canBack}
+              aria-label="Previous song"
+              className={navBtn}
+            >
+              <span aria-hidden="true">‹</span>
+            </button>
 
-              {/* In the rail the title and Edit stack, so the title keeps its
+            {/* In the rail the title and Edit stack, so the title keeps its
               width instead of fighting the button for it. */}
-              <span
-                className={
-                  'flex min-w-0 gap-3 items-center' +
-                  (wideLayout ? ' lg:flex-col lg:items-start lg:gap-1' : '')
-                }
+            <span
+              className={
+                'flex min-w-0 gap-3 items-center' +
+                (wideLayout ? ' lg:flex-col lg:items-start lg:gap-1' : '')
+              }
+            >
+              <SetlistNav
+                songs={songs.map((s) => ({
+                  title: s.title,
+                  isMarker: !s.conversationId,
+                }))}
+                current={current}
+                onSelect={setIndex}
+                align="center"
               >
-                <SetlistNav
-                  songs={songs.map((s) => ({
-                    title: s.title,
-                    isMarker: !s.conversationId,
-                  }))}
-                  current={current}
-                  onSelect={setIndex}
-                  align="center"
-                >
-                  <span className="text-sm">
-                    <span className="font-medium">{song.title}</span>
-                    <span className="text-neutral-500">
-                      {' '}
-                      - {current + 1}/{total}
-                    </span>
+                <span className="text-sm">
+                  <span className="font-medium">{song.title}</span>
+                  <span className="text-neutral-500">
+                    {' '}
+                    - {current + 1}/{total}
                   </span>
-                </SetlistNav>
-              </span>
+                </span>
+              </SetlistNav>
+            </span>
 
-              <button
-                type="button"
-                onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}
-                disabled={!canForward}
-                aria-label="Next song"
-                className={navBtn}
-              >
-                <span aria-hidden="true">›</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}
+              disabled={!canForward}
+              aria-label="Next song"
+              className={navBtn}
+            >
+              <span aria-hidden="true">›</span>
+            </button>
           </div>
 
-          {song.conversationId &&
-            (playerSlot ?? (
-              <AudioPlayer
-                src={
-                  song.src ??
-                  `/api/conversations/${song.conversationId}/files/audio?name=${encodeURIComponent(
-                    song.title,
-                  )}`
-                }
-                fileName={song.title}
-                mimeType={song.mimeType ?? 'audio/mpeg'}
-                bpm={song.bpm}
-                songKey={song.songKey}
-                sticky
-              />
-            ))}
+          {song.conversationId && (
+            <div className={playerCls}>
+              {playerSlot ?? (
+                <AudioPlayer
+                  src={
+                    song.src ??
+                    `/api/conversations/${song.conversationId}/files/audio?name=${encodeURIComponent(
+                      song.title,
+                    )}`
+                  }
+                  fileName={song.title}
+                  mimeType={song.mimeType ?? 'audio/mpeg'}
+                  bpm={song.bpm}
+                  songKey={song.songKey}
+                  sticky
+                />
+              )}
+            </div>
+          )}
         </div>
 
         <div className={mainCls}>
