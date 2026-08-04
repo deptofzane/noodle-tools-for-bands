@@ -1,20 +1,25 @@
 import Link from 'next/link';
 import { auth } from '@/auth';
-import { HistoryList } from './HistoryList';
+import { HistoryClient } from './HistoryClient';
+import { isHistoryTab } from './historyTabs';
 import { PageHeader } from '../PageHeader';
 
 /**
- * History page — closed conversations only.
+ * History page — the record of what's already finished, in three categories:
+ * closed conversations, closed polls, and past events.
  *
- * "Open Conversations" (the default Annotated view) shows things
- * still in flight. History is the parking lot for conversations that
- * have been explicitly closed. Reading a closed conversation from here
- * does NOT reopen it — only adding a new note auto-reopens (server-side
- * via `addNoteToOwnFile`).
+ * "Open Conversations" (the default Annotated view) shows what's still in
+ * flight. Reading a closed conversation from here does NOT reopen it — only
+ * adding a new note auto-reopens (server-side via `addNoteToOwnFile`).
  */
-export default async function HistoryPage() {
+export default async function HistoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const session = await auth();
   if (!session?.user) return null;
+  const { tab } = await searchParams;
 
   return (
     <main className="main-container">
@@ -23,8 +28,8 @@ export default async function HistoryPage() {
       <div className="mb-4">
         <h1 className="title-text">History</h1>
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-          Conversations you&apos;ve marked closed. Anything still active
-          lives in{' '}
+          Conversations you&apos;ve closed, polls that have been decided, and
+          events that have already happened. Anything still active lives in{' '}
           <Link
             href="/open-conversations"
             className="text-blue-600 underline dark:text-blue-400"
@@ -35,7 +40,8 @@ export default async function HistoryPage() {
         </p>
       </div>
 
-      <HistoryList />
+      {/* No `?tab=` means "wherever you left off" — the client restores it. */}
+      <HistoryClient initialTab={isHistoryTab(tab) ? tab : undefined} />
     </main>
   );
 }

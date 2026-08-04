@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { formatDateShort, formatTimeRange } from '@/lib/format';
 import { completionInstant } from './eventTiming';
 import { liveHref, practiceHref } from '@/lib/routes';
+import { usePersistedBoolean } from '../usePersistedBoolean';
 
 export interface UpcomingShow {
   id: string;
@@ -53,7 +54,8 @@ export function UpcomingShows({
   nextEvent?: UpcomingShow | null;
   serverToday: string;
 }) {
-  const [open, setOpen] = useState(true);
+  // Expanded by default, but the choice sticks across visits.
+  const [open, setOpen] = usePersistedBoolean('homeUpcomingShowsOpen', true);
   const [today, setToday] = useState(serverToday);
   // Set on mount so already-finished events drop out (they move to Recent).
   // Null on the server + first client render → no time filtering yet, so no

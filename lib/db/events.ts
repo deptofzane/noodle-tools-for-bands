@@ -1,4 +1,15 @@
-import { and, asc, desc, eq, gte, inArray, lte, or, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lt,
+  lte,
+  or,
+  sql,
+} from 'drizzle-orm';
 import { db } from './index';
 import {
   bandMembers,
@@ -142,16 +153,63 @@ export async function listEventsForUserInRange(
     // Filtered to this user, so at most one match per event — no dupes.
     .leftJoin(
       eventMembers,
-      and(
-        eq(eventMembers.eventId, events.id),
-        eq(eventMembers.userId, userId),
-      ),
+      and(eq(eventMembers.eventId, events.id), eq(eventMembers.userId, userId)),
     )
     .leftJoin(venues, eq(venues.id, events.venueId))
     .where(and(gte(events.date, from), lte(events.date, to), visible))
     .orderBy(asc(events.date), asc(events.time));
 
   return rows;
+}
+
+/**
+ * Events visible to the user that have already happened — dated before
+ * `before` (YYYY-MM-DD, the viewer's today), most recent first. Same
+ * visibility union as the range query: their bands' events plus any they were
+ * added to. Paged, since this grows without bound.
+ */
+export async function listPastEventsForUser(
+  userId: string,
+  before: string,
+  window?: { limit: number; offset: number },
+): Promise<EventListItem[]> {
+  const bandIds = await userBandIds(userId);
+  const visible =
+    bandIds.length > 0
+      ? or(inArray(events.bandId, bandIds), eq(eventMembers.userId, userId))
+      : eq(eventMembers.userId, userId);
+
+  return (
+    db
+      .select({
+        id: events.id,
+        bandId: events.bandId,
+        bandName: bands.name,
+        title: events.title,
+        date: events.date,
+        time: events.time,
+        endTime: events.endTime,
+        location: events.location,
+        setlistId: events.setlistId,
+        venueName: venues.name,
+        venueAddress: venues.address,
+      })
+      .from(events)
+      .innerJoin(bands, eq(bands.id, events.bandId))
+      // Filtered to this user, so at most one match per event — no dupes.
+      .leftJoin(
+        eventMembers,
+        and(
+          eq(eventMembers.eventId, events.id),
+          eq(eventMembers.userId, userId),
+        ),
+      )
+      .leftJoin(venues, eq(venues.id, events.venueId))
+      .where(and(lt(events.date, before), visible))
+      .orderBy(desc(events.date), desc(events.time))
+      .limit(window ? window.limit : Number.MAX_SAFE_INTEGER)
+      .offset(window ? window.offset : 0)
+  );
 }
 
 /**
@@ -213,7 +271,9 @@ export interface FeedEvent {
 
 /** `base` shifted by `days`, as a UTC YYYY-MM-DD string. */
 function isoDateOffset(base: Date, days: number): string {
-  return new Date(base.getTime() + days * 86_400_000).toISOString().slice(0, 10);
+  return new Date(base.getTime() + days * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
 }
 
 /**
@@ -395,12 +455,16 @@ export async function canAccessEvent(
   const [member] = await db
     .select({ x: eventMembers.userId })
     .from(eventMembers)
-    .where(and(eq(eventMembers.eventId, eventId), eq(eventMembers.userId, userId)))
+    .where(
+      and(eq(eventMembers.eventId, eventId), eq(eventMembers.userId, userId)),
+    )
     .limit(1);
   return Boolean(member);
 }
 
-export async function listEventMembers(eventId: string): Promise<EventMember[]> {
+export async function listEventMembers(
+  eventId: string,
+): Promise<EventMember[]> {
   return db
     .select({
       userId: users.id,
@@ -417,7 +481,10 @@ export async function addEventMember(
   eventId: string,
   userId: string,
 ): Promise<void> {
-  await db.insert(eventMembers).values({ eventId, userId }).onConflictDoNothing();
+  await db
+    .insert(eventMembers)
+    .values({ eventId, userId })
+    .onConflictDoNothing();
 }
 
 export async function removeEventMember(
@@ -426,5 +493,7 @@ export async function removeEventMember(
 ): Promise<void> {
   await db
     .delete(eventMembers)
-    .where(and(eq(eventMembers.eventId, eventId), eq(eventMembers.userId, userId)));
+    .where(
+      and(eq(eventMembers.eventId, eventId), eq(eventMembers.userId, userId)),
+    );
 }

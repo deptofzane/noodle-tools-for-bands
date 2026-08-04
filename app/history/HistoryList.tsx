@@ -1,16 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import Link from 'next/link';
-import { useTrackPending } from '../PendingActionProvider';
 import { actorLabel, formatRelativeTime } from '@/lib/format';
 import { LoadingBlock } from '../Spinner';
+import { HISTORY_PAGE_SIZE } from './historyPaging';
+import { LoadMore } from './LoadMore';
+import { usePagedList } from './usePagedList';
 
 /**
  * History list — closed conversations only.
  *
- * Fetches /api/conversations/annotated?filter=closed. Read-only: opening
- * a conversation doesn't reopen it (only an explicit Reopen does).
+ * Fetches /api/conversations/annotated?filter=closed, a page at a time.
+ * Read-only: opening a conversation doesn't reopen it (only an explicit
+ * Reopen does).
  */
 
 interface ConversationListItem {
@@ -22,34 +25,22 @@ interface ConversationListItem {
 }
 
 export function HistoryList() {
-  const [items, setItems] = useState<ConversationListItem[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const trackPending = useTrackPending();
-
-  useEffect(() => {
-    let cancelled = false;
-    setError(null);
-    void trackPending(async () => {
-      try {
-        const r = await fetch('/api/conversations/annotated?filter=closed', {
-          cache: 'no-store',
-        });
-        if (!r.ok) {
-          const body = await r.json().catch(() => ({}));
-          throw new Error(body.message ?? body.error ?? `HTTP ${r.status}`);
-        }
-        const data = (await r.json()) as {
-          conversations: ConversationListItem[];
-        };
-        if (!cancelled) setItems(data.conversations);
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [trackPending]);
+  const fetchPage = useCallback(
+    (offset: number) =>
+      fetch(
+        `/api/conversations/annotated?filter=closed` +
+          `&limit=${HISTORY_PAGE_SIZE}&offset=${offset}`,
+        { cache: 'no-store' },
+      ),
+    [],
+  );
+  const pick = useCallback(
+    (d: unknown) =>
+      (d as { conversations: ConversationListItem[] }).conversations,
+    [],
+  );
+  const { items, hasMore, loadingMore, error, loadMore } =
+    usePagedList<ConversationListItem>(fetchPage, pick);
 
   if (error) {
     return (
@@ -74,10 +65,13 @@ export function HistoryList() {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-xs text-neutral-500">
-        {items.length} closed{' '}
-        {items.length === 1 ? 'conversation' : 'conversations'}
-      </p>
+      <LoadMore
+        shown={items.length}
+        noun="closed conversation"
+        hasMore={hasMore}
+        loading={loadingMore}
+        onLoadMore={() => void loadMore()}
+      />
       <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
         {items.map((item) => (
           <li key={item.conversationId}>

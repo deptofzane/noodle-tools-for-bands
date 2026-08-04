@@ -1,4 +1,13 @@
-import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  sql,
+} from 'drizzle-orm';
 import { db } from './index';
 import { bandMembers, bands, pollOptions, pollVotes, polls } from './schema';
 
@@ -64,6 +73,64 @@ export async function listOpenPollsForUser(
     .where(and(isNull(pollVotes.id), isNull(polls.closedAt)))
     .orderBy(desc(polls.createdAt));
   return rows;
+}
+
+export interface ClosedPoll {
+  id: string;
+  bandId: string;
+  bandName: string;
+  title: string;
+  description: string | null;
+  closedAt: string;
+  /** Whether this user voted before it closed. */
+  voted: boolean;
+}
+
+/**
+ * Closed polls across the user's bands, most recently closed first — the
+ * History page's record of decisions already made. Unlike
+ * `listOpenPollsForUser`, this doesn't filter by whether they voted; it
+ * reports it instead, since a poll you missed is exactly what you'd come
+ * here to check.
+ */
+export async function listClosedPollsForUser(
+  userId: string,
+  window?: { limit: number; offset: number },
+): Promise<ClosedPoll[]> {
+  const rows = await db
+    .select({
+      id: polls.id,
+      bandId: polls.bandId,
+      bandName: bands.name,
+      title: polls.title,
+      description: polls.description,
+      closedAt: polls.closedAt,
+      votedId: pollVotes.id,
+    })
+    .from(polls)
+    .innerJoin(
+      bandMembers,
+      and(eq(bandMembers.bandId, polls.bandId), eq(bandMembers.userId, userId)),
+    )
+    .innerJoin(bands, eq(bands.id, polls.bandId))
+    .leftJoin(
+      pollVotes,
+      and(eq(pollVotes.pollId, polls.id), eq(pollVotes.userId, userId)),
+    )
+    .where(isNotNull(polls.closedAt))
+    .orderBy(desc(polls.closedAt))
+    .limit(window ? window.limit : Number.MAX_SAFE_INTEGER)
+    .offset(window ? window.offset : 0);
+
+  return rows.map((r) => ({
+    id: r.id,
+    bandId: r.bandId,
+    bandName: r.bandName,
+    title: r.title,
+    description: r.description,
+    closedAt: r.closedAt!.toISOString(),
+    voted: r.votedId !== null,
+  }));
 }
 
 /** The band's polls, newest first (open and closed). */

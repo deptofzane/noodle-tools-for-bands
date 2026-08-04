@@ -34,7 +34,11 @@ export interface ConversationListItem {
   audioFileName: string | null;
   closed: boolean;
   lastActivityAt: string; // ISO (conversation.updatedAt)
-  lastActivityBy: { id: string; name: string | null; email: string | null } | null;
+  lastActivityBy: {
+    id: string;
+    name: string | null;
+    email: string | null;
+  } | null;
   mentionedAt: string | null; // ISO; most recent mention of the user
   lastSeenAt: string | null; // ISO
   /** Activity since last seen, not authored by the user. */
@@ -46,6 +50,12 @@ export interface ConversationListItem {
 export async function listConversationsForUser(
   userId: string,
   filter: ConversationFilter = 'open',
+  /**
+   * Optional window over the result. Applied to the base query, so the
+   * follow-up lookups (actors, mentions) only cover the page. Omitted means
+   * the whole list, which is what the Open Conversations view wants.
+   */
+  window?: { limit: number; offset: number },
 ): Promise<ConversationListItem[]> {
   const closedFilter =
     filter === 'open'
@@ -102,7 +112,9 @@ export async function listConversationsForUser(
       ),
     )
     .where(and(closedFilter, archivedFilter, hasComment))
-    .orderBy(desc(conversations.updatedAt));
+    .orderBy(desc(conversations.updatedAt))
+    .limit(window ? window.limit : Number.MAX_SAFE_INTEGER)
+    .offset(window ? window.offset : 0);
 
   if (base.length === 0) return [];
   const ids = base.map((b) => b.conversationId);

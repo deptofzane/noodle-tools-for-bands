@@ -8,6 +8,7 @@ import { Modal } from '../Modal';
 import { useToast } from '../ToastProvider';
 import { completionInstant } from './eventTiming';
 import type { UpcomingShow } from './UpcomingShows';
+import { usePersistedBoolean } from '../usePersistedBoolean';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -31,7 +32,8 @@ export function RecentEvents({
   bandIds: string[];
 }) {
   const showToast = useToast();
-  const [open, setOpen] = useState(false); // starts minimized
+  // Minimized by default, but the choice sticks across visits.
+  const [open, setOpen] = usePersistedBoolean('homeRecentEventsOpen', false);
   const [now, setNow] = useState<number | null>(null);
 
   // The event whose notes are being edited, plus modal state.
