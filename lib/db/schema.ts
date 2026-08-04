@@ -39,6 +39,11 @@ export const users = pgTable('users', {
   email: text('email').unique(),
   passwordHash: text('password_hash'),
   name: text('name'),
+  // Set when the account is deleted. The row survives as a tombstone because
+  // song comments, chat, and activity all reference it and are meant to
+  // outlive the account (see lib/db/account-deletion.ts); everything personal
+  // — email, password, name, linked providers — is stripped at that point.
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -547,10 +552,9 @@ export const setlistSongs = pgTable(
     setlistId: uuid('setlist_id')
       .notNull()
       .references(() => setlists.id, { onDelete: 'cascade' }),
-    conversationId: uuid('conversation_id').references(
-      () => conversations.id,
-      { onDelete: 'cascade' },
-    ),
+    conversationId: uuid('conversation_id').references(() => conversations.id, {
+      onDelete: 'cascade',
+    }),
     // Name for non-song items (set break / custom); null for songs.
     label: text('label'),
     position: integer('position').notNull(),

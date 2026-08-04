@@ -10,6 +10,7 @@ import { OfflineBanner } from './OfflineBanner';
 import { PendingActionProvider } from './PendingActionProvider';
 import { PlaylistPlayerProvider } from './player/PlaylistPlayer';
 import { RouteProgress } from './RouteProgress';
+import { ThemeKeeper } from './ThemeKeeper';
 import { ToastProvider } from './ToastProvider';
 import './globals.css';
 
@@ -107,6 +108,9 @@ export default async function RootLayout({
           (isSignedIn ? ' has-app-nav' : '')
         }
       >
+        {/* Restores the theme class when a re-render of this layout drops it
+            (see ThemeKeeper). */}
+        <ThemeKeeper />
         {/* Suspense: `RouteProgress` reads the query string, which opts its
             subtree out of prerendering. */}
         <Suspense fallback={null}>

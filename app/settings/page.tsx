@@ -12,6 +12,7 @@ import { CalendarSubscription } from './CalendarSubscription';
 import { NotificationPreferences } from './NotificationPreferences';
 import { PushNotificationToggle } from './PushNotificationToggle';
 import { SettingsTabs, type SettingsTab } from './SettingsTabs';
+import { DeleteAccount } from './DeleteAccount';
 
 const LINK_MESSAGES: Record<string, { text: string; tone: 'ok' | 'error' }> = {
   conflict: {
@@ -187,6 +188,9 @@ export default async function SettingsPage({
           )}
         </pre>
       </details>
+
+      {/* Last, and visually separated: the only irreversible thing here. */}
+      <DeleteAccount email={dbUser?.email ?? session.user.email ?? null} />
     </div>
   );
 
