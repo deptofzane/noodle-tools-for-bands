@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { formatRelativeTime } from '@/lib/format';
 import { usePersistedBoolean } from '../usePersistedBoolean';
 import { Spinner } from '../Spinner';
+import { NotificationPlayButton } from './NotificationPlayButton';
+import { isUploadNotification } from './notificationTracks';
 
 export interface NotificationItem {
   id: string;
@@ -231,13 +233,16 @@ export function NotificationList({
           <>
             <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
               {items.map((n) => (
-                <li key={n.id}>
+                <li
+                  key={n.id}
+                  className={
+                    'flex items-center gap-2 pr-2 hover:bg-neutral-50 dark:hover:bg-neutral-900 ' +
+                    (n.unread ? 'bg-blue-50/50 dark:bg-blue-950/20' : '')
+                  }
+                >
                   <Link
                     href={hrefFor(n)}
-                    className={
-                      'flex items-start gap-3 px-3 py-2.5 hover:bg-neutral-50 dark:hover:bg-neutral-900 ' +
-                      (n.unread ? 'bg-blue-50/50 dark:bg-blue-950/20' : '')
-                    }
+                    className="flex min-w-0 flex-1 items-start gap-3 px-3 py-2.5"
                   >
                     <span
                       aria-hidden="true"
@@ -254,6 +259,12 @@ export function NotificationList({
                       </span>
                     </span>
                   </Link>
+                  {isUploadNotification(n) && (
+                    <NotificationPlayButton
+                      notification={n}
+                      bandId={n.bandId}
+                    />
+                  )}
                 </li>
               ))}
             </ul>

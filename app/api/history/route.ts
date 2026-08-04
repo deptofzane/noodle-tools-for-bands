@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/api-guard';
 import { listPastEventsForUser } from '@/lib/db/events';
 import { listClosedPollsForUser } from '@/lib/db/polls';
-import { readWindow, splitPage } from '@/app/history/historyPaging';
+import { readWindow, splitPage } from '@/lib/paging';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 

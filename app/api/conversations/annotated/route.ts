@@ -4,7 +4,7 @@ import {
   listConversationsForUser,
   type ConversationFilter,
 } from '@/lib/db/listing';
-import { readWindow, splitPage } from '@/app/history/historyPaging';
+import { readWindow, splitPage } from '@/lib/paging';
 
 /**
  * GET /api/conversations/annotated?filter=open|closed|all[&limit=&offset=]

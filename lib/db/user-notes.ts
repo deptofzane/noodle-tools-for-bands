@@ -118,6 +118,7 @@ function toNote(row: {
 export async function listBandNotesForUser(
   bandId: string,
   userId: string,
+  window?: { limit: number; offset: number },
 ): Promise<UserNote[]> {
   const rows = await db
     .select(NOTE_COLUMNS)
@@ -129,7 +130,9 @@ export async function listBandNotesForUser(
         or(eq(userNotes.authorId, userId), eq(userNotes.shared, true)),
       ),
     )
-    .orderBy(desc(userNotes.updatedAt));
+    .orderBy(desc(userNotes.updatedAt))
+    .limit(window ? window.limit : Number.MAX_SAFE_INTEGER)
+    .offset(window ? window.offset : 0);
   return withLinks(rows.map(toNote));
 }
 

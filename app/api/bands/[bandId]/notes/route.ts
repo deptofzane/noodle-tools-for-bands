@@ -2,13 +2,15 @@ import { NextResponse } from 'next/server';
 import { requireBandMember } from '@/lib/api-guard';
 import { createNote, listBandNotesForUser } from '@/lib/db/user-notes';
 import { parseLinks } from '@/lib/note-links';
+import { readWindow, splitPage } from '@/lib/paging';
 
 const MAX_TITLE = 200;
 const MAX_BODY = 20_000;
 
 /**
- * GET  /api/bands/[bandId]/notes
- *   → the caller's notes in this band, plus the band's shared ones.
+ * GET  /api/bands/[bandId]/notes[?limit=&offset=]
+ *   → one page of the caller's notes in this band plus the band's shared
+ *   ones, newest first, with `hasMore`.
  *
  * POST /api/bands/[bandId]/notes
  *   Body: { title, body?, shared?, links? } → create one, authored by the
@@ -17,15 +19,21 @@ const MAX_BODY = 20_000;
  * Both require band membership.
  */
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ bandId: string }> },
 ) {
   const { bandId } = await params;
   const guard = await requireBandMember(bandId);
   if (guard instanceof NextResponse) return guard;
-  return NextResponse.json({
-    notes: await listBandNotesForUser(bandId, guard.user.id),
+
+  // One page at a time, with one row over the edge so `hasMore` is free.
+  const { limit, offset } = readWindow(new URL(req.url));
+  const rows = await listBandNotesForUser(bandId, guard.user.id, {
+    limit: limit + 1,
+    offset,
   });
+  const { items, hasMore } = splitPage(rows, limit);
+  return NextResponse.json({ notes: items, hasMore });
 }
 
 export async function POST(

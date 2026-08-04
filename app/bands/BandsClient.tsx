@@ -9,6 +9,7 @@ import { useToast } from '../ToastProvider';
 import { ActionMenu, ActionMenuItem } from '../ActionMenu';
 import { LeaveBandModal } from './LeaveBandModal';
 import { LoadingBlock } from '../Spinner';
+import { DEFAULT_BAND_TAB } from './[bandId]/bandTabs';
 
 interface BandSummary {
   id: string;
@@ -19,8 +20,8 @@ interface BandSummary {
 
 /**
  * Lists the bands the user belongs to and lets them create a new one.
- * Fetches on mount; refetches after a create. No polling (bands change
- * rarely).
+ * Fetches on mount; creating one navigates straight into it, so there's
+ * nothing to refetch. No polling (bands change rarely).
  */
 export function BandsClient({ currentUserId }: { currentUserId: string }) {
   const [bands, setBands] = useState<BandSummary[] | null>(null);
@@ -54,21 +55,28 @@ export function BandsClient({ currentUserId }: { currentUserId: string }) {
     if (!trimmed || creating) return;
     setCreating(true);
     try {
-      await trackPending(async () => {
+      const band = await trackPending(async () => {
         const r = await fetch('/api/bands', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: trimmed }),
         });
         await ensureOk(r);
+        const data = (await r.json()) as { band: { id: string } };
+        return data.band;
       });
       setName('');
       // Let the header's band picker refresh (it's mounted separately).
       window.dispatchEvent(new Event('bands:changed'));
-      await load();
+      // Straight into the new band rather than back to the list — there's
+      // nothing to do with a band from here, and everything to do inside it.
+      // The tab is explicit so it opens on Overview rather than wherever the
+      // user last was in some other band.
+      router.push(`/bands/${band.id}?tab=${DEFAULT_BAND_TAB}`);
+      // `creating` stays true: the button should remain disabled through the
+      // navigation instead of inviting a second band.
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
-    } finally {
       setCreating(false);
     }
   };

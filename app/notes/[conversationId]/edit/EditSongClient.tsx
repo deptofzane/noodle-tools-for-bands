@@ -97,7 +97,19 @@ export function EditSongClient({
 
   // Return to the page the user came from (in-app history), falling back to
   // the song itself on a fresh load / deep link.
+  //
+  // `router.refresh()` first, on every exit — not just after Save. Back and
+  // forward navigations are served from the client Router Cache without
+  // re-requesting the server components, so the song page would render the
+  // payload from before the edit and appear not to have saved. Refreshing
+  // invalidates that cache so the next render fetches fresh data.
+  //
+  // It belongs here rather than in the save handler because the version
+  // panels below (audio and sheet music) write immediately — renaming a
+  // version, changing the default, deleting one — so even Cancel can leave
+  // with changes the song page has to reflect.
   const leave = () => {
+    router.refresh();
     if (canGoBack()) router.back();
     else router.push(songHref);
   };
@@ -174,6 +186,9 @@ export function EditSongClient({
         });
         await ensureOk(res, [204]);
       });
+      // Same cache problem as `leave()`: without this the list still holds a
+      // payload containing the song that was just deleted.
+      router.refresh();
       router.push('/open-conversations');
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));

@@ -4,9 +4,9 @@ import { useCallback } from 'react';
 import Link from 'next/link';
 import { formatDateLong, formatTimeRange } from '@/lib/format';
 import { LoadingBlock } from '../Spinner';
-import { HISTORY_PAGE_SIZE } from './historyPaging';
-import { LoadMore } from './LoadMore';
-import { usePagedList } from './usePagedList';
+import { PAGE_SIZE } from '@/lib/paging';
+import { LoadMore } from '../LoadMore';
+import { usePagedList } from '../usePagedList';
 
 interface PastEvent {
   id: string;
@@ -38,7 +38,7 @@ export function PastEvents() {
     (offset: number) =>
       fetch(
         `/api/history?category=events&today=${localToday()}` +
-          `&limit=${HISTORY_PAGE_SIZE}&offset=${offset}`,
+          `&limit=${PAGE_SIZE}&offset=${offset}`,
         { cache: 'no-store' },
       ),
     [],

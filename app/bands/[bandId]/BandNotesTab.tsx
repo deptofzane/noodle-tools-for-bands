@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
@@ -8,6 +8,10 @@ import { formatRelativeTime } from '@/lib/format';
 import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
 import { ConfirmModal } from '../../ConfirmModal';
 import { LoadingBlock } from '../../Spinner';
+import { LoadMore } from '../../LoadMore';
+import { usePagedList } from '../../usePagedList';
+import { usePersistedStringSet } from '../../usePersistedStringSet';
+import { PAGE_SIZE } from '@/lib/paging';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
 import { NOTE_LINK_KINDS, noteLinkHref } from '@/lib/note-links';
@@ -62,7 +66,11 @@ function LinkChip({ link, bandId }: { link: NoteLink; bandId: string }) {
  * what says otherwise — and only an author sees Edit or Delete on their own.
  *
  * Loads on mount rather than with the band payload: most visits to a band
- * aren't about notes, and this way the tab pays for itself.
+ * aren't about notes, and this way the tab pays for itself, a page at a time.
+ *
+ * Notes open collapsed — a title is enough to find the one you want, and a
+ * body can run long — and which ones you've opened is remembered per band, so
+ * navigating away and back leaves the tab as you left it.
  */
 export function BandNotesTab({
   bandId,
@@ -74,29 +82,34 @@ export function BandNotesTab({
   const router = useRouter();
   const trackPending = useTrackPending();
   const showToast = useToast();
-  const [notes, setNotes] = useState<UserNote[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<UserNote | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const load = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/bands/${bandId}/notes`, {
-        cache: 'no-store',
-      });
-      await ensureOk(res);
-      const data = (await res.json()) as { notes: UserNote[] };
-      setNotes(data.notes);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-      setNotes([]);
-    }
-  }, [bandId]);
+  // Collapsed unless the id is in the set, so notes start minimized and a
+  // brand-new one doesn't spring open on the next visit.
+  const [expanded, toggleExpanded] = usePersistedStringSet(
+    `bandNotesExpanded:${bandId}`,
+  );
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const fetchPage = useCallback(
+    (offset: number) =>
+      fetch(`/api/bands/${bandId}/notes?limit=${PAGE_SIZE}&offset=${offset}`, {
+        cache: 'no-store',
+      }),
+    [bandId],
+  );
+  const pick = useCallback(
+    (d: unknown) => (d as { notes: UserNote[] }).notes,
+    [],
+  );
+  const {
+    items: notes,
+    hasMore,
+    loadingMore,
+    error,
+    loadMore,
+    reload,
+  } = usePagedList<UserNote>(fetchPage, pick);
 
   const handleDelete = async () => {
     if (!deleteTarget || deleting) return;
@@ -111,7 +124,7 @@ export function BandNotesTab({
       });
       showToast('Note deleted.', 'success');
       setDeleteTarget(null);
-      await load();
+      await reload();
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
     } finally {
@@ -145,14 +158,35 @@ export function BandNotesTab({
         <ul className="flex flex-col gap-2">
           {notes.map((note) => {
             const mine = note.authorId === currentUserId;
+            const open = expanded.has(note.id);
+            const hasBody = Boolean(note.body) || note.links.length > 0;
             return (
               <li
                 key={note.id}
                 className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-4 py-3 dark:border-neutral-800"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className="flex min-w-0 flex-col gap-0.5">
+                  {/* The whole heading toggles, so the target is the note, not
+                      a 12px chevron. Notes with nothing to reveal don't. */}
+                  <button
+                    type="button"
+                    onClick={() => hasBody && toggleExpanded(note.id)}
+                    aria-expanded={hasBody ? open : undefined}
+                    disabled={!hasBody}
+                    className={
+                      'flex min-w-0 flex-1 flex-col gap-0.5 text-left ' +
+                      (hasBody ? '' : 'cursor-default')
+                    }
+                  >
                     <span className="flex min-w-0 items-center gap-2">
+                      {hasBody && (
+                        <span
+                          aria-hidden="true"
+                          className="shrink-0 text-sm leading-none text-neutral-400"
+                        >
+                          {open ? '▾' : '▸'}
+                        </span>
+                      )}
                       <span className="truncate font-medium">{note.title}</span>
                       {note.shared && (
                         <span
@@ -171,7 +205,7 @@ export function BandNotesTab({
                       {mine ? 'You' : (note.authorName ?? 'A bandmate')} ·{' '}
                       {formatRelativeTime(note.updatedAt)}
                     </span>
-                  </span>
+                  </button>
                   {mine && (
                     <ActionMenu label={`Actions for ${note.title}`}>
                       <ActionMenuItem
@@ -191,13 +225,13 @@ export function BandNotesTab({
                   )}
                 </div>
 
-                {note.body && (
+                {open && note.body && (
                   <p className="whitespace-pre-wrap text-sm text-neutral-600 dark:text-neutral-400">
                     {note.body}
                   </p>
                 )}
 
-                {note.links.length > 0 && (
+                {open && note.links.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {note.links.map((l) => (
                       <LinkChip key={l.id} link={l} bandId={bandId} />
@@ -208,6 +242,16 @@ export function BandNotesTab({
             );
           })}
         </ul>
+      )}
+
+      {notes !== null && notes.length > 0 && (
+        <LoadMore
+          shown={notes.length}
+          noun="note"
+          hasMore={hasMore}
+          loading={loadingMore}
+          onLoadMore={() => void loadMore()}
+        />
       )}
 
       <ConfirmModal

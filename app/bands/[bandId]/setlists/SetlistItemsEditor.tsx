@@ -100,6 +100,12 @@ export function SetlistItemsEditor({
       { id: makeSetlistRowId(), conversationId: null, name: 'Set break' },
     ]);
 
+  const addEncore = () =>
+    onItemsChange((prev) => [
+      ...prev,
+      { id: makeSetlistRowId(), conversationId: null, name: 'Encore' },
+    ]);
+
   const addOther = () => {
     const label = otherName.trim();
     if (!label) return;
@@ -172,6 +178,9 @@ export function SetlistItemsEditor({
         </button>
         <button type="button" onClick={addSetBreak} className={addBtnClass}>
           Add set break
+        </button>
+        <button type="button" onClick={addEncore} className={addBtnClass}>
+          Add encore
         </button>
         <button
           type="button"

@@ -59,7 +59,12 @@ export function VenueForm({
   const venuesHref = `/bands/${bandId}?tab=venues`;
   const isEdit = Boolean(venueId);
 
+  // `router.refresh()` on every exit: back/forward navigations are served from
+  // the client Router Cache without re-requesting server components, so the
+  // page behind would render its pre-edit payload and look as though the save
+  // hadn't taken.
   const leave = () => {
+    router.refresh();
     if (canGoBack()) router.back();
     else router.push(venuesHref);
   };
@@ -84,6 +89,7 @@ export function VenueForm({
         await ensureOk(r);
       });
       showToast(isEdit ? 'Venue saved.' : 'Venue created.', 'success');
+      router.refresh();
       router.push(venuesHref);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));

@@ -50,7 +50,12 @@ export function EditSetlistClient({
 
   // Return to the page the user came from (in-app history), falling back to
   // the song itself on a fresh load / deep link.
+  // `router.refresh()` on every exit: back/forward navigations are served from
+  // the client Router Cache without re-requesting server components, so the
+  // page behind would render its pre-edit payload and look as though the save
+  // hadn't taken.
   const leave = () => {
+    router.refresh();
     if (canGoBack()) router.back();
     else router.push(viewHref);
   };
@@ -73,6 +78,7 @@ export function EditSetlistClient({
         await ensureOk(r);
       });
       showToast('Setlist saved.', 'success');
+      router.refresh();
       router.push(viewHref);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));

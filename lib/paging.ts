@@ -1,5 +1,5 @@
-/** How many items a History category loads at a time. */
-export const HISTORY_PAGE_SIZE = 30;
+/** How many items a paged list loads at a time (History, band notes). */
+export const PAGE_SIZE = 30;
 
 /**
  * Read `?limit=`/`?offset=` off a request, clamped. Shared by the History
@@ -10,8 +10,8 @@ export function readWindow(url: URL): { limit: number; offset: number } {
   const rawOffset = Number(url.searchParams.get('offset'));
   const limit =
     Number.isInteger(rawLimit) && rawLimit > 0
-      ? Math.min(rawLimit, HISTORY_PAGE_SIZE)
-      : HISTORY_PAGE_SIZE;
+      ? Math.min(rawLimit, PAGE_SIZE)
+      : PAGE_SIZE;
   const offset = Number.isInteger(rawOffset) && rawOffset > 0 ? rawOffset : 0;
   return { limit, offset };
 }

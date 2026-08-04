@@ -4,9 +4,9 @@ import { useCallback } from 'react';
 import Link from 'next/link';
 import { formatRelativeTime } from '@/lib/format';
 import { LoadingBlock } from '../Spinner';
-import { HISTORY_PAGE_SIZE } from './historyPaging';
-import { LoadMore } from './LoadMore';
-import { usePagedList } from './usePagedList';
+import { PAGE_SIZE } from '@/lib/paging';
+import { LoadMore } from '../LoadMore';
+import { usePagedList } from '../usePagedList';
 
 interface ClosedPoll {
   id: string;
@@ -26,10 +26,9 @@ interface ClosedPoll {
 export function ClosedPolls() {
   const fetchPage = useCallback(
     (offset: number) =>
-      fetch(
-        `/api/history?category=polls&limit=${HISTORY_PAGE_SIZE}&offset=${offset}`,
-        { cache: 'no-store' },
-      ),
+      fetch(`/api/history?category=polls&limit=${PAGE_SIZE}&offset=${offset}`, {
+        cache: 'no-store',
+      }),
     [],
   );
   const pick = useCallback(

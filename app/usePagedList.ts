@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ensureOk } from '@/lib/api';
-import { HISTORY_PAGE_SIZE } from './historyPaging';
 
 interface Page<T> {
   items: T[];
@@ -19,7 +18,7 @@ interface Page<T> {
  * every time they skimmed past the bottom.
  */
 export function usePagedList<T>(
-  /** Fetches one page. Given the offset; should honor `HISTORY_PAGE_SIZE`. */
+  /** Fetches one page. Given the offset; should honor `PAGE_SIZE`. */
   fetchPage: (offset: number) => Promise<Response>,
   /** Pull the rows out of the response body — each category names them. */
   pick: (data: unknown) => T[],
@@ -39,26 +38,37 @@ export function usePagedList<T>(
     [fetchPage, pick],
   );
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
+  /**
+   * (Re)load from the top, discarding any pages already fetched. Used on mount
+   * and after a mutation — deleting an item shifts every later offset, so
+   * patching the list in place would skip a row on the next "load more".
+   */
+  const loadFirstPage = useCallback(
+    async (isCancelled: () => boolean = () => false) => {
       try {
         const page = await load(0);
-        if (!cancelled && page) {
+        if (!isCancelled() && page) {
           setItems(page.items);
           setHasMore(page.hasMore);
+          setError(null);
         }
       } catch (e) {
-        if (!cancelled) {
+        if (!isCancelled()) {
           setError(e instanceof Error ? e.message : String(e));
           setItems([]);
         }
       }
-    })();
+    },
+    [load],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadFirstPage(() => cancelled);
     return () => {
       cancelled = true;
     };
-  }, [load]);
+  }, [loadFirstPage]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loadingMore || items === null) return;
@@ -77,5 +87,12 @@ export function usePagedList<T>(
     }
   }, [hasMore, loadingMore, items, load]);
 
-  return { items, hasMore, loadingMore, error, loadMore, HISTORY_PAGE_SIZE };
+  return {
+    items,
+    hasMore,
+    loadingMore,
+    error,
+    loadMore,
+    reload: loadFirstPage,
+  };
 }
