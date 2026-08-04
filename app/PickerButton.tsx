@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { usePickerAppId } from './DriveCapabilityProvider';
 
 /**
  * Reusable Google Picker button.
@@ -31,6 +32,7 @@ interface PickerDocsView {
 
 interface PickerBuilder {
   addView: (view: PickerDocsView) => PickerBuilder;
+  setAppId: (appId: string) => PickerBuilder;
   enableFeature: (feature: string) => PickerBuilder;
   setSize: (width: number, height: number) => PickerBuilder;
   setOAuthToken: (token: string) => PickerBuilder;
@@ -66,6 +68,7 @@ export function PickerButton({
   /** Allow selecting more than one file. */
   multiple?: boolean;
 }) {
+  const appId = usePickerAppId();
   const [pickerReady, setPickerReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -141,6 +144,11 @@ export function PickerButton({
     if (window.innerWidth <= 640) {
       builder = builder.setSize(window.innerWidth, window.innerHeight);
     }
+    // `setAppId` is what makes Drive grant the picked files to this app under
+    // the narrow `drive.file` scope. Without it the Picker still works, but
+    // every later files.get on the result 404s.
+    if (appId) builder = builder.setAppId(appId);
+
     const picker = builder
       .setOAuthToken(accessToken)
       .setDeveloperKey(apiKey)
@@ -156,7 +164,7 @@ export function PickerButton({
       .build();
 
     picker.setVisible(true);
-  }, [apiKey, onPick, multiple]);
+  }, [apiKey, appId, onPick, multiple]);
 
   return (
     <div className="flex flex-col gap-1">
@@ -174,7 +182,9 @@ export function PickerButton({
         </p>
       )}
       {error && (
-        <p className="text-[0.6875rem] text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-[0.6875rem] text-red-600 dark:text-red-400">
+          {error}
+        </p>
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata, Viewport } from 'next';
 import { auth } from '@/auth';
-import { hasAllDriveScopes } from '@/lib/google';
+import { googlePickerAppId, hasAllDriveScopes } from '@/lib/google';
 import { Header } from './Header';
 import { CurrentBandProvider } from './CurrentBandProvider';
 import { DriveCapabilityProvider } from './DriveCapabilityProvider';
@@ -115,7 +115,10 @@ export default async function RootLayout({
         <PendingActionProvider>
           <ToastProvider>
             <NavigationHistoryProvider>
-              <DriveCapabilityProvider canUseDrive={canUseDrive}>
+              <DriveCapabilityProvider
+                canUseDrive={canUseDrive}
+                pickerAppId={googlePickerAppId()}
+              >
                 <CurrentBandProvider enabled={isSignedIn}>
                   <PlaylistPlayerProvider userKey={session?.user?.sub ?? null}>
                     {children}

@@ -13,6 +13,7 @@ import {
 import { verifyPassword } from '@/lib/password';
 import { rateLimit, rateLimitByIp } from '@/lib/rate-limit';
 import { LINK_COOKIE, verifyLinkToken } from '@/lib/link-token';
+import { isUuid } from '@/lib/uuid';
 
 /**
  * Read AND clear the one-shot "link to this user" cookie. Clearing it on
@@ -185,23 +186,62 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return t;
       }
 
+      // Repair a session minted before identity moved to Postgres, whose
+      // `sub` is the Google account id rather than a DB user id. Those cookies
+      // stay valid for as long as they're used, so they'd otherwise keep
+      // handing a 21-digit number to queries expecting a uuid — which Postgres
+      // rejects outright (22P02), 500ing every page that looks the user up.
+      // The Google id still identifies the account, so translate it once.
+      if (t.sub && !isUuid(t.sub)) {
+        const linked = await getAccountByProvider('google', t.sub);
+        if (linked) {
+          t.sub = linked.userId;
+        } else {
+          // Nothing to map it to — drop the identity so downstream lookups
+          // miss cleanly and the user is treated as signed out.
+          console.warn('[auth] dropping session with unresolvable identity');
+          delete t.sub;
+        }
+      }
+
       // (2) + (3) Cached token — refresh if near expiry
       if (t.accessToken && t.accessTokenExpiresAt && t.refreshToken) {
         const msUntilExpiry = t.accessTokenExpiresAt - Date.now();
         if (msUntilExpiry < 60_000) {
-          try {
-            const refreshed = await refreshGoogleAccessToken(t.refreshToken);
-            t.accessToken = refreshed.access_token;
-            t.accessTokenExpiresAt = Date.now() + refreshed.expires_in * 1000;
-            if (refreshed.refresh_token) {
-              t.refreshToken = refreshed.refresh_token;
+          const result = await refreshGoogleAccessToken(t.refreshToken);
+          if (result.ok) {
+            const { tokens } = result;
+            t.accessToken = tokens.access_token;
+            t.accessTokenExpiresAt = Date.now() + tokens.expires_in * 1000;
+            if (tokens.refresh_token) {
+              t.refreshToken = tokens.refresh_token;
             }
-            if (refreshed.scope) {
-              t.scopes = refreshed.scope.split(' ').filter(Boolean);
+            if (tokens.scope) {
+              t.scopes = tokens.scope.split(' ').filter(Boolean);
             }
             delete t.error;
-          } catch (err) {
-            console.error('[auth] token refresh failed', err);
+          } else if (result.reason === 'dead') {
+            // The grant is gone (revoked, or expired under a Testing-mode
+            // consent screen). Drop the credentials: the guard above is what
+            // stops us asking Google again on every single request, and
+            // clearing `scopes` turns off the Drive UI. The user reconnects
+            // from Settings, which mints a fresh refresh token.
+            console.warn(
+              '[auth] Google grant is no longer valid:',
+              result.detail,
+            );
+            delete t.accessToken;
+            delete t.refreshToken;
+            delete t.accessTokenExpiresAt;
+            delete t.scopes;
+            t.error = 'RefreshAccessTokenError';
+          } else {
+            // Google was unreachable or rate-limiting — keep the refresh token
+            // and try again on the next request.
+            console.warn(
+              '[auth] token refresh failed, will retry:',
+              result.detail,
+            );
             t.error = 'RefreshAccessTokenError';
           }
         }

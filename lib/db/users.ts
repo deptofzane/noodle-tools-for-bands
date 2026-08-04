@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { db } from './index';
 import { users } from './schema';
 import { hashPassword } from '../password';
+import { isUuid } from '@/lib/uuid';
 
 export type DbUser = typeof users.$inferSelect;
 
@@ -29,6 +30,10 @@ export async function upsertUser(input: {
 }
 
 export async function getUserById(id: string): Promise<DbUser | null> {
+  // A non-UUID id is a miss, not a crash: Postgres raises 22P02 on a malformed
+  // uuid, and this is reached with whatever identity a session carries — which
+  // can be a stale value from an older cookie.
+  if (!isUuid(id)) return null;
   const [row] = await db.select().from(users).where(eq(users.id, id)).limit(1);
   return row ?? null;
 }

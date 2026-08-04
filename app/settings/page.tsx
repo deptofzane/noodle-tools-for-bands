@@ -44,11 +44,14 @@ export default async function SettingsPage({
   if (!session?.user) redirect('/login');
   const { tab, link } = await searchParams;
 
+  // Everything keys off the resolved DB user, not `session.user.sub` — a
+  // session can outlive the identity it was minted with, and these columns are
+  // uuids that Postgres refuses outright when handed anything else.
   const dbUser = await getCurrentDbUser();
   const [mutedKinds, pushMutedKinds, googleAccount, feedToken] =
     await Promise.all([
-      getMutedKinds(session.user.sub ?? ''),
-      getPushMutedKinds(session.user.sub ?? ''),
+      dbUser ? getMutedKinds(dbUser.id) : Promise.resolve([]),
+      dbUser ? getPushMutedKinds(dbUser.id) : Promise.resolve([]),
       dbUser ? getUserAccount(dbUser.id, 'google') : Promise.resolve(null),
       dbUser ? getOrCreateFeedToken(dbUser.id) : Promise.resolve(null),
     ]);
@@ -124,10 +127,7 @@ export default async function SettingsPage({
           {!googleAccount ? (
             <form action={startGoogleConnect}>
               <input type="hidden" name="next" value="/settings?tab=account" />
-              <button
-                type="submit"
-                className="btn-primary"
-              >
+              <button type="submit" className="btn-primary">
                 Connect Google
               </button>
             </form>
@@ -140,10 +140,7 @@ export default async function SettingsPage({
                     name="next"
                     value="/settings?tab=account"
                   />
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                  >
+                  <button type="submit" className="btn-primary">
                     {refreshError ? 'Reconnect Google' : 'Enable Drive access'}
                   </button>
                 </form>
