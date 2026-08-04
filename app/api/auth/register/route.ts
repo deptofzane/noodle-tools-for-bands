@@ -19,7 +19,10 @@ export async function POST(req: Request) {
   });
   if (!limit.allowed)
     return NextResponse.json(
-      { error: 'rate_limited', message: 'Too many attempts. Please try again later.' },
+      {
+        error: 'rate_limited',
+        message: 'Too many attempts. Please try again later.',
+      },
       { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } },
     );
 
@@ -35,7 +38,10 @@ export async function POST(req: Request) {
     );
   if (password.length < 8)
     return NextResponse.json(
-      { error: 'weak_password', message: 'Password must be at least 8 characters.' },
+      {
+        error: 'weak_password',
+        message: 'Password must be at least 8 characters.',
+      },
       { status: 400 },
     );
 

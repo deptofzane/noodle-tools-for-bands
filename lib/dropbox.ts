@@ -20,7 +20,8 @@ export function isAllowedDropboxUrl(raw: string): boolean {
   if (url.protocol !== 'https:') return false;
   const host = url.hostname.toLowerCase();
   return (
-    host === 'dropboxusercontent.com' || host.endsWith('.dropboxusercontent.com')
+    host === 'dropboxusercontent.com' ||
+    host.endsWith('.dropboxusercontent.com')
   );
 }
 

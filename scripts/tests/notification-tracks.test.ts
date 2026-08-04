@@ -15,6 +15,7 @@ function song(id: string, createdAt: string, audio = true): Conversation {
     audioFileName: `${id}.mp3`,
     closed: false,
     archived: false,
+    originalBand: null,
     bpm: null,
     key: null,
     createdAt,

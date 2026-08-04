@@ -74,6 +74,9 @@ export function tracksForNotification(
     fileName: c.audioStoredName ?? undefined,
     mimeType: c.audioMimeType ?? undefined,
     href: `/notes/${c.id}?from=audio`,
+    originalBand: c.originalBand ?? undefined,
+    bpm: c.bpm,
+    songKey: c.key,
     subtitle: n.bandName ?? undefined,
     durationSec: c.songLength ?? undefined,
   }));

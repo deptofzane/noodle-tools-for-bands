@@ -51,6 +51,9 @@ export function UploadDayClient({
     fileName: c.audioStoredName ?? undefined,
     mimeType: c.audioMimeType ?? undefined,
     href: `/notes/${c.id}?from=audio`,
+    originalBand: c.originalBand ?? undefined,
+    bpm: c.bpm,
+    songKey: c.key,
     subtitle: `${data.band.name} · ${label}`,
     durationSec: c.songLength ?? undefined,
   }));

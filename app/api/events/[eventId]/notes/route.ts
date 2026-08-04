@@ -21,11 +21,13 @@ async function guard(
   const user = await requireUser();
   if (user instanceof NextResponse) return user;
   const event = await getEventBandAndNotes(eventId);
-  if (!event)
-    return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (!event) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   if (!(await getMembership(user.id, event.bandId)))
     return NextResponse.json(
-      { error: 'forbidden', message: 'Only band members can edit these notes.' },
+      {
+        error: 'forbidden',
+        message: 'Only band members can edit these notes.',
+      },
       { status: 403 },
     );
   return event;
@@ -53,7 +55,10 @@ export async function PATCH(
   const raw = typeof body?.notes === 'string' ? body.notes.trim() : '';
   if (raw.length > MAX_NOTES)
     return NextResponse.json(
-      { error: 'too_long', message: `Notes must be at most ${MAX_NOTES} characters.` },
+      {
+        error: 'too_long',
+        message: `Notes must be at most ${MAX_NOTES} characters.`,
+      },
       { status: 400 },
     );
 

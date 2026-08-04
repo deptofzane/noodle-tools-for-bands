@@ -66,7 +66,8 @@ export async function POST(
   const seenSongs = new Set<string>();
   for (const entry of raw) {
     const it = entry as { conversationId?: unknown; label?: unknown };
-    const cid = typeof it?.conversationId === 'string' ? it.conversationId : null;
+    const cid =
+      typeof it?.conversationId === 'string' ? it.conversationId : null;
     if (cid) {
       if (allowed.has(cid) && !seenSongs.has(cid)) {
         seenSongs.add(cid);
@@ -74,7 +75,8 @@ export async function POST(
       }
     } else {
       const label = typeof it?.label === 'string' ? it.label.trim() : '';
-      if (label) items.push({ conversationId: null, label: label.slice(0, MAX_LABEL) });
+      if (label)
+        items.push({ conversationId: null, label: label.slice(0, MAX_LABEL) });
     }
   }
 

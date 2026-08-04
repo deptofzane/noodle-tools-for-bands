@@ -9,15 +9,23 @@ import {
 } from '@/lib/db/bands';
 import { notify } from '@/lib/db/notifications';
 
-export async function GET(_req: Request, { params }: { params: Promise<{ bandId: string }> }) {
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ bandId: string }> },
+) {
   const user = await requireUser();
   if (user instanceof NextResponse) return user;
   const { bandId } = await params;
   const membership = await getMembership(user.id, bandId);
-  if (!membership) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  if (!membership)
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   const band = await getBandById(bandId);
   if (!band) return NextResponse.json({ error: 'not_found' }, { status: 404 });
-  return NextResponse.json({ band, members: await listMembers(bandId), myRole: membership.role });
+  return NextResponse.json({
+    band,
+    members: await listMembers(bandId),
+    myRole: membership.role,
+  });
 }
 
 /**

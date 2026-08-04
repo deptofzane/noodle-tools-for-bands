@@ -39,7 +39,8 @@ export function ActionMenu({
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
@@ -107,12 +108,12 @@ export function ActionMenuItem({
   children,
   onClick,
   destructive = false,
-  disabled = false
+  disabled = false,
 }: {
   children: ReactNode;
   onClick: () => void;
   destructive?: boolean;
-  disabled?: boolean
+  disabled?: boolean;
 }) {
   return (
     <button

@@ -36,7 +36,9 @@ export async function POST(
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
   const body = await req.json().catch(() => null);
-  const email = normalizeEmail(typeof body?.email === 'string' ? body.email : '');
+  const email = normalizeEmail(
+    typeof body?.email === 'string' ? body.email : '',
+  );
   if (!EMAIL_RE.test(email))
     return NextResponse.json(
       { error: 'bad_email', message: 'Enter a valid email address.' },

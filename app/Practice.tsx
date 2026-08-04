@@ -25,6 +25,9 @@ export interface PracticeSong {
   title: string;
   /** Audio MIME type; defaults to audio/mpeg when unknown. */
   mimeType?: string;
+  /** Tempo / musical key, shown in the player's options panel when known. */
+  bpm?: number | null;
+  songKey?: string | null;
   /** Sheet music to show beneath the player, if the song has any. */
   sheetMusic?: SheetMusicMeta | null;
   /**
@@ -290,6 +293,8 @@ export function Practice({
                 }
                 fileName={song.title}
                 mimeType={song.mimeType ?? 'audio/mpeg'}
+                bpm={song.bpm}
+                songKey={song.songKey}
                 sticky
               />
             ))}

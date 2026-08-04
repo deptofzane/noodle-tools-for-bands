@@ -191,7 +191,9 @@ export function NoteForm({
         <textarea
           ref={textareaRef}
           value={body}
-          onChange={(e) => handleChange(e.target.value, e.target.selectionStart)}
+          onChange={(e) =>
+            handleChange(e.target.value, e.target.selectionStart)
+          }
           onKeyDown={handleKey}
           onBlur={() => setTimeout(closeMenu, 120)}
           placeholder={placeholder}
@@ -218,7 +220,9 @@ export function NoteForm({
                 >
                   <span className="font-medium">{mentionLabel(m)}</span>
                   {m.email && m.email !== mentionLabel(m) && (
-                    <span className="text-[0.6875rem] text-neutral-500">{m.email}</span>
+                    <span className="text-[0.6875rem] text-neutral-500">
+                      {m.email}
+                    </span>
                   )}
                 </button>
               </li>
@@ -226,9 +230,13 @@ export function NoteForm({
           </ul>
         )}
       </div>
-      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {error && (
+        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+      )}
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[0.625rem] text-neutral-500">⌘ Enter to submit</span>
+        <span className="text-[0.625rem] text-neutral-500">
+          ⌘ Enter to submit
+        </span>
         <div className="flex gap-2">
           {onCancel && (
             <button

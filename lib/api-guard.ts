@@ -44,7 +44,9 @@ export async function requireBandMember(
  */
 export async function requireConversationMember(
   conversationId: string,
-): Promise<{ user: DbUser; membership: ConversationMembership } | NextResponse> {
+): Promise<
+  { user: DbUser; membership: ConversationMembership } | NextResponse
+> {
   const user = await getCurrentDbUser();
   if (!user) return unauthenticated();
   const membership = await getConversationMembership(user.id, conversationId);

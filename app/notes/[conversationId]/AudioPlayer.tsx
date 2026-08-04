@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createAudioEngine, type AudioEngine } from '@/lib/audio';
-import { formatDuration } from '@/lib/format';
+import { formatDuration, formatSongMeta } from '@/lib/format';
 import { useTrackBoolean } from '../../PendingActionProvider';
 import { claimAudioFocus, subscribeAudioFocus } from '../../player/audioFocus';
 import { usePlayer } from './PlayerContext';
@@ -33,6 +33,13 @@ type AudioPlayerProps = {
   versions?: PlayerVersion[];
   // Practice options refer to the 10s forward and backup, as well as the ability to adjust speed
   hasPracticeOptions?: boolean;
+  /**
+   * The song's tempo and musical key, shown in the options panel when known.
+   * `songKey` rather than `key` — React reserves `key` as a prop name and
+   * would swallow it before the component ever saw it.
+   */
+  bpm?: number | null;
+  songKey?: string | null;
 };
 
 const SPEEDS = [0.5, 0.6, 0.7, 0.8, 0.9, 1] as const;
@@ -63,6 +70,8 @@ export function AudioPlayer({
   conversationId,
   versions,
   hasPracticeOptions = true,
+  bpm,
+  songKey,
 }: AudioPlayerProps) {
   const { setEngine } = usePlayer();
   const engineRef = useRef<AudioEngine | null>(null);
@@ -292,6 +301,8 @@ export function AudioPlayer({
       isReady={isReady}
       error={error}
       sticky={sticky}
+      bpm={bpm}
+      songKey={songKey}
       onTogglePlay={togglePlay}
       onSeek={seekTo}
       practice={
@@ -377,6 +388,8 @@ export function AudioPlayerView({
   isReady,
   error,
   sticky = false,
+  bpm,
+  songKey,
   onTogglePlay,
   onSeek,
   practice,
@@ -390,6 +403,9 @@ export function AudioPlayerView({
   isReady: boolean;
   error: string | null;
   sticky?: boolean;
+  /** Tempo / musical key, shown in the options panel when either is set. */
+  bpm?: number | null;
+  songKey?: string | null;
   onTogglePlay: () => void;
   onSeek: (seconds: number) => void;
   /** Start over / ±10s / speed. Omit to hide the practice options entirely. */
@@ -433,6 +449,7 @@ export function AudioPlayerView({
   }, []);
 
   const hasVersionSwitcher = Boolean(versions && versions.list.length > 1);
+  const songMeta = formatSongMeta(bpm ?? null, songKey ?? null);
 
   return (
     <div
@@ -609,6 +626,14 @@ export function AudioPlayerView({
                 ))}
               </select>
             </label>
+          )}
+
+          {/* `ml-auto` rather than `justify-between` on the row: the panel
+              wraps, and only this needs to sit at the right edge. */}
+          {songMeta && (
+            <span className="ml-auto shrink-0 text-xs text-neutral-600 dark:text-neutral-400">
+              {songMeta}
+            </span>
           )}
         </div>
       )}

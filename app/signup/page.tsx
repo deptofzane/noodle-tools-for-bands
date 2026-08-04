@@ -26,7 +26,10 @@ export default async function SignupPage({
           Sign up with an email and password.
         </p>
 
-        <SignupForm initialEmail={email ?? ''} callbackUrl={callbackUrl ?? '/home'} />
+        <SignupForm
+          initialEmail={email ?? ''}
+          callbackUrl={callbackUrl ?? '/home'}
+        />
 
         <p className="mt-4 text-xs text-neutral-500">
           Already have an account?{' '}

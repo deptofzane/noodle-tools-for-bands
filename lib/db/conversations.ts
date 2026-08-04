@@ -235,12 +235,17 @@ export async function renameConversation(
 }
 
 /**
- * Update a song's optional metadata (tempo / key). Only the provided fields
- * are changed; pass `null` to clear one. Both are optional and start blank.
+ * Update a song's optional metadata (original band / tempo / key). Only the
+ * provided fields are changed; pass `null` to clear one. All are optional and
+ * start blank.
  */
 export async function setConversationMeta(
   conversationId: string,
-  fields: { bpm?: number | null; key?: string | null },
+  fields: {
+    originalBand?: string | null;
+    bpm?: number | null;
+    key?: string | null;
+  },
 ): Promise<Conversation> {
   const [row] = await db
     .update(conversations)

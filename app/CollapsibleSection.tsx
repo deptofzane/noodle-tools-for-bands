@@ -49,7 +49,11 @@ function LocalCollapsible({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <CollapsibleShell title={title} open={open} onToggle={() => setOpen((o) => !o)}>
+    <CollapsibleShell
+      title={title}
+      open={open}
+      onToggle={() => setOpen((o) => !o)}
+    >
       {children}
     </CollapsibleShell>
   );
@@ -68,7 +72,11 @@ function PersistedCollapsible({
 }) {
   const [open, setOpen] = usePersistedBoolean(persistKey, defaultOpen);
   return (
-    <CollapsibleShell title={title} open={open} onToggle={() => setOpen((o) => !o)}>
+    <CollapsibleShell
+      title={title}
+      open={open}
+      onToggle={() => setOpen((o) => !o)}
+    >
       {children}
     </CollapsibleShell>
   );

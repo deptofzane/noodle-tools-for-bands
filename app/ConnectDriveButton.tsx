@@ -22,13 +22,7 @@ export function ConnectDriveButton({
   return (
     <form action={startGoogleConnect} className="contents">
       <input type="hidden" name="next" value={pathname} />
-      <button
-        type="submit"
-        className={
-          className ??
-          'btn-outline'
-        }
-      >
+      <button type="submit" className={className ?? 'btn-outline'}>
         {label}
       </button>
     </form>

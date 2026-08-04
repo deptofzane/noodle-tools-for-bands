@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/api-guard';
 import { getConversationMembership } from '@/lib/db/conversations';
-import { deleteNote, NoteNotFoundError, setNoteResolved, updateNote } from '@/lib/db/notes';
+import {
+  deleteNote,
+  NoteNotFoundError,
+  setNoteResolved,
+  updateNote,
+} from '@/lib/db/notes';
 
 /**
  * PATCH  /api/conversations/[conversationId]/notes/[noteId]
@@ -26,12 +31,18 @@ export async function PATCH(
 
   try {
     if (typeof body?.resolved === 'boolean') {
-      const note = await setNoteResolved(conversationId, user.id, noteId, body.resolved);
+      const note = await setNoteResolved(
+        conversationId,
+        user.id,
+        noteId,
+        body.resolved,
+      );
       return NextResponse.json({ note });
     }
     if (typeof body?.body === 'string') {
       const text = body.body.trim();
-      if (!text) return NextResponse.json({ error: 'empty_body' }, { status: 400 });
+      if (!text)
+        return NextResponse.json({ error: 'empty_body' }, { status: 400 });
       if (text.length > 10_000)
         return NextResponse.json({ error: 'body_too_long' }, { status: 400 });
       const note = await updateNote(conversationId, user.id, noteId, text);

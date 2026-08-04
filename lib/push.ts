@@ -25,7 +25,8 @@ function ensureConfigured(): boolean {
   if (configured !== null) return configured;
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
-  const subject = process.env.VAPID_SUBJECT || 'mailto:notifications@sidestage.app';
+  const subject =
+    process.env.VAPID_SUBJECT || 'mailto:notifications@sidestage.app';
   if (!publicKey || !privateKey) {
     configured = false;
     return false;
@@ -91,7 +92,9 @@ function pushUrl(
         ? `/bands/${bandId}?tab=chat`
         : `/bands/${bandId}`;
     case 'poll':
-      return subjectId ? `/bands/${bandId}/polls/${subjectId}` : `/bands/${bandId}`;
+      return subjectId
+        ? `/bands/${bandId}/polls/${subjectId}`
+        : `/bands/${bandId}`;
     case 'setlist':
       return subjectId
         ? `/bands/${bandId}/setlists/${subjectId}`
@@ -123,8 +126,16 @@ export async function sendEventPush(
   let bandName = names?.bandName ?? null;
   if (!names) {
     const [[actor], [band]] = await Promise.all([
-      db.select({ name: users.name }).from(users).where(eq(users.id, input.actorId)).limit(1),
-      db.select({ name: bands.name }).from(bands).where(eq(bands.id, input.bandId)).limit(1),
+      db
+        .select({ name: users.name })
+        .from(users)
+        .where(eq(users.id, input.actorId))
+        .limit(1),
+      db
+        .select({ name: bands.name })
+        .from(bands)
+        .where(eq(bands.id, input.bandId))
+        .limit(1),
     ]);
     actorName = actor?.name ?? null;
     bandName = band?.name ?? null;
@@ -138,7 +149,12 @@ export async function sendEventPush(
       bandName ?? 'the band',
       input.subjectLabel ?? null,
     ),
-    url: pushUrl(input.subjectType, input.subjectId ?? null, input.bandId, input.kind),
+    url: pushUrl(
+      input.subjectType,
+      input.subjectId ?? null,
+      input.bandId,
+      input.kind,
+    ),
     // Collapse repeat pushes about the same subject into one on the device.
     tag: `${input.bandId}:${input.subjectType}:${input.subjectId ?? ''}`,
   });

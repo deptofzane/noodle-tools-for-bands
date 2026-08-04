@@ -38,6 +38,7 @@ export default async function EditSongPage({
         initialName={conversation.audioFileName ?? ''}
         initialBandId={conversation.bandId}
         initialArchived={conversation.archived}
+        initialOriginalBand={conversation.originalBand}
         initialBpm={conversation.bpm}
         initialKey={conversation.key}
         bands={bands.map((b) => ({ id: b.id, name: b.name }))}

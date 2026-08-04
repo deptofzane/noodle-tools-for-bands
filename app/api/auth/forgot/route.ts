@@ -34,7 +34,10 @@ export async function POST(req: Request) {
   if (!perIp.allowed || !perEmail.allowed) {
     const retryAfterSec = Math.max(perIp.retryAfterSec, perEmail.retryAfterSec);
     return NextResponse.json(
-      { error: 'rate_limited', message: 'Too many requests. Please try again later.' },
+      {
+        error: 'rate_limited',
+        message: 'Too many requests. Please try again later.',
+      },
       { status: 429, headers: { 'Retry-After': String(retryAfterSec) } },
     );
   }

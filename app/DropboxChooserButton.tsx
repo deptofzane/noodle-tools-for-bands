@@ -63,7 +63,8 @@ export function DropboxChooserButton({
     const existing = document.getElementById(SCRIPT_ID);
     if (existing) {
       if (window.Dropbox) setReady(true);
-      else existing.addEventListener('load', () => setReady(true), { once: true });
+      else
+        existing.addEventListener('load', () => setReady(true), { once: true });
       return;
     }
     const script = document.createElement('script');

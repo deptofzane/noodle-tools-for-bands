@@ -92,11 +92,21 @@ function isMp3(mimeType: string): boolean {
 
 // MPEG audio bitrate tables (kbps), indexed by the 4-bit bitrate field.
 // Index 0 = "free", 15 = "bad"; both are unusable → treated as 0.
-const BITRATES_V1_L1 = [0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 0];
-const BITRATES_V1_L2 = [0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384, 0];
-const BITRATES_V1_L3 = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0];
-const BITRATES_V2_L1 = [0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256, 0];
-const BITRATES_V2_L23 = [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0];
+const BITRATES_V1_L1 = [
+  0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 0,
+];
+const BITRATES_V1_L2 = [
+  0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384, 0,
+];
+const BITRATES_V1_L3 = [
+  0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0,
+];
+const BITRATES_V2_L1 = [
+  0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256, 0,
+];
+const BITRATES_V2_L23 = [
+  0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0,
+];
 const SAMPLE_RATES: Record<number, number[]> = {
   3: [44100, 48000, 32000], // MPEG1
   2: [22050, 24000, 16000], // MPEG2
@@ -146,10 +156,12 @@ function parseFrameHeader(buf: Buffer, off: number) {
   if (!bitrateKbps || !sampleRate) return null;
 
   // Frame length in bytes (used to validate the next sync).
-  const samplesPer8 = layer === 3 ? 48 : versionId === 3 || layer === 2 ? 144 : 72;
+  const samplesPer8 =
+    layer === 3 ? 48 : versionId === 3 || layer === 2 ? 144 : 72;
   const slot = layer === 3 ? 4 : 1;
   const frameLength =
-    Math.floor((samplesPer8 * bitrateKbps * 1000) / sampleRate) + padding * slot;
+    Math.floor((samplesPer8 * bitrateKbps * 1000) / sampleRate) +
+    padding * slot;
 
   return { versionId, channelMode, bitrateKbps, sampleRate, frameLength };
 }
@@ -162,7 +174,10 @@ function parseFrameHeader(buf: Buffer, off: number) {
  * is the fallback for the case where a truncated buffer makes music-metadata
  * collapse a CBR duration to ~(probe-window ÷ bitrate).
  */
-function estimateMp3CbrDurationSec(head: Buffer, sizeBytes: number): number | null {
+function estimateMp3CbrDurationSec(
+  head: Buffer,
+  sizeBytes: number,
+): number | null {
   const start = id3v2Size(head);
   // Find the first frame whose next frame also syncs (guards against false hits).
   let off = -1;
@@ -181,7 +196,13 @@ function estimateMp3CbrDurationSec(head: Buffer, sizeBytes: number): number | nu
   const h = parseFrameHeader(head, off)!;
   // A Xing/Info (or VBRI) header means music-metadata gets the exact duration.
   const sideInfo =
-    h.versionId === 3 ? (h.channelMode === 3 ? 17 : 32) : h.channelMode === 3 ? 9 : 17;
+    h.versionId === 3
+      ? h.channelMode === 3
+        ? 17
+        : 32
+      : h.channelMode === 3
+        ? 9
+        : 17;
   const xingAt = off + 4 + sideInfo;
   const tag = head.subarray(xingAt, xingAt + 4).toString('latin1');
   const vbri = head.subarray(off + 4 + 32, off + 4 + 36).toString('latin1');
@@ -211,7 +232,10 @@ function isWav(mimeType: string): boolean {
  * bytes actually present (~probe-window ÷ byteRate). Returns null if the
  * header can't be parsed.
  */
-function estimateWavDurationSec(head: Buffer, sizeBytes: number): number | null {
+function estimateWavDurationSec(
+  head: Buffer,
+  sizeBytes: number,
+): number | null {
   if (head.length < 12) return null;
   if (head.toString('latin1', 0, 4) !== 'RIFF') return null;
   if (head.toString('latin1', 8, 12) !== 'WAVE') return null;
@@ -377,7 +401,11 @@ export async function addAudioVersion(input: {
   await putObjectStream(key, input.body, input.mimeType, input.sizeBytes);
   // Duration is derived after the fact from the stored object's header, so
   // we never hold the whole file in memory.
-  const songLength = await probeAudioDuration(key, input.mimeType, input.sizeBytes);
+  const songLength = await probeAudioDuration(
+    key,
+    input.mimeType,
+    input.sizeBytes,
+  );
 
   const row = await db.transaction(async (tx) => {
     const existing = await tx
@@ -712,7 +740,10 @@ export async function deleteSongFile(
   await db
     .delete(songFiles)
     .where(
-      and(eq(songFiles.conversationId, conversationId), eq(songFiles.kind, kind)),
+      and(
+        eq(songFiles.conversationId, conversationId),
+        eq(songFiles.kind, kind),
+      ),
     );
   if (row?.storageKey) await deleteObjects([row.storageKey]);
 }

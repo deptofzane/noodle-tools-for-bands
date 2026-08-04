@@ -26,7 +26,10 @@ export function claimAudioFocus(owner: string): void {
  * Run `onLost` whenever a *different* owner claims playback. Returns an
  * unsubscribe function for effect cleanup.
  */
-export function subscribeAudioFocus(owner: string, onLost: () => void): () => void {
+export function subscribeAudioFocus(
+  owner: string,
+  onLost: () => void,
+): () => void {
   if (typeof window === 'undefined') return () => {};
   const handler = (e: Event) => {
     const claimant = (e as CustomEvent<string>).detail;

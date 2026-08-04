@@ -133,7 +133,9 @@ export async function deleteUsersByGoogleSub(subs: string[]): Promise<void> {
 }
 
 export class GoogleAccountConflictError extends Error {
-  constructor(message = 'That Google account is already linked to another account.') {
+  constructor(
+    message = 'That Google account is already linked to another account.',
+  ) {
     super(message);
     this.name = 'GoogleAccountConflictError';
   }

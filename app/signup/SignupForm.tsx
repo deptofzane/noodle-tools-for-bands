@@ -42,9 +42,7 @@ export function SignupForm({
       });
       if (res?.error) {
         // Created but auto-login failed — send them to login (keep intent).
-        router.push(
-          `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`,
-        );
+        router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
         return;
       }
       // Let the header's band picker refresh (invites may have added a band).
@@ -83,7 +81,9 @@ export function SignupForm({
         minLength={8}
         className={field}
       />
-      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {error && (
+        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+      )}
       <button
         type="submit"
         disabled={busy || !email || password.length < 8}

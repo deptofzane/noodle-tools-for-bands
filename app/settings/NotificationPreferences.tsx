@@ -193,7 +193,9 @@ export function NotificationPreferences({
         shows it in your notification feed; “Push” sends it to your devices.
         These apply only to you.
       </p>
-      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {error && (
+        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+      )}
 
       <div className="rounded-lg border border-neutral-200 dark:border-neutral-800">
         <div className="flex items-center justify-end gap-5 px-4 py-2 text-[0.6875rem] font-medium text-neutral-500">

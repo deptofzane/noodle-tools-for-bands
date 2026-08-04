@@ -23,7 +23,10 @@ export function formatRelativeTime(iso: string): string {
  * `currentUserId` to render the viewer's own actions as "you".
  */
 export function actorLabel(
-  by: { id?: string; name?: string | null; email?: string | null } | null | undefined,
+  by:
+    | { id?: string; name?: string | null; email?: string | null }
+    | null
+    | undefined,
   currentUserId?: string,
 ): string {
   if (!by) return 'someone';
@@ -104,7 +107,9 @@ export function addHoursToTime(time: string, hours: number): string | null {
 
 /** "7:00 PM – 9:00 PM", or just the start when there's no end. */
 export function formatTimeRange(start: string, end: string | null): string {
-  return end ? `${formatTime12h(start)} – ${formatTime12h(end)}` : formatTime12h(start);
+  return end
+    ? `${formatTime12h(start)} – ${formatTime12h(end)}`
+    : formatTime12h(start);
 }
 
 /** A song's tempo/key as a compact line ("128 BPM · Am"), or null if neither. */

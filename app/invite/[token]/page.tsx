@@ -43,7 +43,10 @@ export default async function InvitePage({
               : 'This invite link is invalid. Ask an owner for a new link.'}
         </p>
         <p className="mt-4 text-sm">
-          <Link href="/home" className="text-blue-600 hover:underline dark:text-blue-400">
+          <Link
+            href="/home"
+            className="text-blue-600 hover:underline dark:text-blue-400"
+          >
             Go to Sidestage
           </Link>
         </p>
@@ -94,7 +97,9 @@ export default async function InvitePage({
               Log in
             </Link>
           </div>
-          <p className="text-xs text-neutral-500">Invite sent to {invite.email}.</p>
+          <p className="text-xs text-neutral-500">
+            Invite sent to {invite.email}.
+          </p>
         </div>
       )}
     </Shell>

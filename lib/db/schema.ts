@@ -176,7 +176,10 @@ export const conversations = pgTable(
       .references(() => bands.id, { onDelete: 'cascade' }),
     driveAudioFileId: text('drive_audio_file_id').notNull(),
     audioFileName: text('audio_file_name'), // denormalized snapshot
-    // Optional song metadata — both start blank, neither is required.
+    // Optional song metadata — all start blank, none are required.
+    // Who the song is originally by, for covers. Free text: the original
+    // artist usually isn't a band in this app, so there's nothing to link to.
+    originalBand: text('original_band'),
     bpm: integer('bpm'), // tempo in beats per minute
     key: text('song_key'), // musical key, free text (e.g. "Am", "C#")
     closed: boolean('closed').notNull().default(false),

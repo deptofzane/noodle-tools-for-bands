@@ -20,6 +20,7 @@ import { audioSrc, type Conversation } from '../bandDetailShared';
  */
 export function SongRow({
   c,
+  bandName,
   disabled,
   onAddToSetlist,
   onEdit,
@@ -28,6 +29,8 @@ export function SongRow({
   onDelete,
 }: {
   c: Conversation;
+  /** Names the song in the player when it has no tempo or key of its own. */
+  bandName: string | null;
   disabled: boolean;
   onAddToSetlist: (c: Conversation) => void;
   onEdit: (c: Conversation) => void;
@@ -51,6 +54,12 @@ export function SongRow({
         fileName: c.audioStoredName ?? undefined,
         mimeType: c.audioMimeType ?? undefined,
         href: `/notes/${c.id}?from=audio`,
+        originalBand: c.originalBand ?? undefined,
+        bpm: c.bpm,
+        songKey: c.key,
+        // Tempo and key first — that's what's useful while the song is
+        // playing. The band only fills in for songs that have neither.
+        subtitle: meta ?? bandName ?? undefined,
         durationSec: c.songLength ?? undefined,
       }
     : null;
@@ -124,6 +133,11 @@ export function SongRow({
             </span>
           )}
         </div>
+        {c.originalBand && (
+          <div className="mt-0.5 truncate text-xs text-neutral-500">
+            Originally by {c.originalBand}
+          </div>
+        )}
         {meta && <div className="mt-0.5 text-xs text-neutral-500">{meta}</div>}
         <div className="mt-0.5 text-xs text-neutral-500">
           Updated {formatRelativeTime(c.updatedAt)}
@@ -143,16 +157,16 @@ export function SongRow({
         {/* Live is sheet music on screen and nothing else, so it needs some.
             Practice pairs the player with the sheet, and is worth opening with
             either one. */}
-        {c.hasSheetMusic && (
-          <ActionMenuItem onClick={() => router.push(`/notes/${c.id}/live`)}>
-            Live
-          </ActionMenuItem>
-        )}
         {(c.hasSheetMusic || track) && (
           <ActionMenuItem
             onClick={() => router.push(`/notes/${c.id}/practice`)}
           >
             Practice
+          </ActionMenuItem>
+        )}
+        {c.hasSheetMusic && (
+          <ActionMenuItem onClick={() => router.push(`/notes/${c.id}/live`)}>
+            Live
           </ActionMenuItem>
         )}
         <ActionMenuItem onClick={() => onView(c)}>View song</ActionMenuItem>

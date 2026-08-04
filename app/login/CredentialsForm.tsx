@@ -53,7 +53,9 @@ export function CredentialsForm({ callbackUrl }: { callbackUrl: string }) {
         placeholder="Password"
         className={field}
       />
-      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {error && (
+        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+      )}
       <button
         type="submit"
         disabled={busy || !email || !password}

@@ -96,7 +96,6 @@ export function CalendarClient() {
     void trackPending(() => load());
   }, [load, trackPending]);
 
-
   const prevMonth = () =>
     setView((v) =>
       v.month === 0
@@ -112,8 +111,7 @@ export function CalendarClient() {
   const goToday = () =>
     setView({ year: today.getFullYear(), month: today.getMonth() });
 
-  const navBtn =
-    'btn-outline';
+  const navBtn = 'btn-outline';
 
   return (
     <div className="flex flex-col gap-3">
@@ -144,10 +142,7 @@ export function CalendarClient() {
             <span aria-hidden="true">›</span>
           </button>
         </div>
-        <Link
-          href="/calendar/events/new"
-          className="ml-1 btn-primary"
-        >
+        <Link href="/calendar/events/new" className="ml-1 btn-primary">
           Add event
         </Link>
       </div>
@@ -213,58 +208,56 @@ export function CalendarClient() {
           labelledBy="day-summary-title"
           size="sm"
         >
-            <h2 id="day-summary-title" className="text-base font-semibold">
-              {formatDateLong(summaryDate)}
-            </h2>
-            {(eventsByDate[summaryDate] ?? []).length === 0 ? (
-              <p className="mt-3 text-sm text-neutral-500">
-                No events on this day.
-              </p>
-            ) : (
-              <ul className="mt-3 flex max-h-72 flex-col gap-1 overflow-auto">
-                {(eventsByDate[summaryDate] ?? []).map((ev) => {
-                  const loc = displayLocation(ev);
-                  return (
-                    <li key={ev.id}>
-                      <Link
-                        href={`/calendar/events/${ev.id}`}
-                        className="block rounded-md border border-neutral-200 px-3 py-2 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
-                      >
-                        <div className="flex items-baseline justify-between gap-2">
-                          <span className="truncate font-medium">
-                            {ev.title}
+          <h2 id="day-summary-title" className="text-base font-semibold">
+            {formatDateLong(summaryDate)}
+          </h2>
+          {(eventsByDate[summaryDate] ?? []).length === 0 ? (
+            <p className="mt-3 text-sm text-neutral-500">
+              No events on this day.
+            </p>
+          ) : (
+            <ul className="mt-3 flex max-h-72 flex-col gap-1 overflow-auto">
+              {(eventsByDate[summaryDate] ?? []).map((ev) => {
+                const loc = displayLocation(ev);
+                return (
+                  <li key={ev.id}>
+                    <Link
+                      href={`/calendar/events/${ev.id}`}
+                      className="block rounded-md border border-neutral-200 px-3 py-2 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
+                    >
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="truncate font-medium">{ev.title}</span>
+                        {ev.time && (
+                          <span className="shrink-0 text-xs text-neutral-500">
+                            {formatTimeRange(ev.time, ev.endTime)}
                           </span>
-                          {ev.time && (
-                            <span className="shrink-0 text-xs text-neutral-500">
-                              {formatTimeRange(ev.time, ev.endTime)}
-                            </span>
-                          )}
-                        </div>
-                        <div className="truncate text-xs text-neutral-500">
-                          {ev.bandName}
-                          {loc ? ` · ${loc}` : ''}
-                        </div>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            <div className="mt-4 flex items-center justify-between gap-2">
-              <Link
-                href={`/calendar/events/new?date=${summaryDate}`}
-                className="btn-outline"
-              >
-                Add event
-              </Link>
-              <button
-                type="button"
-                onClick={() => setSummaryDate(null)}
-                className="btn-ghost"
-              >
-                Close
-              </button>
-            </div>
+                        )}
+                      </div>
+                      <div className="truncate text-xs text-neutral-500">
+                        {ev.bandName}
+                        {loc ? ` · ${loc}` : ''}
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <div className="mt-4 flex items-center justify-between gap-2">
+            <Link
+              href={`/calendar/events/new?date=${summaryDate}`}
+              className="btn-outline"
+            >
+              Add event
+            </Link>
+            <button
+              type="button"
+              onClick={() => setSummaryDate(null)}
+              className="btn-ghost"
+            >
+              Close
+            </button>
+          </div>
         </Modal>
       )}
     </div>

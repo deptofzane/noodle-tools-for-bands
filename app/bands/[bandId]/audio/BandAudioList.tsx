@@ -12,6 +12,7 @@ import { SongRow } from './SongRow';
  */
 export function BandAudioList({
   conversations,
+  bandName,
   canUseDrive,
   importProgress,
   audioBusy,
@@ -25,6 +26,7 @@ export function BandAudioList({
   onDelete,
 }: {
   conversations: Conversation[] | null;
+  bandName: string | null;
   canUseDrive: boolean;
   importProgress: { current: number; total: number } | null;
   audioBusy: boolean;
@@ -54,6 +56,7 @@ export function BandAudioList({
     <SongRow
       key={c.id}
       c={c}
+      bandName={bandName}
       disabled={rowsDisabled}
       onAddToSetlist={onAddToSetlist}
       onEdit={onEditSong}

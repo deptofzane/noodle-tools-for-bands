@@ -21,9 +21,9 @@ let cached: S3Client | null | undefined;
 export function isObjectStoreConfigured(): boolean {
   return Boolean(
     process.env.S3_ENDPOINT &&
-      process.env.S3_BUCKET &&
-      process.env.S3_ACCESS_KEY_ID &&
-      process.env.S3_SECRET_ACCESS_KEY,
+    process.env.S3_BUCKET &&
+    process.env.S3_ACCESS_KEY_ID &&
+    process.env.S3_SECRET_ACCESS_KEY,
   );
 }
 
@@ -65,7 +65,10 @@ export function songFileKey(conversationId: string, kind: string): string {
  * conversation, so the key carries a per-file id (not the `kind`) to keep
  * each version's bytes distinct.
  */
-export function audioVersionKey(conversationId: string, fileId: string): string {
+export function audioVersionKey(
+  conversationId: string,
+  fileId: string,
+): string {
   return `conversations/${conversationId}/audio/${fileId}`;
 }
 
@@ -73,7 +76,10 @@ export function audioVersionKey(conversationId: string, fileId: string): string 
  * Object key for one sheet-music version. Like audio, sheet music can have
  * many versions per conversation, so the key carries a per-file id.
  */
-export function sheetVersionKey(conversationId: string, fileId: string): string {
+export function sheetVersionKey(
+  conversationId: string,
+  fileId: string,
+): string {
   return `conversations/${conversationId}/sheet_music/${fileId}`;
 }
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   DndContext,
   KeyboardSensor,
@@ -19,6 +20,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { formatDuration } from '@/lib/format';
+import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { AddTrackToSetlistModal } from '../../../player/AddTrackToSetlistModal';
 import {
   usePlaylistPlayer,
   type PlaylistTrack,
@@ -34,9 +37,12 @@ import {
  * never interrupts what's playing.
  */
 export function SongQueue() {
-  const { queue, index, isPlaying, track, play, toggle, reorder } =
+  const { queue, index, isPlaying, track, play, toggle, reorder, remove } =
     usePlaylistPlayer();
   const [arranging, setArranging] = useState(false);
+  // Queue entry whose "Add to setlist" modal is open.
+  const [addTarget, setAddTarget] = useState<PlaylistTrack | null>(null);
+  const router = useRouter();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -133,7 +139,7 @@ export function SongQueue() {
               <li
                 key={rowId}
                 className={
-                  'flex items-center gap-3 pr-3 ' +
+                  'flex items-center gap-3 pr-1 ' +
                   (isCurrent ? 'bg-blue-50 dark:bg-blue-950/40' : '')
                 }
               >
@@ -205,6 +211,11 @@ export function SongQueue() {
                       {t.title}
                     </span>
                   )}
+                  {t.originalBand && (
+                    <span className="block truncate text-xs text-neutral-500">
+                      Originally by {t.originalBand}
+                    </span>
+                  )}
                   {t.subtitle && (
                     <span className="block truncate text-xs text-neutral-500">
                       {t.subtitle}
@@ -217,10 +228,45 @@ export function SongQueue() {
                     {formatDuration(t.durationSec)}
                   </span>
                 )}
+
+                <ActionMenu label={`Actions for ${t.title}`}>
+                  {/* Unconditional, unlike the Audio list's rows: a queue
+                      entry carries no sheet-music flag to gate Live on, and
+                      Live says so plainly when a song has none. */}
+                  <ActionMenuItem
+                    onClick={() => router.push(`/notes/${t.id}/practice`)}
+                  >
+                    Practice
+                  </ActionMenuItem>
+                  {/* By row, not by track id: the same song can sit in the
+                      queue twice, and only the one whose menu is open should
+                      come out. */}
+                  <ActionMenuItem onClick={() => remove(i)}>
+                    Remove from queue
+                  </ActionMenuItem>
+                  <ActionMenuItem onClick={() => setAddTarget(t)}>
+                    Add to setlist
+                  </ActionMenuItem>
+                  <ActionMenuItem onClick={() => router.push(`/notes/${t.id}`)}>
+                    View song
+                  </ActionMenuItem>
+                  <ActionMenuItem
+                    onClick={() => router.push(`/notes/${t.id}/edit`)}
+                  >
+                    Edit song
+                  </ActionMenuItem>
+                </ActionMenu>
               </li>
             );
           })}
         </ul>
+      )}
+
+      {addTarget && (
+        <AddTrackToSetlistModal
+          track={addTarget}
+          onClose={() => setAddTarget(null)}
+        />
       )}
     </section>
   );

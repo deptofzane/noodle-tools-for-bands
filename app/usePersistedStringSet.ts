@@ -21,7 +21,8 @@ export function usePersistedStringSet(
       const saved = localStorage.getItem(key);
       if (saved) {
         const arr = JSON.parse(saved);
-        if (Array.isArray(arr)) setValue(new Set(arr.filter((x) => typeof x === 'string')));
+        if (Array.isArray(arr))
+          setValue(new Set(arr.filter((x) => typeof x === 'string')));
       }
     } catch {
       // ignore malformed / unavailable storage

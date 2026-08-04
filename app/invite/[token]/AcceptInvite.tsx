@@ -33,7 +33,8 @@ export function AcceptInvite({
         bandId?: string;
         message?: string;
       };
-      if (!r.ok) throw new Error(data.message || 'Could not accept the invite.');
+      if (!r.ok)
+        throw new Error(data.message || 'Could not accept the invite.');
       // Refresh the header's band picker (it's mounted separately).
       window.dispatchEvent(new Event('bands:changed'));
       router.push(data.bandId ? `/bands/${data.bandId}` : '/bands');

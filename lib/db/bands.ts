@@ -14,7 +14,10 @@ export class BandAccessError extends Error {
 }
 
 /** Create a band and make the creator its owner, atomically. */
-export async function createBand(creatorUserId: string, name: string): Promise<Band> {
+export async function createBand(
+  creatorUserId: string,
+  name: string,
+): Promise<Band> {
   return db.transaction(async (tx) => {
     const [band] = await tx
       .insert(bands)
@@ -42,7 +45,11 @@ export async function listMyBands(userId: string) {
 }
 
 export async function getBandById(bandId: string): Promise<Band | null> {
-  const [row] = await db.select().from(bands).where(eq(bands.id, bandId)).limit(1);
+  const [row] = await db
+    .select()
+    .from(bands)
+    .where(eq(bands.id, bandId))
+    .limit(1);
   return row ?? null;
 }
 
@@ -89,8 +96,15 @@ export async function listMembers(bandId: string) {
     .orderBy(bandMembers.createdAt);
 }
 
-export async function addMember(bandId: string, userId: string, role: BandRole = 'member') {
-  await db.insert(bandMembers).values({ bandId, userId, role }).onConflictDoNothing();
+export async function addMember(
+  bandId: string,
+  userId: string,
+  role: BandRole = 'member',
+) {
+  await db
+    .insert(bandMembers)
+    .values({ bandId, userId, role })
+    .onConflictDoNothing();
 }
 
 export async function removeMember(bandId: string, userId: string) {
@@ -135,7 +149,9 @@ export async function leaveBand(
     const [me] = await tx
       .select()
       .from(bandMembers)
-      .where(and(eq(bandMembers.bandId, bandId), eq(bandMembers.userId, userId)))
+      .where(
+        and(eq(bandMembers.bandId, bandId), eq(bandMembers.userId, userId)),
+      )
       .limit(1);
     if (!me) return { status: 'not_a_member' };
 

@@ -60,7 +60,12 @@ export async function createInvite(input: {
         email: bandInvites.email,
         expiresAt: bandInvites.expiresAt,
       });
-    return { id: row!.id, token: raw, email: row!.email, expiresAt: row!.expiresAt };
+    return {
+      id: row!.id,
+      token: raw,
+      email: row!.email,
+      expiresAt: row!.expiresAt,
+    };
   });
 }
 
@@ -185,10 +190,7 @@ export async function acceptInvite(
       .select({ userId: bandMembers.userId })
       .from(bandMembers)
       .where(
-        and(
-          eq(bandMembers.bandId, inv.bandId),
-          eq(bandMembers.userId, userId),
-        ),
+        and(eq(bandMembers.bandId, inv.bandId), eq(bandMembers.userId, userId)),
       )
       .limit(1);
 

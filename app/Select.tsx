@@ -64,7 +64,9 @@ export function Select({
   // Keep the active option scrolled into view.
   useEffect(() => {
     if (!open || activeIndex < 0) return;
-    const el = listRef.current?.children[activeIndex] as HTMLElement | undefined;
+    const el = listRef.current?.children[activeIndex] as
+      | HTMLElement
+      | undefined;
     el?.scrollIntoView({ block: 'nearest' });
   }, [open, activeIndex]);
 

@@ -25,7 +25,9 @@ export async function startGoogleConnect(formData: FormData): Promise<void> {
   const user = await getCurrentDbUser();
   if (!user) redirect('/login');
   const next = safePath(
-    typeof formData.get('next') === 'string' ? String(formData.get('next')) : null,
+    typeof formData.get('next') === 'string'
+      ? String(formData.get('next'))
+      : null,
   );
 
   (await cookies()).set(LINK_COOKIE, signLinkToken(user.id), {

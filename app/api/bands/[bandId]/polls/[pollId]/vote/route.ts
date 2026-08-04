@@ -33,8 +33,7 @@ export async function POST(
   const body = await req.json().catch(() => null);
   const optionId = typeof body?.optionId === 'string' ? body.optionId : '';
   const ok = await castVote({ pollId, optionId, userId: user.id });
-  if (!ok)
-    return NextResponse.json({ error: 'bad_option' }, { status: 400 });
+  if (!ok) return NextResponse.json({ error: 'bad_option' }, { status: 400 });
 
   // If this vote means everyone has now voted, auto-close the poll and tell
   // the band. Best-effort: a hiccup here must not fail the vote itself.

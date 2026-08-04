@@ -38,7 +38,8 @@ function createSemaphore(max: number): Semaphore {
 
   const release = (): void => {
     const next = queue.shift();
-    if (next) next(); // hand the token straight to the next waiter
+    if (next)
+      next(); // hand the token straight to the next waiter
     else available += 1;
   };
 

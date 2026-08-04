@@ -69,7 +69,9 @@ async function insertMentions(
   if (mentionUserIds.length === 0) return;
   await exec
     .insert(noteMentions)
-    .values(mentionUserIds.map((mentionedUserId) => ({ noteId, mentionedUserId })))
+    .values(
+      mentionUserIds.map((mentionedUserId) => ({ noteId, mentionedUserId })),
+    )
     .onConflictDoNothing();
 }
 
@@ -93,12 +95,17 @@ export async function loadNotes(
     })
     .from(notes)
     .innerJoin(users, eq(users.id, notes.authorId))
-    .where(and(eq(notes.conversationId, conversationId), isNull(notes.deletedAt)));
+    .where(
+      and(eq(notes.conversationId, conversationId), isNull(notes.deletedAt)),
+    );
 
   if (rows.length === 0) return [];
 
   const mentionRows = await db
-    .select({ noteId: noteMentions.noteId, userId: noteMentions.mentionedUserId })
+    .select({
+      noteId: noteMentions.noteId,
+      userId: noteMentions.mentionedUserId,
+    })
     .from(noteMentions)
     .where(
       inArray(
@@ -159,7 +166,13 @@ export async function createNote(
   return db.transaction(async (tx) => {
     const [note] = await tx
       .insert(notes)
-      .values({ conversationId, authorId, parentNoteId: null, timestampMs, body })
+      .values({
+        conversationId,
+        authorId,
+        parentNoteId: null,
+        timestampMs,
+        body,
+      })
       .returning();
     await insertMentions(tx, note!.id, mentionUserIds);
     await recordActivity(tx, conversationId, authorId, 'note-created');

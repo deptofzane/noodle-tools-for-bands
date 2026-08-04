@@ -1,16 +1,199 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatDuration } from '@/lib/format';
 import { FullPlayer } from './FullPlayer';
-import { usePlaylistPlayer } from './PlaylistPlayer';
+import { usePlaylistPlayer, type PlaylistTrack } from './PlaylistPlayer';
 
 /** Horizontal travel that commits a drag to a track change. */
 const SWIPE_PX = 56;
 /** Travel before a gesture is claimed as a swipe rather than a scroll or tap. */
 const CLAIM_PX = 8;
-/** How far the bar follows the finger, so a long drag doesn't slide it away. */
-const MAX_DRAG_PX = 96;
+/** How far the bar follows the finger — enough to read the next song's row. */
+const MAX_DRAG_PX = 160;
+/** Length of the commit slide. Must match `duration-200` on the strip. */
+const SLIDE_MS = 200;
+
+// Shared by the live row and its neighbours, so a track sliding into place
+// lands exactly where the real one is drawn.
+const PLAY_BTN_CLS =
+  'flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-500';
+const ICON_BTN_CLS =
+  'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 disabled:opacity-40 dark:text-neutral-300 dark:hover:bg-neutral-800';
+const ROW_CLS = 'flex w-full items-center gap-3 px-3 py-2 lg:px-6';
+const TIME_CLS =
+  'shrink-0 font-mono text-[0.6875rem] tabular-nums text-neutral-500';
+
+function PlayPauseIcon({ isPlaying }: { isPlaying: boolean }) {
+  return isPlaying ? (
+    <svg
+      viewBox="0 0 24 24"
+      width="15"
+      height="15"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <rect x="6" y="5" width="4" height="14" rx="1" />
+      <rect x="14" y="5" width="4" height="14" rx="1" />
+    </svg>
+  ) : (
+    <svg
+      viewBox="0 0 24 24"
+      width="15"
+      height="15"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  );
+}
+
+function RestartIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 10a9 9 0 1 1 2.64 6.36" />
+      <path d="M3 4v6h6" />
+    </svg>
+  );
+}
+
+/** Title, queue position, elapsed/total and the progress line. */
+function TrackColumn({
+  title,
+  originalBand,
+  subtitle,
+  position,
+  total,
+  currentTime,
+  duration,
+  error,
+}: {
+  title: string;
+  originalBand?: string;
+  subtitle?: string;
+  position: number;
+  total: number;
+  currentTime: number;
+  duration: number;
+  error?: string | null;
+}) {
+  const pct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <div className="flex min-w-0 items-baseline gap-2">
+        {/* Plain text, not a link to the song: the whole bar is one tap target
+            now, and a link inside it would be a trap for the thumb. The full
+            player still links out to the track. */}
+        <span className="min-w-0 truncate text-sm font-medium">{title}</span>
+        {total > 1 && (
+          <span className="shrink-0 text-xs tabular-nums text-neutral-500">
+            {position} of {total}
+          </span>
+        )}
+      </div>
+
+      {error ? (
+        <p className="truncate text-xs text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      ) : (
+        <div className="flex items-center gap-2">
+          <span className={TIME_CLS}>{formatDuration(currentTime)}</span>
+          <div
+            role="progressbar"
+            aria-label="Playback progress"
+            aria-valuemin={0}
+            aria-valuemax={Math.round(duration) || 0}
+            aria-valuenow={Math.round(currentTime)}
+            aria-valuetext={`${formatDuration(currentTime)} of ${formatDuration(duration)}`}
+            className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800"
+          >
+            <div
+              className="h-full rounded-full bg-blue-600"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <span className={TIME_CLS}>{formatDuration(duration)}</span>
+        </div>
+      )}
+      {/* Above the subtitle, which is where tempo and key land. */}
+      {originalBand && !error && (
+        <p className="truncate text-[0.6875rem] text-neutral-500">
+          Originally by {originalBand}
+        </p>
+      )}
+      {subtitle && !error && (
+        <p className="truncate text-[0.6875rem] text-neutral-500">{subtitle}</p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The track on one side of the live row, parked just off the edge of the bar.
+ *
+ * It's a full copy of the row rather than a label, so that a committed swipe
+ * can simply slide it into place: what the user watches arrive is laid out
+ * exactly like what replaces it, and the swap underneath is invisible. Inert
+ * and hidden from assistive tech — the real row is a frame away.
+ */
+function PeekRow({
+  track,
+  side,
+  position,
+  total,
+  isPlaying,
+}: {
+  track: PlaylistTrack;
+  side: 'prev' | 'next';
+  position: number;
+  total: number;
+  isPlaying: boolean;
+}) {
+  return (
+    <div
+      aria-hidden="true"
+      className={
+        'pointer-events-none absolute inset-y-0 ' +
+        (side === 'prev' ? 'right-full ' : 'left-full ') +
+        ROW_CLS
+      }
+    >
+      <div className="flex shrink-0 items-center gap-1">
+        <span className={PLAY_BTN_CLS}>
+          <PlayPauseIcon isPlaying={isPlaying} />
+        </span>
+        <span className={ICON_BTN_CLS}>
+          <RestartIcon />
+        </span>
+      </div>
+      <TrackColumn
+        title={track.title}
+        originalBand={track.originalBand}
+        subtitle={track.subtitle}
+        position={position}
+        total={total}
+        // A track you haven't reached (or are stepping back to) starts at zero.
+        currentTime={0}
+        duration={track.durationSec ?? 0}
+      />
+      {/* Placeholders for expand and dismiss, so the columns line up. */}
+      <span className="h-9 w-9 shrink-0" />
+      <span className="h-9 w-9 shrink-0" />
+    </div>
+  );
+}
 
 /**
  * The playback bar pinned to the bottom of the screen while something is
@@ -19,15 +202,24 @@ const MAX_DRAG_PX = 96;
  *
  * Track changes are gestures rather than buttons: swipe left for the next
  * song, right for the previous one — always a move, never a restart of what's
- * already playing, which is what the Restart button is for. Tapping the bar
- * anywhere that isn't a control expands it into the full-screen `FullPlayer`,
- * which is where next/previous stay available as real buttons for keyboard
- * and screen-reader users. Rendered by `PlaylistPlayerProvider` — pages never
- * mount it themselves.
+ * already playing, which is what the Restart button is for. The neighbouring
+ * tracks sit just off either edge and slide in with the drag, so a committed
+ * swipe carries through as one motion instead of snapping back. Tapping the
+ * bar anywhere that isn't a control expands it into the full-screen
+ * `FullPlayer`, which is where next/previous stay available as real buttons
+ * for keyboard and screen-reader users. Rendered by `PlaylistPlayerProvider` —
+ * pages never mount it themselves.
  */
 export function MiniPlayer() {
   const [expanded, setExpanded] = useState(false);
   const [dragX, setDragX] = useState(0);
+  /** A swipe that met the threshold, sliding out on its way to `target`. */
+  const [commit, setCommit] = useState<{
+    side: 'prev' | 'next';
+    target: number;
+  } | null>(null);
+  /** The frame after a commit lands, when the strip snaps back untweened. */
+  const [settling, setSettling] = useState(false);
   const {
     track,
     queue,
@@ -37,7 +229,6 @@ export function MiniPlayer() {
     duration,
     error,
     toggle,
-    next,
     goTo,
     seek,
     close,
@@ -49,13 +240,39 @@ export function MiniPlayer() {
   /** Set when a gesture resolved to a swipe, to disarm the click it leaves. */
   const swiped = useRef(false);
 
+  // Change the track only once the outgoing row has finished sliding off, so
+  // the neighbour the user watched arrive is the one that stays.
+  useEffect(() => {
+    if (!commit) return;
+    const timer = setTimeout(() => {
+      goTo(commit.target);
+      setSettling(true);
+      setCommit(null);
+    }, SLIDE_MS);
+    return () => clearTimeout(timer);
+  }, [commit, goTo]);
+
+  // Re-arm the transition a frame after the untweened snap back to centre has
+  // painted — any sooner and the browser animates the snap itself, undoing it.
+  useEffect(() => {
+    if (!settling) return;
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => setSettling(false));
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
+  }, [settling]);
+
   if (!track) return null;
 
   if (expanded) return <FullPlayer onCollapse={() => setExpanded(false)} />;
 
-  const hasNext = index + 1 < queue.length;
-  const hasPrev = index > 0;
-  const pct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+  const prevTrack = index > 0 ? (queue[index - 1] ?? null) : null;
+  const nextTrack =
+    index + 1 < queue.length ? (queue[index + 1] ?? null) : null;
 
   const endGesture = (e: React.PointerEvent) => {
     if (captured.current !== null) {
@@ -69,7 +286,8 @@ export function MiniPlayer() {
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (!e.isPrimary) return;
+    // Mid-commit the strip is animating; a new drag would fight it.
+    if (!e.isPrimary || commit) return;
     start.current = { x: e.clientX, y: e.clientY };
     swiped.current = false;
   };
@@ -103,15 +321,21 @@ export function MiniPlayer() {
 
     const dx = e.clientX - s.x;
     if (Math.abs(dx) < SWIPE_PX) return; // Short of committing — leave it be.
+    const side = dx < 0 ? 'next' : 'prev';
+    const target = dx < 0 ? index + 1 : index - 1;
+    if (side === 'next' ? !nextTrack : !prevTrack) return;
+
     swiped.current = true;
-    if (dx < 0) {
-      if (hasNext) next();
-    } else if (hasPrev) {
-      // `goTo` rather than the player's `previous`, which restarts the current
-      // track once it's a few seconds in. A swipe is a request to change
-      // songs; hearing the same one start over would read as a missed gesture.
-      goTo(index - 1);
+    // `goTo`, not the player's `previous`: a swipe is a request to change
+    // songs, and hearing the current one start over would read as a miss.
+    if (
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+    ) {
+      goTo(target);
+      setSettling(true);
+      return;
     }
+    setCommit({ side, target });
   };
 
   // Runs ahead of every control in the bar: a drag that happens to end over
@@ -124,12 +348,33 @@ export function MiniPlayer() {
     e.stopPropagation();
   };
 
-  // Clamped so the bar hints at the gesture without travelling far, and
-  // damped at either end of the queue when swiping toward a track that isn't
-  // there — the bar shouldn't promise a move it won't make.
+  // Clamped so the strip stops short of a full change of its own accord, and
+  // damped at either end of the queue where there's no neighbour to reveal —
+  // the bar shouldn't promise a move it won't make.
   const clamped = Math.max(-MAX_DRAG_PX, Math.min(MAX_DRAG_PX, dragX));
-  const blocked = clamped < 0 ? !hasNext : !hasPrev;
+  const blocked = clamped < 0 ? !nextTrack : !prevTrack;
   const offset = blocked ? clamped / 4 : clamped;
+
+  // A commit runs the strip the rest of the way, landing the peek exactly
+  // where the live row sits.
+  const transform = commit
+    ? `translateX(${commit.side === 'next' ? '-100%' : '100%'})`
+    : offset === 0
+      ? undefined
+      : `translateX(${offset}px)`;
+  // No transition while the finger is down (the strip tracks it exactly) or
+  // on the snap back to centre after a commit (that one must not be seen).
+  const tweened = dragX === 0 && !settling;
+
+  // The player zeroes its clock in an effect, which lands a frame after the
+  // swap paints — long enough to flash the outgoing track's elapsed time
+  // against the incoming title. `settling` marks exactly that gap.
+  const engineDuration = settling ? 0 : duration;
+  const shownTime = settling ? 0 : currentTime;
+  // Falling back to the queue's own length keeps the total from blinking to
+  // 0:00 while the new track loads — and matches what the peek showed.
+  const shownDuration =
+    engineDuration > 0 ? engineDuration : (track.durationSec ?? 0);
 
   return (
     <div
@@ -139,76 +384,90 @@ export function MiniPlayer() {
       // edge on desktop where the nav sits at the top.
       className="player-bar fixed inset-x-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/95"
     >
-      <div
-        onClick={() => setExpanded(true)}
-        onClickCapture={handleClickCapture}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={endGesture}
-        style={
-          offset === 0 ? undefined : { transform: `translateX(${offset}px)` }
-        }
-        // `touch-pan-y` keeps vertical scrolling with the page while claiming
-        // horizontal drags for the swipe. No transition mid-drag, so the bar
-        // tracks the finger exactly and only animates on the way back.
-        className={
-          'mx-auto flex max-w-5xl cursor-pointer touch-pan-y select-none items-center gap-3 px-3 py-2 lg:px-6' +
-          (dragX === 0 ? ' transition-transform duration-200' : '')
-        }
-      >
-        <div className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              toggle();
-            }}
-            aria-label={isPlaying ? 'Pause' : 'Play'}
-            title={isPlaying ? 'Pause' : 'Play'}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-500"
-          >
-            {isPlaying ? (
-              <svg
-                viewBox="0 0 24 24"
-                width="15"
-                height="15"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <rect x="6" y="5" width="4" height="14" rx="1" />
-                <rect x="14" y="5" width="4" height="14" rx="1" />
-              </svg>
-            ) : (
-              <svg
-                viewBox="0 0 24 24"
-                width="15"
-                height="15"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            )}
-          </button>
+      {/* Clips to the bar's own width, so the parked neighbours stay hidden
+          until a drag uncovers them. */}
+      <div className="mx-auto max-w-5xl overflow-hidden">
+        <div
+          onClick={() => setExpanded(true)}
+          onClickCapture={handleClickCapture}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={endGesture}
+          style={transform ? { transform } : undefined}
+          // `touch-pan-y` keeps vertical scrolling with the page while
+          // claiming horizontal drags for the swipe.
+          className={
+            'relative cursor-pointer touch-pan-y select-none ' +
+            ROW_CLS +
+            (tweened ? ' transition-transform duration-200' : '')
+          }
+        >
+          {prevTrack && (
+            <PeekRow
+              track={prevTrack}
+              side="prev"
+              position={index}
+              total={queue.length}
+              isPlaying={isPlaying}
+            />
+          )}
 
-          {/* Restart, not "previous": swiping right steps back a track, so
-              starting the current one over needs its own control. */}
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggle();
+              }}
+              aria-label={isPlaying ? 'Pause' : 'Play'}
+              title={isPlaying ? 'Pause' : 'Play'}
+              className={PLAY_BTN_CLS}
+            >
+              <PlayPauseIcon isPlaying={isPlaying} />
+            </button>
+
+            {/* Restart, not "previous": swiping right steps back a track, so
+                starting the current one over needs its own control. */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                seek(0);
+              }}
+              disabled={engineDuration <= 0}
+              aria-label="Restart song"
+              title="Restart song"
+              className={ICON_BTN_CLS}
+            >
+              <RestartIcon />
+            </button>
+          </div>
+
+          <TrackColumn
+            title={track.title}
+            originalBand={track.originalBand}
+            subtitle={track.subtitle}
+            position={index + 1}
+            total={queue.length}
+            currentTime={shownTime}
+            duration={shownDuration}
+            error={error}
+          />
+
+          {/* Redundant with tapping the bar, but the only way to expand from a
+              keyboard — and the visible cue that the bar opens at all. */}
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              seek(0);
-            }}
-            disabled={duration <= 0}
-            aria-label="Restart song"
-            title="Restart song"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 disabled:opacity-40 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            onClick={() => setExpanded(true)}
+            aria-label="Expand player"
+            title="Expand player"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
           >
             <svg
               viewBox="0 0 24 24"
-              width="16"
-              height="16"
+              width="18"
+              height="18"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
@@ -216,100 +475,35 @@ export function MiniPlayer() {
               strokeLinejoin="round"
               aria-hidden="true"
             >
-              <path d="M3 10a9 9 0 1 1 2.64 6.36" />
-              <path d="M3 4v6h6" />
+              <path d="M18 15l-6-6-6 6" />
             </svg>
           </button>
-        </div>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <div className="flex min-w-0 items-baseline gap-2">
-            {/* Plain text, not a link to the song: the whole bar is one tap
-                target now, and a link inside it would be a trap for the
-                thumb. The full player still links out to the track. */}
-            <span className="min-w-0 truncate text-sm font-medium">
-              {track.title}
-            </span>
-            {queue.length > 1 && (
-              <span className="shrink-0 text-xs tabular-nums text-neutral-500">
-                {index + 1} of {queue.length}
-              </span>
-            )}
-          </div>
-
-          {error ? (
-            <p className="truncate text-xs text-red-600 dark:text-red-400">
-              {error}
-            </p>
-          ) : (
-            <div className="flex items-center gap-2">
-              <span className="shrink-0 font-mono text-[0.6875rem] tabular-nums text-neutral-500">
-                {formatDuration(currentTime)}
-              </span>
-              <div
-                role="progressbar"
-                aria-label="Playback progress"
-                aria-valuemin={0}
-                aria-valuemax={Math.round(duration) || 0}
-                aria-valuenow={Math.round(currentTime)}
-                aria-valuetext={`${formatDuration(currentTime)} of ${formatDuration(duration)}`}
-                className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800"
-              >
-                <div
-                  className="h-full rounded-full bg-blue-600"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-              <span className="shrink-0 font-mono text-[0.6875rem] tabular-nums text-neutral-500">
-                {formatDuration(duration)}
-              </span>
-            </div>
-          )}
-          {track.subtitle && !error && (
-            <p className="truncate text-[0.6875rem] text-neutral-500">
-              {track.subtitle}
-            </p>
-          )}
-        </div>
-
-        {/* Redundant with tapping the bar, but the only way to expand from a
-            keyboard — and the visible cue that the bar opens at all. */}
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          aria-label="Expand player"
-          title="Expand player"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              close();
+            }}
+            aria-label="Close player"
+            title="Close player"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
           >
-            <path d="M18 15l-6-6-6 6" />
-          </svg>
-        </button>
+            <span aria-hidden="true" className="text-lg leading-none">
+              ×
+            </span>
+          </button>
 
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            close();
-          }}
-          aria-label="Close player"
-          title="Close player"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
-        >
-          <span aria-hidden="true" className="text-lg leading-none">
-            ×
-          </span>
-        </button>
+          {nextTrack && (
+            <PeekRow
+              track={nextTrack}
+              side="next"
+              position={index + 2}
+              total={queue.length}
+              isPlaying={isPlaying}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

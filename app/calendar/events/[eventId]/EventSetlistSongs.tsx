@@ -17,6 +17,9 @@ interface SongItem {
   id: string;
   conversationId: string | null;
   name: string;
+  originalBand: string | null;
+  bpm: number | null;
+  key: string | null;
   songLength: number | null;
   audioStoredName: string | null;
   audioMimeType: string | null;
@@ -69,6 +72,9 @@ export function EventSetlistSongs({
     fileName: s.audioStoredName!,
     mimeType: s.audioMimeType ?? undefined,
     href: `/notes/${s.conversationId}`,
+    originalBand: s.originalBand ?? undefined,
+    bpm: s.bpm,
+    songKey: s.key,
     subtitle: setlistName,
     durationSec: s.songLength ?? undefined,
   }));

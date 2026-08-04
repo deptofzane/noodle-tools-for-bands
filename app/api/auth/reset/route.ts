@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { setUserPassword } from '@/lib/db/users';
-import { consumeResetToken, deleteUserResetTokens } from '@/lib/db/reset-tokens';
+import {
+  consumeResetToken,
+  deleteUserResetTokens,
+} from '@/lib/db/reset-tokens';
 import { rateLimitByIp } from '@/lib/rate-limit';
 
 /**
@@ -19,7 +22,10 @@ export async function POST(req: Request) {
   });
   if (!limit.allowed)
     return NextResponse.json(
-      { error: 'rate_limited', message: 'Too many attempts. Please try again later.' },
+      {
+        error: 'rate_limited',
+        message: 'Too many attempts. Please try again later.',
+      },
       { status: 429, headers: { 'Retry-After': String(limit.retryAfterSec) } },
     );
 
@@ -29,14 +35,20 @@ export async function POST(req: Request) {
 
   if (password.length < 8)
     return NextResponse.json(
-      { error: 'weak_password', message: 'Password must be at least 8 characters.' },
+      {
+        error: 'weak_password',
+        message: 'Password must be at least 8 characters.',
+      },
       { status: 400 },
     );
 
   const userId = token ? await consumeResetToken(token) : null;
   if (!userId)
     return NextResponse.json(
-      { error: 'invalid_token', message: 'This reset link is invalid or has expired.' },
+      {
+        error: 'invalid_token',
+        message: 'This reset link is invalid or has expired.',
+      },
       { status: 400 },
     );
 

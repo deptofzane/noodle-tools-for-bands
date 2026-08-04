@@ -123,6 +123,7 @@ export async function DELETE(
   }
 
   const result = await deleteSheetVersion(conversationId, versionId);
-  if (!result) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (!result)
+    return NextResponse.json({ error: 'not_found' }, { status: 404 });
   return NextResponse.json({ ok: true, newDefaultId: result.newDefaultId });
 }

@@ -53,10 +53,10 @@ export function CalendarSubscription({ token }: { token: string }) {
       <div>
         <p className="font-medium">Calendar subscription</p>
         <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-          Subscribe to your Sidestage events in Google Calendar, Apple
-          Calendar, or Outlook. The feed is read-only and updates on your
-          calendar app’s own schedule (Google can take a few hours). Keep this
-          URL private — anyone with it can see your events.
+          Subscribe to your Sidestage events in Google Calendar, Apple Calendar,
+          or Outlook. The feed is read-only and updates on your calendar app’s
+          own schedule (Google can take a few hours). Keep this URL private —
+          anyone with it can see your events.
         </p>
       </div>
 

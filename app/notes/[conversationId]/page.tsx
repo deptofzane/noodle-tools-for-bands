@@ -89,9 +89,7 @@ export default async function NotesPage({
       </PageHeader>
       {/* The song, not the version being played — the player's own title
           shows which version that is. */}
-      {audio && (
-        <p className="text-sm text-neutral-200 mx-auto">{fileName}</p>
-      )}
+      {audio && <p className="text-sm text-neutral-200 mx-auto">{fileName}</p>}
 
       <PlayerProvider>
         <div className="flex flex-col gap-6">
@@ -102,6 +100,8 @@ export default async function NotesPage({
               )}`}
               fileName={fileName}
               mimeType={mimeType}
+              bpm={conversation.bpm}
+              songKey={conversation.key}
               conversationId={conversationId}
               versions={audioVersions.map((v) => ({
                 id: v.id,
@@ -116,22 +116,43 @@ export default async function NotesPage({
               No audio yet. Add audio from the Edit song page.
             </p>
           )}
-          {(conversation.bpm != null || conversation.key || sheetMusic) && (
+          {(conversation.originalBand ||
+            conversation.bpm != null ||
+            conversation.key ||
+            sheetMusic) && (
             <SongDetails>
-              <span className="flex justify-around">
-                {(conversation.bpm != null || conversation.key) && (
-                  <div className="flex justify-center flex-col md:flex-row md:gap-3 gap-1 text-sm text-neutral-600 dark:text-neutral-400">
-                    {conversation.bpm != null && (
+              <span className="flex justify-around items-center">
+                {(conversation.originalBand ||
+                  conversation.bpm != null ||
+                  conversation.key) && (
+                  <div className="flex flex-col items-center gap-1 text-sm text-neutral-600 dark:text-neutral-400">
+                    {conversation.originalBand && (
                       <span>
-                        <span className="font-medium">{conversation.bpm}</span>{' '}
-                        BPM
+                        Originally by{' '}
+                        <span className="font-medium">
+                          {conversation.originalBand}
+                        </span>
                       </span>
                     )}
-                    {conversation.key && (
-                      <span>
-                        Key of{' '}
-                        <span className="font-medium">{conversation.key}</span>
-                      </span>
+                    {(conversation.bpm != null || conversation.key) && (
+                      <div className="flex justify-center flex-col md:flex-row md:gap-3 gap-1">
+                        {conversation.bpm != null && (
+                          <span>
+                            <span className="font-medium">
+                              {conversation.bpm}
+                            </span>{' '}
+                            BPM
+                          </span>
+                        )}
+                        {conversation.key && (
+                          <span>
+                            Key of{' '}
+                            <span className="font-medium">
+                              {conversation.key}
+                            </span>
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}

@@ -82,7 +82,15 @@ const RETRY_CONFIG = {
   // gaxios defaults this to 2; we raise it so retries outlast a fully
   // stale socket pool (e.g. after the machine wakes from sleep).
   noResponseRetries: 5,
-  httpMethodsToRetry: ['GET', 'HEAD', 'OPTIONS', 'PUT', 'PATCH', 'POST', 'DELETE'],
+  httpMethodsToRetry: [
+    'GET',
+    'HEAD',
+    'OPTIONS',
+    'PUT',
+    'PATCH',
+    'POST',
+    'DELETE',
+  ],
   statusCodesToRetry: [
     [429, 429],
     [500, 599],

@@ -48,7 +48,10 @@ export async function PATCH(
     }
     if (typeof raw === 'string' && raw.length > MAX_LABEL_LEN) {
       return NextResponse.json(
-        { error: 'bad_request', message: `Label must be ${MAX_LABEL_LEN} characters or fewer.` },
+        {
+          error: 'bad_request',
+          message: `Label must be ${MAX_LABEL_LEN} characters or fewer.`,
+        },
         { status: 400 },
       );
     }
@@ -64,7 +67,10 @@ export async function PATCH(
   }
 
   return NextResponse.json(
-    { error: 'bad_request', message: 'Provide { default: true } or { label }.' },
+    {
+      error: 'bad_request',
+      message: 'Provide { default: true } or { label }.',
+    },
     { status: 400 },
   );
 }
@@ -83,6 +89,7 @@ export async function DELETE(
   }
 
   const result = await deleteAudioVersion(conversationId, versionId);
-  if (!result) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (!result)
+    return NextResponse.json({ error: 'not_found' }, { status: 404 });
   return NextResponse.json({ ok: true, newDefaultId: result.newDefaultId });
 }

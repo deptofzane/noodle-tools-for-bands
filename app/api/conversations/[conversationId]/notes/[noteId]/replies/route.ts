@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/api-guard';
 import { getConversationMembership } from '@/lib/db/conversations';
-import { createReply, NoteNotFoundError, sanitizeMentionIds } from '@/lib/db/notes';
+import {
+  createReply,
+  NoteNotFoundError,
+  sanitizeMentionIds,
+} from '@/lib/db/notes';
 import { notify } from '@/lib/db/notifications';
 
 /**

@@ -56,7 +56,9 @@ export function AudioVersions({
   const [versions, setVersions] = useState<AudioVersionMeta[]>(initial);
   const [busy, setBusy] = useState(false);
   const [chooseOpen, setChooseOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<AudioVersionMeta | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AudioVersionMeta | null>(
+    null,
+  );
   const [deleting, setDeleting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -162,7 +164,9 @@ export function AudioVersions({
         });
         await ensureOk(res);
       });
-      setVersions((prev) => prev.map((v) => (v.id === id ? { ...v, label } : v)));
+      setVersions((prev) =>
+        prev.map((v) => (v.id === id ? { ...v, label } : v)),
+      );
       setEditingId(null);
       showToast('Label updated.', 'success');
     } catch (e) {
@@ -262,7 +266,9 @@ export function AudioVersions({
                     </span>
                     <span className="truncate text-[0.6875rem] text-neutral-500">
                       {v.label ? `${v.fileName} · ` : ''}
-                      {v.songLength != null ? formatDuration(v.songLength) : '—'}
+                      {v.songLength != null
+                        ? formatDuration(v.songLength)
+                        : '—'}
                     </span>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">

@@ -1,4 +1,14 @@
-import { and, desc, eq, gt, inArray, lt, notInArray, or, sql } from 'drizzle-orm';
+import {
+  and,
+  desc,
+  eq,
+  gt,
+  inArray,
+  lt,
+  notInArray,
+  or,
+  sql,
+} from 'drizzle-orm';
 import { db } from './index';
 import {
   bandMembers,
@@ -110,8 +120,16 @@ export async function createNotification(
   input: CreateNotificationInput,
 ): Promise<{ actorName: string | null; bandName: string | null }> {
   const [[actor], [band]] = await Promise.all([
-    db.select({ name: users.name }).from(users).where(eq(users.id, input.actorId)).limit(1),
-    db.select({ name: bands.name }).from(bands).where(eq(bands.id, input.bandId)).limit(1),
+    db
+      .select({ name: users.name })
+      .from(users)
+      .where(eq(users.id, input.actorId))
+      .limit(1),
+    db
+      .select({ name: bands.name })
+      .from(bands)
+      .where(eq(bands.id, input.bandId))
+      .limit(1),
   ]);
   const actorName = actor?.name ?? null;
   const bandName = band?.name ?? null;

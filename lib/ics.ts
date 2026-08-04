@@ -159,7 +159,8 @@ function buildVEvent(ev: IcsEvent, durationMinutes: number): string {
 
 /** Render a full VCALENDAR document (CRLF line endings, trailing CRLF). */
 export function buildCalendar(opts: BuildCalendarOptions): string {
-  const duration = opts.defaultDurationMinutes ?? DEFAULT_EVENT_DURATION_MINUTES;
+  const duration =
+    opts.defaultDurationMinutes ?? DEFAULT_EVENT_DURATION_MINUTES;
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',

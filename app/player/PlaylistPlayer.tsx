@@ -28,6 +28,11 @@ export type PlaylistTrack = {
   href?: string;
   /** Optional line under the title (e.g. the band or upload day). */
   subtitle?: string;
+  /** Who the song is originally by, shown above the subtitle for covers. */
+  originalBand?: string;
+  /** Tempo / musical key, carried through so Practice can show them. */
+  bpm?: number | null;
+  songKey?: string | null;
   /** Known length in seconds, shown in the queue list when available. */
   durationSec?: number;
 };

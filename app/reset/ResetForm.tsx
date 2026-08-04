@@ -67,7 +67,9 @@ export function ResetForm({ token }: { token: string }) {
         minLength={8}
         className={field}
       />
-      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {error && (
+        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+      )}
       <button
         type="submit"
         disabled={busy || password.length < 8}

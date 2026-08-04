@@ -62,7 +62,10 @@ export async function POST(
   }
   if (body.length > MAX_BODY) {
     return NextResponse.json(
-      { error: 'too_long', message: `Messages are limited to ${MAX_BODY} characters.` },
+      {
+        error: 'too_long',
+        message: `Messages are limited to ${MAX_BODY} characters.`,
+      },
       { status: 400 },
     );
   }

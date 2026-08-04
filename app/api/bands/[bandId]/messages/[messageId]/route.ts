@@ -39,13 +39,22 @@ export async function PATCH(
   }
   if (body.length > MAX_BODY) {
     return NextResponse.json(
-      { error: 'too_long', message: `Messages are limited to ${MAX_BODY} characters.` },
+      {
+        error: 'too_long',
+        message: `Messages are limited to ${MAX_BODY} characters.`,
+      },
       { status: 400 },
     );
   }
 
   const mentions = sanitizeMentionIds(json?.mentions);
-  const message = await editBandMessage(bandId, messageId, user.id, body, mentions);
+  const message = await editBandMessage(
+    bandId,
+    messageId,
+    user.id,
+    body,
+    mentions,
+  );
   if (!message) {
     // Missing, deleted, or not the caller's message.
     return NextResponse.json({ error: 'not_found' }, { status: 404 });

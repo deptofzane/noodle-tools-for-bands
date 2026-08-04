@@ -1,6 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 import type { PreviewKind } from '@/lib/sheet-preview';
 import { useIsDesktop } from './useIsDesktop';
 

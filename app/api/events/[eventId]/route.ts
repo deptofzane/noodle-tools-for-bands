@@ -22,7 +22,10 @@ const TIME_RE = /^\d{2}:\d{2}$/;
 const MAX_EVENT_TYPE = 40;
 
 /** End time only applies with a start; defaults to +2h when not provided. */
-function resolveEndTime(time: string | null, rawEnd: string | null): string | null {
+function resolveEndTime(
+  time: string | null,
+  rawEnd: string | null,
+): string | null {
   if (!time) return null;
   if (rawEnd && TIME_RE.test(rawEnd)) return rawEnd;
   return addHoursToTime(time, DEFAULT_EVENT_DURATION_HOURS);
@@ -135,7 +138,10 @@ export async function DELETE(
   if (!event) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   if (!(await getMembership(user.id, event.bandId)))
     return NextResponse.json(
-      { error: 'forbidden', message: 'Only band members can delete this event.' },
+      {
+        error: 'forbidden',
+        message: 'Only band members can delete this event.',
+      },
       { status: 403 },
     );
 

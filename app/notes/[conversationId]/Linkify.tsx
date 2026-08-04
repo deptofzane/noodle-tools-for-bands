@@ -54,9 +54,7 @@ export function Linkify({
   mentionRe.lastIndex = 0;
   while ((match = mentionRe.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      out.push(
-        ...linkifyUrls(text.slice(lastIndex, match.index), () => key++),
-      );
+      out.push(...linkifyUrls(text.slice(lastIndex, match.index), () => key++));
     }
     out.push(
       <span
@@ -94,7 +92,9 @@ function linkifyUrls(text: string, nextKey: () => number): ReactNode[] {
 
     if (matchStart > lastIndex) {
       parts.push(
-        <Fragment key={nextKey()}>{text.slice(lastIndex, matchStart)}</Fragment>,
+        <Fragment key={nextKey()}>
+          {text.slice(lastIndex, matchStart)}
+        </Fragment>,
       );
     }
     parts.push(

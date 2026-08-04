@@ -14,7 +14,10 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const name = typeof body?.name === 'string' ? body.name.trim() : '';
   if (!name || name.length > 100)
-    return NextResponse.json({ error: 'bad_name', message: 'Band name required (≤100 chars).' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'bad_name', message: 'Band name required (≤100 chars).' },
+      { status: 400 },
+    );
   const band = await createBand(user.id, name);
   return NextResponse.json({ band }, { status: 201 });
 }

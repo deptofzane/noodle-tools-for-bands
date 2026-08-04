@@ -32,7 +32,9 @@ export async function GET(
   if (!(await getConversationMembership(user.id, conversationId))) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
-  return NextResponse.json({ versions: await listAudioVersions(conversationId) });
+  return NextResponse.json({
+    versions: await listAudioVersions(conversationId),
+  });
 }
 
 export async function POST(
@@ -64,7 +66,10 @@ export async function POST(
       const clientBytes = Number(body?.bytes ?? 0) || 0;
       if (clientBytes > MAX_AUDIO_BYTES)
         return NextResponse.json(
-          { error: 'file_too_large', message: 'Audio exceeds the 50 MB limit.' },
+          {
+            error: 'file_too_large',
+            message: 'Audio exceeds the 50 MB limit.',
+          },
           { status: 413 },
         );
       const fetched = await fetchDropboxFile(dropboxUrl);
@@ -77,21 +82,30 @@ export async function POST(
       if (!mimeType) {
         fetched.body.destroy();
         return NextResponse.json(
-          { error: 'unsupported_type', message: 'Please choose an audio file.' },
+          {
+            error: 'unsupported_type',
+            message: 'Please choose an audio file.',
+          },
           { status: 415 },
         );
       }
       if (!fetched.sizeBytes) {
         fetched.body.destroy();
         return NextResponse.json(
-          { error: 'import_failed', message: 'Could not determine the file size.' },
+          {
+            error: 'import_failed',
+            message: 'Could not determine the file size.',
+          },
           { status: 502 },
         );
       }
       if (fetched.sizeBytes > MAX_AUDIO_BYTES) {
         fetched.body.destroy();
         return NextResponse.json(
-          { error: 'file_too_large', message: 'Audio exceeds the 50 MB limit.' },
+          {
+            error: 'file_too_large',
+            message: 'Audio exceeds the 50 MB limit.',
+          },
           { status: 413 },
         );
       }
@@ -124,7 +138,10 @@ export async function POST(
     const session = await auth();
     if (!session?.accessToken) {
       return NextResponse.json(
-        { error: 'no_token', message: 'Connect Google Drive to import from it.' },
+        {
+          error: 'no_token',
+          message: 'Connect Google Drive to import from it.',
+        },
         { status: 401 },
       );
     }
@@ -137,13 +154,19 @@ export async function POST(
       const declaredSize = Number(metaRes.data.size ?? 0);
       if (declaredSize > MAX_AUDIO_BYTES) {
         return NextResponse.json(
-          { error: 'file_too_large', message: 'Audio exceeds the 50 MB limit.' },
+          {
+            error: 'file_too_large',
+            message: 'Audio exceeds the 50 MB limit.',
+          },
           { status: 413 },
         );
       }
       if (!declaredSize) {
         return NextResponse.json(
-          { error: 'import_failed', message: 'Could not determine the file size.' },
+          {
+            error: 'import_failed',
+            message: 'Could not determine the file size.',
+          },
           { status: 502 },
         );
       }
@@ -166,7 +189,10 @@ export async function POST(
     } catch (err) {
       console.error('[audio-versions] Drive import failed', err);
       return NextResponse.json(
-        { error: 'import_failed', message: 'Could not import the audio from Drive.' },
+        {
+          error: 'import_failed',
+          message: 'Could not import the audio from Drive.',
+        },
         { status: 502 },
       );
     }
@@ -176,7 +202,9 @@ export async function POST(
   const form = await req.formData().catch(() => null);
   const file = form?.get('file');
   const label =
-    typeof form?.get('label') === 'string' ? String(form.get('label')).trim() : '';
+    typeof form?.get('label') === 'string'
+      ? String(form.get('label')).trim()
+      : '';
   if (!(file instanceof File) || file.size === 0) {
     return NextResponse.json(
       { error: 'no_file', message: 'An audio file is required.' },

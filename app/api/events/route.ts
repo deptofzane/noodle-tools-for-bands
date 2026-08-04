@@ -14,7 +14,10 @@ const TIME_RE = /^\d{2}:\d{2}$/;
  * end wins, otherwise it defaults to `DEFAULT_EVENT_DURATION_HOURS` after the
  * start. Null for all-day (no start) events.
  */
-function resolveEndTime(time: string | null, rawEnd: string | null): string | null {
+function resolveEndTime(
+  time: string | null,
+  rawEnd: string | null,
+): string | null {
   if (!time) return null;
   if (rawEnd && TIME_RE.test(rawEnd)) return rawEnd;
   return addHoursToTime(time, DEFAULT_EVENT_DURATION_HOURS);

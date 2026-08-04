@@ -21,7 +21,10 @@ export async function POST(req: Request) {
   const auth = typeof body?.keys?.auth === 'string' ? body.keys.auth : '';
   if (!endpoint || !p256dh || !auth)
     return NextResponse.json(
-      { error: 'bad_subscription', message: 'A valid push subscription is required.' },
+      {
+        error: 'bad_subscription',
+        message: 'A valid push subscription is required.',
+      },
       { status: 400 },
     );
   // Reject endpoints that aren't a known HTTPS push service (SSRF guard).

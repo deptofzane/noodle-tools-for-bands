@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { usePersistedBoolean } from '../../usePersistedBoolean';
 
 /**
- * Collapsible "Song Details" section on the song page (tempo/key, Practice /
+ * Collapsible "Song details" section on the song page (tempo/key, Practice /
  * Live links). Collapsed by default; its open/closed state persists to
  * localStorage so it stays how the user left it.
  */
@@ -22,7 +22,7 @@ export function SongDetails({ children }: { children: ReactNode }) {
           onClick={() => setMinimized((v) => !v)}
           aria-expanded={!minimized}
           aria-label={
-            minimized ? 'Expand Song Details' : 'Minimize Song Details'
+            minimized ? 'Expand Song details' : 'Minimize Song details'
           }
           className="flex items-center gap-2"
         >
@@ -32,7 +32,7 @@ export function SongDetails({ children }: { children: ReactNode }) {
           >
             {minimized ? '▸' : '▾'}
           </span>
-          <h2 className="text-sm font-medium">Song Details</h2>
+          <h2 className="text-sm font-medium">Song details</h2>
         </button>
       </div>
       {!minimized && children}

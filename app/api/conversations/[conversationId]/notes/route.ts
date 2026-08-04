@@ -20,10 +20,13 @@ export async function POST(
   const body = await req.json().catch(() => null);
   const timestampMs = body?.timestampMs;
   const text = typeof body?.body === 'string' ? body.body.trim() : '';
-  if (typeof timestampMs !== 'number' || !Number.isFinite(timestampMs) || timestampMs < 0)
+  if (
+    typeof timestampMs !== 'number' ||
+    !Number.isFinite(timestampMs) ||
+    timestampMs < 0
+  )
     return NextResponse.json({ error: 'bad_timestamp' }, { status: 400 });
-  if (!text)
-    return NextResponse.json({ error: 'empty_body' }, { status: 400 });
+  if (!text) return NextResponse.json({ error: 'empty_body' }, { status: 400 });
   if (text.length > 10_000)
     return NextResponse.json({ error: 'body_too_long' }, { status: 400 });
 

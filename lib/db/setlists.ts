@@ -19,6 +19,8 @@ export interface SetlistSong {
   name: string;
   /** Audio duration in whole seconds; null for markers / unknown. */
   songLength: number | null;
+  /** Who the song is originally by; null for markers / unset. */
+  originalBand: string | null;
   /** Optional song tempo; null for markers / unset. */
   bpm: number | null;
   /** Optional song key; null for markers / unset. */
@@ -38,7 +40,10 @@ export interface SetlistItemInput {
   label: string | null;
 }
 
-function resolveName(audioFileName: string | null, label: string | null): string {
+function resolveName(
+  audioFileName: string | null,
+  label: string | null,
+): string {
   return audioFileName ?? label ?? 'Untitled';
 }
 
@@ -113,6 +118,7 @@ export async function getSetlist(
       id: setlistSongs.id,
       conversationId: setlistSongs.conversationId,
       audioFileName: conversations.audioFileName,
+      originalBand: conversations.originalBand,
       bpm: conversations.bpm,
       key: conversations.key,
       label: setlistSongs.label,
@@ -141,6 +147,7 @@ export async function getSetlist(
     conversationId: r.conversationId,
     name: resolveName(r.audioFileName, r.label),
     songLength: r.songLength,
+    originalBand: r.originalBand,
     bpm: r.bpm,
     key: r.key,
     audioStoredName: r.audioStoredName,
@@ -235,6 +242,7 @@ export async function listBandSetlists(
       id: setlistSongs.id,
       conversationId: setlistSongs.conversationId,
       audioFileName: conversations.audioFileName,
+      originalBand: conversations.originalBand,
       bpm: conversations.bpm,
       key: conversations.key,
       label: setlistSongs.label,
@@ -265,6 +273,7 @@ export async function listBandSetlists(
       conversationId: s.conversationId,
       name: resolveName(s.audioFileName, s.label),
       songLength: s.songLength,
+      originalBand: s.originalBand,
       bpm: s.bpm,
       key: s.key,
       audioStoredName: s.audioStoredName,
@@ -306,6 +315,9 @@ export interface PracticeSong {
   conversationId: string | null;
   title: string;
   mimeType: string;
+  /** Tempo / musical key; null for markers and for songs that haven't set them. */
+  bpm: number | null;
+  songKey: string | null;
   sheetMusic: { fileName: string; mimeType: string; updatedAt: string } | null;
 }
 
@@ -322,6 +334,8 @@ export async function getSetlistPracticeSongs(
     .select({
       conversationId: setlistSongs.conversationId,
       audioFileName: conversations.audioFileName,
+      bpm: conversations.bpm,
+      key: conversations.key,
       label: setlistSongs.label,
     })
     .from(setlistSongs)
@@ -362,6 +376,8 @@ export async function getSetlistPracticeSongs(
         conversationId: null,
         title: r.label ?? 'Set break',
         mimeType: '',
+        bpm: null,
+        songKey: null,
         sheetMusic: null,
       };
     }
@@ -371,6 +387,8 @@ export async function getSetlistPracticeSongs(
       conversationId: r.conversationId,
       title: r.audioFileName ?? audio?.fileName ?? 'Untitled audio',
       mimeType: audio?.mimeType ?? 'audio/mpeg',
+      bpm: r.bpm,
+      songKey: r.key,
       sheetMusic: sheet
         ? {
             fileName: sheet.fileName,
@@ -391,7 +409,11 @@ export async function getConversationPracticeSong(
   conversationId: string,
 ): Promise<PracticeSong | null> {
   const [conv] = await db
-    .select({ audioFileName: conversations.audioFileName })
+    .select({
+      audioFileName: conversations.audioFileName,
+      bpm: conversations.bpm,
+      key: conversations.key,
+    })
     .from(conversations)
     .where(eq(conversations.id, conversationId))
     .limit(1);
@@ -417,6 +439,8 @@ export async function getConversationPracticeSong(
     conversationId,
     title: conv.audioFileName ?? audio?.fileName ?? 'Untitled audio',
     mimeType: audio?.mimeType ?? 'audio/mpeg',
+    bpm: conv.bpm,
+    songKey: conv.key,
     sheetMusic: sheet
       ? {
           fileName: sheet.fileName,

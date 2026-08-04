@@ -59,26 +59,30 @@ function tokenizeLyric(line: string): ChordToken[] {
 }
 
 export function parseChordPro(text: string): ChordProLine[] {
-  return text.replace(/\r\n?/g, '\n').split('\n').map((raw) => {
-    const line = raw.replace(/\s+$/, '');
-    if (line.trim() === '') return { type: 'empty' as const };
+  return text
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((raw) => {
+      const line = raw.replace(/\s+$/, '');
+      if (line.trim() === '') return { type: 'empty' as const };
 
-    const directive = line.trim().match(/^\{(.+?)\}$/);
-    if (directive) {
-      const inner = directive[1]!;
-      const sep = inner.indexOf(':');
-      const name = normalizeDirective(sep >= 0 ? inner.slice(0, sep) : inner);
-      const value = sep >= 0 ? inner.slice(sep + 1).trim() : '';
-      if (name === 'comment') return { type: 'comment' as const, text: value };
-      return { type: 'directive' as const, name, value };
-    }
+      const directive = line.trim().match(/^\{(.+?)\}$/);
+      if (directive) {
+        const inner = directive[1]!;
+        const sep = inner.indexOf(':');
+        const name = normalizeDirective(sep >= 0 ? inner.slice(0, sep) : inner);
+        const value = sep >= 0 ? inner.slice(sep + 1).trim() : '';
+        if (name === 'comment')
+          return { type: 'comment' as const, text: value };
+        return { type: 'directive' as const, name, value };
+      }
 
-    if (line.trimStart().startsWith('#')) {
-      return { type: 'comment' as const, text: line.replace(/^\s*#\s?/, '') };
-    }
+      if (line.trimStart().startsWith('#')) {
+        return { type: 'comment' as const, text: line.replace(/^\s*#\s?/, '') };
+      }
 
-    return { type: 'lyric' as const, tokens: tokenizeLyric(line) };
-  });
+      return { type: 'lyric' as const, tokens: tokenizeLyric(line) };
+    });
 }
 
 /**

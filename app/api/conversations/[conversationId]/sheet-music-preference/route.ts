@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/api-guard';
 import { getConversationMembership } from '@/lib/db/conversations';
-import {
-  getSheetVersionMeta,
-  setSheetVersionPref,
-} from '@/lib/db/song-files';
+import { getSheetVersionMeta, setSheetVersionPref } from '@/lib/db/song-files';
 
 /**
  * POST /api/conversations/[conversationId]/sheet-music-preference

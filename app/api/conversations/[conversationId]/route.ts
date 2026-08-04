@@ -20,7 +20,8 @@ import { notify } from '@/lib/db/notifications';
  *   → { conversation, closed, notes (threaded), activity, members, myRole }
  *
  * PATCH  /api/conversations/[conversationId]
- *   Body may include any of: { closed?, name?, bandId?, archived?, bpm?, key? }
+ *   Body may include any of:
+ *   { closed?, name?, bandId?, archived?, originalBand?, bpm?, key? }
  *   — open/close, rename, move to another band you belong to, archive, or set
  *   the optional tempo / key (send null to clear either).
  *
@@ -95,7 +96,10 @@ export async function PATCH(
       edited = true;
     } catch (err) {
       if (err instanceof ConversationConflictError)
-        return NextResponse.json({ error: 'conflict', message: err.message }, { status: 409 });
+        return NextResponse.json(
+          { error: 'conflict', message: err.message },
+          { status: 409 },
+        );
       throw err;
     }
   }
@@ -110,9 +114,28 @@ export async function PATCH(
     edited = true;
   }
 
-  // Optional song metadata (tempo / key). Present-but-unchanged is a no-op;
-  // send null to clear either.
-  const meta: { bpm?: number | null; key?: string | null } = {};
+  // Optional song metadata (original band / tempo / key). Present-but-unchanged
+  // is a no-op; send null to clear any of them.
+  const meta: {
+    originalBand?: string | null;
+    bpm?: number | null;
+    key?: string | null;
+  } = {};
+  if ('originalBand' in body) {
+    const raw = body.originalBand;
+    let originalBand: string | null;
+    if (raw === null || raw === '') originalBand = null;
+    else if (typeof raw === 'string') {
+      const t = raw.trim();
+      originalBand = t ? t.slice(0, 120) : null;
+    } else
+      return NextResponse.json(
+        { error: 'bad_original_band', message: 'Original band must be text.' },
+        { status: 400 },
+      );
+    if (originalBand !== (conversation.originalBand ?? null))
+      meta.originalBand = originalBand;
+  }
   if ('bpm' in body) {
     const raw = body.bpm;
     let bpm: number | null;
@@ -126,7 +149,10 @@ export async function PATCH(
       bpm = raw;
     else
       return NextResponse.json(
-        { error: 'bad_bpm', message: 'BPM must be a whole number from 1 to 400.' },
+        {
+          error: 'bad_bpm',
+          message: 'BPM must be a whole number from 1 to 400.',
+        },
         { status: 400 },
       );
     if (bpm !== (conversation.bpm ?? null)) meta.bpm = bpm;
@@ -145,7 +171,11 @@ export async function PATCH(
       );
     if (key !== (conversation.key ?? null)) meta.key = key;
   }
-  if (meta.bpm !== undefined || meta.key !== undefined) {
+  if (
+    meta.originalBand !== undefined ||
+    meta.bpm !== undefined ||
+    meta.key !== undefined
+  ) {
     conversation = await setConversationMeta(conversationId, meta);
     edited = true;
   }

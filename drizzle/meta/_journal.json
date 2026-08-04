@@ -295,6 +295,13 @@
       "when": 1785869567864,
       "tag": "0041_supreme_nextwave",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1785878154864,
+      "tag": "0042_nice_mindworm",
+      "breakpoints": true
     }
   ]
 }

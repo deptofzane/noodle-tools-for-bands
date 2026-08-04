@@ -92,10 +92,7 @@ async function membersAmong(
     .select({ userId: bandMembers.userId })
     .from(bandMembers)
     .where(
-      and(
-        eq(bandMembers.bandId, bandId),
-        inArray(bandMembers.userId, userIds),
-      ),
+      and(eq(bandMembers.bandId, bandId), inArray(bandMembers.userId, userIds)),
     );
   return rows.map((r) => r.userId);
 }
@@ -161,7 +158,9 @@ async function replaceMentions(
   if (mentionUserIds.length === 0) return;
   await exec
     .insert(bandMessageMentions)
-    .values(mentionUserIds.map((mentionedUserId) => ({ messageId, mentionedUserId })))
+    .values(
+      mentionUserIds.map((mentionedUserId) => ({ messageId, mentionedUserId })),
+    )
     .onConflictDoNothing();
 }
 
@@ -264,7 +263,9 @@ export async function getBandChatUnread(
       bandMessageMentions,
       eq(bandMessageMentions.messageId, bandMessages.id),
     )
-    .where(and(unreadCondition, eq(bandMessageMentions.mentionedUserId, userId)))
+    .where(
+      and(unreadCondition, eq(bandMessageMentions.mentionedUserId, userId)),
+    )
     .limit(1);
 
   return { count, mentioned: Boolean(mention) };

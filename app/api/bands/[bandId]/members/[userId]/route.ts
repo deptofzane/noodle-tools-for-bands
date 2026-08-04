@@ -8,7 +8,10 @@ import { notify } from '@/lib/db/notifications';
  * PATCH { role: 'owner' } → promote a member to owner. Owners only. Bands can
  * have multiple owners; promotion is idempotent.
  */
-export async function PATCH(req: Request, { params }: { params: Promise<{ bandId: string; userId: string }> }) {
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ bandId: string; userId: string }> },
+) {
   const user = await requireUser();
   if (user instanceof NextResponse) return user;
   const { bandId, userId } = await params;
@@ -26,7 +29,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ bandId
   const target = await getMembership(userId, bandId);
   if (!target)
     return NextResponse.json(
-      { error: 'not_a_member', message: 'That person isn’t a member of this band.' },
+      {
+        error: 'not_a_member',
+        message: 'That person isn’t a member of this band.',
+      },
       { status: 404 },
     );
 
@@ -45,7 +51,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ bandId
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ bandId: string; userId: string }> }) {
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ bandId: string; userId: string }> },
+) {
   const user = await requireUser();
   if (user instanceof NextResponse) return user;
   const { bandId, userId } = await params;
@@ -53,7 +62,13 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ band
   if (!membership || membership.role !== 'owner')
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   if (userId === user.id)
-    return NextResponse.json({ error: 'cannot_remove_self', message: 'Owners can’t remove themselves here.' }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: 'cannot_remove_self',
+        message: 'Owners can’t remove themselves here.',
+      },
+      { status: 400 },
+    );
   await removeMember(bandId, userId);
   await notify({
     bandId,

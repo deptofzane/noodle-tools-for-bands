@@ -19,8 +19,8 @@ export default async function BandsPage() {
       <div>
         <h1 className="title-text">Bands</h1>
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400 mb-2">
-          Bands group people and own conversations. Anyone in a band can see
-          its audio and notes.
+          Bands group people and own conversations. Anyone in a band can see its
+          audio and notes.
         </p>
       </div>
 

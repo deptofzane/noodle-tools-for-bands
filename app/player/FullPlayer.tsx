@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { formatDuration } from '@/lib/format';
 import { ActionMenu, ActionMenuItem } from '../ActionMenu';
 import { AddTrackToSetlistModal } from './AddTrackToSetlistModal';
@@ -38,6 +39,14 @@ export function FullPlayer({ onCollapse }: { onCollapse: () => void }) {
   const rootRef = useRef<HTMLDivElement>(null);
   // Queue entry whose "Add to setlist" modal is open.
   const [addTarget, setAddTarget] = useState<PlaylistTrack | null>(null);
+  const router = useRouter();
+
+  // Leaving for a page: collapse first, or the overlay stays up covering the
+  // page that was just navigated to. Same reason the links in here do it.
+  const goTo = (href: string) => {
+    onCollapse();
+    router.push(href);
+  };
 
   // Escape collapses, and the page behind shouldn't scroll under the overlay.
   useEffect(() => {
@@ -281,11 +290,28 @@ export function FullPlayer({ onCollapse }: { onCollapse: () => void }) {
                     </button>
 
                     <ActionMenu label={`Actions for ${t.title}`}>
-                      <ActionMenuItem onClick={() => setAddTarget(t)}>
-                        Add to setlist
+                      <ActionMenuItem
+                        onClick={() => goTo(`/notes/${t.id}/practice`)}
+                      >
+                        Practice
                       </ActionMenuItem>
                       <ActionMenuItem onClick={() => remove(i)}>
                         Remove from queue
+                      </ActionMenuItem>
+                      <ActionMenuItem onClick={() => setAddTarget(t)}>
+                        Add to setlist
+                      </ActionMenuItem>
+                      {/* The track's own href where it has one — it carries
+                          the `?from=` that sends Back to the right place. */}
+                      <ActionMenuItem
+                        onClick={() => goTo(t.href ?? `/notes/${t.id}`)}
+                      >
+                        View song
+                      </ActionMenuItem>
+                      <ActionMenuItem
+                        onClick={() => goTo(`/notes/${t.id}/edit`)}
+                      >
+                        Edit song
                       </ActionMenuItem>
                     </ActionMenu>
                   </li>

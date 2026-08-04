@@ -47,7 +47,8 @@ export async function POST(
     );
 
   const body = await req.json().catch(() => null);
-  const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
+  const email =
+    typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
   if (!email) return NextResponse.json({ error: 'bad_email' }, { status: 400 });
 
   const target = await getUserByEmail(email);
@@ -55,7 +56,8 @@ export async function POST(
     return NextResponse.json(
       {
         error: 'user_not_found',
-        message: 'That person must sign in to the app once before they can be added.',
+        message:
+          'That person must sign in to the app once before they can be added.',
       },
       { status: 404 },
     );

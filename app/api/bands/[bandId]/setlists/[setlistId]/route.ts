@@ -51,7 +51,8 @@ export async function PATCH(
   const seenSongs = new Set<string>();
   for (const entry of raw) {
     const it = entry as { conversationId?: unknown; label?: unknown };
-    const cid = typeof it?.conversationId === 'string' ? it.conversationId : null;
+    const cid =
+      typeof it?.conversationId === 'string' ? it.conversationId : null;
     if (cid) {
       // Songs must belong to this band, with no duplicates.
       if (!bandSongs.has(cid) || seenSongs.has(cid)) {
@@ -65,7 +66,8 @@ export async function PATCH(
     } else {
       // Marker (set break / custom). Skip empty labels.
       const label = typeof it?.label === 'string' ? it.label.trim() : '';
-      if (label) items.push({ conversationId: null, label: label.slice(0, MAX_LABEL) });
+      if (label)
+        items.push({ conversationId: null, label: label.slice(0, MAX_LABEL) });
     }
   }
 

@@ -26,7 +26,11 @@ import { usePathname } from 'next/navigation';
  */
 const CanGoBackContext = createContext<() => boolean>(() => false);
 
-export function NavigationHistoryProvider({ children }: { children: ReactNode }) {
+export function NavigationHistoryProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const pathname = usePathname();
   const stackRef = useRef<string[]>([]);
 
@@ -41,7 +45,8 @@ export function NavigationHistoryProvider({ children }: { children: ReactNode })
     if (!pathname || pathname === top) return; // initial mount / no change
     if (pathname === stack[stack.length - 2]) {
       stack.pop(); // stepped back
-    } else { // stop edit pages from being included in stack
+    } else {
+      // stop edit pages from being included in stack
       stack.push(pathname); // moved forward
     }
   }, [pathname]);

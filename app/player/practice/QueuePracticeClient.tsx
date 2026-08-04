@@ -102,6 +102,8 @@ export function QueuePracticeClient({ apiKey }: { apiKey: string }) {
     conversationId: t.id,
     title: t.title,
     mimeType: t.mimeType,
+    bpm: t.bpm,
+    songKey: t.songKey,
     src: t.src,
   }));
 

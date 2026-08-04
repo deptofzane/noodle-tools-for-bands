@@ -20,9 +20,7 @@ export default async function AnnotatedPage() {
       <PageHeader defaultHref="/home" />
 
       <div className="mb-4">
-        <h1 className="title-text">
-          Open conversations
-        </h1>
+        <h1 className="title-text">Open conversations</h1>
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
           Conversations you&apos;re still working on. Closed ones live in{' '}
           <Link

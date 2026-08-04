@@ -13,6 +13,8 @@ export interface Conversation {
   audioFileName: string | null;
   closed: boolean;
   archived: boolean;
+  /** Who the song is originally by, for covers; null when it's the band's own. */
+  originalBand: string | null;
   bpm: number | null;
   key: string | null;
   /** When the song was added to the band — the Uploads history's sort key. */
@@ -45,6 +47,7 @@ export interface Setlist {
     id: string;
     conversationId: string | null;
     name: string;
+    originalBand: string | null;
     bpm: number | null;
     key: string | null;
     /** Duration in seconds; null for markers / unknown. */
@@ -75,6 +78,9 @@ export function setlistQueue(sl: Setlist): PlaylistTrack[] {
       fileName: s.audioStoredName!,
       mimeType: s.audioMimeType ?? undefined,
       href: `/notes/${s.conversationId}`,
+      originalBand: s.originalBand ?? undefined,
+      bpm: s.bpm,
+      songKey: s.key,
       subtitle: sl.name,
       durationSec: s.songLength ?? undefined,
     }));
