@@ -272,7 +272,7 @@ export function FullPlayer({
             {currentUserId && (
               <button
                 type="button"
-                onClick={() => setShowComments((v) => !v)}
+              onClick={() => setShowComments((v) => !v)}
                 aria-expanded={showComments}
                 className="btn-outline"
               >

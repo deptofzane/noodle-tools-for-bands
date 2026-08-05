@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { formatDuration } from '@/lib/format';
 import { FullPlayer } from './FullPlayer';
 import { usePlaylistPlayer, type PlaylistTrack } from './PlaylistPlayer';
+import { useIsDesktop } from '../useIsDesktop';
 import { RestartIcon } from './icons';
 
 /** Horizontal travel that commits a drag to a track change. */
@@ -60,6 +61,7 @@ function TrackColumn({
   currentTime,
   duration,
   error,
+  onSeek,
 }: {
   title: string;
   originalBand?: string;
@@ -69,14 +71,20 @@ function TrackColumn({
   currentTime: number;
   duration: number;
   error?: string | null;
+  /**
+   * Given, the progress line becomes a scrub bar. Only desktop passes one:
+   * on a phone the bar is a thumb-sized swipe target, and a slider inside it
+   * would fight the gesture for the same drag.
+   */
+  onSeek?: (seconds: number) => void;
 }) {
   const pct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
       <div className="flex min-w-0 items-baseline gap-2">
-        {/* Plain text, not a link to the song: the whole bar is one tap target
-            now, and a link inside it would be a trap for the thumb. The full
-            player still links out to the track. */}
+        {/* Plain text, not a link: on a phone this sits inside the swipe
+            target, where a link is a trap for the thumb. The full player
+            links out to the track. */}
         <span className="min-w-0 truncate text-sm font-medium">{title}</span>
         {total > 1 && (
           <span className="shrink-0 text-xs tabular-nums text-neutral-500">
@@ -92,20 +100,37 @@ function TrackColumn({
       ) : (
         <div className="flex items-center gap-2">
           <span className={TIME_CLS}>{formatDuration(currentTime)}</span>
-          <div
-            role="progressbar"
-            aria-label="Playback progress"
-            aria-valuemin={0}
-            aria-valuemax={Math.round(duration) || 0}
-            aria-valuenow={Math.round(currentTime)}
-            aria-valuetext={`${formatDuration(currentTime)} of ${formatDuration(duration)}`}
-            className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800"
-          >
-            <div
-              className="h-full rounded-full bg-blue-600"
-              style={{ width: `${pct}%` }}
+          {onSeek ? (
+            <input
+              type="range"
+              min={0}
+              max={duration || 0}
+              step={0.1}
+              value={currentTime}
+              onChange={(e) => {
+                const t = parseFloat(e.target.value);
+                if (Number.isFinite(t)) onSeek(t);
+              }}
+              disabled={duration <= 0}
+              aria-label="Seek"
+              className="h-1 min-w-0 flex-1 accent-blue-600"
             />
-          </div>
+          ) : (
+            <div
+              role="progressbar"
+              aria-label="Playback progress"
+              aria-valuemin={0}
+              aria-valuemax={Math.round(duration) || 0}
+              aria-valuenow={Math.round(currentTime)}
+              aria-valuetext={`${formatDuration(currentTime)} of ${formatDuration(duration)}`}
+              className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800"
+            >
+              <div
+                className="h-full rounded-full bg-blue-600"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          )}
           <span className={TIME_CLS}>{formatDuration(duration)}</span>
         </div>
       )}
@@ -182,15 +207,17 @@ function PeekRow({
  * queued. Shows the track name, its place in the queue, playback progress,
  * and play-pause / restart / expand / dismiss controls.
  *
- * Track changes are gestures rather than buttons: swipe left for the next
- * song, right for the previous one — always a move, never a restart of what's
- * already playing, which is what the Restart button is for. The neighbouring
- * tracks sit just off either edge and slide in with the drag, so a committed
- * swipe carries through as one motion instead of snapping back. Tapping the
- * bar anywhere that isn't a control expands it into the full-screen
- * `FullPlayer`, which is where next/previous stay available as real buttons
- * for keyboard and screen-reader users. Rendered by `PlaylistPlayerProvider` —
- * pages never mount it themselves.
+ * The two sizes change tracks differently. Desktop has Previous and Next
+ * buttons and a draggable scrub bar. A phone has neither: the bar is too
+ * narrow for four transport buttons, and a slider that thin is a poor thumb
+ * target — so there it's a swipe, left for the next song and right for the
+ * previous, with the neighbouring tracks parked just off either edge so a
+ * committed swipe carries through as one motion. Both are always a move,
+ * never a restart of what's playing, which is what the Restart button is for.
+ *
+ * The expand button is the only way into the full-screen `FullPlayer` — the
+ * bar's background isn't a target, so a stray tap can't take over the screen.
+ * Rendered by `PlaylistPlayerProvider`; pages never mount it themselves.
  */
 export function MiniPlayer({
   currentUserId,
@@ -220,6 +247,11 @@ export function MiniPlayer({
     seek,
     close,
   } = usePlaylistPlayer();
+
+  // Desktop gets Previous/Next buttons and a scrub bar instead of the swipe:
+  // a draggable slider inside a swipe target would fight it for the drag, and
+  // with buttons present the gesture has nothing left to do.
+  const isDesktop = useIsDesktop();
 
   const start = useRef<{ x: number; y: number } | null>(null);
   /** The pointer we've taken capture of, once the drag reads as horizontal. */
@@ -280,7 +312,7 @@ export function MiniPlayer({
 
   const handlePointerDown = (e: React.PointerEvent) => {
     // Mid-commit the strip is animating; a new drag would fight it.
-    if (!e.isPrimary || commit) return;
+    if (isDesktop || !e.isPrimary || commit) return;
     start.current = { x: e.clientX, y: e.clientY };
     swiped.current = false;
   };
@@ -381,7 +413,6 @@ export function MiniPlayer({
           until a drag uncovers them. */}
       <div className="mx-auto max-w-5xl overflow-hidden">
         <div
-          onClick={() => setExpanded(true)}
           onClickCapture={handleClickCapture}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -391,12 +422,12 @@ export function MiniPlayer({
           // `touch-pan-y` keeps vertical scrolling with the page while
           // claiming horizontal drags for the swipe.
           className={
-            'relative cursor-pointer touch-pan-y select-none ' +
+            'relative touch-pan-y select-none ' +
             ROW_CLS +
             (tweened ? ' transition-transform duration-200' : '')
           }
         >
-          {prevTrack && (
+          {prevTrack && !isDesktop && (
             <PeekRow
               track={prevTrack}
               side="prev"
@@ -407,6 +438,27 @@ export function MiniPlayer({
           )}
 
           <div className="flex shrink-0 items-center gap-1">
+            {isDesktop && (
+              <button
+                type="button"
+                onClick={() => prevTrack && goTo(index - 1)}
+                disabled={!prevTrack}
+                aria-label="Previous song"
+                title="Previous song"
+                className={ICON_BTN_CLS}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path d="M7 6h2v12H7zM19 6v12l-9-6z" />
+                </svg>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={(e) => {
@@ -435,6 +487,27 @@ export function MiniPlayer({
             >
               <RestartIcon />
             </button>
+
+            {isDesktop && (
+              <button
+                type="button"
+                onClick={() => nextTrack && goTo(index + 1)}
+                disabled={!nextTrack}
+                aria-label="Next song"
+                title="Next song"
+                className={ICON_BTN_CLS}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path d="M15 6h2v12h-2zM5 6l9 6-9 6z" />
+                </svg>
+              </button>
+            )}
           </div>
 
           <TrackColumn
@@ -446,6 +519,7 @@ export function MiniPlayer({
             currentTime={shownTime}
             duration={shownDuration}
             error={error}
+            onSeek={isDesktop ? seek : undefined}
           />
 
           {/* Redundant with tapping the bar, but the only way to expand from a
@@ -487,7 +561,7 @@ export function MiniPlayer({
             </span>
           </button>
 
-          {nextTrack && (
+          {nextTrack && !isDesktop && (
             <PeekRow
               track={nextTrack}
               side="next"
