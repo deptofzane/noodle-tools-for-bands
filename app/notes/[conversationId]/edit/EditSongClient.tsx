@@ -104,18 +104,17 @@ export function EditSongClient({
   // Return to the page the user came from (in-app history), falling back to
   // the song itself on a fresh load / deep link.
   //
-  // `router.refresh()` first, on every exit — not just after Save. Back and
-  // forward navigations are served from the client Router Cache without
-  // re-requesting the server components, so the song page would render the
-  // payload from before the edit and appear not to have saved. Refreshing
-  // invalidates that cache so the next render fetches fresh data.
+  // No `router.refresh()` here. It refetches the route you're on — this one,
+  // about to be discarded — while `router.back()` restores the destination
+  // from the client Router Cache as it was left, still showing pre-edit data.
+  // `RefreshAfterEdit` in the root layout refreshes the page we land on
+  // instead, which is the only place that can outlive this navigation.
   //
-  // It belongs here rather than in the save handler because the version
-  // panels below (audio and sheet music) write immediately — renaming a
-  // version, changing the default, deleting one — so even Cancel can leave
-  // with changes the song page has to reflect.
+  // That it fires on Cancel too matters here: the version panels below (audio
+  // and sheet music) write immediately — renaming a version, changing the
+  // default, deleting one — so leaving without saving still leaves changes
+  // the song page has to reflect.
   const leave = () => {
-    router.refresh();
     if (canGoBack()) router.back();
     else router.push(songHref);
   };

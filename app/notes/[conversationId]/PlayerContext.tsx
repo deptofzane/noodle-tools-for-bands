@@ -34,7 +34,19 @@ export interface PlayerControls {
 
 const PlayerContext = createContext<PlayerControls | null>(null);
 
-export function PlayerProvider({ children }: { children: ReactNode }) {
+export function PlayerProvider({
+  children,
+  controls: external,
+}: {
+  children: ReactNode;
+  /**
+   * Drive the notes UI from an engine this provider doesn't own — the
+   * full-screen player passes the playlist queue's transport, so a note can
+   * still seek and stamp the right time there. Omitted, the provider owns its
+   * engine as usual (`setEngine` from the song page's AudioPlayer).
+   */
+  controls?: PlayerControls;
+}) {
   const engineRef = useRef<AudioEngine | null>(null);
 
   // Stable identity (empty deps) — the methods read the ref's current
@@ -51,7 +63,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <PlayerContext.Provider value={controls}>{children}</PlayerContext.Provider>
+    <PlayerContext.Provider value={external ?? controls}>
+      {children}
+    </PlayerContext.Provider>
   );
 }
 

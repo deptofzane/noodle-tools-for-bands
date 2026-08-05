@@ -1,12 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatDuration } from '@/lib/format';
 import { ActionMenu, ActionMenuItem } from '../ActionMenu';
 import { AddTrackToSetlistModal } from './AddTrackToSetlistModal';
 import { usePlaylistPlayer, type PlaylistTrack } from './PlaylistPlayer';
+import {
+  PlayerProvider,
+  type PlayerControls,
+} from '../notes/[conversationId]/PlayerContext';
+import { NotesPanel } from '../notes/[conversationId]/NotesPanel';
 
 /**
  * The maximized player: the bottom bar's contents blown up to full screen with
@@ -18,7 +23,14 @@ import { usePlaylistPlayer, type PlaylistTrack } from './PlaylistPlayer';
  * Mounted by `MiniPlayer` while expanded — Escape or the collapse button
  * returns to the bar, and playback is untouched either way.
  */
-export function FullPlayer({ onCollapse }: { onCollapse: () => void }) {
+export function FullPlayer({
+  onCollapse,
+  currentUserId,
+}: {
+  onCollapse: () => void;
+  /** Null when signed out — the comments panel needs an author. */
+  currentUserId: string | null;
+}) {
   const {
     track,
     queue,
@@ -39,7 +51,24 @@ export function FullPlayer({ onCollapse }: { onCollapse: () => void }) {
   const rootRef = useRef<HTMLDivElement>(null);
   // Queue entry whose "Add to setlist" modal is open.
   const [addTarget, setAddTarget] = useState<PlaylistTrack | null>(null);
+  const [showComments, setShowComments] = useState(false);
   const router = useRouter();
+
+  // The notes UI seeks the player and stamps notes with the playing position.
+  // On the song page those come from that page's own engine; here they have to
+  // come from the queue's, so the transport is handed over directly. Read
+  // through a ref so the memo doesn't capture a stale time.
+  const timeRef = useRef(currentTime);
+  timeRef.current = currentTime;
+  const noteControls = useMemo<PlayerControls>(
+    () => ({
+      seek,
+      getCurrentTime: () => timeRef.current,
+      // The queue owns its engine; there's nothing for notes to register.
+      setEngine: () => {},
+    }),
+    [seek],
+  );
 
   // Leaving for a page: collapse first, or the overlay stays up covering the
   // page that was just navigated to. Same reason the links in here do it.
@@ -229,95 +258,123 @@ export function FullPlayer({ onCollapse }: { onCollapse: () => void }) {
             </button>
           </div>
 
-          {/* Hands the queue to the Practice page — same songs, same engine,
-                so playback carries straight over. */}
-          <div className="flex justify-center">
+          {/* Opens the song that's playing on the standard Practice page —
+              sheet music, speed, 10s skips. Practice runs its own engine, so
+              this hands over the song rather than the queue. */}
+          <div className="flex justify-center gap-2">
             <Link
-              href="/player/practice"
+              href={`/notes/${track.id}/practice`}
               onClick={onCollapse}
               className="btn-outline"
             >
-              Practice
+              Go to Practice
             </Link>
+            {currentUserId && (
+              <button
+                type="button"
+                onClick={() => setShowComments((v) => !v)}
+                aria-expanded={showComments}
+                className="btn-outline"
+              >
+                {showComments ? 'Show queue' : 'Show comments'}
+              </button>
+            )}
           </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto border-t border-neutral-200 dark:border-neutral-800">
           <div className="mx-auto w-full max-w-2xl px-4 py-3">
-            <h3 className="pb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
-              Queue
-            </h3>
-            <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
-              {queue.map((t, i) => {
-                const isCurrent = i === index;
-                return (
-                  <li
-                    key={`${t.id}-${i}`}
-                    ref={isCurrent ? currentRef : null}
-                    className="flex items-center gap-1"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => play(queue, i)}
-                      aria-current={isCurrent ? 'true' : undefined}
-                      className={
-                        'flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900 ' +
-                        (isCurrent ? 'text-blue-700 dark:text-blue-400' : '')
-                      }
-                    >
-                      <span className="w-5 shrink-0 text-right text-xs tabular-nums text-neutral-400">
-                        {isCurrent && isPlaying ? (
-                          <span aria-label="Playing" title="Playing">
-                            ♪
+            {showComments && currentUserId ? (
+              /* Keyed by song: stepping the queue with comments open should
+                 load that song's thread, not keep the last one's. */
+              <PlayerProvider controls={noteControls}>
+                <NotesPanel
+                  key={track.id}
+                  conversationId={track.id}
+                  currentUserId={currentUserId}
+                  canCloseConversation={false}
+                />
+              </PlayerProvider>
+            ) : (
+              <>
+                <h3 className="pb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  Queue
+                </h3>
+                <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                  {queue.map((t, i) => {
+                    const isCurrent = i === index;
+                    return (
+                      <li
+                        key={`${t.id}-${i}`}
+                        ref={isCurrent ? currentRef : null}
+                        className="flex items-center gap-1"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => play(queue, i)}
+                          aria-current={isCurrent ? 'true' : undefined}
+                          className={
+                            'flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900 ' +
+                            (isCurrent
+                              ? 'text-blue-700 dark:text-blue-400'
+                              : '')
+                          }
+                        >
+                          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-neutral-400">
+                            {isCurrent && isPlaying ? (
+                              <span aria-label="Playing" title="Playing">
+                                ♪
+                              </span>
+                            ) : (
+                              i + 1
+                            )}
                           </span>
-                        ) : (
-                          i + 1
-                        )}
-                      </span>
-                      <span
-                        className={
-                          'min-w-0 flex-1 truncate ' +
-                          (isCurrent ? 'font-medium' : '')
-                        }
-                      >
-                        {t.title}
-                      </span>
-                      {t.durationSec != null && (
-                        <span className="shrink-0 text-xs tabular-nums text-neutral-500">
-                          {formatDuration(t.durationSec)}
-                        </span>
-                      )}
-                    </button>
+                          <span
+                            className={
+                              'min-w-0 flex-1 truncate ' +
+                              (isCurrent ? 'font-medium' : '')
+                            }
+                          >
+                            {t.title}
+                          </span>
+                          {t.durationSec != null && (
+                            <span className="shrink-0 text-xs tabular-nums text-neutral-500">
+                              {formatDuration(t.durationSec)}
+                            </span>
+                          )}
+                        </button>
 
-                    <ActionMenu label={`Actions for ${t.title}`}>
-                      <ActionMenuItem
-                        onClick={() => goTo(`/notes/${t.id}/practice`)}
-                      >
-                        Practice
-                      </ActionMenuItem>
-                      <ActionMenuItem onClick={() => remove(i)}>
-                        Remove from queue
-                      </ActionMenuItem>
-                      <ActionMenuItem onClick={() => setAddTarget(t)}>
-                        Add to setlist
-                      </ActionMenuItem>
-                      {/* The track's own href where it has one — it carries
+                        <ActionMenu label={`Actions for ${t.title}`}>
+                          <ActionMenuItem
+                            onClick={() => goTo(`/notes/${t.id}/practice`)}
+                          >
+                            Practice
+                          </ActionMenuItem>
+                          <ActionMenuItem onClick={() => remove(i)}>
+                            Remove from queue
+                          </ActionMenuItem>
+                          <ActionMenuItem onClick={() => setAddTarget(t)}>
+                            Add to setlist
+                          </ActionMenuItem>
+                          {/* The track's own href where it has one — it carries
                           the `?from=` that sends Back to the right place. */}
-                      <ActionMenuItem
-                        onClick={() => goTo(t.href ?? `/notes/${t.id}`)}
-                      >
-                        View song
-                      </ActionMenuItem>
-                      <ActionMenuItem
-                        onClick={() => goTo(`/notes/${t.id}/edit`)}
-                      >
-                        Edit song
-                      </ActionMenuItem>
-                    </ActionMenu>
-                  </li>
-                );
-              })}
-            </ul>
+                          <ActionMenuItem
+                            onClick={() => goTo(t.href ?? `/notes/${t.id}`)}
+                          >
+                            View song
+                          </ActionMenuItem>
+                          <ActionMenuItem
+                            onClick={() => goTo(`/notes/${t.id}/edit`)}
+                          >
+                            Edit song
+                          </ActionMenuItem>
+                        </ActionMenu>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
           </div>
         </div>
       </div>

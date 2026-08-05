@@ -315,10 +315,23 @@ export interface PracticeSong {
   conversationId: string | null;
   title: string;
   mimeType: string;
+  /** Who the song is originally by; null for markers and for the band's own. */
+  originalBand: string | null;
   /** Tempo / musical key; null for markers and for songs that haven't set them. */
   bpm: number | null;
   songKey: string | null;
   sheetMusic: { fileName: string; mimeType: string; updatedAt: string } | null;
+  /**
+   * Every audio version, so Practice can offer a switcher. One entry (or
+   * none) means there's nothing to switch between.
+   */
+  audioVersions: {
+    id: string;
+    fileName: string;
+    mimeType: string;
+    label: string | null;
+    isDefault: boolean;
+  }[];
 }
 
 /**
@@ -334,6 +347,7 @@ export async function getSetlistPracticeSongs(
     .select({
       conversationId: setlistSongs.conversationId,
       audioFileName: conversations.audioFileName,
+      originalBand: conversations.originalBand,
       bpm: conversations.bpm,
       key: conversations.key,
       label: setlistSongs.label,
@@ -350,11 +364,13 @@ export async function getSetlistPracticeSongs(
   const files = ids.length
     ? await db
         .select({
+          id: songFiles.id,
           conversationId: songFiles.conversationId,
           kind: songFiles.kind,
           isDefault: songFiles.isDefault,
           fileName: songFiles.fileName,
           mimeType: songFiles.mimeType,
+          label: songFiles.label,
           updatedAt: songFiles.updatedAt,
         })
         .from(songFiles)
@@ -363,10 +379,17 @@ export async function getSetlistPracticeSongs(
 
   const audioByConv = new Map<string, (typeof files)[number]>();
   const sheetByConv = new Map<string, (typeof files)[number]>();
+  // Every audio version, not just the default — the switcher needs the rest.
+  const versionsByConv = new Map<string, (typeof files)[number][]>();
   for (const f of files) {
     // A song can have several audio versions; use the default one.
-    if (f.kind === 'audio' && f.isDefault) audioByConv.set(f.conversationId, f);
-    else if (f.kind === 'sheet_music') sheetByConv.set(f.conversationId, f);
+    if (f.kind === 'audio') {
+      if (f.isDefault) audioByConv.set(f.conversationId, f);
+      versionsByConv.set(f.conversationId, [
+        ...(versionsByConv.get(f.conversationId) ?? []),
+        f,
+      ]);
+    } else if (f.kind === 'sheet_music') sheetByConv.set(f.conversationId, f);
   }
 
   return rows.map((r) => {
@@ -376,9 +399,11 @@ export async function getSetlistPracticeSongs(
         conversationId: null,
         title: r.label ?? 'Set break',
         mimeType: '',
+        originalBand: null,
         bpm: null,
         songKey: null,
         sheetMusic: null,
+        audioVersions: [],
       };
     }
     const audio = audioByConv.get(r.conversationId);
@@ -387,8 +412,16 @@ export async function getSetlistPracticeSongs(
       conversationId: r.conversationId,
       title: r.audioFileName ?? audio?.fileName ?? 'Untitled audio',
       mimeType: audio?.mimeType ?? 'audio/mpeg',
+      originalBand: r.originalBand,
       bpm: r.bpm,
       songKey: r.key,
+      audioVersions: (versionsByConv.get(r.conversationId) ?? []).map((v) => ({
+        id: v.id,
+        fileName: v.fileName,
+        mimeType: v.mimeType,
+        label: v.label,
+        isDefault: v.isDefault,
+      })),
       sheetMusic: sheet
         ? {
             fileName: sheet.fileName,
@@ -411,6 +444,7 @@ export async function getConversationPracticeSong(
   const [conv] = await db
     .select({
       audioFileName: conversations.audioFileName,
+      originalBand: conversations.originalBand,
       bpm: conversations.bpm,
       key: conversations.key,
     })
@@ -421,9 +455,11 @@ export async function getConversationPracticeSong(
 
   const files = await db
     .select({
+      id: songFiles.id,
       kind: songFiles.kind,
       isDefault: songFiles.isDefault,
       fileName: songFiles.fileName,
+      label: songFiles.label,
       mimeType: songFiles.mimeType,
       updatedAt: songFiles.updatedAt,
     })
@@ -439,8 +475,18 @@ export async function getConversationPracticeSong(
     conversationId,
     title: conv.audioFileName ?? audio?.fileName ?? 'Untitled audio',
     mimeType: audio?.mimeType ?? 'audio/mpeg',
+    originalBand: conv.originalBand,
     bpm: conv.bpm,
     songKey: conv.key,
+    audioVersions: files
+      .filter((f) => f.kind === 'audio')
+      .map((v) => ({
+        id: v.id,
+        fileName: v.fileName,
+        mimeType: v.mimeType,
+        label: v.label,
+        isDefault: v.isDefault,
+      })),
     sheetMusic: sheet
       ? {
           fileName: sheet.fileName,

@@ -7,6 +7,8 @@ import { useTrackBoolean } from '../../PendingActionProvider';
 import { claimAudioFocus, subscribeAudioFocus } from '../../player/audioFocus';
 import { usePlayer } from './PlayerContext';
 import { LoadingBar } from '../../Spinner';
+import { RestartIcon } from '../../player/icons';
+import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
 
 /** One selectable audio version, for the in-player version switcher. */
 export type PlayerVersion = {
@@ -40,6 +42,13 @@ type AudioPlayerProps = {
    */
   bpm?: number | null;
   songKey?: string | null;
+  /** Who the song is originally by — shown by the rail variant, for covers. */
+  originalBand?: string | null;
+  /**
+   * `bar` is the horizontal player. `rail` is the Practice page's desktop
+   * form: a narrow vertical strip that leaves the sheet music its width.
+   */
+  variant?: 'bar' | 'rail';
 };
 
 const SPEEDS = [0.5, 0.6, 0.7, 0.8, 0.9, 1] as const;
@@ -72,6 +81,8 @@ export function AudioPlayer({
   hasPracticeOptions = true,
   bpm,
   songKey,
+  originalBand,
+  variant = 'bar',
 }: AudioPlayerProps) {
   const { setEngine } = usePlayer();
   const engineRef = useRef<AudioEngine | null>(null);
@@ -91,11 +102,32 @@ export function AudioPlayer({
   const hasVersions = Boolean(
     conversationId && versions && versions.length > 0,
   );
-  const [selectedVersionId, setSelectedVersionId] = useState(
-    () => versions?.find((v) => v.isDefault)?.id ?? versions?.[0]?.id ?? '',
-  );
+  // Only the user's explicit pick is state; the rest derives from the props.
+  // Storing the resolved id instead would freeze it at mount — and since
+  // returning from Edit song re-renders this component rather than remounting
+  // it, a version made default over there would never take effect here.
+  const [override, setOverride] = useState<string | null>(null);
+
+  // Drop that pick whenever the version set changes underneath us. Adjusted
+  // during render rather than in an effect: an effect would paint one frame
+  // with the stale selection, and on this component that means a frame of the
+  // wrong audio loading.
+  const versionKey =
+    versions?.map((v) => `${v.id}:${v.isDefault}`).join('|') ?? '';
+  const [seenVersionKey, setSeenVersionKey] = useState(versionKey);
+  if (versionKey !== seenVersionKey) {
+    setSeenVersionKey(versionKey);
+    setOverride(null);
+  }
+
+  // Default before first: deleting the selected version should fall back to
+  // the song's default, not to whichever version happens to sort first. Only
+  // ids and default-ness are in the key above, so renaming a version leaves an
+  // explicit pick alone.
   const selectedVersion = hasVersions
-    ? (versions!.find((v) => v.id === selectedVersionId) ?? versions![0]!)
+    ? (versions!.find((v) => v.id === override) ??
+      versions!.find((v) => v.isDefault) ??
+      versions![0]!)
     : null;
 
   const effectiveSrc = selectedVersion
@@ -303,6 +335,8 @@ export function AudioPlayer({
       sticky={sticky}
       bpm={bpm}
       songKey={songKey}
+      originalBand={originalBand}
+      variant={variant}
       onTogglePlay={togglePlay}
       onSeek={seekTo}
       practice={
@@ -320,8 +354,8 @@ export function AudioPlayer({
         hasVersions
           ? {
               list: versions!,
-              selectedId: selectedVersionId,
-              onSelect: setSelectedVersionId,
+              selectedId: selectedVersion!.id,
+              onSelect: setOverride,
             }
           : undefined
       }
@@ -374,6 +408,263 @@ export function useTransportKeys({
   }, [togglePlay, forward10, back10]);
 }
 
+/** "100%", "80%" — the speed button's whole label, so it fits the rail. */
+function speedLabel(rate: number): string {
+  return rate === 1 ? '100%' : `${Math.round(rate * 100)}%`;
+}
+
+/** Stacked layers: this song's other audio versions. */
+function VersionsIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 2 2 7l10 5 10-5-10-5z" />
+      <path d="M2 17l10 5 10-5" />
+      <path d="M2 12l10 5 10-5" />
+    </svg>
+  );
+}
+
+/**
+ * The Practice page's desktop player: a narrow vertical strip instead of a
+ * horizontal bar, so the sheet music beside it keeps the width.
+ *
+ * An info box over two columns — playback progress running top-to-bottom on
+ * the left, the controls stacked on the right. The slider is a real range
+ * input turned upright with `writing-mode`, so it stays draggable and
+ * keyboard-operable; rotating one with a transform would have kept the looks
+ * and lost both.
+ */
+function AudioPlayerRail({
+  fileName,
+  originalBand,
+  bpm,
+  songKey,
+  currentTime,
+  duration,
+  isPlaying,
+  isReady,
+  error,
+  onTogglePlay,
+  onSeek,
+  practice,
+  versions,
+}: {
+  fileName: string;
+  originalBand?: string | null;
+  bpm?: number | null;
+  songKey?: string | null;
+  currentTime: number;
+  duration: number;
+  isPlaying: boolean;
+  isReady: boolean;
+  error: string | null;
+  onTogglePlay: () => void;
+  onSeek: (seconds: number) => void;
+  practice?: {
+    rate: number;
+    onRateChange: (rate: number) => void;
+    onStartOver: () => void;
+    onBack10: () => void;
+    onForward10: () => void;
+  };
+  versions?: {
+    list: PlayerVersion[];
+    selectedId: string;
+    onSelect: (id: string) => void;
+  };
+}) {
+  const songMeta = formatSongMeta(bpm ?? null, songKey ?? null);
+  const hasVersionSwitcher = Boolean(versions && versions.list.length > 1);
+  const ctrl =
+    'flex h-9 w-full items-center justify-center rounded-md border border-neutral-300 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900';
+
+  return (
+    // <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-950">
+    // IN PROGRESS
+    <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-950 h-fit">
+      {/* Info box */}
+      <div className="flex flex-col gap-0.5">
+        <h2 className="truncate text-sm font-medium" title={fileName}>
+          {fileName}
+        </h2>
+        {originalBand && (
+          <p className="truncate text-xs text-neutral-500">
+            Originally by {originalBand}
+          </p>
+        )}
+        {songMeta && <p className="text-xs text-neutral-500">{songMeta}</p>}
+      </div>
+
+      {error ? (
+        <p className="rounded-md border border-red-300 bg-red-50 px-2 py-1.5 text-xs text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+          {error}
+        </p>
+      ) : (
+        <div className="flex gap-3">
+          {/* Progress, running top to bottom */}
+          <div className="flex flex-col items-center gap-1 h-[28rem]">
+            <span className="font-mono text-[0.6875rem] tabular-nums text-neutral-500">
+              {formatDuration(currentTime)}
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={duration || 0}
+              step={0.1}
+              value={currentTime}
+              onChange={(e) => {
+                const t = parseFloat(e.target.value);
+                if (Number.isFinite(t)) onSeek(t);
+              }}
+              disabled={!isReady || duration <= 0}
+              aria-label="Seek"
+              aria-orientation="vertical"
+              // `vertical-lr` puts the track's zero at the top, so progress
+              // fills downward the way the song reads.
+              className="h-[16rem] w-4 flex-1 accent-blue-600 [writing-mode:vertical-lr]"
+            />
+            <span className="font-mono text-[0.6875rem] tabular-nums text-neutral-500">
+              {formatDuration(duration)}
+            </span>
+          </div>
+
+          {/* Controls */}
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <button
+              type="button"
+              onClick={onTogglePlay}
+              disabled={!isReady}
+              aria-label={isPlaying ? 'Pause' : 'Play'}
+              title={isPlaying ? 'Pause' : 'Play'}
+              className="flex h-9 w-full items-center justify-center rounded-md bg-blue-600 text-white transition hover:bg-blue-500 disabled:opacity-50"
+            >
+              {isPlaying ? (
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <rect x="6" y="5" width="4" height="14" rx="1" />
+                  <rect x="14" y="5" width="4" height="14" rx="1" />
+                </svg>
+              ) : (
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )}
+            </button>
+
+            {practice && (
+              <>
+                <button
+                  type="button"
+                  onClick={practice.onStartOver}
+                  disabled={!isReady}
+                  aria-label="Start over"
+                  title="Start over"
+                  className={ctrl}
+                >
+                  <RestartIcon />
+                </button>
+                <button
+                  type="button"
+                  onClick={practice.onForward10}
+                  disabled={!isReady}
+                  aria-label="Forward 10 seconds"
+                  title="Forward 10 seconds"
+                  className={ctrl}
+                >
+                  10s<span aria-hidden="true">↻</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={practice.onBack10}
+                  disabled={!isReady}
+                  aria-label="Back 10 seconds"
+                  title="Back 10 seconds"
+                  className={ctrl}
+                >
+                  <span aria-hidden="true">↺</span>10s
+                </button>
+                {/* A dropdown showing "100%" doesn't fit the rail's width.
+                    Cycling wraps to the slowest speed, so every setting is
+                    reachable without a menu. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const i = SPEEDS.indexOf(
+                      practice.rate as (typeof SPEEDS)[number],
+                    );
+                    practice.onRateChange(SPEEDS[(i + 1) % SPEEDS.length] ?? 1);
+                  }}
+                  disabled={!isReady}
+                  aria-label={`Playback speed: ${speedLabel(practice.rate)}. Tap to change.`}
+                  title="Playback speed"
+                  className={ctrl}
+                >
+                  {speedLabel(practice.rate)}
+                </button>
+              </>
+            )}
+
+            {hasVersionSwitcher && (
+              <ActionMenu
+                label="Audio version"
+                align="left"
+                triggerClassName={ctrl}
+                icon={
+                  <span title="Audio version" className="flex items-center">
+                    <VersionsIcon />
+                  </span>
+                }
+              >
+                <p
+                  role="presentation"
+                  className="px-4 pb-1 pt-1 text-xs font-medium text-neutral-500 sm:px-3"
+                >
+                  Versions:
+                </p>
+                {versions!.list.map((v) => (
+                  <ActionMenuItem
+                    key={v.id}
+                    onClick={() => versions!.onSelect(v.id)}
+                  >
+                    {/* The check marks the one playing; the space keeps the
+                        others' text aligned with it. */}
+                    {(v.id === versions!.selectedId ? '✓ ' : '\u2007 ') +
+                      (v.label || v.fileName) +
+                      (v.isDefault ? ' (default)' : '')}
+                  </ActionMenuItem>
+                ))}
+              </ActionMenu>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!isReady && !error && <LoadingBar label="Loading audio" />}
+    </div>
+  );
+}
+
 /**
  * The player's controls, with no audio engine of its own — the caller owns
  * playback and passes state down. Used by `AudioPlayer` (one song, its own
@@ -390,6 +681,8 @@ export function AudioPlayerView({
   sticky = false,
   bpm,
   songKey,
+  originalBand,
+  variant = 'bar',
   onTogglePlay,
   onSeek,
   practice,
@@ -406,6 +699,9 @@ export function AudioPlayerView({
   /** Tempo / musical key, shown in the options panel when either is set. */
   bpm?: number | null;
   songKey?: string | null;
+  originalBand?: string | null;
+  /** See `AudioPlayerProps.variant`. */
+  variant?: 'bar' | 'rail';
   onTogglePlay: () => void;
   onSeek: (seconds: number) => void;
   /** Start over / ±10s / speed. Omit to hide the practice options entirely. */
@@ -450,6 +746,27 @@ export function AudioPlayerView({
 
   const hasVersionSwitcher = Boolean(versions && versions.list.length > 1);
   const songMeta = formatSongMeta(bpm ?? null, songKey ?? null);
+
+  // The rail is a different shape, not a restyled bar — the controls it shows
+  // are always open, so it has no options panel and ignores the state above.
+  if (variant === 'rail')
+    return (
+      <AudioPlayerRail
+        fileName={fileName}
+        originalBand={originalBand}
+        bpm={bpm}
+        songKey={songKey}
+        currentTime={currentTime}
+        duration={duration}
+        isPlaying={isPlaying}
+        isReady={isReady}
+        error={error}
+        onTogglePlay={onTogglePlay}
+        onSeek={onSeek}
+        practice={practice}
+        versions={versions}
+      />
+    );
 
   return (
     <div

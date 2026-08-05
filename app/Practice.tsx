@@ -1,10 +1,14 @@
 'use client';
 
 import { PlayerProvider } from './notes/[conversationId]/PlayerContext';
-import { AudioPlayer } from './notes/[conversationId]/AudioPlayer';
+import {
+  AudioPlayer,
+  type PlayerVersion,
+} from './notes/[conversationId]/AudioPlayer';
 import { PageHeader } from './PageHeader';
 import { SetlistNav } from './SetlistNav';
 import { usePersistedIndex } from './usePersistedIndex';
+import { useIsDesktop } from './useIsDesktop';
 import {
   SheetMusic,
   type SheetMusicMeta,
@@ -25,11 +29,15 @@ export interface PracticeSong {
   title: string;
   /** Audio MIME type; defaults to audio/mpeg when unknown. */
   mimeType?: string;
-  /** Tempo / musical key, shown in the player's options panel when known. */
+  /** Who the song is originally by, for covers. */
+  originalBand?: string | null;
+  /** Tempo / musical key, shown by the player when known. */
   bpm?: number | null;
   songKey?: string | null;
   /** Sheet music to show beneath the player, if the song has any. */
   sheetMusic?: SheetMusicMeta | null;
+  /** Every audio version; two or more puts a switcher in the player. */
+  audioVersions?: PlayerVersion[];
   /**
    * Audio URL to stream. Defaults to the song's default audio version —
    * callers that already know the exact URL (the player's queue) pass theirs
@@ -42,16 +50,14 @@ export interface PracticeSong {
  * Step through a setlist one song at a time for practice: a nav bar with
  * back/forward plus "{title} - {n}/{total}", the music player, and the song's
  * sheet music (if any). Narrow screens stack those top to bottom; from `lg` up
- * (unless `wideLayout` is off) the nav and player move into a left rail and
- * the sheet music takes the rest of the width. Either way the player alone
- * stays pinned to the top of the viewport while the sheet music scrolls under
- * it — the nav scrolls away with the page.
+ * the nav spans the full width with the player in a narrow rail beneath it,
+ * and the sheet music takes the rest. Either way the player alone stays pinned
+ * to the top of the viewport while the sheet music scrolls under it — the nav
+ * scrolls away with the page. Desktop swaps the player for a vertical variant
+ * sized for the rail (see AudioPlayer's `variant`).
  *
- * By default each song gets a fresh player (the provider is keyed by
- * conversation id), so switching tears down the old audio engine and spins up
- * a clean one for the new song. Pass `playerSlot` to supply a player instead —
- * the full-screen player does, so its Practice tab drives the queue's engine
- * rather than opening a second one.
+ * Each song gets a fresh player (the provider is keyed by conversation id), so
+ * switching tears down the old audio engine and spins up a clean one.
  */
 export function Practice({
   songs,
@@ -60,8 +66,6 @@ export function Practice({
   index: controlledIndex,
   onIndexChange,
   onNavigate,
-  wideLayout = true,
-  playerSlot,
   back,
   startIndex,
   shareHref,
@@ -71,12 +75,6 @@ export function Practice({
   /** localStorage key to remember the last-viewed song (per set). */
   persistKey?: string;
   /**
-   * Allow the two-column desktop layout. Off for callers that render Practice
-   * inside a narrow container (the full-screen player), where the viewport
-   * being wide says nothing about the space actually available.
-   */
-  wideLayout?: boolean;
-  /**
    * Controlled position. When passed (with `onIndexChange`), the owner keeps
    * the current song — used by the full-screen player, whose Practice tab
    * opens on whatever the queue is playing.
@@ -85,12 +83,6 @@ export function Practice({
   onIndexChange?: Dispatch<SetStateAction<number>>;
   /** Called when a link inside leaves the page (lets an overlay close). */
   onNavigate?: () => void;
-  /**
-   * Player to show above the sheet music instead of Practice's own. Supplying
-   * one means Practice owns no audio engine — the slot's player is the only
-   * one, and stepping songs is the caller's business (see `onIndexChange`).
-   */
-  playerSlot?: ReactNode;
   /**
    * Where the page's back link goes. Given one, Practice renders the page
    * header itself so "Edit song" can sit in it — the link points at whichever
@@ -115,6 +107,10 @@ export function Practice({
     startIndex,
   );
   const [copied, setCopied] = useState(false);
+  // The desktop player is a different component, not a restyled one, so the
+  // choice can't live in a `lg:` class. Resolves after mount (see the hook),
+  // which means a beat of the bar layout before the rail takes over.
+  const isDesktop = useIsDesktop();
   const controlled = controlledIndex != null && onIndexChange != null;
   const index = controlled ? controlledIndex : ownIndex;
   const setIndex = controlled ? onIndexChange : setOwnIndex;
@@ -175,44 +171,28 @@ export function Practice({
   const navBtn =
     'shrink-0 rounded-md border border-neutral-300 px-3 py-2 text-lg leading-none font-medium hover:bg-neutral-50 disabled:opacity-40 dark:border-neutral-700 dark:hover:bg-neutral-900';
 
-  // Desktop (`lg`+): nav + player in a fixed-width rail on the left, sheet
-  // music filling the rest. Below `lg` — and whenever `wideLayout` is off —
-  // everything stacks in one column, as it always has.
+  // Desktop (`lg`+): a narrow player rail on the left, sheet music filling the
+  // rest. Below `lg` they stack. The song nav sits above both, full width —
+  // the rail is too narrow to hold a title and two buttons.
   //
-  // No `items-start`: the rail has to stretch to the row's full height, since
-  // that's the box the sticky player travels inside (see `playerCls`).
-  const rowCls =
-    'flex flex-col gap-2' + (wideLayout ? ' lg:flex-row lg:gap-4' : '');
-  const mainCls = 'min-w-0' + (wideLayout ? ' lg:flex-1' : '');
+  // `items-start` is what it looks like: the rail sticks on its own now, and
+  // its parent is this row, which already runs as tall as the sheet music.
+  const rowCls = 'flex flex-col gap-2 lg:flex-row lg:items-start lg:gap-4';
+  const mainCls = 'min-w-0 lg:flex-1';
 
-  // The left rail on desktop; nothing at all on mobile.
+  // The player, plus the rail around it on desktop.
   //
   // `contents` takes this wrapper out of the box tree below `lg`, promoting
-  // the song nav and the player to direct children of `rowCls` — the tall
-  // column that also holds the sheet music, which is what the sticky player
-  // needs as its parent. At `lg` it re-forms as the fixed-width rail, and
-  // being a flex child of a stretch-aligned row, it runs the row's full
-  // height for the same reason.
+  // the player to a direct child of `rowCls` — the tall column that also holds
+  // the sheet music, which is the box the player's own `sticky top-0` travels
+  // inside (it brings an opaque background too; see AudioPlayerView's `sticky`
+  // prop). `top-0` is clear there because the app's nav bar is pinned to the
+  // bottom on mobile. At `lg` this re-forms as the rail and does the sticking
+  // itself, at an offset that clears the desktop nav bar — `fixed` at the top
+  // and 4.5rem tall. z-50 keeps it above the sheet music it scrolls across.
   const colCls =
-    'contents' +
-    (wideLayout
-      ? ' lg:flex lg:flex-col lg:gap-2 lg:w-[22rem] lg:shrink-0 xl:w-[26rem]'
-      : '');
-
-  // Only the player stays put — at both sizes the song nav scrolls away with
-  // the page.
-  //
-  // On mobile this wrapper vanishes (`contents`) and the player's own
-  // `sticky top-0` does the work; it brings an opaque background with it (see
-  // AudioPlayerView's `sticky` prop), and `top-0` is clear because the app's
-  // nav bar is pinned to the bottom there. On desktop the offset has to clear
-  // the nav bar instead — `fixed` at the top and 4.5rem tall — so the wrapper
-  // takes over the sticking at that offset, which also makes the player's own
-  // `top-0` inert (it has a box its exact size to travel in). z-50 keeps it
-  // above the sheet music it scrolls across.
-  const playerCls =
-    'contents' +
-    (wideLayout ? ' lg:block lg:z-50 lg:sticky lg:top-[var(--app-nav-h)]' : '');
+    'contents lg:block lg:w-[8rem] lg:shrink-0 lg:z-50' +
+    ' lg:sticky lg:top-[var(--app-nav-h)]';
 
   const layout = (
     <>
@@ -240,77 +220,75 @@ export function Practice({
         </span>,
       )}
 
-      <div className={rowCls}>
-        <div className={colCls}>
-          <div className="flex items-center justify-between gap-2 px-2">
-            <button
-              type="button"
-              onClick={() => setIndex((i) => Math.max(0, i - 1))}
-              disabled={!canBack}
-              aria-label="Previous song"
-              className={navBtn}
-            >
-              <span aria-hidden="true">‹</span>
-            </button>
+      {/* Full width, above both columns: the rail is far too narrow for a
+          title flanked by two buttons. Not sticky — it scrolls away with the
+          page, leaving the player pinned on its own. */}
+      <div className="flex items-center justify-between gap-2 px-2">
+        <button
+          type="button"
+          onClick={() => setIndex((i) => Math.max(0, i - 1))}
+          disabled={!canBack}
+          aria-label="Previous song"
+          className={navBtn}
+        >
+          <span aria-hidden="true">‹</span>
+        </button>
 
-            {/* In the rail the title and Edit stack, so the title keeps its
+        {/* In the rail the title and Edit stack, so the title keeps its
               width instead of fighting the button for it. */}
-            <span
-              className={
-                'flex min-w-0 gap-3 items-center' +
-                (wideLayout ? ' lg:flex-col lg:items-start lg:gap-1' : '')
-              }
-            >
-              <SetlistNav
-                songs={songs.map((s) => ({
-                  title: s.title,
-                  isMarker: !s.conversationId,
-                }))}
-                current={current}
-                onSelect={setIndex}
-                align="center"
-              >
-                <span className="text-sm">
-                  <span className="font-medium">{song.title}</span>
-                  <span className="text-neutral-500">
-                    {' '}
-                    - {current + 1}/{total}
-                  </span>
-                </span>
-              </SetlistNav>
+        <span className="flex min-w-0 items-center gap-3">
+          <SetlistNav
+            songs={songs.map((s) => ({
+              title: s.title,
+              isMarker: !s.conversationId,
+            }))}
+            current={current}
+            onSelect={setIndex}
+            align="center"
+          >
+            <span className="text-sm">
+              <span className="font-medium">{song.title}</span>
+              <span className="text-neutral-500">
+                {' '}
+                - {current + 1}/{total}
+              </span>
             </span>
+          </SetlistNav>
+        </span>
 
-            <button
-              type="button"
-              onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}
-              disabled={!canForward}
-              aria-label="Next song"
-              className={navBtn}
-            >
-              <span aria-hidden="true">›</span>
-            </button>
+        <button
+          type="button"
+          onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}
+          disabled={!canForward}
+          aria-label="Next song"
+          className={navBtn}
+        >
+          <span aria-hidden="true">›</span>
+        </button>
+      </div>
+
+      <div className={rowCls}>
+        {song.conversationId && (
+          <div className={colCls}>
+            <AudioPlayer
+              src={
+                song.src ??
+                `/api/conversations/${song.conversationId}/files/audio?name=${encodeURIComponent(
+                  song.title,
+                )}`
+              }
+              fileName={song.title}
+              mimeType={song.mimeType ?? 'audio/mpeg'}
+              conversationId={song.conversationId}
+              versions={song.audioVersions}
+              originalBand={song.originalBand}
+              bpm={song.bpm}
+              songKey={song.songKey}
+              variant={isDesktop ? 'rail' : 'bar'}
+              sticky
+            />
           </div>
-
-          {song.conversationId && (
-            <div className={playerCls}>
-              {playerSlot ?? (
-                <AudioPlayer
-                  src={
-                    song.src ??
-                    `/api/conversations/${song.conversationId}/files/audio?name=${encodeURIComponent(
-                      song.title,
-                    )}`
-                  }
-                  fileName={song.title}
-                  mimeType={song.mimeType ?? 'audio/mpeg'}
-                  bpm={song.bpm}
-                  songKey={song.songKey}
-                  sticky
-                />
-              )}
-            </div>
-          )}
-        </div>
+        )}
 
         <div className={mainCls}>
           {song.conversationId ? (
@@ -335,9 +313,8 @@ export function Practice({
   );
 
   // The provider owns the audio engine our player registers; keyed by song so
-  // each one gets a fresh engine. With a `playerSlot` there's no engine of
-  // ours to hold, so there's nothing to provide.
-  return song.conversationId && !playerSlot ? (
+  // each one gets a fresh engine.
+  return song.conversationId ? (
     <PlayerProvider key={song.conversationId}>{layout}</PlayerProvider>
   ) : (
     layout

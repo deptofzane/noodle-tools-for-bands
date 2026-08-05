@@ -37,10 +37,18 @@ export function NotesPanel({
   conversationId,
   currentUserId,
   initialThreadId = null,
+  canCloseConversation = true,
 }: {
   conversationId: string;
   currentUserId: string;
   initialThreadId?: string | null;
+  /**
+   * Whether to offer Close / Reopen. Off in the full-screen player, where
+   * closing a conversation isn't what you're there for — the song page owns
+   * that. Commenting still reopens a closed one (the API does it), so the
+   * state stays reachable.
+   */
+  canCloseConversation?: boolean;
 }) {
   const [notes, setNotes] = useState<ThreadedNote[] | null>(null);
   const [closed, setClosed] = useState(false);
@@ -204,23 +212,25 @@ export function NotesPanel({
         <h2 className="text-sm font-medium">Notes</h2>
         <div className="flex items-center gap-3 text-xs text-neutral-500">
           {notes && <span>{countAll(notes)} total</span>}
-          <button
-            type="button"
-            onClick={() => setConversationClosed(!closed)}
-            disabled={stateBusy}
-            className="rounded-md border border-neutral-300 px-2 py-0.5 text-[0.6875rem] font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
-            title={
-              closed
-                ? 'Reopen this conversation so it shows up in Open Conversations'
-                : 'Mark this conversation closed (moves it to History)'
-            }
-          >
-            {stateBusy
-              ? '…'
-              : closed
-                ? 'Reopen conversation'
-                : 'Close conversation'}
-          </button>
+          {canCloseConversation && (
+            <button
+              type="button"
+              onClick={() => setConversationClosed(!closed)}
+              disabled={stateBusy}
+              className="rounded-md border border-neutral-300 px-2 py-0.5 text-[0.6875rem] font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+              title={
+                closed
+                  ? 'Reopen this conversation so it shows up in Open Conversations'
+                  : 'Mark this conversation closed (moves it to History)'
+              }
+            >
+              {stateBusy
+                ? '…'
+                : closed
+                  ? 'Reopen conversation'
+                  : 'Close conversation'}
+            </button>
+          )}
         </div>
       </header>
 

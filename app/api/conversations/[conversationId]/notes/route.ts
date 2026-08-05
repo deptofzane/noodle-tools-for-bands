@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 import { requireConversationMember } from '@/lib/api-guard';
 import { createNote, sanitizeMentionIds } from '@/lib/db/notes';
+import { setConversationClosed } from '@/lib/db/conversations';
 import { notify } from '@/lib/db/notifications';
 
 /**
  * POST /api/conversations/[conversationId]/notes
  *   Body: { timestampMs: number, body: string, mentions?: string[] }
- *   → create a top-level note. Requires band membership.
+ *   → create a top-level note. Requires band membership. Reopens the
+ *     conversation if it was closed.
  */
 export async function POST(
   req: Request,
@@ -37,6 +39,12 @@ export async function POST(
     text,
     sanitizeMentionIds(body?.mentions),
   );
+  // A comment on a closed conversation reopens it: the thread is clearly live
+  // again, and some surfaces that let you comment (the full-screen player)
+  // deliberately have no Reopen control. No-ops when it's already open.
+  if (membership.conversation.closed)
+    await setConversationClosed(conversationId, user.id, false);
+
   await notify({
     bandId: membership.conversation.bandId,
     actorId: user.id,

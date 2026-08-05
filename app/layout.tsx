@@ -6,6 +6,7 @@ import { Header } from './Header';
 import { CurrentBandProvider } from './CurrentBandProvider';
 import { DriveCapabilityProvider } from './DriveCapabilityProvider';
 import { NavigationHistoryProvider } from './NavigationHistoryProvider';
+import { RefreshAfterEdit } from './RefreshAfterEdit';
 import { OfflineBanner } from './OfflineBanner';
 import { PendingActionProvider } from './PendingActionProvider';
 import { PlaylistPlayerProvider } from './player/PlaylistPlayer';
@@ -119,6 +120,8 @@ export default async function RootLayout({
         <PendingActionProvider>
           <ToastProvider>
             <NavigationHistoryProvider>
+              {/* Outside the pages themselves so it survives leaving one. */}
+              <RefreshAfterEdit />
               <DriveCapabilityProvider
                 canUseDrive={canUseDrive}
                 pickerAppId={googlePickerAppId()}

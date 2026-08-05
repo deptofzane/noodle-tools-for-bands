@@ -15,8 +15,9 @@ const useIsomorphicLayoutEffect =
 
 /**
  * Small kebab (⋯) dropdown for row-level actions. Closes on outside click
- * or Escape, and after any item is chosen. Pair with `ActionMenuItem` for
- * consistently styled entries:
+ * or Escape, and after any item is chosen. `icon`, `triggerClassName` and
+ * `align` let it serve as a general dropdown elsewhere; left alone it's the
+ * kebab. Pair with `ActionMenuItem` for consistently styled entries:
  *
  *   <ActionMenu label="Song actions">
  *     <ActionMenuItem destructive onClick={...}>Delete</ActionMenuItem>
@@ -26,10 +27,23 @@ export function ActionMenu({
   children,
   label = 'Actions',
   disabled = false,
+  icon,
+  triggerClassName,
+  align = 'right',
 }: {
   children: ReactNode;
   label?: string;
   disabled?: boolean;
+  /** Trigger glyph. Defaults to the kebab. */
+  icon?: ReactNode;
+  /** Replaces the trigger's styling wholesale, for menus outside table rows. */
+  triggerClassName?: string;
+  /**
+   * Which edge the menu hangs from. `right` (the default) suits a trigger at
+   * the end of a row; `left` is for one near the left edge of the screen,
+   * where a right-hung menu would run off it.
+   */
+  align?: 'left' | 'right';
 }) {
   const [open, setOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false);
@@ -82,9 +96,12 @@ export function ActionMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={label}
-        className="rounded-md px-4 py-3 md:px-2 md:py-1 my-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 disabled:opacity-50 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+        className={
+          triggerClassName ??
+          'rounded-md px-4 py-3 md:px-2 md:py-1 my-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 disabled:opacity-50 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
+        }
       >
-        <span aria-hidden="true">⋯</span>
+        {icon ?? <span aria-hidden="true">⋯</span>}
       </button>
       {open && (
         <div
@@ -92,7 +109,8 @@ export function ActionMenu({
           role="menu"
           onClick={() => setOpen(false)}
           className={
-            'absolute right-0 z-10 min-w-52 overflow-hidden rounded-md border border-neutral-200 bg-white py-1.5 shadow-lg sm:py-1 dark:border-neutral-800 dark:bg-neutral-900 ' +
+            'absolute z-10 min-w-52 overflow-hidden rounded-md border border-neutral-200 bg-white py-1.5 shadow-lg sm:py-1 dark:border-neutral-800 dark:bg-neutral-900 ' +
+            (align === 'left' ? 'left-0 ' : 'right-0 ') +
             (openUp ? 'bottom-full mb-1' : 'top-full mt-1')
           }
         >

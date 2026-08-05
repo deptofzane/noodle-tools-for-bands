@@ -594,7 +594,7 @@ export function PlaylistPlayerProvider({
         <>
           {/* Keeps the fixed bar from covering the end of the page. */}
           <div aria-hidden="true" className="h-28" />
-          <MiniPlayer />
+          <MiniPlayer currentUserId={userKey} />
         </>
       )}
     </PlaylistPlayerContext.Provider>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { formatDuration } from '@/lib/format';
 import { FullPlayer } from './FullPlayer';
 import { usePlaylistPlayer, type PlaylistTrack } from './PlaylistPlayer';
+import { RestartIcon } from './icons';
 
 /** Horizontal travel that commits a drag to a track change. */
 const SWIPE_PX = 56;
@@ -45,25 +46,6 @@ function PlayPauseIcon({ isPlaying }: { isPlaying: boolean }) {
       aria-hidden="true"
     >
       <path d="M8 5v14l11-7z" />
-    </svg>
-  );
-}
-
-function RestartIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="16"
-      height="16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M3 10a9 9 0 1 1 2.64 6.36" />
-      <path d="M3 4v6h6" />
     </svg>
   );
 }
@@ -210,7 +192,12 @@ function PeekRow({
  * for keyboard and screen-reader users. Rendered by `PlaylistPlayerProvider` —
  * pages never mount it themselves.
  */
-export function MiniPlayer() {
+export function MiniPlayer({
+  currentUserId,
+}: {
+  /** Signed-in user's id, for the comments panel in the full-screen player. */
+  currentUserId: string | null;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [dragX, setDragX] = useState(0);
   /** A swipe that met the threshold, sliding out on its way to `target`. */
@@ -268,7 +255,13 @@ export function MiniPlayer() {
 
   if (!track) return null;
 
-  if (expanded) return <FullPlayer onCollapse={() => setExpanded(false)} />;
+  if (expanded)
+    return (
+      <FullPlayer
+        onCollapse={() => setExpanded(false)}
+        currentUserId={currentUserId}
+      />
+    );
 
   const prevTrack = index > 0 ? (queue[index - 1] ?? null) : null;
   const nextTrack =
