@@ -17,7 +17,7 @@ const STORE = 'setlists';
 const PAGES_CACHE = 'sidestage-pages'; // must match app/sw.ts
 const DATA_CACHE = 'sidestage-meta'; // must match app/sw.ts
 const SHEET_CACHE = 'sidestage-files'; // must match app/sw.ts
-const AUDIO_CACHE = 'sidestage-audio'; // must match app/sw.ts
+const AUDIO_CACHE = 'sidestage-audio-v2'; // must match app/sw.ts
 
 const CHOICES_KEY = 'offline:downloadChoices';
 
@@ -95,6 +95,12 @@ export interface OfflineRecord {
 export interface OfflineSong {
   conversationId: string | null;
   name: string;
+  /**
+   * The default audio version at download time. Cached audio is keyed by
+   * version, so saving without one would file the bytes under a URL nothing
+   * asks for — see `audioSrc`.
+   */
+  audioVersionId?: string | null;
 }
 
 // ---- tiny IndexedDB helpers (no dependency) --------------------------------
@@ -250,12 +256,13 @@ export async function downloadSetlistOffline(input: {
     }
 
     // Audio: the default version, at the same URL the player requests so the
-    // cache entry matches. Fetched without a Range header → full 200 body.
-    if (choices.audio) {
+    // cache entry matches — which means naming the version, since that's what
+    // the cache keys on. Fetched without a Range header → full 200 body.
+    if (choices.audio && song.audioVersionId) {
       try {
-        const aurl = `/api/conversations/${cid}/files/audio?name=${encodeURIComponent(
-          song.name,
-        )}`;
+        const aurl =
+          `/api/conversations/${cid}/files/audio` +
+          `?version=${song.audioVersionId}&name=${encodeURIComponent(song.name)}`;
         const ares = await fetch(aurl);
         if (ares.ok) {
           audioCount++;

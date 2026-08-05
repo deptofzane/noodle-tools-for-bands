@@ -48,6 +48,8 @@ export interface NotificationDTO {
   subjectLabel: string | null;
   /** Upload rollups only: the day they cover (see the schema comment). */
   day: string | null;
+  /** True when a rollup collected uploads from more than one person. */
+  multiActor: boolean;
   bandId: string;
   bandName: string | null;
   actorName: string | null;
@@ -209,6 +211,10 @@ function uploadLabel(n: number): string {
  *
  * A rollup standing for a single upload is labelled with its file name, so a
  * quiet day still reads "added audio: Cascade.wav" rather than "1 upload".
+ *
+ * When a second person adds to the same day the row stops naming anyone (see
+ * `multiActor`): it can hold one actor, and crediting the last uploader for
+ * the whole band's work reads worse than crediting nobody.
  */
 export async function notifyUploadBatch(input: {
   bandId: string;
@@ -231,7 +237,12 @@ export async function notifyUploadBatch(input: {
   if (input.added <= 0) return;
 
   const [existing] = await db
-    .select({ id: notifications.id, subjectLabel: notifications.subjectLabel })
+    .select({
+      id: notifications.id,
+      subjectLabel: notifications.subjectLabel,
+      actorId: notifications.actorId,
+      multiActor: notifications.multiActor,
+    })
     .from(notifications)
     .where(
       and(
@@ -277,6 +288,9 @@ export async function notifyUploadBatch(input: {
       ),
       actorId: input.actorId,
       actorName: actor?.name ?? null,
+      // Sticky once set: a third uploader doesn't un-share the day, and a
+      // second batch from the first uploader doesn't either.
+      multiActor: existing.multiActor || existing.actorId !== input.actorId,
       createdAt: sql`now()`,
     })
     .where(eq(notifications.id, existing.id));
@@ -378,6 +392,7 @@ export async function listNotifications(
       subjectId: notifications.subjectId,
       subjectLabel: notifications.subjectLabel,
       day: notifications.day,
+      multiActor: notifications.multiActor,
       bandId: notifications.bandId,
       bandName: notifications.bandName,
       actorId: notifications.actorId,

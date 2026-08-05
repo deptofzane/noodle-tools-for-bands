@@ -260,6 +260,14 @@ export const notifications = pgTable(
      * grouping, the row's link, and playback all agreeing on one answer.
      */
     day: text('day'),
+    /**
+     * Set once a rollup has more than one uploader.
+     *
+     * The row can only name one actor, so a day several people contributed to
+     * would credit whoever went last. Rather than pick, the feed drops the
+     * name entirely when this is set.
+     */
+    multiActor: boolean('multi_actor').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),

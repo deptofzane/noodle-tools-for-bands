@@ -30,6 +30,8 @@ export interface NotificationItem {
   subjectLabel: string | null;
   /** Upload rollups only: the day they cover. */
   day: string | null;
+  /** True when a rollup collected uploads from more than one person. */
+  multiActor: boolean;
   bandId: string;
   bandName: string | null;
   actorName: string | null;
@@ -95,7 +97,11 @@ function messageFor(n: NotificationItem): string {
     case 'setlist-created':
       return `${who} created a setlist: ${n.subjectLabel ?? 'Untitled'}`;
     case 'audio-added':
-      return `${who} added audio: ${n.subjectLabel ?? 'Untitled'}`;
+      // A day's uploads can come from several people, and the row holds one
+      // actor. Rather than credit whoever happened to go last, name nobody.
+      return n.multiActor
+        ? `${n.subjectLabel ?? 'Audio'} added to ${band}`
+        : `${who} added audio: ${n.subjectLabel ?? 'Untitled'}`;
     case 'song-created':
       return `${who} created a song: ${n.subjectLabel ?? 'Untitled'}`;
   }

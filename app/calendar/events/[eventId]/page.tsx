@@ -147,6 +147,9 @@ export default async function EventPage({
                 songs={setlist.songs.map((s) => ({
                   conversationId: s.conversationId,
                   name: s.name,
+                  // Cached audio is keyed by version — without this the
+                  // download would save nothing playable.
+                  audioVersionId: s.audioVersionId,
                 }))}
                 fields={{
                   title: event.title,

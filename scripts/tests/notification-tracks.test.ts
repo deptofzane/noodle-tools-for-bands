@@ -38,6 +38,7 @@ function song(id: string, createdAt: string, audio = true): Conversation {
     songLength: 120,
     audioStoredName: audio ? `${id}-stored.mp3` : null,
     audioMimeType: audio ? 'audio/mpeg' : null,
+    audioVersionId: audio ? `${id}-ver` : null,
     hasSheetMusic: false,
   };
 }
@@ -106,7 +107,11 @@ test('notification tracks: a named upload resolves to exactly its song', () => {
   );
   const [track] = tracks;
   assert.ok(track);
-  assert.equal(track.src.startsWith('/api/conversations/b/files/audio'), true);
+  // Version-explicit, so the cached bytes can never be another take's.
+  assert.equal(
+    track.src,
+    '/api/conversations/b/files/audio?version=b-ver&name=b-stored.mp3',
+  );
   assert.equal(track.subtitle, 'The Band');
 });
 

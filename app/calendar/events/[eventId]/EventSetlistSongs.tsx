@@ -23,6 +23,7 @@ interface SongItem {
   songLength: number | null;
   audioStoredName: string | null;
   audioMimeType: string | null;
+  audioVersionId: string | null;
 }
 
 /**
@@ -62,13 +63,15 @@ export function EventSetlistSongs({
 
   // The queue skips songs with no audio, so a song's queue position isn't its
   // position in the setlist.
-  const withAudio = songs.filter((s) => s.conversationId && s.audioStoredName);
+  const withAudio = songs.filter(
+    (s) => s.conversationId && s.audioStoredName && s.audioVersionId,
+  );
   const queue: PlaylistTrack[] = withAudio.map((s) => ({
     id: s.conversationId!,
     title: s.name,
-    src: `/api/conversations/${s.conversationId}/files/audio?name=${encodeURIComponent(
-      s.audioStoredName!,
-    )}`,
+    src:
+      `/api/conversations/${s.conversationId}/files/audio` +
+      `?version=${s.audioVersionId}&name=${encodeURIComponent(s.audioStoredName!)}`,
     fileName: s.audioStoredName!,
     mimeType: s.audioMimeType ?? undefined,
     href: `/notes/${s.conversationId}`,

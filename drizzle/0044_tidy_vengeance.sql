@@ -1,0 +1,1 @@
+ALTER TABLE "notifications" ADD COLUMN "multi_actor" boolean DEFAULT false NOT NULL;

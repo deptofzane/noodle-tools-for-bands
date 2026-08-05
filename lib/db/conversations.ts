@@ -113,6 +113,12 @@ export interface BandConversation extends Conversation {
   /** MIME type of the default audio version; null with no audio. */
   audioMimeType: string | null;
   /**
+   * The default audio version's id, so callers can address it explicitly.
+   * URLs that name a version are immutable — the bytes behind them never
+   * change — which is what lets the service worker cache audio forever.
+   */
+  audioVersionId: string | null;
+  /**
    * Whether the song has any sheet music at all — what callers use to tell
    * whether the sheet-reading views (Live, Practice) have anything to show.
    */
@@ -129,6 +135,7 @@ export async function listBandConversations(
         songLength: songFiles.songLength,
         audioStoredName: songFiles.fileName,
         audioMimeType: songFiles.mimeType,
+        audioVersionId: songFiles.id,
         // A subquery rather than another join: a song can have several sheet
         // versions, and joining them would duplicate its row.
         hasSheetMusic: sql<boolean>`exists (

@@ -32,6 +32,26 @@ declare const self: ServiceWorkerGlobalScope;
  * Order matters: these run BEFORE `defaultCache` so they win over Serwist's
  * generic api/page rules.
  */
+/**
+ * Bumped when the audio cache's key scheme changes, so entries written under
+ * the old one are dropped rather than lingering to their 60-day expiry. The
+ * v2 scheme keys on the version id (see the audio rule below).
+ */
+const AUDIO_CACHE = 'sidestage-audio-v2';
+
+/**
+ * The cache key for an audio request: the path plus its version, and nothing
+ * else. `?name=` varies between the player and the download for the same
+ * bytes, so it must not split the entry; the version must, since it names
+ * different bytes.
+ */
+function canonicalAudioKey(request: Request): string {
+  const url = new URL(request.url);
+  const version = url.searchParams.get('version');
+  url.search = version ? `?version=${version}` : '';
+  return url.toString();
+}
+
 const offlineRuntimeCaching: RuntimeCaching[] = [
   // Sheet-music file bytes. URLs are versioned (`?version=&v=updatedAt`) and
   // therefore immutable, so CacheFirst is both correct and fast. `?version=`
@@ -54,17 +74,26 @@ const offlineRuntimeCaching: RuntimeCaching[] = [
     }),
   },
   // Audio bytes. `RangeRequestsPlugin` serves the partial-content requests an
-  // <audio> element makes (seeking) from the fully-cached 200 response. The
-  // `?name=` query only sets the download filename, so ignore search when
-  // matching — the player's URL and the download URL still resolve to one entry.
+  // <audio> element makes (seeking) from the fully-cached 200 response.
+  //
+  // Cached under a canonical key: the version is kept, everything else (the
+  // `?name=` that only sets a download filename) is dropped. That used to be
+  // `ignoreSearch: true`, which collapsed *all* query strings into one entry
+  // — so once a song's default version was downloaded, every other version of
+  // it was answered with those same bytes. Keying on the version instead
+  // makes each one its own entry, and leaves audio URLs immutable, which is
+  // the assumption `CacheFirst` rests on.
   {
     matcher: ({ url, sameOrigin }) =>
       sameOrigin &&
       /^\/api\/conversations\/[^/]+\/files\/audio/.test(url.pathname),
     handler: new CacheFirst({
-      cacheName: 'sidestage-audio',
-      matchOptions: { ignoreVary: true, ignoreSearch: true },
+      cacheName: AUDIO_CACHE,
+      matchOptions: { ignoreVary: true },
       plugins: [
+        {
+          cacheKeyWillBeUsed: async ({ request }) => canonicalAudioKey(request),
+        },
         new CacheableResponsePlugin({ statuses: [200] }),
         new RangeRequestsPlugin(),
         new ExpirationPlugin({
@@ -192,8 +221,30 @@ async function refreshCachedPageShells(): Promise<void> {
   }
 }
 
+/**
+ * Drop audio cached under a retired key scheme.
+ *
+ * Renaming the cache is what makes the new scheme take effect; without this
+ * the old one would simply sit there holding a copy of every downloaded song
+ * until its 60-day expiry.
+ */
+async function dropStaleAudioCaches(): Promise<void> {
+  try {
+    const names = await caches.keys();
+    await Promise.all(
+      names
+        .filter((n) => n.startsWith('sidestage-audio') && n !== AUDIO_CACHE)
+        .map((n) => caches.delete(n)),
+    );
+  } catch {
+    // No Cache Storage — nothing to clean up.
+  }
+}
+
 self.addEventListener('activate', (event) => {
-  event.waitUntil(refreshCachedPageShells());
+  event.waitUntil(
+    Promise.all([refreshCachedPageShells(), dropStaleAudioCaches()]),
+  );
 });
 
 // --- Web Push -------------------------------------------------------------

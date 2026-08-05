@@ -3,7 +3,6 @@
 import { formatDateLong } from '@/lib/format';
 import type { BandUpload } from '@/lib/db/song-files';
 import type { PlaylistTrack } from '../../../player/PlaylistPlayer';
-import type { Conversation } from '../bandDetailShared';
 
 /**
  * Upload-day helpers shared by the Uploads tab and the per-day tracks page.

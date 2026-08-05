@@ -32,6 +32,8 @@ export interface SetlistSong {
    */
   audioStoredName: string | null;
   audioMimeType: string | null;
+  /** The default audio version's id — see `audioSrc` on why URLs name one. */
+  audioVersionId: string | null;
 }
 
 /** One item to persist: a song (conversationId) or a marker (label). */
@@ -125,6 +127,7 @@ export async function getSetlist(
       songLength: songFiles.songLength,
       audioStoredName: songFiles.fileName,
       audioMimeType: songFiles.mimeType,
+      audioVersionId: songFiles.id,
     })
     .from(setlistSongs)
     // Left join: marker items have no conversation.
@@ -152,6 +155,7 @@ export async function getSetlist(
     key: r.key,
     audioStoredName: r.audioStoredName,
     audioMimeType: r.audioMimeType,
+    audioVersionId: r.audioVersionId,
   }));
   return { id: row.id, bandId: row.bandId, name: row.name, songs };
 }
@@ -249,6 +253,7 @@ export async function listBandSetlists(
       songLength: songFiles.songLength,
       audioStoredName: songFiles.fileName,
       audioMimeType: songFiles.mimeType,
+      audioVersionId: songFiles.id,
     })
     .from(setlistSongs)
     // Left join: marker items have no conversation.
@@ -278,6 +283,7 @@ export async function listBandSetlists(
       key: s.key,
       audioStoredName: s.audioStoredName,
       audioMimeType: s.audioMimeType,
+      audioVersionId: s.audioVersionId,
     });
     byList.set(s.setlistId, arr);
   }

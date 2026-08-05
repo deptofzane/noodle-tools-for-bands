@@ -26,16 +26,27 @@ export interface Conversation {
   audioStoredName: string | null;
   /** Stored audio MIME type; null when the song has no audio yet. */
   audioMimeType: string | null;
+  /** Default audio version's id; null when the song has no audio yet. */
+  audioVersionId: string | null;
   /** Whether the song has sheet music — i.e. whether Live has anything to show. */
   hasSheetMusic: boolean;
 }
 
-/** A song's streaming URL, or null when it has no audio to play. */
+/**
+ * A song's streaming URL, or null when it has no audio to play.
+ *
+ * Always names a version, even the default one. Without it the URL means
+ * "whatever the default is now" — a moving target that the service worker
+ * caches forever, so a song whose default changed would keep playing the old
+ * take offline. Naming the version makes the URL immutable, which is the
+ * assumption `CacheFirst` is built on.
+ */
 export function audioSrc(c: Conversation): string | null {
-  if (!c.audioStoredName) return null;
-  return `/api/conversations/${c.id}/files/audio?name=${encodeURIComponent(
-    c.audioStoredName,
-  )}`;
+  if (!c.audioStoredName || !c.audioVersionId) return null;
+  return (
+    `/api/conversations/${c.id}/files/audio` +
+    `?version=${c.audioVersionId}&name=${encodeURIComponent(c.audioStoredName)}`
+  );
 }
 
 export interface Setlist {
@@ -59,6 +70,8 @@ export interface Setlist {
      */
     audioStoredName: string | null;
     audioMimeType: string | null;
+    /** Default audio version's id — see `audioSrc` on why URLs name one. */
+    audioVersionId: string | null;
   }[];
 }
 
@@ -75,13 +88,13 @@ export function setlistQueue(sl: {
   songs: Setlist['songs'];
 }): PlaylistTrack[] {
   return sl.songs
-    .filter((s) => s.conversationId && s.audioStoredName)
+    .filter((s) => s.conversationId && s.audioStoredName && s.audioVersionId)
     .map((s) => ({
       id: s.conversationId!,
       title: s.name,
-      src: `/api/conversations/${s.conversationId}/files/audio?name=${encodeURIComponent(
-        s.audioStoredName!,
-      )}`,
+      src:
+        `/api/conversations/${s.conversationId}/files/audio` +
+        `?version=${s.audioVersionId}&name=${encodeURIComponent(s.audioStoredName!)}`,
       fileName: s.audioStoredName!,
       mimeType: s.audioMimeType ?? undefined,
       href: `/notes/${s.conversationId}`,
