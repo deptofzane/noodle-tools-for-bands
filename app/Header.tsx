@@ -58,6 +58,7 @@ export function Header() {
   const [unread, setUnread] = useState(0);
   const { bands, bandId: selectedBandId, band, setBandId } = useCurrentBand();
   const menuRef = useRef<HTMLDivElement>(null);
+  const scrimRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
 
   /** Shut the dropdown, back at its top level for the next open. */
@@ -163,6 +164,10 @@ export function Header() {
   useEffect(() => {
     if (!menuOpen) return;
     const onDown = (e: MouseEvent) => {
+      // The scrim closes on its own `click`, one event later. Closing here
+      // would unmount it between press and release, and the release would
+      // land on whatever it was covering.
+      if (e.target === scrimRef.current) return;
       if (menuRef.current && !menuRef.current.contains(e.target as Node))
         closeMenu();
     };
@@ -192,6 +197,26 @@ export function Header() {
       ref={barRef}
       className="fixed inset-x-0 bottom-0 z-[45] border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] lg:bottom-auto lg:top-0 lg:border-b lg:border-t-0 lg:pb-0 dark:border-neutral-800 dark:bg-neutral-950"
     >
+      {/* Swallows the tap that dismisses the menu, so closing it can't also
+          hit a link or a play button underneath. Sits below the menu (z-50)
+          but above the rest of this bar, which means the bar's own buttons
+          need a second tap too — dismissing is its own action. Tinted, so
+          it's visible enough to read as "tap here to close", but lighter
+          than the modal backdrop (black/40): this dims a menu, not the app.
+          
+          Mobile only. A mis-tap costs a thumb far more than a mouse, and on
+          desktop the outside-click listener below already closes the menu
+          without a second click. `hidden` there means it isn't hit-testable,
+          so that listener sees the real target as it always did. */}
+      {menuOpen && (
+        <div
+          ref={scrimRef}
+          aria-hidden="true"
+          onClick={closeMenu}
+          className="fixed inset-0 z-40 bg-black/25 lg:hidden dark:bg-black/40"
+        />
+      )}
+
       <nav className="mx-auto flex max-w-5xl flex-row items-center justify-between gap-1 px-3 py-3 lg:px-6 bg-white dark:bg-neutral-950">
         <span className="flex flex-row items-center gap-2">
           <Link key="/home" href="/home">
