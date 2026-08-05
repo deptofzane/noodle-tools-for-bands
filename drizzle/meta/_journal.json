@@ -302,6 +302,13 @@
       "when": 1785878154864,
       "tag": "0042_nice_mindworm",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1785896806328,
+      "tag": "0043_salty_squirrel_girl",
+      "breakpoints": true
     }
   ]
 }

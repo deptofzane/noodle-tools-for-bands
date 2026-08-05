@@ -1,12 +1,27 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Conversation } from '../../app/bands/[bandId]/bandDetailShared';
+import type { BandUpload } from '../../lib/db/song-files';
 import {
-  batchCount,
+  isPlayableNotification,
+  isSetlistNotification,
   isUploadNotification,
   tracksForNotification,
-  type UploadNotification,
+  type PlayableNotification,
 } from '../../app/home/notificationTracks';
+import {
+  uploadTrack,
+  uploadsQueue,
+} from '../../app/bands/[bandId]/audio/uploadDays';
+
+/**
+ * ISO for a *local* wall-clock time. Upload days are the viewer's local days
+ * (see `dayKey`), so fixtures written as UTC instants would straddle midnight
+ * differently depending on where the test runs.
+ */
+function localIso(year: number, month: number, day: number, hour: number) {
+  return new Date(year, month - 1, day, hour).toISOString();
+}
 
 /** A band song, with audio unless `audioStoredName` is nulled out. */
 function song(id: string, createdAt: string, audio = true): Conversation {
@@ -27,36 +42,59 @@ function song(id: string, createdAt: string, audio = true): Conversation {
   };
 }
 
+/** One uploaded audio file. */
+function upload(over: Partial<BandUpload> & { fileId: string }): BandUpload {
+  return {
+    conversationId: `conv-${over.fileId}`,
+    title: 'A Song',
+    fileName: `${over.fileId}.wav`,
+    label: null,
+    mimeType: 'audio/wav',
+    songLength: 100,
+    isDefault: true,
+    createdAt: localIso(2026, 8, 4, 12),
+    originalBand: null,
+    bpm: null,
+    key: null,
+    ...over,
+  };
+}
+
 function notification(
-  over: Partial<UploadNotification> = {},
-): UploadNotification {
+  over: Partial<PlayableNotification> = {},
+): PlayableNotification {
   return {
     kind: 'audio-added',
     subjectId: null,
     subjectLabel: null,
     bandName: 'The Band',
-    createdAt: '2026-08-04T12:00:00.000Z',
+    createdAt: localIso(2026, 8, 4, 12),
     ...over,
   };
 }
 
-test('notification tracks: only audio-added notifications are playable', () => {
+test('notification tracks: uploads and new setlists are playable, nothing else', () => {
   assert.equal(isUploadNotification(notification()), true);
   assert.equal(
-    isUploadNotification(notification({ kind: 'song-created' })),
-    false,
+    isSetlistNotification(
+      notification({ kind: 'setlist-created', subjectId: 's1' }),
+    ),
+    true,
   );
+  // A setlist notification with no subject names nothing to fetch.
   assert.equal(
-    isUploadNotification(notification({ kind: 'chat-message' })),
+    isSetlistNotification(notification({ kind: 'setlist-created' })),
     false,
   );
+  for (const kind of ['song-created', 'chat-message', 'poll-created']) {
+    assert.equal(isPlayableNotification(notification({ kind })), false, kind);
+  }
 });
 
-test('notification tracks: a single upload resolves to exactly its song', () => {
+test('notification tracks: a named upload resolves to exactly its song', () => {
   const conversations = [
-    song('a', '2026-08-04T11:00:00.000Z'),
-    song('b', '2026-08-04T11:59:00.000Z'),
-    song('c', '2026-08-04T11:59:30.000Z'),
+    song('a', localIso(2026, 8, 4, 11)),
+    song('b', localIso(2026, 8, 4, 11)),
   ];
   const tracks = tracksForNotification(
     notification({ subjectId: 'b', subjectLabel: 'b.mp3' }),
@@ -70,80 +108,94 @@ test('notification tracks: a single upload resolves to exactly its song', () => 
   assert.ok(track);
   assert.equal(track.src.startsWith('/api/conversations/b/files/audio'), true);
   assert.equal(track.subtitle, 'The Band');
-  assert.equal(track.durationSec, 120);
 });
 
-test('notification tracks: a batch takes that many, oldest-first, and stops at the notification', () => {
-  const conversations = [
-    song('old', '2026-08-01T09:00:00.000Z'),
-    song('x', '2026-08-04T11:59:00.000Z'),
-    song('y', '2026-08-04T11:59:20.000Z'),
-    song('z', '2026-08-04T11:59:40.000Z'),
-    // Uploaded after the notification — a different batch, not this one.
-    song('later', '2026-08-04T12:30:00.000Z'),
-  ];
-  const tracks = tracksForNotification(
-    notification({ subjectLabel: '3 songs' }),
-    conversations,
-  );
-  // Upload order, so the queue plays the way the batch was added.
+test('notification tracks: a rollup names no song, so this resolves nothing', () => {
+  // Rollups cover a day and include new versions, so they resolve from the
+  // band's uploads instead — see `uploadsQueue` below.
   assert.deepEqual(
-    tracks.map((t) => t.id),
-    ['x', 'y', 'z'],
-  );
-});
-
-test('notification tracks: songs without audio never enter the queue', () => {
-  const conversations = [
-    song('has-audio', '2026-08-04T11:58:00.000Z'),
-    song('no-audio', '2026-08-04T11:59:00.000Z', false),
-  ];
-  // The batch counted two, but only one of them can actually play.
-  assert.deepEqual(
-    tracksForNotification(
-      notification({ subjectLabel: '2 songs' }),
-      conversations,
-    ).map((t) => t.id),
-    ['has-audio'],
-  );
-  // And a single upload whose audio is gone resolves to nothing rather than
-  // to a queue entry that would fail to load.
-  assert.deepEqual(
-    tracksForNotification(
-      notification({ subjectId: 'no-audio' }),
-      conversations,
-    ),
-    [],
-  );
-});
-
-test('notification tracks: a deleted song leaves nothing to play', () => {
-  assert.deepEqual(
-    tracksForNotification(notification({ subjectId: 'gone' }), [
-      song('still-here', '2026-08-04T11:00:00.000Z'),
+    tracksForNotification(notification(), [
+      song('a', localIso(2026, 8, 4, 11)),
     ]),
     [],
   );
 });
 
-test('notification tracks: batch counts come from our own label format', () => {
-  assert.equal(batchCount('7 songs'), 7);
-  assert.equal(batchCount('1 song'), 1);
-  // Anything unparseable means the single-upload shape.
-  assert.equal(batchCount(null), 1);
-  assert.equal(batchCount('some songs'), 1);
-  assert.equal(batchCount('0 songs'), 1);
+test('notification tracks: a named upload with nothing behind it plays nothing', () => {
+  // Song deleted since the notification.
+  assert.deepEqual(
+    tracksForNotification(notification({ subjectId: 'gone' }), [
+      song('still-here', localIso(2026, 8, 4, 11)),
+    ]),
+    [],
+  );
+  // Song still there, audio removed.
+  assert.deepEqual(
+    tracksForNotification(notification({ subjectId: 'silent' }), [
+      song('silent', localIso(2026, 8, 4, 11), false),
+    ]),
+    [],
+  );
 });
 
-test('notification tracks: timestamps are compared as instants, not strings', () => {
-  // Postgres-style offset formatting sorts differently from ISO-Z as text;
-  // both name the same moment, and the cutoff has to honor that.
-  const conversations = [song('a', '2026-08-04 11:59:00+00')];
+test('uploads queue: a day plays in upload order, versions included', () => {
+  const uploads = [
+    upload({ fileId: 'x', createdAt: localIso(2026, 8, 4, 9) }),
+    // A second take of the *same* song, later the same day: both play.
+    upload({
+      fileId: 'x-v2',
+      conversationId: 'conv-x',
+      isDefault: false,
+      createdAt: localIso(2026, 8, 4, 17),
+    }),
+    upload({ fileId: 'y', createdAt: localIso(2026, 8, 4, 13) }),
+  ];
   assert.deepEqual(
-    tracksForNotification(
-      notification({ createdAt: '2026-08-04T12:00:00.000Z' }),
-      conversations,
-    ).map((t) => t.id),
-    ['a'],
+    uploadsQueue(uploads, '2026-08-04').map((t) => t.fileName),
+    ['x.wav', 'y.wav', 'x-v2.wav'],
   );
+});
+
+test('uploads queue: scoped to its own local day', () => {
+  const uploads = [
+    upload({ fileId: 'day-before', createdAt: localIso(2026, 8, 3, 23) }),
+    upload({ fileId: 'first-thing', createdAt: localIso(2026, 8, 4, 0) }),
+    upload({ fileId: 'last-thing', createdAt: localIso(2026, 8, 4, 23) }),
+    upload({ fileId: 'day-after', createdAt: localIso(2026, 8, 5, 0) }),
+  ];
+  assert.deepEqual(
+    uploadsQueue(uploads, '2026-08-04').map((t) => t.fileName),
+    ['first-thing.wav', 'last-thing.wav'],
+  );
+});
+
+test('uploads queue: the song titles the track, the file names it', () => {
+  const track = uploadTrack(
+    upload({
+      fileId: 'f1',
+      conversationId: 'c1',
+      title: 'Cascade',
+      fileName: 'cascade-take-2.wav',
+      label: 'Take 2',
+      songLength: 244,
+    }),
+  );
+  assert.equal(track.title, 'Cascade');
+  // The label wins over the file name — it's what the version switcher shows.
+  assert.equal(track.subtitle, 'Take 2');
+  // The id stays the conversation's, so the queue's row actions still resolve.
+  assert.equal(track.id, 'c1');
+  // …while the src names the exact version, so two takes don't collide.
+  assert.equal(
+    track.src,
+    '/api/conversations/c1/files/audio?version=f1&name=cascade-take-2.wav',
+  );
+  assert.equal(track.durationSec, 244);
+});
+
+test('uploads queue: with no label the file name stands in', () => {
+  const track = uploadTrack(
+    upload({ fileId: 'f2', fileName: 'rehearsal.mp3', label: null }),
+  );
+  assert.equal(track.subtitle, 'rehearsal.mp3');
 });

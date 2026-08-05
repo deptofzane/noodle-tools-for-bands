@@ -4,21 +4,25 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
-import { MinimizeToggle, type Conversation } from '../bandDetailShared';
+import { MinimizeToggle } from '../bandDetailShared';
+import type { BandUpload } from '@/lib/db/song-files';
 import { dayLabel, groupByDay, timeLabel } from './uploadDays';
 
 /**
- * The Uploads tab: the band's songs grouped by the day they were added, newest
- * day first. Everything added on the same day collapses into a single entry
- * listing those songs in the order they arrived, with a kebab menu for
- * day-level actions. Read-only — per-song actions live on the Songs tab.
+ * The Uploads tab: the band's audio files grouped by the day they arrived,
+ * newest day first, collapsing into one entry per day with a kebab for
+ * day-level actions.
+ *
+ * Files, not songs: a second take of an existing song is an upload and belongs
+ * here, while a song created without audio never was one. Read-only — per-song
+ * actions live on the Songs tab.
  */
 export function UploadHistory({
   bandId,
-  conversations,
+  uploads,
 }: {
   bandId: string;
-  conversations: Conversation[] | null;
+  uploads: BandUpload[] | null;
 }) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -31,19 +35,19 @@ export function UploadHistory({
       return next;
     });
 
-  if (!conversations) return null;
+  if (!uploads) return null;
 
-  if (conversations.length === 0) {
+  if (uploads.length === 0) {
     return (
       <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
-        Nothing uploaded yet. Songs you add show up here, grouped by day.
+        Nothing uploaded yet. Audio you add shows up here, grouped by day.
       </p>
     );
   }
 
   return (
     <ul className="flex flex-col gap-3">
-      {groupByDay(conversations).map(([key, songs]) => (
+      {groupByDay(uploads).map(([key, dayUploads]) => (
         <li
           key={key}
           className="rounded-lg border border-neutral-200 dark:border-neutral-800"
@@ -58,7 +62,8 @@ export function UploadHistory({
             </MinimizeToggle>
             <div className="flex shrink-0 items-center gap-1">
               <span className="text-xs text-neutral-500">
-                {songs.length} {songs.length === 1 ? 'song' : 'songs'}
+                {dayUploads.length}{' '}
+                {dayUploads.length === 1 ? 'upload' : 'uploads'}
               </span>
               <ActionMenu label={`Actions for ${dayLabel(key)}`}>
                 <ActionMenuItem
@@ -73,24 +78,23 @@ export function UploadHistory({
           </div>
           {!collapsed.has(key) && (
             <ul className="divide-y divide-neutral-200 border-t border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-              {songs.map((c) => (
+              {dayUploads.map((u) => (
                 <li
-                  key={c.id}
+                  key={u.fileId}
                   className="flex items-center gap-2 pr-3 hover:bg-neutral-50 dark:hover:bg-neutral-900"
                 >
                   <Link
-                    href={`/notes/${c.id}?from=audio`}
-                    className="min-w-0 flex-1 truncate px-4 py-3 text-sm md:px-3 md:py-1.5"
+                    href={`/notes/${u.conversationId}?from=audio`}
+                    className="min-w-0 flex-1 px-4 py-3 text-sm md:px-3 md:py-1.5"
                   >
-                    {c.audioFileName ?? 'Untitled audio'}
-                  </Link>
-                  {c.archived && (
-                    <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                      archived
+                    <span className="block truncate">{u.title}</span>
+                    {/* The file, so two takes of one song are tellable apart. */}
+                    <span className="block truncate text-xs text-neutral-500">
+                      {u.label || u.fileName}
                     </span>
-                  )}
+                  </Link>
                   <span className="shrink-0 text-xs tabular-nums text-neutral-500">
-                    {timeLabel(c.createdAt)}
+                    {timeLabel(u.createdAt)}
                   </span>
                 </li>
               ))}

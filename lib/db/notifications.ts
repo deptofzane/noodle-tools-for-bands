@@ -4,6 +4,7 @@ import {
   eq,
   gt,
   inArray,
+  isNull,
   lt,
   notInArray,
   or,
@@ -45,6 +46,8 @@ export interface NotificationDTO {
   subjectType: NotificationSubject;
   subjectId: string | null;
   subjectLabel: string | null;
+  /** Upload rollups only: the day they cover (see the schema comment). */
+  day: string | null;
   bandId: string;
   bandName: string | null;
   actorName: string | null;
@@ -109,6 +112,8 @@ export interface CreateNotificationInput {
   kind: NotificationKind;
   subjectType: NotificationSubject;
   subjectId?: string | null;
+  /** Uploader's local day, on upload rollups. See the schema comment. */
+  day?: string | null;
   subjectLabel?: string | null;
 }
 
@@ -142,6 +147,7 @@ export async function createNotification(
     subjectType: input.subjectType,
     subjectId: input.subjectId ?? null,
     subjectLabel: input.subjectLabel ?? null,
+    day: input.day ?? null,
   });
   return { actorName, bandName };
 }
@@ -165,6 +171,115 @@ export async function notify(input: CreateNotificationInput): Promise<void> {
   void import('../push')
     .then((m) => m.sendEventPush(input, names))
     .catch((err) => console.error('[push] fan-out failed', err));
+}
+
+/**
+ * How many uploads a rollup already stands for.
+ *
+ * The count only survives in the label we wrote, and a rollup of exactly one
+ * is labelled with the file's name instead of a count — so anything that
+ * isn't our own "N uploads" format is a named single upload, worth 1. The
+ * match is strict rather than a leading-integer parse so a song called "5"
+ * can't be mistaken for a count.
+ */
+function labelCount(subjectLabel: string | null): number {
+  const m = /^(\d+) uploads?$/.exec(subjectLabel ?? '');
+  return m ? Number(m[1]) : 1;
+}
+
+function uploadLabel(n: number): string {
+  return `${n} ${n === 1 ? 'upload' : 'uploads'}`;
+}
+
+/**
+ * Record `added` new uploads — songs, audio versions, or a mix — against the
+ * band's rollup notification for today, creating it if this is the day's
+ * first.
+ *
+ * One row per band per day rather than one per upload: a rehearsal recording
+ * session lands a dozen files, and a dozen notifications for one sitting is
+ * noise nobody reads. The day is the uploader's, not the server's — see
+ * `day` below. `created_at` is bumped on every addition so the row
+ * sorts back to the top of the feed and counts as unread again (unread is
+ * `created_at > last_seen`), which is what makes a running total still act
+ * like news.
+ *
+ * Only the day's first upload pushes to phones. Later ones update the feed
+ * quietly — the point of a rollup is one interruption, not one per file.
+ *
+ * A rollup standing for a single upload is labelled with its file name, so a
+ * quiet day still reads "added audio: Cascade.wav" rather than "1 upload".
+ */
+export async function notifyUploadBatch(input: {
+  bandId: string;
+  actorId: string;
+  added: number;
+  /**
+   * The uploader's local calendar day ("2026-08-05"). Supplied by whoever
+   * triggered the upload, because only they know which day they're having:
+   * `date_trunc('day', now())` in a UTC database rolls over at 6pm for a
+   * band in UTC-6, splitting one evening across two notifications.
+   */
+  day: string;
+  /**
+   * What was uploaded, when it's a single file. Used as the label while the
+   * day's rollup stands for just this one, so a lone upload still says which
+   * song it was rather than "1 upload"; the count takes over from two on.
+   */
+  name?: string | null;
+}): Promise<void> {
+  if (input.added <= 0) return;
+
+  const [existing] = await db
+    .select({ id: notifications.id, subjectLabel: notifications.subjectLabel })
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.bandId, input.bandId),
+        eq(notifications.kind, 'audio-added'),
+        // Rollups carry no subject; a single named upload does.
+        isNull(notifications.subjectId),
+        eq(notifications.day, input.day),
+      ),
+    )
+    .orderBy(desc(notifications.createdAt))
+    .limit(1);
+
+  if (!existing) {
+    const name = input.name?.trim();
+    await notify({
+      bandId: input.bandId,
+      actorId: input.actorId,
+      kind: 'audio-added',
+      subjectType: 'conversation',
+      // Still no subject even when named: `subjectId` is what marks a row as
+      // the day's rollup, and tomorrow's second upload has to find this one.
+      subjectId: null,
+      subjectLabel: input.added === 1 && name ? name : uploadLabel(input.added),
+      day: input.day,
+    });
+    return;
+  }
+
+  // Re-attribute to whoever just added: the row now describes their action,
+  // and `audio-added` is self-visible, so nobody loses it from their feed.
+  const [actor] = await db
+    .select({ name: users.name })
+    .from(users)
+    .where(eq(users.id, input.actorId))
+    .limit(1);
+
+  await db
+    .update(notifications)
+    .set({
+      subjectLabel: uploadLabel(
+        labelCount(existing.subjectLabel) + input.added,
+      ),
+      actorId: input.actorId,
+      actorName: actor?.name ?? null,
+      createdAt: sql`now()`,
+    })
+    .where(eq(notifications.id, existing.id));
 }
 
 /** Notification kinds the user has muted (default: none). */
@@ -262,6 +377,7 @@ export async function listNotifications(
       subjectType: notifications.subjectType,
       subjectId: notifications.subjectId,
       subjectLabel: notifications.subjectLabel,
+      day: notifications.day,
       bandId: notifications.bandId,
       bandName: notifications.bandName,
       actorId: notifications.actorId,

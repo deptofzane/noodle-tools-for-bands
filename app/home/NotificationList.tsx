@@ -6,7 +6,7 @@ import { formatRelativeTime } from '@/lib/format';
 import { usePersistedBoolean } from '../usePersistedBoolean';
 import { Spinner } from '../Spinner';
 import { NotificationPlayButton } from './NotificationPlayButton';
-import { isUploadNotification } from './notificationTracks';
+import { isPlayableNotification } from './notificationTracks';
 
 export interface NotificationItem {
   id: string;
@@ -28,6 +28,8 @@ export interface NotificationItem {
   subjectType: 'conversation' | 'event' | 'band' | 'poll' | 'setlist';
   subjectId: string | null;
   subjectLabel: string | null;
+  /** Upload rollups only: the day they cover. */
+  day: string | null;
   bandId: string;
   bandName: string | null;
   actorName: string | null;
@@ -41,7 +43,11 @@ const POLL_INTERVAL_MS = 60_000;
 function hrefFor(n: NotificationItem): string {
   switch (n.subjectType) {
     case 'conversation':
-      return n.subjectId ? `/notes/${n.subjectId}` : `/bands/${n.bandId}`;
+      if (n.subjectId) return `/notes/${n.subjectId}`;
+      // An upload rollup: the day's own page lists exactly what it counted.
+      return n.day
+        ? `/bands/${n.bandId}/audio/uploads/${n.day}`
+        : `/bands/${n.bandId}/audio`;
     case 'event':
       // Shows live on the band page (and the calendar); land on the band.
       return `/bands/${n.bandId}`;
@@ -259,7 +265,7 @@ export function NotificationList({
                       </span>
                     </span>
                   </Link>
-                  {isUploadNotification(n) && (
+                  {isPlayableNotification(n) && (
                     <NotificationPlayButton
                       notification={n}
                       bandId={n.bandId}

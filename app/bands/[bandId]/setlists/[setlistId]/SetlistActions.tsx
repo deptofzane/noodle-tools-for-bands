@@ -4,14 +4,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../../../ActionMenu';
 import { useOfflineDownload } from '../../../../offline/useOfflineDownload';
-import type { OfflineSong } from '../../../../offline/offlineSetlists';
+import { setlistQueue, type Setlist } from '../../bandDetailShared';
+import { usePlaylistPlayer } from '../../../../player/PlaylistPlayer';
 import { liveHref, practiceHref } from '@/lib/routes';
 
 /**
- * The setlist's top actions — Practice, Live, and offline download. On desktop
- * they're individual buttons; on mobile they collapse into a single kebab to
- * save room. Both share one offline-download state (so the label/progress stay
- * in sync) and the same choose-what-to-save modal.
+ * The setlist's top actions — Play all, Practice, Live, and offline download.
+ * On desktop they're individual buttons; on mobile they collapse into a single
+ * kebab to save room. Both share one offline-download state (so the
+ * label/progress stay in sync) and the same choose-what-to-save modal.
  */
 export function SetlistActions({
   bandId,
@@ -22,16 +23,24 @@ export function SetlistActions({
   bandId: string;
   setlistId: string;
   name: string;
-  songs: OfflineSong[];
+  /** The full song rows: playable enough for a queue, and a superset of what
+      the offline download needs. */
+  songs: Setlist['songs'];
 }) {
   const router = useRouter();
   const offline = useOfflineDownload();
+  const player = usePlaylistPlayer();
 
   const rec = offline.records?.get(setlistId);
   const downloading = offline.busyId === setlistId;
   const target = { bandId, setlistId, name, songs };
   const practice = practiceHref(setlistId);
   const live = liveHref(setlistId);
+
+  // Markers and songs with no audio drop out, so this can be shorter than the
+  // setlist — and empty, when nothing in it has audio yet.
+  const queue = setlistQueue({ name, songs });
+  const playAll = () => player.play(queue, 0);
 
   const downloadLabel = downloading
     ? `↓ ${Math.round(offline.progress * 100)}%`
@@ -58,6 +67,11 @@ export function SetlistActions({
 
       {/* Desktop: individual buttons. */}
       <span className="hidden items-center gap-2 md:flex">
+        {queue.length > 0 && (
+          <button type="button" onClick={playAll} className="btn-outline h-9">
+            Play all
+          </button>
+        )}
         <Link href={practice} className="btn-outline h-9">
           Practice
         </Link>
@@ -90,6 +104,9 @@ export function SetlistActions({
       {/* Mobile: one kebab holding all three. */}
       <span className="md:hidden">
         <ActionMenu label="Setlist actions">
+          {queue.length > 0 && (
+            <ActionMenuItem onClick={playAll}>Play all songs</ActionMenuItem>
+          )}
           <ActionMenuItem onClick={() => router.push(practice)}>
             Practice
           </ActionMenuItem>

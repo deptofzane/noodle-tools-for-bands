@@ -13,6 +13,7 @@ import { BandAudioList } from './BandAudioList';
 import { BandSetlistsTab } from './BandSetlistsTab';
 import { SongQueue } from './SongQueue';
 import { UploadHistory } from './UploadHistory';
+import { todayKey } from './uploadDays';
 import { AddToSetlistModal } from './AddToSetlistModal';
 import { AddAudioSourceModal } from './AddAudioSourceModal';
 import { useBandAudioData } from '../bandDetailHooks';
@@ -88,7 +89,7 @@ export function BandAudioClient({
   const showToast = useToast();
   const canUseDrive = useCanUseDrive();
 
-  const { data, conversations, setlists, error, reload } =
+  const { data, conversations, setlists, uploads, error, reload } =
     useBandAudioData(bandId);
 
   // Mirror the active tab into the URL (?tab=…) so refresh and browser-back
@@ -149,7 +150,7 @@ export function BandAudioClient({
         await fetch(`/api/bands/${bandId}/conversations/notify-added`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ count: added }),
+          body: JSON.stringify({ count: added, day: todayKey() }),
         }).catch(() => {});
       }
       await reload();
@@ -376,7 +377,7 @@ export function BandAudioClient({
       )}
 
       {activeTab === 'uploads' && (
-        <UploadHistory bandId={bandId} conversations={conversations} />
+        <UploadHistory bandId={bandId} uploads={uploads} />
       )}
 
       <ConfirmModal

@@ -2,19 +2,77 @@
 
 import { useState } from 'react';
 import { ensureOk } from '@/lib/api';
-import type { Conversation } from '@/app/bands/[bandId]/bandDetailShared';
+import {
+  setlistQueue,
+  type Conversation,
+  type Setlist,
+} from '@/app/bands/[bandId]/bandDetailShared';
+import { uploadsQueue } from '@/app/bands/[bandId]/audio/uploadDays';
+import type { BandUpload } from '@/lib/db/song-files';
 import { useToast } from '../ToastProvider';
 import { usePlaylistPlayer } from '../player/PlaylistPlayer';
 import { Spinner } from '../Spinner';
 import {
-  batchCount,
+  isSetlistNotification,
   tracksForNotification,
-  type UploadNotification,
+  type PlayableNotification,
 } from './notificationTracks';
+import type { PlaylistTrack } from '../player/PlaylistPlayer';
+
+/** The one song a named upload notification is about. */
+async function songTracks(
+  bandId: string,
+  notification: PlayableNotification,
+): Promise<PlaylistTrack[]> {
+  const res = await fetch(`/api/bands/${bandId}/conversations`, {
+    cache: 'no-store',
+  });
+  await ensureOk(res);
+  const { conversations } = (await res.json()) as {
+    conversations: Conversation[];
+  };
+  return tracksForNotification(notification, conversations);
+}
 
 /**
- * Plays the audio an "added audio" notification announced, without making the
- * user go find it first.
+ * Everything the band uploaded on a rollup's day — first uploads and new
+ * versions alike, which is what the rollup counted. Grouping happens here
+ * rather than server-side because upload days are the viewer's local days.
+ */
+async function dayTracks(
+  bandId: string,
+  day: string,
+): Promise<PlaylistTrack[]> {
+  const res = await fetch(`/api/bands/${bandId}/uploads`, {
+    cache: 'no-store',
+  });
+  await ensureOk(res);
+  const { uploads } = (await res.json()) as { uploads: BandUpload[] };
+  return uploadsQueue(uploads, day);
+}
+
+/**
+ * The named setlist, as a queue. Fetched by band because there's no
+ * single-setlist endpoint; a setlist deleted since resolves to nothing.
+ */
+async function setlistTracks(
+  bandId: string,
+  setlistId: string,
+): Promise<PlaylistTrack[]> {
+  const res = await fetch(`/api/bands/${bandId}/setlists`, {
+    cache: 'no-store',
+  });
+  await ensureOk(res);
+  const { setlists } = (await res.json()) as { setlists: Setlist[] };
+  const setlist = setlists.find((s) => s.id === setlistId);
+  return setlist
+    ? setlistQueue({ name: setlist.name, songs: setlist.songs })
+    : [];
+}
+
+/**
+ * Plays whatever a notification announced — the day's uploads, or a new
+ * setlist — without making the user go find it first.
  *
  * The songs are resolved on click rather than up front: the notification row
  * knows only its band, and pre-fetching every band in the feed to light up
@@ -24,7 +82,7 @@ export function NotificationPlayButton({
   notification,
   bandId,
 }: {
-  notification: UploadNotification;
+  notification: PlayableNotification;
   bandId: string;
 }) {
   const player = usePlaylistPlayer();
@@ -43,10 +101,14 @@ export function NotificationPlayButton({
     queued.includes(player.track.id);
   const isPlaying = isMine && player.isPlaying;
 
-  const count = notification.subjectId
-    ? 1
-    : batchCount(notification.subjectLabel);
-  const noun = count === 1 ? 'the new upload' : `the ${count} new uploads`;
+  const isSetlist = isSetlistNotification(notification);
+  // A rollup's count includes audio versions, which aren't playable on their
+  // own, so it can't be promised in the label — say what it is instead.
+  const noun = isSetlist
+    ? `the setlist ${notification.subjectLabel ?? ''}`.trim()
+    : notification.subjectId
+      ? 'the new upload'
+      : "the day's new uploads";
 
   const handleClick = async () => {
     // Already ours — this is a transport control, not a fresh start. Without
@@ -58,20 +120,20 @@ export function NotificationPlayButton({
     if (loading) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/bands/${bandId}/conversations`, {
-        cache: 'no-store',
-      });
-      await ensureOk(res);
-      const { conversations } = (await res.json()) as {
-        conversations: Conversation[];
-      };
-      const tracks = tracksForNotification(notification, conversations);
+      const tracks = isSetlist
+        ? await setlistTracks(bandId, notification.subjectId!)
+        : notification.subjectId
+          ? await songTracks(bandId, notification)
+          : await dayTracks(bandId, notification.day ?? '');
       if (tracks.length === 0) {
-        // The notification outlives the songs it announced.
+        // The notification outlives what it announced — a deleted song, a
+        // rollup that counted only new versions, an empty setlist.
         showToast(
-          count === 1
-            ? 'That audio is no longer available.'
-            : 'Those uploads are no longer available.',
+          isSetlist
+            ? 'Nothing to play in that setlist yet.'
+            : notification.subjectId
+              ? 'That audio is no longer available.'
+              : 'No new songs to play from that day.',
         );
         return;
       }

@@ -1,20 +1,24 @@
 'use client';
 
 import Link from 'next/link';
-import { formatDuration, formatSongMeta } from '@/lib/format';
-import {
-  usePlaylistPlayer,
-  type PlaylistTrack,
-} from '../../../../../player/PlaylistPlayer';
+import { formatDuration } from '@/lib/format';
+import { usePlaylistPlayer } from '../../../../../player/PlaylistPlayer';
 import { useBandAudioData } from '../../../bandDetailHooks';
-import { audioSrc, type Conversation } from '../../../bandDetailShared';
-import { dayLabel, songsForDay, timeLabel } from '../../uploadDays';
+import {
+  dayLabel,
+  timeLabel,
+  uploadsForDay,
+  uploadTrack,
+} from '../../uploadDays';
 import { LoadingBlock } from '../../../../../Spinner';
 
 /**
- * All tracks uploaded on one day, in the order they were added, playable as a
- * playlist through the global bottom-bar player. Songs added without audio
- * (created from just a name) are listed but skipped by the queue.
+ * Everything uploaded on one day, in the order it arrived, playable as a
+ * playlist through the global bottom-bar player.
+ *
+ * A row is an audio *file*, not a song: two takes of the same song uploaded
+ * that day are two rows, and a song added without audio isn't here at all.
+ * The song names the row, the file names the line beneath it.
  */
 export function UploadDayClient({
   bandId,
@@ -23,7 +27,7 @@ export function UploadDayClient({
   bandId: string;
   day: string;
 }) {
-  const { data, conversations, error } = useBandAudioData(bandId);
+  const { data, uploads, error } = useBandAudioData(bandId);
   const player = usePlaylistPlayer();
 
   if (error) {
@@ -34,39 +38,18 @@ export function UploadDayClient({
     );
   }
 
-  if (!data || !conversations) {
+  if (!data) {
     return <LoadingBlock />;
   }
 
-  const songs = songsForDay(conversations, day);
+  const items = uploadsForDay(uploads, day);
   const label = dayLabel(day);
+  const queue = items.map(uploadTrack);
 
-  // The queue skips songs with no audio, so a row's queue position isn't its
-  // row index — map by id.
-  const playable = songs.filter((c) => audioSrc(c) !== null);
-  const queue: PlaylistTrack[] = playable.map((c) => ({
-    id: c.id,
-    title: c.audioFileName ?? 'Untitled audio',
-    src: audioSrc(c)!,
-    fileName: c.audioStoredName ?? undefined,
-    mimeType: c.audioMimeType ?? undefined,
-    href: `/notes/${c.id}?from=audio`,
-    originalBand: c.originalBand ?? undefined,
-    bpm: c.bpm,
-    songKey: c.key,
-    subtitle: `${data.band.name} · ${label}`,
-    durationSec: c.songLength ?? undefined,
-  }));
-  const queueIndex = (c: Conversation) =>
-    playable.findIndex((p) => p.id === c.id);
+  const known = items.filter((u) => u.songLength != null);
+  const totalSeconds = known.reduce((sum, u) => sum + (u.songLength ?? 0), 0);
 
-  const knownLengths = playable.filter((c) => c.songLength != null);
-  const totalSeconds = knownLengths.reduce(
-    (sum, c) => sum + (c.songLength ?? 0),
-    0,
-  );
-
-  if (songs.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="flex flex-col gap-4">
         <h1 className="title-text">{label}</h1>
@@ -83,11 +66,11 @@ export function UploadDayClient({
         <div className="flex min-w-0 flex-col gap-1">
           <h1 className="title-text">{label}</h1>
           <p className="text-sm text-neutral-500">
-            {songs.length} {songs.length === 1 ? 'track' : 'tracks'}
+            {items.length} {items.length === 1 ? 'upload' : 'uploads'}
             {totalSeconds > 0 && (
               <>
                 {' · '}
-                {knownLengths.length === playable.length ? '' : '~'}
+                {known.length === items.length ? '' : '~'}
                 {formatDuration(totalSeconds)}
               </>
             )}
@@ -98,7 +81,6 @@ export function UploadDayClient({
         <button
           type="button"
           onClick={() => player.play(queue, 0)}
-          disabled={queue.length === 0}
           className="shrink-0 btn-primary"
         >
           Play all
@@ -106,13 +88,12 @@ export function UploadDayClient({
       </div>
 
       <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-        {songs.map((c, i) => {
-          const src = audioSrc(c);
-          const isCurrent = player.track?.id === c.id;
-          const meta = formatSongMeta(c.bpm, c.key);
+        {items.map((u, i) => {
+          const isCurrent =
+            player.track?.id === u.conversationId && player.index === i;
           return (
             <li
-              key={c.id}
+              key={u.fileId}
               className={
                 'flex items-center gap-3 px-3 py-2 ' +
                 (isCurrent ? 'bg-blue-50 dark:bg-blue-950/40' : '')
@@ -122,68 +103,60 @@ export function UploadDayClient({
                 {i + 1}
               </span>
 
-              {src ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    isCurrent
-                      ? player.toggle()
-                      : player.play(queue, queueIndex(c))
-                  }
-                  aria-label={
-                    isCurrent && player.isPlaying
-                      ? `Pause ${c.audioFileName ?? 'this track'}`
-                      : `Play ${c.audioFileName ?? 'this track'}`
-                  }
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-900"
-                >
-                  {isCurrent && player.isPlaying ? (
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="12"
-                      height="12"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <rect x="6" y="5" width="4" height="14" rx="1" />
-                      <rect x="14" y="5" width="4" height="14" rx="1" />
-                    </svg>
-                  ) : (
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="12"
-                      height="12"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  )}
-                </button>
-              ) : (
-                <span
-                  aria-hidden="true"
-                  className="h-8 w-8 shrink-0 rounded-full border border-dashed border-neutral-300 dark:border-neutral-700"
-                />
-              )}
+              <button
+                type="button"
+                onClick={() =>
+                  isCurrent ? player.toggle() : player.play(queue, i)
+                }
+                aria-label={
+                  isCurrent && player.isPlaying
+                    ? `Pause ${u.title}`
+                    : `Play ${u.title}`
+                }
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-900"
+              >
+                {isCurrent && player.isPlaying ? (
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="12"
+                    height="12"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <rect x="6" y="5" width="4" height="14" rx="1" />
+                    <rect x="14" y="5" width="4" height="14" rx="1" />
+                  </svg>
+                ) : (
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="12"
+                    height="12"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </button>
 
               <span className="min-w-0 flex-1">
                 <Link
-                  href={`/notes/${c.id}?from=audio`}
+                  href={`/notes/${u.conversationId}?from=audio`}
                   className="block truncate text-sm font-medium hover:underline"
                 >
-                  {c.audioFileName ?? 'Untitled audio'}
+                  {u.title}
                 </Link>
                 <span className="block truncate text-xs text-neutral-500">
-                  {timeLabel(c.createdAt)}
-                  {meta && ` · ${meta}`}
-                  {!src && ' · no audio'}
+                  {u.label || u.fileName}
+                  {' · '}
+                  {timeLabel(u.createdAt)}
+                  {!u.isDefault && ' · version'}
                 </span>
               </span>
 
-              {c.songLength != null && (
+              {u.songLength != null && (
                 <span className="shrink-0 text-xs tabular-nums text-neutral-500">
-                  {formatDuration(c.songLength)}
+                  {formatDuration(u.songLength)}
                 </span>
               )}
             </li>

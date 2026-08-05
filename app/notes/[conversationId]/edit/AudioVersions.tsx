@@ -25,6 +25,7 @@ const AUDIO_EXTENSIONS = [
 import { useCanUseDrive } from '../../../DriveCapabilityProvider';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
+import { todayKey } from '../../../bands/[bandId]/audio/uploadDays';
 import { formatDuration } from '@/lib/format';
 
 export interface AudioVersionMeta {
@@ -68,6 +69,9 @@ export function AudioVersions({
   const showToast = useToast();
 
   const endpoint = `/api/conversations/${conversationId}/audio-versions`;
+  // Uploads roll up per band per *local* day, and only the browser knows
+  // which day that is (see lib/upload-day).
+  const uploadEndpoint = () => `${endpoint}?day=${todayKey()}`;
 
   const refresh = async () => {
     const r = await fetch(endpoint, { cache: 'no-store' });
@@ -84,7 +88,10 @@ export function AudioVersions({
       await trackPending(async () => {
         const form = new FormData();
         form.append('file', file);
-        const res = await fetch(endpoint, { method: 'POST', body: form });
+        const res = await fetch(uploadEndpoint(), {
+          method: 'POST',
+          body: form,
+        });
         await ensureOk(res);
         await refresh();
       });
@@ -102,7 +109,7 @@ export function AudioVersions({
     setBusy(true);
     try {
       await trackPending(async () => {
-        const res = await fetch(endpoint, {
+        const res = await fetch(uploadEndpoint(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),

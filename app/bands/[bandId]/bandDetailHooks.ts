@@ -11,6 +11,7 @@ import type {
   Show,
   Venue,
 } from './bandDetailShared';
+import type { BandUpload } from '@/lib/db/song-files';
 
 export interface BandDetail {
   band: { id: string; name: string };
@@ -77,15 +78,20 @@ export function useBandAudioData(bandId: string) {
     null,
   );
   const [setlists, setSetlists] = useState<Setlist[]>([]);
+  // Audio *files*, for the Uploads history: adding a second take is an
+  // upload, and a song created without audio isn't one, so neither lines up
+  // with the conversation list.
+  const [uploads, setUploads] = useState<BandUpload[]>([]);
   const [error, setError] = useState<string | null>(null);
   const trackPending = useTrackPending();
 
   const reload = useCallback(async () => {
     try {
-      const [detailRes, convRes, setlistRes] = await Promise.all([
+      const [detailRes, convRes, setlistRes, uploadRes] = await Promise.all([
         fetch(`/api/bands/${bandId}`, { cache: 'no-store' }),
         fetch(`/api/bands/${bandId}/conversations`, { cache: 'no-store' }),
         fetch(`/api/bands/${bandId}/setlists`, { cache: 'no-store' }),
+        fetch(`/api/bands/${bandId}/uploads`, { cache: 'no-store' }),
       ]);
       await ensureOk(detailRes);
       setData((await detailRes.json()) as BandDetail);
@@ -97,6 +103,10 @@ export function useBandAudioData(bandId: string) {
         const sd = (await setlistRes.json()) as { setlists: Setlist[] };
         setSetlists(sd.setlists);
       }
+      if (uploadRes.ok) {
+        const ud = (await uploadRes.json()) as { uploads: BandUpload[] };
+        setUploads(ud.uploads);
+      }
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -107,7 +117,7 @@ export function useBandAudioData(bandId: string) {
     void trackPending(() => reload());
   }, [reload, trackPending]);
 
-  return { data, conversations, setlists, error, reload };
+  return { data, conversations, setlists, uploads, error, reload };
 }
 
 /**

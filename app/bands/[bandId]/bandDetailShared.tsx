@@ -65,8 +65,15 @@ export interface Setlist {
 /**
  * A setlist's songs as a player queue, in order. Markers (set breaks) and
  * songs with no audio drop out — a queue position isn't a setlist position.
+ *
+ * Takes just the name and songs rather than a whole `Setlist`, so callers
+ * holding only those (the setlist page) don't have to invent the rest. A full
+ * `Setlist` still satisfies it.
  */
-export function setlistQueue(sl: Setlist): PlaylistTrack[] {
+export function setlistQueue(sl: {
+  name: string;
+  songs: Setlist['songs'];
+}): PlaylistTrack[] {
   return sl.songs
     .filter((s) => s.conversationId && s.audioStoredName)
     .map((s) => ({

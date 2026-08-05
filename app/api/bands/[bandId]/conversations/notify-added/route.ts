@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { requireBandMember } from '@/lib/api-guard';
-import { notify } from '@/lib/db/notifications';
+import { notifyUploadBatch } from '@/lib/db/notifications';
+import { readUploadDay } from '@/lib/upload-day';
 
 /**
  * POST /api/bands/[bandId]/conversations/notify-added
- *   Body: { count } — one batched "added N songs" notification for a bulk
- *   import (the per-file adds are done silently). Requires band membership.
+ *   Body: { count, day } — folds a bulk import into the band's rollup
+ *   notification for today (the per-file adds are done silently), creating it
+ *   if this is the day's first upload. Requires band membership.
  */
 export async function POST(
   req: Request,
@@ -22,16 +24,13 @@ export async function POST(
       ? Math.floor(body.count)
       : 0;
 
-  if (count > 0) {
-    await notify({
+  if (count > 0)
+    await notifyUploadBatch({
       bandId,
       actorId: user.id,
-      kind: 'audio-added',
-      subjectType: 'conversation',
-      subjectId: null,
-      subjectLabel: `${count} ${count === 1 ? 'song' : 'songs'}`,
+      added: count,
+      day: readUploadDay(body?.day),
     });
-  }
 
   return new NextResponse(null, { status: 204 });
 }

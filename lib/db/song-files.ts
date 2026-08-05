@@ -492,6 +492,60 @@ export async function reprobeAudioDurations(opts?: {
   return { scanned: rows.length, updated };
 }
 
+/**
+ * One uploaded audio file: a song's first upload or a later version of it.
+ *
+ * The Uploads history and the daily rollup are both about *files*, not songs
+ * — adding a second take is an upload, and a song created without audio isn't
+ * one — so they read this rather than the conversation list.
+ */
+export interface BandUpload {
+  /** The `song_files` row, i.e. this particular version. */
+  fileId: string;
+  conversationId: string;
+  /** The song's name. */
+  title: string;
+  fileName: string;
+  label: string | null;
+  mimeType: string;
+  songLength: number | null;
+  isDefault: boolean;
+  /** When this file was uploaded — the day it belongs to. */
+  createdAt: string;
+  originalBand: string | null;
+  bpm: number | null;
+  key: string | null;
+}
+
+/** Every audio file the band has uploaded, oldest first. */
+export async function listBandUploads(bandId: string): Promise<BandUpload[]> {
+  const rows = await db
+    .select({
+      fileId: songFiles.id,
+      conversationId: songFiles.conversationId,
+      title: conversations.audioFileName,
+      fileName: songFiles.fileName,
+      label: songFiles.label,
+      mimeType: songFiles.mimeType,
+      songLength: songFiles.songLength,
+      isDefault: songFiles.isDefault,
+      createdAt: songFiles.createdAt,
+      originalBand: conversations.originalBand,
+      bpm: conversations.bpm,
+      key: conversations.key,
+    })
+    .from(songFiles)
+    .innerJoin(conversations, eq(conversations.id, songFiles.conversationId))
+    .where(and(eq(conversations.bandId, bandId), eq(songFiles.kind, 'audio')))
+    .orderBy(asc(songFiles.createdAt));
+
+  return rows.map((r) => ({
+    ...r,
+    title: r.title ?? r.fileName,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
 /** All audio versions for a song, default first, then oldest → newest. */
 export async function listAudioVersions(
   conversationId: string,

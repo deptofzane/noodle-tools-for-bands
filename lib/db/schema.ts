@@ -250,12 +250,24 @@ export const notifications = pgTable(
     subjectType: notificationSubject('subject_type').notNull(),
     subjectId: uuid('subject_id'),
     subjectLabel: text('subject_label'),
+    /**
+     * Uploader's local calendar day ("2026-08-05"), on upload rollups only.
+     *
+     * The grouping key for "one notification per band per day". It can't be
+     * derived from `created_at`: that's an instant, and the day it falls in
+     * depends on the reader's offset — a 7pm upload in UTC-6 is already
+     * tomorrow to the database. Storing the day the uploader saw keeps
+     * grouping, the row's link, and playback all agreeing on one answer.
+     */
+    day: text('day'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
   (t) => [
     index('notifications_band_created_idx').on(t.bandId, t.createdAt),
+    // Finding the band's rollup for a given day, on every upload.
+    index('notifications_band_day_idx').on(t.bandId, t.day),
     index('notifications_created_idx').on(t.createdAt),
   ],
 );

@@ -1,6 +1,8 @@
 'use client';
 
 import { formatDateLong } from '@/lib/format';
+import type { BandUpload } from '@/lib/db/song-files';
+import type { PlaylistTrack } from '../../../player/PlaylistPlayer';
 import type { Conversation } from '../bandDetailShared';
 
 /**
@@ -19,6 +21,11 @@ export function dayKey(iso: string): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+/** Today's key, for tagging an upload with the day the uploader is having. */
+export function todayKey(): string {
+  return dayKey(new Date().toISOString());
+}
+
 /** "Today" / "Yesterday" for the two most recent days, else the full date. */
 export function dayLabel(key: string): string {
   const today = dayKey(new Date().toISOString());
@@ -35,28 +42,60 @@ export function timeLabel(iso: string): string {
   return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
-/** Songs added on `key`, in the order they were added. */
-export function songsForDay(
-  conversations: Conversation[],
-  key: string,
-): Conversation[] {
-  return conversations
-    .filter((c) => dayKey(c.createdAt) === key)
-    .sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-    );
-}
-
 /**
  * Songs bucketed by the day they were added — newest day first, and within a
  * day in the order they were added.
  */
-export function groupByDay(
-  conversations: Conversation[],
-): [string, Conversation[]][] {
-  const keys = [...new Set(conversations.map((c) => dayKey(c.createdAt)))].sort(
+export function groupByDay(uploads: BandUpload[]): [string, BandUpload[]][] {
+  const keys = [...new Set(uploads.map((u) => dayKey(u.createdAt)))].sort(
     (a, b) => b.localeCompare(a),
   );
-  return keys.map((key) => [key, songsForDay(conversations, key)]);
+  return keys.map((key) => [key, uploadsForDay(uploads, key)]);
+}
+
+/** The uploads made on `key`, in the order they arrived. */
+export function uploadsForDay(
+  uploads: BandUpload[],
+  key: string,
+): BandUpload[] {
+  return uploads
+    .filter((u) => dayKey(u.createdAt) === key)
+    .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+}
+
+/**
+ * An uploaded file as a queue entry.
+ *
+ * `id` stays the *conversation* id, not the file's: it's what the player's
+ * row actions resolve (View song, Edit, Add to setlist). Two takes of one song
+ * therefore share an id, which is already true of a song queued twice — the
+ * queue identifies rows by position, not id.
+ *
+ * The song names the track and the file names the line beneath it, so two
+ * versions of the same song are still tellable apart mid-set.
+ */
+export function uploadTrack(u: BandUpload): PlaylistTrack {
+  return {
+    id: u.conversationId,
+    title: u.title,
+    src:
+      `/api/conversations/${u.conversationId}/files/audio` +
+      `?version=${u.fileId}&name=${encodeURIComponent(u.fileName)}`,
+    fileName: u.fileName,
+    mimeType: u.mimeType,
+    href: `/notes/${u.conversationId}?from=audio`,
+    originalBand: u.originalBand ?? undefined,
+    bpm: u.bpm,
+    songKey: u.key,
+    subtitle: u.label || u.fileName,
+    durationSec: u.songLength ?? undefined,
+  };
+}
+
+/** Every upload made on `key`, as a playable queue in upload order. */
+export function uploadsQueue(
+  uploads: BandUpload[],
+  key: string,
+): PlaylistTrack[] {
+  return uploadsForDay(uploads, key).map(uploadTrack);
 }

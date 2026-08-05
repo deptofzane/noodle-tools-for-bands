@@ -4,68 +4,54 @@ import {
 } from '@/app/bands/[bandId]/bandDetailShared';
 import type { PlaylistTrack } from '../player/PlaylistPlayer';
 
-/** The bits of a notification this module needs to find what was uploaded. */
-export interface UploadNotification {
+/** The bits of a notification this module needs to find what to play. */
+export interface PlayableNotification {
   kind: string;
   subjectId: string | null;
   subjectLabel: string | null;
   bandName: string | null;
   createdAt: string;
+  /** Rollups only: the day they cover. */
+  day?: string | null;
 }
 
-/** Only "audio was added" notifications have anything to play. */
-export function isUploadNotification(n: UploadNotification): boolean {
+/** Whether this notification announces something the player can load. */
+export function isPlayableNotification(n: PlayableNotification): boolean {
+  return isUploadNotification(n) || isSetlistNotification(n);
+}
+
+/** An upload: one named song, or the day's rollup. */
+export function isUploadNotification(n: PlayableNotification): boolean {
   return n.kind === 'audio-added';
 }
 
 /**
- * How many songs a batched upload notification covers.
- *
- * Bulk imports post one notification for the whole batch, and the count only
- * survives in the label our own code wrote (`"7 songs"`), so parsing it back
- * out is reading our own format rather than guessing at prose. A label we
- * can't parse means one song — the shape every non-batched upload has.
+ * A new setlist. Unlike a rollup this names its subject, so it resolves to
+ * exactly that setlist — no guessing from timestamps.
  */
-export function batchCount(subjectLabel: string | null): number {
-  const n = Number.parseInt(subjectLabel ?? '', 10);
-  return Number.isFinite(n) && n > 0 ? n : 1;
+export function isSetlistNotification(n: PlayableNotification): boolean {
+  return n.kind === 'setlist-created' && n.subjectId !== null;
 }
 
 /**
- * The songs an "added audio" notification is about, as a playable queue.
+ * The songs a single named upload notification is about.
  *
- * A single upload names its conversation, so it resolves exactly. A bulk
- * import doesn't: the notification carries a count and nothing else, because
- * one row can't hold a list of ids. Those are recovered by their timestamps —
- * the batch's songs are the newest ones that existed when the notification
- * was written — which is exact unless someone uploaded into the same band in
- * the seconds between the import finishing and the notification landing.
+ * These name their conversation, so they resolve exactly. Rollups don't —
+ * they cover a day, and their contents include new versions of existing
+ * songs, so they resolve from the band's uploads instead (`uploadsQueue`).
  *
  * Songs without audio are dropped: a queue entry that can't play is worse
- * than a shorter queue, and a notification whose songs have all since been
- * deleted correctly resolves to nothing.
+ * than a shorter queue, and a notification whose song has since been deleted
+ * correctly resolves to nothing.
  */
 export function tracksForNotification(
-  n: UploadNotification,
+  n: PlayableNotification,
   conversations: Conversation[],
 ): PlaylistTrack[] {
-  const playable = conversations.filter((c) => audioSrc(c) !== null);
-
-  // Parsed rather than compared as strings: these two timestamps are
-  // serialized by different layers, so they aren't guaranteed to share a
-  // format that happens to sort lexicographically.
-  const at = (iso: string) => Date.parse(iso);
-  const cutoff = at(n.createdAt);
-
-  const songs = n.subjectId
-    ? playable.filter((c) => c.id === n.subjectId)
-    : playable
-        .filter((c) => at(c.createdAt) <= cutoff)
-        // Newest first to take the batch, then flipped back below so the
-        // queue plays in the order the songs were uploaded.
-        .sort((a, b) => at(b.createdAt) - at(a.createdAt))
-        .slice(0, batchCount(n.subjectLabel))
-        .reverse();
+  if (!n.subjectId) return [];
+  const songs = conversations.filter(
+    (c) => c.id === n.subjectId && audioSrc(c) !== null,
+  );
 
   return songs.map((c) => ({
     id: c.id,

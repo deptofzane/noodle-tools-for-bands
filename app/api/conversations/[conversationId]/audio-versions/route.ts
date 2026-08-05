@@ -3,6 +3,8 @@ import { requireUser } from '@/lib/api-guard';
 import { auth } from '@/auth';
 import { getDriveClient } from '@/lib/drive';
 import { getConversationMembership } from '@/lib/db/conversations';
+import { notifyUploadBatch } from '@/lib/db/notifications';
+import { readUploadDay } from '@/lib/upload-day';
 import type { Readable } from 'node:stream';
 import { addAudioVersion, listAudioVersions } from '@/lib/db/song-files';
 import { MAX_AUDIO_BYTES, normalizeAudioMime } from '@/lib/audio-mime';
@@ -44,9 +46,27 @@ export async function POST(
   const user = await requireUser();
   if (user instanceof NextResponse) return user;
   const { conversationId } = await params;
-  if (!(await getConversationMembership(user.id, conversationId))) {
+  const membership = await getConversationMembership(user.id, conversationId);
+  if (!membership) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
+
+  // A new version is an upload like any other, so it joins the band's rollup
+  // for the day rather than announcing itself. Called from each of the three
+  // paths below (Dropbox, Drive, direct upload) once the version exists.
+  // `?day=` carries the uploader's local day; every upload path here is a
+  // POST from the browser, so the client always knows it.
+  const day = readUploadDay(new URL(req.url).searchParams.get('day'));
+  const announce = (version: { fileName: string; label: string | null }) =>
+    notifyUploadBatch({
+      bandId: membership.conversation.bandId,
+      actorId: user.id,
+      added: 1,
+      day,
+      // Its own label if it has one, else the file name — the same thing the
+      // version switcher shows.
+      name: version.label || version.fileName,
+    });
 
   const contentType = req.headers.get('content-type') ?? '';
 
@@ -120,6 +140,7 @@ export async function POST(
             label: label || null,
           }),
         );
+        await announce(version);
         return NextResponse.json({ version }, { status: 201 });
       } catch (err) {
         console.error('[audio-versions] Dropbox import failed', err);
@@ -185,6 +206,7 @@ export async function POST(
           driveFileId,
         }),
       );
+      await announce(version);
       return NextResponse.json({ version }, { status: 201 });
     } catch (err) {
       console.error('[audio-versions] Drive import failed', err);
@@ -236,6 +258,7 @@ export async function POST(
         label: label || null,
       }),
     );
+    await announce(version);
     return NextResponse.json({ version }, { status: 201 });
   } catch (err) {
     console.error('[audio-versions] local upload failed', err);
