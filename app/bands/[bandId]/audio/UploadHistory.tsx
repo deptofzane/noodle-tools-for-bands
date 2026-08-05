@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
 import { MinimizeToggle } from '../bandDetailShared';
 import type { BandUpload } from '@/lib/db/song-files';
-import { dayLabel, groupByDay, timeLabel } from './uploadDays';
+import { dayLabel, groupByDay, timeLabel, uploadTrack } from './uploadDays';
+import { usePlaylistPlayer } from '../../../player/PlaylistPlayer';
 
 /**
  * The Uploads tab: the band's audio files grouped by the day they arrived,
@@ -25,6 +26,7 @@ export function UploadHistory({
   uploads: BandUpload[] | null;
 }) {
   const router = useRouter();
+  const player = usePlaylistPlayer();
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   const toggleDay = (key: string) =>
@@ -66,6 +68,13 @@ export function UploadHistory({
                 {dayUploads.length === 1 ? 'upload' : 'uploads'}
               </span>
               <ActionMenu label={`Actions for ${dayLabel(key)}`}>
+                {/* Every row here is an audio file, so the whole day is
+                    playable — no need to filter the way a setlist does. */}
+                <ActionMenuItem
+                  onClick={() => player.play(dayUploads.map(uploadTrack), 0)}
+                >
+                  Play all
+                </ActionMenuItem>
                 <ActionMenuItem
                   onClick={() =>
                     router.push(`/bands/${bandId}/audio/uploads/${key}`)
