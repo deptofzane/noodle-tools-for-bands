@@ -110,7 +110,7 @@ export function FullPlayer({
       role="dialog"
       aria-modal="true"
       aria-label="Audio player"
-      className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-neutral-950"
+      className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-neutral-900"
     >
       {/* Collapse is the only way out of here — dismissing the queue lives on
           the bar this collapses back to. */}

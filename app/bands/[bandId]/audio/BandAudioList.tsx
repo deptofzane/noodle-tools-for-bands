@@ -74,7 +74,7 @@ export function BandAudioList({
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search audio…"
         aria-label="Search audio"
-        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:placeholder:text-neutral-500"
+        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:placeholder:text-neutral-500"
       />
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">

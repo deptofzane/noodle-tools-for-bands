@@ -229,7 +229,7 @@ export function Live({
     'flex h-12 w-12 items-center justify-center rounded-md border border-neutral-300 text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:border-neutral-700 dark:hover:bg-neutral-900';
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-white dark:bg-neutral-950">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-white dark:bg-neutral-900">
       {/* Controls header. */}
       {/* <header className="flex items-center justify-between border-b border-neutral-200 px-2 py-2 dark:border-neutral-800"> */}
       <header className="w-100 flex flex-col">

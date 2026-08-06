@@ -95,6 +95,10 @@ body {
   @apply text-2xl font-semibold tracking-tight;
 }
 
+.theme-text-colors {
+  @apply text-neutral-500 dark:text-neutral-400;
+}
+
 /*
  * Button styles. Padding is roomier on mobile (px-4 py-3) and tighter on
  * desktop (md:px-3 md:py-1.5). `disabled:opacity-50` is a no-op on links.

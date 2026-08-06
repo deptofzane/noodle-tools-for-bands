@@ -104,7 +104,7 @@ export default async function RootLayout({
       </head>
       <body
         className={
-          'min-h-screen bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100' +
+          'min-h-screen bg-white text-neutral-900 antialiased dark:bg-neutral-900 dark:text-neutral-100' +
           // Reserves room for the fixed nav bar on the side it's pinned to.
           (isSignedIn ? ' has-app-nav' : '')
         }

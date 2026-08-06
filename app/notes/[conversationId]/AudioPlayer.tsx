@@ -489,9 +489,8 @@ function AudioPlayerRail({
     'flex h-9 w-full items-center justify-center rounded-md border border-neutral-300 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900';
 
   return (
-    // <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-950">
     // IN PROGRESS
-    <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-950 h-fit">
+    <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900 h-fit">
       {/* Info box */}
       <div className="flex flex-col gap-0.5">
         <h2 className="truncate text-sm font-medium" title={fileName}>
@@ -772,7 +771,7 @@ export function AudioPlayerView({
     <div
       className={
         'border border-neutral-200 p-4 dark:border-neutral-800' +
-        (sticky ? ' sticky top-0 z-30 bg-white dark:bg-neutral-950' : '')
+        (sticky ? ' sticky top-0 z-30 bg-white dark:bg-neutral-900' : '')
       }
     >
       <div className="flex items-baseline justify-between gap-3">

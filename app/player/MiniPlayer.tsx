@@ -407,7 +407,7 @@ export function MiniPlayer({
       aria-label="Audio player"
       // `.player-bar` anchors it above the nav on mobile, and to the bottom
       // edge on desktop where the nav sits at the top.
-      className="player-bar fixed inset-x-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/95"
+      className="player-bar fixed inset-x-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95"
     >
       {/* Clips to the bar's own width, so the parked neighbours stay hidden
           until a drag uncovers them. */}

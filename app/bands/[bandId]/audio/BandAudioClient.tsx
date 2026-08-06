@@ -447,7 +447,7 @@ export function BandAudioClient({
               aria-label="Song name"
               autoFocus
               disabled={creating}
-              className="mt-4 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-950 dark:placeholder:text-neutral-500"
+              className="mt-4 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:placeholder:text-neutral-500"
             />
             <div className="mt-5 flex justify-end gap-2">
               <button

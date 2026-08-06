@@ -195,7 +195,7 @@ export function Header() {
     <div
       id="app-nav"
       ref={barRef}
-      className="fixed inset-x-0 bottom-0 z-[45] border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] lg:bottom-auto lg:top-0 lg:border-b lg:border-t-0 lg:pb-0 dark:border-neutral-800 dark:bg-neutral-950"
+      className="fixed inset-x-0 bottom-0 z-[45] border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] lg:bottom-auto lg:top-0 lg:border-b lg:border-t-0 lg:pb-0 dark:border-neutral-800 dark:bg-neutral-900"
     >
       {/* Swallows the tap that dismisses the menu, so closing it can't also
           hit a link or a play button underneath. Sits below the menu (z-50)
@@ -217,7 +217,7 @@ export function Header() {
         />
       )}
 
-      <nav className="mx-auto flex max-w-5xl flex-row items-center justify-between gap-1 px-3 py-3 lg:px-6 bg-white dark:bg-neutral-950">
+      <nav className="mx-auto flex max-w-5xl flex-row items-center justify-between gap-1 px-3 py-3 lg:px-6 bg-white dark:bg-neutral-900">
         <span className="flex flex-row items-center gap-2">
           <Link key="/home" href="/home">
             <h3 className="mb-2 font-serif text-4xl hidden lg:inline">

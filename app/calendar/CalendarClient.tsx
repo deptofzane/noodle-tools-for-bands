@@ -163,7 +163,7 @@ export function CalendarClient() {
               'min-h-24 ' +
               (d === null
                 ? 'bg-neutral-50/60 dark:bg-neutral-900/40'
-                : 'bg-white dark:bg-neutral-950')
+                : 'bg-white dark:bg-neutral-900')
             }
           >
             {d !== null && (
