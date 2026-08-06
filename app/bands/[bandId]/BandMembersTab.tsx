@@ -179,7 +179,7 @@ export function BandMembersTab({
                     </div>
                   )}
                 </div>
-                <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+                <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium text-neutral-600 dark:bg-neutral-900 dark:text-neutral-300">
                   {m.role}
                 </span>
                 {canManage && m.role !== 'owner' && (

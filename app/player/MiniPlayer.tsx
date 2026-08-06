@@ -123,7 +123,7 @@ function TrackColumn({
               aria-valuemax={Math.round(duration) || 0}
               aria-valuenow={Math.round(currentTime)}
               aria-valuetext={`${formatDuration(currentTime)} of ${formatDuration(duration)}`}
-              className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800"
+              className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-900"
             >
               <div
                 className="h-full rounded-full bg-blue-600"

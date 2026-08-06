@@ -83,7 +83,7 @@ export function SetlistNav({
               className={
                 'flex w-full items-baseline gap-2 px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 ' +
                 (i === current
-                  ? 'bg-neutral-100 font-medium dark:bg-neutral-800'
+                  ? 'bg-neutral-100 font-medium dark:bg-neutral-900'
                   : 'text-neutral-700 dark:text-neutral-200')
               }
             >

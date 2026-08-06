@@ -47,7 +47,7 @@ export default async function PollPage({
           <div className="flex items-center gap-2">
             <h1 className="title-text">{poll.title}</h1>
             {poll.closed && (
-              <span className="shrink-0 rounded-full bg-neutral-200 px-2 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+              <span className="shrink-0 rounded-full bg-neutral-200 px-2 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-neutral-600 dark:bg-neutral-900 dark:text-neutral-400">
                 Closed
               </span>
             )}

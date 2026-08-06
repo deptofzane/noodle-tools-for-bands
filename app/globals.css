@@ -92,6 +92,65 @@
 }
 
 /*
+ * Event colours, by type (see app/calendar/eventColors.ts).
+ *
+ * A surface sets `data-event-type` and styles with the two variables; it never
+ * needs to know the theme. `--event-accent` carries the text, dot, and left
+ * rule; `--event-fill` is the pill behind them.
+ *
+ * The two sets aren't inversions of each other. On a dark cell the accent is
+ * pale and the fill is a dark tint of it; on white the accent has to be deep
+ * enough to read at 11px, so the pastel moves into the fill. Both fills are
+ * pre-blended against their ground — 20% over #171717, 8% over #FFFFFF —
+ * rather than alpha, so a hover or selected-day background behind the pill
+ * can't shift them.
+ *
+ * Separation is by hue, not lightness: within a theme all five sit at similar
+ * weight, so no event type looks more important than another.
+ */
+[data-event-type] {
+  --event-accent: #5c6480;
+  --event-fill: #f2f3f5;
+}
+[data-event-type='show'] {
+  --event-accent: #9c4518;
+  --event-fill: #f7f0ec;
+}
+[data-event-type='practice'] {
+  --event-accent: #2c5fa8;
+  --event-fill: #eef2f8;
+}
+[data-event-type='writing'] {
+  --event-accent: #35733c;
+  --event-fill: #eff4ef;
+}
+[data-event-type='studio'] {
+  --event-accent: #6b47b8;
+  --event-fill: #f3f0f9;
+}
+
+.dark [data-event-type] {
+  --event-accent: #a5adcb;
+  --event-fill: #33353b;
+}
+.dark [data-event-type='show'] {
+  --event-accent: #f5a97f;
+  --event-fill: #43342c;
+}
+.dark [data-event-type='practice'] {
+  --event-accent: #8aadf4;
+  --event-fill: #2e3543;
+}
+.dark [data-event-type='writing'] {
+  --event-accent: #a6da95;
+  --event-fill: #343e30;
+}
+.dark [data-event-type='studio'] {
+  --event-accent: #c6a0f6;
+  --event-fill: #3a3244;
+}
+
+/*
  * The nav bar is fixed — to the bottom on mobile, the top on desktop — so it
  * covers page content unless the body reserves its height on the matching
  * side. Set on <body> only for signed-in routes, which are the ones that

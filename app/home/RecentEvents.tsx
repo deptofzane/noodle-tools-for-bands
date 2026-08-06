@@ -9,6 +9,7 @@ import { useToast } from '../ToastProvider';
 import { completionInstant } from './eventTiming';
 import type { UpcomingShow } from './UpcomingShows';
 import { usePersistedBoolean } from '../usePersistedBoolean';
+import { eventColorKey } from '../calendar/eventColors';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -117,19 +118,25 @@ export function RecentEvents({
       </button>
 
       {open && (
-        <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+        <ul className="divide-y divide-neutral-200 overflow-hidden rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
           {recent.map((s) => (
-            <li key={s.id} className="flex items-center gap-1 px-3 py-2.5">
+            <li
+              key={s.id}
+              data-event-type={eventColorKey(s.eventType)}
+              className="flex items-center gap-1 border-l-[3px] border-l-[color:var(--event-accent)] bg-[color:var(--event-fill)] px-3 py-2.5"
+            >
               <Link
                 href={`/calendar/events/${s.id}`}
-                className="-mx-1 flex min-w-0 flex-1 flex-col items-start justify-start gap-3 rounded px-1 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                className="-mx-1 flex min-w-0 flex-1 flex-col items-start justify-start gap-3 rounded px-1 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
               >
                 <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-sm font-medium">
+                  <span className="truncate text-sm font-medium text-[color:var(--event-accent)]">
                     {s.title}
                   </span>
                   <span className="truncate text-[0.6875rem] minor-text-theme-colors">
-                    <span className="minor-text-band-theme-colors">{s.bandName}</span>
+                    <span className="minor-text-band-theme-colors">
+                      {s.bandName}
+                    </span>
                     {s.location ? ` · ${s.location}` : ''}
                   </span>
                 </span>

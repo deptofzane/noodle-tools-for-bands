@@ -27,7 +27,7 @@ function LinkChip({ link, bandId }: { link: NoteLink; bandId: string }) {
   const external = link.kind === 'other' && /^https?:\/\//i.test(href ?? '');
   const inner = (
     <>
-      <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide minor-text-theme-colors dark:bg-neutral-800">
+      <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide minor-text-theme-colors dark:bg-neutral-900">
         {kindLabel(link.kind)}
       </span>
       <span className="truncate">{link.label}</span>

@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { Modal } from '../Modal';
 import { useTrackPending } from '../PendingActionProvider';
 import { formatDateLong, formatTime12h, formatTimeRange } from '@/lib/format';
+import { eventColorKey } from './eventColors';
+import { useCurrentBand } from '../CurrentBandProvider';
+import { BAND_ACTIVE_TAB_KEY } from '../bands/[bandId]/bandTabs';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [
@@ -28,6 +31,7 @@ interface CalendarEvent {
   date: string; // YYYY-MM-DD
   time: string | null;
   endTime: string | null;
+  eventType: string | null;
   bandName: string;
   location: string | null;
   venueName: string | null;
@@ -60,6 +64,7 @@ export function CalendarClient() {
   >({});
   // The day whose shows-summary is open (YYYY-MM-DD), or null.
   const [summaryDate, setSummaryDate] = useState<string | null>(null);
+  const { bandId: currentBandId } = useCurrentBand();
 
   const startWeekday = new Date(view.year, view.month, 1).getDay();
   const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
@@ -142,9 +147,36 @@ export function CalendarClient() {
             <span aria-hidden="true">›</span>
           </button>
         </div>
-        <Link href="/calendar/events/new" className="ml-1 btn-primary">
-          Add event
-        </Link>
+        {/* The calendar spans every band the viewer is in, but Overview is
+            one band's page — so this goes to whichever band the app is
+            currently "in", and isn't offered until there is one. The band
+            list resolves after mount, so this appears a beat late rather
+            than pointing somewhere useless in the meantime.
+
+            The stored tab is set on the way out because the band page
+            restores it on arrival; `?tab=events` alone doesn't survive the
+            trip (Overview strips the param, being its default). */}
+        <span className="flex justify-end gap-2 flex-wrap ml-2 ">
+          {currentBandId && (
+            <Link
+              href={`/bands/${currentBandId}?tab=events`}
+              onClick={() => {
+                try {
+                  localStorage.setItem(BAND_ACTIVE_TAB_KEY, 'events');
+                } catch {
+                  // Private mode or storage disabled — the link still works,
+                  // it just lands on whatever tab was last remembered.
+                }
+              }}
+              className="btn-outline text-wrap"
+            >
+              Events
+            </Link>
+          )}
+          <Link href="/calendar/events/new" className="btn-primary">
+            Add event
+          </Link>
+        </span>
       </div>
 
       <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200 dark:border-neutral-800 dark:bg-neutral-800">
@@ -189,7 +221,8 @@ export function CalendarClient() {
                     <span
                       key={ev.id}
                       title={ev.title}
-                      className="truncate rounded bg-cyan-50 px-1 py-0.5 text-[0.6875rem] text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300"
+                      data-event-type={eventColorKey(ev.eventType)}
+                      className="truncate rounded border-l-2 border-[var(--event-accent)] bg-[var(--event-fill)] px-1 py-0.5 text-[0.6875rem] text-[var(--event-accent)]"
                     >
                       {ev.title}
                       {ev.time ? ` ${formatTime12h(ev.time)}` : ''}
@@ -223,7 +256,8 @@ export function CalendarClient() {
                   <li key={ev.id}>
                     <Link
                       href={`/calendar/events/${ev.id}`}
-                      className="block rounded-md border border-neutral-200 px-3 py-2 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
+                      data-event-type={eventColorKey(ev.eventType)}
+                      className="block rounded-md border border-neutral-200 border-l-[3px] border-l-[var(--event-accent)] px-3 py-2 hover:bg-neutral-50 dark:border-neutral-800 dark:border-l-[var(--event-accent)] dark:hover:bg-neutral-900"
                     >
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="truncate font-medium">{ev.title}</span>

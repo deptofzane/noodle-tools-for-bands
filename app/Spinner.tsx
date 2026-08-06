@@ -57,7 +57,7 @@ export function LoadingBar({
     <div
       role="progressbar"
       aria-label={label}
-      className={`h-1 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800 ${className}`}
+      className={`h-1 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-900 ${className}`}
     >
       <div className="loading-bar-fill h-full w-2/5 rounded-full bg-cyan-600 dark:bg-cyan-400" />
     </div>

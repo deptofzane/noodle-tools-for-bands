@@ -11,6 +11,7 @@ import { CollapsibleSection } from '../../../CollapsibleSection';
 import { EventMembersClient } from './EventMembersClient';
 import { EventSetlistActions } from './EventSetlistActions';
 import { EventSetlistSongs } from './EventSetlistSongs';
+import { eventColorKey } from '../../eventColors';
 
 /**
  * Event detail. Server shell — access-guarded via getEventForUser (band
@@ -65,7 +66,16 @@ export default async function EventPage({
       <section className="flex flex-col gap-2 rounded-lg text-sm mb-4">
         {event.eventType && (
           <div>
-            <span className="font-medium">Type:</span> {event.eventType}
+            <span className="font-medium">Type:</span>{' '}
+            {/* Same colour the calendar gives it, so the two read as one
+                thing. A custom type still shows its own words — only the
+                colour falls back. */}
+            <span
+              data-event-type={eventColorKey(event.eventType)}
+              className="inline-flex items-center rounded border-l-2 border-[color:var(--event-accent)] bg-[color:var(--event-fill)] px-1.5 py-0.5 text-[color:var(--event-accent)]"
+            >
+              {event.eventType}
+            </span>
           </div>
         )}
         <div>

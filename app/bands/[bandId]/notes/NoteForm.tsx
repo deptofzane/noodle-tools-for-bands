@@ -149,7 +149,7 @@ export function NoteForm({
                 className="flex items-center justify-between gap-2 rounded-md border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800"
               >
                 <span className="flex min-w-0 items-center gap-2">
-                  <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide minor-text-theme-colors dark:bg-neutral-800">
+                  <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide minor-text-theme-colors dark:bg-neutral-900">
                     {kindLabel(l.kind)}
                   </span>
                   <span className="truncate">{l.label}</span>

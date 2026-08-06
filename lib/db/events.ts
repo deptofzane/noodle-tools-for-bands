@@ -35,6 +35,8 @@ export interface EventListItem {
   bandId: string;
   bandName: string;
   title: string;
+  /** Drives the calendar's colour coding — see app/calendar/eventColors.ts. */
+  eventType: string | null;
   date: string; // YYYY-MM-DD
   time: string | null;
   endTime: string | null;
@@ -47,6 +49,8 @@ export interface EventListItem {
 export interface BandEvent {
   id: string;
   title: string;
+  /** Drives the colour coding — see app/calendar/eventColors.ts. */
+  eventType: string | null;
   date: string; // YYYY-MM-DD
   time: string | null;
   endTime: string | null;
@@ -140,6 +144,7 @@ export async function listEventsForUserInRange(
       bandId: events.bandId,
       bandName: bands.name,
       title: events.title,
+      eventType: events.eventType,
       date: events.date,
       time: events.time,
       endTime: events.endTime,
@@ -186,6 +191,7 @@ export async function listPastEventsForUser(
         bandId: events.bandId,
         bandName: bands.name,
         title: events.title,
+        eventType: events.eventType,
         date: events.date,
         time: events.time,
         endTime: events.endTime,
@@ -233,6 +239,7 @@ export async function getNextEventForUser(
       bandId: events.bandId,
       bandName: bands.name,
       title: events.title,
+      eventType: events.eventType,
       date: events.date,
       time: events.time,
       endTime: events.endTime,
@@ -301,6 +308,7 @@ export async function listEventsForFeed(
       id: events.id,
       bandName: bands.name,
       title: events.title,
+      eventType: events.eventType,
       date: events.date,
       time: events.time,
       endTime: events.endTime,
@@ -332,6 +340,7 @@ export async function listBandEvents(bandId: string): Promise<BandEvent[]> {
     .select({
       id: events.id,
       title: events.title,
+      eventType: events.eventType,
       date: events.date,
       time: events.time,
       endTime: events.endTime,

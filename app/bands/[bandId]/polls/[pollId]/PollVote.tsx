@@ -106,7 +106,7 @@ export function PollVote({
                     'absolute inset-y-0 left-0 transition-[width] ' +
                     (mine
                       ? 'bg-blue-100 dark:bg-blue-950/40'
-                      : 'bg-neutral-100 dark:bg-neutral-800/50')
+                      : 'bg-neutral-100 dark:bg-neutral-900/50')
                   }
                   style={{ width: `${pct}%` }}
                 />

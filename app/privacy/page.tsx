@@ -179,7 +179,7 @@ function B({ children }: { children: React.ReactNode }) {
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded bg-neutral-100 px-1 py-0.5 text-[0.8125rem] dark:bg-neutral-800">
+    <code className="rounded bg-neutral-100 px-1 py-0.5 text-[0.8125rem] dark:bg-neutral-900">
       {children}
     </code>
   );

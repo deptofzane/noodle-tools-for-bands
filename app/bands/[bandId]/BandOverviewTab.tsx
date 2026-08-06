@@ -23,6 +23,7 @@ import {
 import { MapLink } from '../../MapLink';
 import { liveHref, practiceHref } from '@/lib/routes';
 import { CollapsibleSection } from '@/app/CollapsibleSection';
+import { eventColorKey } from '../../calendar/eventColors';
 
 /**
  * The Overview tab: upcoming Shows, Past shows, and (for non-owners) a Leave
@@ -132,9 +133,18 @@ export function BandOverviewTab({
     return (
       <li
         key={show.id}
+        data-event-type={eventColorKey(show.eventType)}
         className="rounded-lg border border-neutral-200 dark:border-neutral-800"
       >
-        <div className="flex items-center gap-1 pr-1">
+        {/* The colour stops at the title row. Tinting the panel below it too
+            would turn a list of events into a wall of colour, and the details
+            in there aren't what you're scanning for. */}
+        <div
+          className={
+            'flex items-center gap-1 border-l-[3px] border-l-[color:var(--event-accent)] bg-[color:var(--event-fill)] pr-1 ' +
+            (expanded ? 'rounded-t-lg' : 'rounded-lg')
+          }
+        >
           <button
             type="button"
             onClick={() => toggleShowExpanded(show.id)}
@@ -144,11 +154,13 @@ export function BandOverviewTab({
             <span className="flex min-w-0 items-center gap-2">
               <span
                 aria-hidden="true"
-                className="text-sm leading-none text-neutral-400"
+                className="text-sm leading-none text-[color:var(--event-accent)] opacity-70"
               >
                 {expanded ? '▾' : '▸'}
               </span>
-              <span className="truncate font-medium">{show.title}</span>
+              <span className="truncate font-medium text-[color:var(--event-accent)]">
+                {show.title}
+              </span>
             </span>
             <span className="shrink-0 text-xs minor-text-theme-colors">
               {formatDateShort(show.date)}

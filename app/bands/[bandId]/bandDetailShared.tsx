@@ -121,6 +121,8 @@ export interface Venue {
 export interface Show {
   id: string;
   title: string;
+  /** Drives the colour coding — see app/calendar/eventColors.ts. */
+  eventType: string | null;
   date: string;
   time: string | null;
   endTime: string | null;

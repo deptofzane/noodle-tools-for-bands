@@ -8,13 +8,16 @@ import { BandMembersTab } from './BandMembersTab';
 import { BandOverviewTab } from './BandOverviewTab';
 import { BandVenuesTab } from './BandVenuesTab';
 import { BandNotesTab } from './BandNotesTab';
-import { BAND_TABS, isBandTab, type BandTab } from './bandTabs';
+import {
+  BAND_ACTIVE_TAB_KEY,
+  BAND_TABS,
+  isBandTab,
+  type BandTab,
+} from './bandTabs';
 import { TabStrip } from '../../TabStrip';
 import { LeaveBandModal } from '../LeaveBandModal';
 import { useBandData, useBandChat } from './bandDetailHooks';
 import { LoadingBlock } from '../../Spinner';
-
-const ACTIVE_TAB_KEY = 'bandActiveTab';
 
 /**
  * Band detail coordinator: fetches the band's data, owns the tab state, and
@@ -54,7 +57,7 @@ export function BandDetailClient({
   const changeTab = useCallback((tab: BandTab) => {
     setActiveTab(tab);
     try {
-      localStorage.setItem(ACTIVE_TAB_KEY, tab);
+      localStorage.setItem(BAND_ACTIVE_TAB_KEY, tab);
     } catch {
       // ignore storage failures (private mode, etc.)
     }
@@ -66,10 +69,11 @@ export function BandDetailClient({
     const urlTab = new URLSearchParams(window.location.search).get('tab');
     try {
       if (urlTab) {
-        if (isBandTab(urlTab)) localStorage.setItem(ACTIVE_TAB_KEY, urlTab);
+        if (isBandTab(urlTab))
+          localStorage.setItem(BAND_ACTIVE_TAB_KEY, urlTab);
         return;
       }
-      const saved = localStorage.getItem(ACTIVE_TAB_KEY);
+      const saved = localStorage.getItem(BAND_ACTIVE_TAB_KEY);
       if (isBandTab(saved)) setActiveTab(saved);
     } catch {
       // ignore

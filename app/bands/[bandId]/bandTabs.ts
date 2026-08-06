@@ -13,6 +13,13 @@ export const BAND_TABS = [
 
 export type BandTab = (typeof BAND_TABS)[number];
 
+/**
+ * Where the last-used tab is remembered. Read on a paramless visit to
+ * `/bands/[id]`, so anything that wants to send someone to a particular tab
+ * has to set it too.
+ */
+export const BAND_ACTIVE_TAB_KEY = 'bandActiveTab';
+
 /** The tab a bare `/bands/[id]` opens on. */
 export const DEFAULT_BAND_TAB: BandTab = 'events';
 
