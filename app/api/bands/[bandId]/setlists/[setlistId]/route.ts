@@ -12,6 +12,35 @@ import {
 const MAX_LABEL = 100;
 
 /**
+ * GET /api/bands/[bandId]/setlists/[setlistId]
+ *   → one setlist with its items in order.
+ *
+ * Exists so callers that want a single setlist don't have to pull the band's
+ * whole collection to find it — the list endpoint returns every setlist with
+ * every song, which is a lot of rows to ship for one.
+ *
+ * Requires band membership; the setlist must belong to the band.
+ */
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ bandId: string; setlistId: string }> },
+) {
+  const user = await requireUser();
+  if (user instanceof NextResponse) return user;
+  const { bandId, setlistId } = await params;
+  if (!(await getMembership(user.id, bandId)))
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+
+  const setlist = await getSetlist(setlistId);
+  // Same 404 for "gone" and "another band's": membership already passed, so
+  // distinguishing them would confirm the id exists somewhere.
+  if (!setlist || setlist.bandId !== bandId)
+    return NextResponse.json({ error: 'not_found' }, { status: 404 });
+
+  return NextResponse.json({ setlist });
+}
+
+/**
  * PATCH /api/bands/[bandId]/setlists/[setlistId]
  *   Body: { items: Array<{ conversationId?: string|null, label?: string|null }> }
  *   — the setlist's items in their new order (add / remove / reorder). An

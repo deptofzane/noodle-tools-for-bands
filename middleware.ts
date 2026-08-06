@@ -28,6 +28,11 @@ const PUBLIC_PATHS = new Set<string>([
   '/forgot',
   '/reset',
   '/api/health',
+  // Public by requirement, not convenience: Play's listing review and Google's
+  // OAuth verification both fetch these without an account, and a login
+  // redirect would read as a missing policy.
+  '/privacy',
+  '/delete-account',
   // The offline screen. It holds no server data — what it lists comes from the
   // device's own IndexedDB — and the service worker precaches it to serve when
   // a navigation fails. Behind auth, that precache would be a login redirect,

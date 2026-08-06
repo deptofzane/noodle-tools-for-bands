@@ -1,4 +1,5 @@
 import { defaultCache } from '@serwist/next/worker';
+import { canonicalAudioKey } from '@/lib/audio-cache-key';
 import {
   CacheableResponsePlugin,
   CacheFirst,
@@ -38,19 +39,6 @@ declare const self: ServiceWorkerGlobalScope;
  * v2 scheme keys on the version id (see the audio rule below).
  */
 const AUDIO_CACHE = 'sidestage-audio-v2';
-
-/**
- * The cache key for an audio request: the path plus its version, and nothing
- * else. `?name=` varies between the player and the download for the same
- * bytes, so it must not split the entry; the version must, since it names
- * different bytes.
- */
-function canonicalAudioKey(request: Request): string {
-  const url = new URL(request.url);
-  const version = url.searchParams.get('version');
-  url.search = version ? `?version=${version}` : '';
-  return url.toString();
-}
 
 const offlineRuntimeCaching: RuntimeCaching[] = [
   // Sheet-music file bytes. URLs are versioned (`?version=&v=updatedAt`) and
@@ -92,7 +80,8 @@ const offlineRuntimeCaching: RuntimeCaching[] = [
       matchOptions: { ignoreVary: true },
       plugins: [
         {
-          cacheKeyWillBeUsed: async ({ request }) => canonicalAudioKey(request),
+          cacheKeyWillBeUsed: async ({ request }) =>
+            canonicalAudioKey(request.url),
         },
         new CacheableResponsePlugin({ statuses: [200] }),
         new RangeRequestsPlugin(),
@@ -133,7 +122,11 @@ const offlineRuntimeCaching: RuntimeCaching[] = [
   },
   // Legacy: Practice/Live documents cached per setlist by downloads made
   // before those screens moved to `/practice?setlist=…`. Nothing writes here
-  // any more; the rule keeps older downloads working until they're refreshed.
+  // any more, and downloads no longer cache page shells at all — Practice and
+  // Live come from the precached documents above. This rule exists solely so a
+  // device that downloaded under the old scheme keeps working; `removeOffline`
+  // still deletes those keys. Safe to delete once those downloads have aged
+  // out.
   {
     matcher: ({ request, url, sameOrigin }) =>
       sameOrigin &&
@@ -156,6 +149,22 @@ const offlineRuntimeCaching: RuntimeCaching[] = [
  */
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
+  /**
+   * Which query parameters to ignore when matching a precached URL.
+   *
+   * Practice and Live are one precached document each, and the setlist rides
+   * in the query (`/practice?setlist=…` — see lib/routes.ts) so a link can be
+   * shared. Precache matching is exact on the query string by default, so the
+   * shell was never found for the URL anyone actually visits: offline, the
+   * navigation fell through to the network, failed, and the fallback quietly
+   * re-served /offline — which looked like the link doing nothing.
+   *
+   * `song` is here for the same reason (a shared link can name a position).
+   * The two defaults have to be repeated: supplying this replaces them.
+   */
+  precacheOptions: {
+    ignoreURLParametersMatching: [/^setlist$/, /^song$/, /^utm_/, /^fbclid$/],
+  },
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,

@@ -52,22 +52,20 @@ async function dayTracks(
 }
 
 /**
- * The named setlist, as a queue. Fetched by band because there's no
- * single-setlist endpoint; a setlist deleted since resolves to nothing.
+ * The named setlist, as a queue. A setlist deleted since the notification
+ * 404s, which resolves to nothing to play rather than an error.
  */
 async function setlistTracks(
   bandId: string,
   setlistId: string,
 ): Promise<PlaylistTrack[]> {
-  const res = await fetch(`/api/bands/${bandId}/setlists`, {
+  const res = await fetch(`/api/bands/${bandId}/setlists/${setlistId}`, {
     cache: 'no-store',
   });
+  if (res.status === 404) return [];
   await ensureOk(res);
-  const { setlists } = (await res.json()) as { setlists: Setlist[] };
-  const setlist = setlists.find((s) => s.id === setlistId);
-  return setlist
-    ? setlistQueue({ name: setlist.name, songs: setlist.songs })
-    : [];
+  const { setlist } = (await res.json()) as { setlist: Setlist };
+  return setlistQueue({ name: setlist.name, songs: setlist.songs });
 }
 
 /**
