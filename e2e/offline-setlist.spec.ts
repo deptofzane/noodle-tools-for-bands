@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { E2E, readSeed } from './fixtures';
+import {
+  addDefaultAudioVersion,
+  addSheet,
+  downloadSetlist,
+  removeAudioVersion,
+  removeSheet,
+} from './helpers';
 
 /**
  * A downloaded setlist has to work with the network gone.
@@ -39,8 +46,10 @@ test('a downloaded setlist opens Practice with no network', async ({
   }
   await page.getByRole('button', { name: 'Download', exact: true }).click();
 
-  // The row reports the stored copy when it's done.
+  // The row reports the stored copy when it's done, and says nothing about it
+  // being behind — nothing has changed yet.
   await expect(page.getByText('✓ Offline')).toBeVisible({ timeout: 120_000 });
+  await expect(page.getByText('Needs update')).toHaveCount(0);
 
   // Cut the network — twice over.
   //
@@ -82,4 +91,46 @@ test('a downloaded setlist opens Practice with no network', async ({
   });
 
   await context.setOffline(false);
+});
+
+/**
+ * A downloaded copy that has fallen behind says so — and only about the parts
+ * that were downloaded.
+ *
+ * Changes are made straight in the database: they're what the badge exists
+ * for, and no amount of clicking in this browser would produce them. The
+ * download modal defaults to sheets only, which is what most people will have,
+ * so that's what this exercises.
+ */
+test('a setlist changed since download is flagged, respecting choices', async ({
+  page,
+}) => {
+  const { bandId, setlistId, songId } = readSeed();
+
+  await page.goto(`/bands/${bandId}/setlists/${setlistId}`);
+  await downloadSetlist(page);
+  await expect(page.getByText('Needs update')).toHaveCount(0);
+
+  // A new default audio take, when only sheets were saved: not their problem.
+  const audioId = await addDefaultAudioVersion(songId);
+  try {
+    await page.reload();
+    await expect(page.getByText('✓ Offline')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Needs update')).toHaveCount(0);
+  } finally {
+    await removeAudioVersion(songId, audioId);
+  }
+
+  // New sheet music, which is exactly what they saved.
+  const sheetId = await addSheet(songId);
+  try {
+    await page.reload();
+    await expect(page.getByText('Needs update')).toBeVisible({
+      timeout: 30_000,
+    });
+    // Still usable offline — that's why the badge keeps both halves.
+    await expect(page.getByText('✓ Offline')).toBeVisible();
+  } finally {
+    await removeSheet(songId, sheetId);
+  }
 });

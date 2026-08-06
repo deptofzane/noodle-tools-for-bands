@@ -72,6 +72,8 @@ export interface Setlist {
     audioMimeType: string | null;
     /** Default audio version's id — see `audioSrc` on why URLs name one. */
     audioVersionId: string | null;
+    /** Every sheet version, with the stamp that moves when one is replaced. */
+    sheetVersions: { id: string; updatedAt: string }[];
   }[];
 }
 

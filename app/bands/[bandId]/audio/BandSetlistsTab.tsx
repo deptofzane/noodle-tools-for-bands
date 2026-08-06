@@ -12,6 +12,7 @@ import { usePersistedStringSet } from '../../../usePersistedStringSet';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
 import { useOfflineDownload } from '../../../offline/useOfflineDownload';
+import { OfflineBadge } from '../../../offline/OfflineBadge';
 import { usePlaylistPlayer } from '../../../player/PlaylistPlayer';
 import { liveHref, practiceHref } from '@/lib/routes';
 import {
@@ -173,14 +174,10 @@ export function BandSetlistsTab({
                 ↓ {Math.round(offline.progress * 100)}%
               </span>
             ) : offlineRec ? (
-              <span
-                title={`Downloaded ${new Date(
-                  offlineRec.downloadedAt,
-                ).toLocaleString()}`}
-                className="text-xs font-medium text-green-600 dark:text-green-500"
-              >
-                ✓ Offline
-              </span>
+              <OfflineBadge
+                downloadedAt={offlineRec.downloadedAt}
+                stale={offline.isStale(sl)}
+              />
             ) : null}
             <span className="text-xs text-neutral-500">
               {songCountLabel(sl.songs)}

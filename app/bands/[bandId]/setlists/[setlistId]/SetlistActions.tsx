@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../../../ActionMenu';
 import { useOfflineDownload } from '../../../../offline/useOfflineDownload';
 import { setlistQueue, type Setlist } from '../../bandDetailShared';
+import { OfflineBadge } from '../../../../offline/OfflineBadge';
 import { usePlaylistPlayer } from '../../../../player/PlaylistPlayer';
 import { liveHref, practiceHref } from '@/lib/routes';
 
@@ -57,12 +58,10 @@ export function SetlistActions({
           ↓ {Math.round(offline.progress * 100)}%
         </span>
       ) : rec ? (
-        <span
-          title={`Downloaded ${new Date(rec.downloadedAt).toLocaleString()}`}
-          className="text-xs font-medium text-green-600 dark:text-green-500"
-        >
-          ✓ Offline
-        </span>
+        <OfflineBadge
+          downloadedAt={rec.downloadedAt}
+          stale={offline.isStale({ id: setlistId, songs })}
+        />
       ) : null}
 
       {/* Desktop: individual buttons. */}

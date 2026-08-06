@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { Modal } from '../Modal';
 import { useToast } from '../ToastProvider';
 import { useOfflineSetlists } from './useOfflineSetlists';
+import { isStale as computeIsStale, type StaleSetlist } from './staleness';
 import {
   readDownloadChoices,
   writeDownloadChoices,
@@ -32,6 +33,15 @@ export interface OfflineDownloadApi {
     setlistId: string;
     name: string;
   }) => Promise<void>;
+  /**
+   * Whether the saved copy of `setlist` is behind the band's. False when it
+   * isn't downloaded, and when the record predates the tracking this reads
+   * (see `isStale`) — it reports what it can prove, nothing more.
+   *
+   * Takes the setlist the caller already has rather than fetching: every
+   * surface showing this badge has just loaded it.
+   */
+  isStale: (setlist: { id: string } & StaleSetlist) => boolean;
   /** Render this once per page — the shared download modal. */
   modal: ReactNode;
 }
@@ -161,6 +171,10 @@ export function useOfflineDownload(): OfflineDownloadApi {
 
   return {
     records: offline.records,
+    isStale: (setlist) => {
+      const rec = offline.records?.get(setlist.id);
+      return rec ? computeIsStale(rec, setlist) : false;
+    },
     busyId: offline.busyId,
     progress: offline.progress,
     openDownload,

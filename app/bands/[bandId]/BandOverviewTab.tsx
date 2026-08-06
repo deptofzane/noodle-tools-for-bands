@@ -12,6 +12,7 @@ import { useToast } from '../../ToastProvider';
 import { usePersistedBoolean } from '../../usePersistedBoolean';
 import { usePersistedStringSet } from '../../usePersistedStringSet';
 import { useOfflineDownload } from '../../offline/useOfflineDownload';
+import { OfflineBadge } from '../../offline/OfflineBadge';
 import { usePlaylistPlayer } from '../../player/PlaylistPlayer';
 import {
   MinimizeToggle,
@@ -267,13 +268,11 @@ export function BandOverviewTab({
                     ↓ {Math.round(offline.progress * 100)}%
                   </span>
                 ) : offlineRec ? (
-                  <span
-                    title={`Downloaded ${new Date(
-                      offlineRec.downloadedAt,
-                    ).toLocaleString()}`}
-                    className="ml-2 text-xs font-medium text-green-600 dark:text-green-500"
-                  >
-                    ✓ Offline
+                  <span className="ml-2">
+                    <OfflineBadge
+                      downloadedAt={offlineRec.downloadedAt}
+                      stale={setlist ? offline.isStale(setlist) : false}
+                    />
                   </span>
                 ) : null}
               </div>

@@ -34,6 +34,16 @@ export interface SetlistSong {
   audioMimeType: string | null;
   /** The default audio version's id — see `audioSrc` on why URLs name one. */
   audioVersionId: string | null;
+  /**
+   * Every sheet-music version, with the stamp that changes when a version's
+   * file is replaced in place.
+   *
+   * All of them, not just the default: downloading a setlist caches every
+   * sheet version, so telling a downloaded copy from the current one means
+   * comparing the whole list. `updatedAt` is part of it because replacing a
+   * version's file keeps its id — the bytes move, the identity doesn't.
+   */
+  sheetVersions: { id: string; updatedAt: string }[];
 }
 
 /** One item to persist: a song (conversationId) or a marker (label). */
@@ -145,9 +155,41 @@ export async function getSetlist(
     .where(eq(setlistSongs.setlistId, setlistId))
     .orderBy(setlistSongs.position);
 
+  // Sheet versions for these songs, in one query — see `listBandSetlists`.
+  const convIds = [
+    ...new Set(
+      rows.map((r) => r.conversationId).filter((id): id is string => !!id),
+    ),
+  ];
+  const sheetRows = convIds.length
+    ? await db
+        .select({
+          conversationId: songFiles.conversationId,
+          id: songFiles.id,
+          updatedAt: songFiles.updatedAt,
+        })
+        .from(songFiles)
+        .where(
+          and(
+            inArray(songFiles.conversationId, convIds),
+            eq(songFiles.kind, 'sheet_music'),
+          ),
+        )
+        .orderBy(asc(songFiles.createdAt))
+    : [];
+  const sheetsByConv = new Map<string, { id: string; updatedAt: string }[]>();
+  for (const r of sheetRows) {
+    const arr = sheetsByConv.get(r.conversationId) ?? [];
+    arr.push({ id: r.id, updatedAt: r.updatedAt.toISOString() });
+    sheetsByConv.set(r.conversationId, arr);
+  }
+
   const songs: SetlistSong[] = rows.map((r) => ({
     id: r.id,
     conversationId: r.conversationId,
+    sheetVersions: r.conversationId
+      ? (sheetsByConv.get(r.conversationId) ?? [])
+      : [],
     name: resolveName(r.audioFileName, r.label),
     songLength: r.songLength,
     originalBand: r.originalBand,
@@ -270,6 +312,36 @@ export async function listBandSetlists(
     .where(inArray(setlistSongs.setlistId, ids))
     .orderBy(setlistSongs.position);
 
+  // Sheet versions for every song across these setlists, in one query. A join
+  // above would have multiplied each song's row by its sheet count.
+  const conversationIds = [
+    ...new Set(
+      rows.map((r) => r.conversationId).filter((id): id is string => !!id),
+    ),
+  ];
+  const sheetRows = conversationIds.length
+    ? await db
+        .select({
+          conversationId: songFiles.conversationId,
+          id: songFiles.id,
+          updatedAt: songFiles.updatedAt,
+        })
+        .from(songFiles)
+        .where(
+          and(
+            inArray(songFiles.conversationId, conversationIds),
+            eq(songFiles.kind, 'sheet_music'),
+          ),
+        )
+        .orderBy(asc(songFiles.createdAt))
+    : [];
+  const sheetsByConv = new Map<string, { id: string; updatedAt: string }[]>();
+  for (const r of sheetRows) {
+    const arr = sheetsByConv.get(r.conversationId) ?? [];
+    arr.push({ id: r.id, updatedAt: r.updatedAt.toISOString() });
+    sheetsByConv.set(r.conversationId, arr);
+  }
+
   const byList = new Map<string, SetlistSong[]>();
   for (const s of rows) {
     const arr = byList.get(s.setlistId) ?? [];
@@ -284,6 +356,9 @@ export async function listBandSetlists(
       audioStoredName: s.audioStoredName,
       audioMimeType: s.audioMimeType,
       audioVersionId: s.audioVersionId,
+      sheetVersions: s.conversationId
+        ? (sheetsByConv.get(s.conversationId) ?? [])
+        : [],
     });
     byList.set(s.setlistId, arr);
   }
