@@ -129,7 +129,7 @@ export function RecentEvents({
                     {s.title}
                   </span>
                   <span className="truncate text-[0.6875rem] minor-text-theme-colors">
-                    {s.bandName}
+                    <span className="minor-text-band-theme-colors">{s.bandName}</span>
                     {s.location ? ` · ${s.location}` : ''}
                   </span>
                 </span>

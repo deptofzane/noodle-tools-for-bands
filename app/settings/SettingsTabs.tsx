@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
+import { TabStrip } from '../TabStrip';
 
 export interface SettingsTab {
   id: string;
@@ -29,29 +30,26 @@ export function SettingsTabs({
 
   return (
     <div className="flex flex-col gap-6">
-      <div
-        role="tablist"
-        aria-label="Settings sections"
-        className="flex gap-1 overflow-x-auto border-b border-neutral-200 dark:border-neutral-800"
-      >
+      <TabStrip label="Settings sections" activeKey={active}>
         {tabs.map((tab) => (
           <button
             key={tab.id}
             type="button"
             role="tab"
+            data-tab-key={tab.id}
             aria-selected={active === tab.id}
             onClick={() => setActive(tab.id)}
             className={
-              '-mb-px shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition ' +
+              '-mb-px shrink-0 whitespace-nowrap border-b-2 border-transparent px-3 py-2 text-sm font-medium transition ' +
               (active === tab.id
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
+                ? 'text-blue-600 dark:text-blue-400'
+                : 'minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
             }
           >
             {tab.label}
           </button>
         ))}
-      </div>
+      </TabStrip>
 
       <div role="tabpanel">{current?.content}</div>
     </div>

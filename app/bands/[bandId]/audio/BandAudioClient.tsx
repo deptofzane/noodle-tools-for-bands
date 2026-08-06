@@ -19,6 +19,7 @@ import { AddAudioSourceModal } from './AddAudioSourceModal';
 import { useBandAudioData } from '../bandDetailHooks';
 import type { Conversation } from '../bandDetailShared';
 import { LoadingBlock } from '../../../Spinner';
+import { TabStrip } from '../../../TabStrip';
 import {
   AUDIO_TABS,
   AUDIO_TAB_STORAGE_KEY,
@@ -324,29 +325,26 @@ export function BandAudioClient({
       </span>
 
       {/* Tabs */}
-      <div
-        role="tablist"
-        aria-label="Audio sections"
-        className="flex gap-1 overflow-x-auto border-b border-neutral-200 dark:border-neutral-800"
-      >
+      <TabStrip label="Audio sections" activeKey={activeTab}>
         {AUDIO_TABS.map((tab) => (
           <button
             key={tab}
             type="button"
             role="tab"
+            data-tab-key={tab}
             aria-selected={activeTab === tab}
             onClick={() => setActiveTab(tab)}
             className={
-              '-mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition ' +
+              '-mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-3 py-2 text-sm font-medium transition ' +
               (activeTab === tab
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
+                ? 'text-blue-600 dark:text-blue-400'
+                : 'minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
             }
           >
             {TAB_LABELS[tab]}
           </button>
         ))}
-      </div>
+      </TabStrip>
 
       {activeTab === 'queue' && <SongQueue />}
 

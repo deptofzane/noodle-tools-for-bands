@@ -9,6 +9,7 @@ import { BandOverviewTab } from './BandOverviewTab';
 import { BandVenuesTab } from './BandVenuesTab';
 import { BandNotesTab } from './BandNotesTab';
 import { BAND_TABS, isBandTab, type BandTab } from './bandTabs';
+import { TabStrip } from '../../TabStrip';
 import { LeaveBandModal } from '../LeaveBandModal';
 import { useBandData, useBandChat } from './bandDetailHooks';
 import { LoadingBlock } from '../../Spinner';
@@ -101,23 +102,20 @@ export function BandDetailClient({
       </span>
 
       {/* Tabs */}
-      <div
-        role="tablist"
-        aria-label="Band sections"
-        className="flex gap-1 overflow-x-auto border-b border-neutral-200 dark:border-neutral-800"
-      >
+      <TabStrip label="Band sections" activeKey={activeTab}>
         {BAND_TABS.map((tab) => (
           <button
             key={tab}
             type="button"
             role="tab"
+            data-tab-key={tab}
             aria-selected={activeTab === tab}
             onClick={() => changeTab(tab)}
             className={
-              '-mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium capitalize transition ' +
+              '-mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-3 py-2 text-sm font-medium capitalize transition ' +
               (activeTab === tab
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
+                ? 'text-blue-600 dark:text-blue-400'
+                : 'minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
             }
           >
             {tab}
@@ -135,7 +133,7 @@ export function BandDetailClient({
             )}
           </button>
         ))}
-      </div>
+      </TabStrip>
 
       {activeTab === 'chat' && (
         <BandChat

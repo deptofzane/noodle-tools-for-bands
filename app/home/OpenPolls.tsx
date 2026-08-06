@@ -30,7 +30,7 @@ export function OpenPolls({ polls }: { polls: OpenPoll[] }) {
       >
         <span
           aria-hidden="true"
-          className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+          className="minor-text-theme-colors hover:text-neutral-700 dark:hover:text-neutral-200"
         >
           {open ? '▾' : '▸'}
         </span>
@@ -54,7 +54,7 @@ export function OpenPolls({ polls }: { polls: OpenPoll[] }) {
                     {p.description}
                   </span>
                 )}
-                <span className="text-[0.6875rem] text-neutral-400">
+                <span className="text-[0.6875rem] minor-text-theme-colors">
                   {p.bandName}
                 </span>
               </Link>

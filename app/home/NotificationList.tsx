@@ -223,7 +223,7 @@ export function NotificationList({
         >
           <span
             aria-hidden="true"
-            className="text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+            className="text-xl leading-none minor-text-theme-colors hover:text-neutral-700 dark:hover:text-neutral-200"
           >
             {minimized ? '▸' : '▾'}
           </span>
@@ -265,8 +265,8 @@ export function NotificationList({
                     />
                     <span className="flex min-w-0 flex-col">
                       <span className="text-sm">{messageFor(n)}</span>
-                      <span className="text-[0.6875rem] text-neutral-400">
-                        {n.bandName ? `${n.bandName} · ` : ''}
+                      <span className="text-[0.6875rem] minor-text-theme-colors">
+                        <span className="minor-text-band-theme-colors">{n.bandName ? `${n.bandName} · ` : ''}</span>
                         {formatRelativeTime(n.createdAt)}
                       </span>
                     </span>

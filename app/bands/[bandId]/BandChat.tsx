@@ -285,9 +285,9 @@ export function BandChat({
               <div className="flex items-baseline gap-2">
                 <span className="text-xs font-medium">
                   {m.author.name ?? m.author.email ?? 'Unknown'}
-                  {mine && <span className="text-neutral-400"> (you)</span>}
+                  {mine && <span className="minor-text-theme-colors"> (you)</span>}
                 </span>
-                <span className="text-[0.6875rem] text-neutral-400">
+                <span className="text-[0.6875rem] minor-text-theme-colors">
                   {formatRelativeTime(m.createdAt)}
                   {m.editedAt && <span title="Edited"> · edited</span>}
                 </span>
@@ -296,7 +296,7 @@ export function BandChat({
                     <button
                       type="button"
                       onClick={() => setEditingId(m.id)}
-                      className="text-[0.6875rem] text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+                      className="text-[0.6875rem] minor-text-theme-colors hover:text-neutral-700 dark:hover:text-neutral-200"
                     >
                       Edit
                     </button>
@@ -305,7 +305,7 @@ export function BandChat({
                     <button
                       type="button"
                       onClick={() => setDeleteTarget(m)}
-                      className="text-[0.6875rem] text-neutral-400 hover:text-red-600 dark:hover:text-red-400"
+                      className="text-[0.6875rem] minor-text-theme-colors hover:text-red-600 dark:hover:text-red-400"
                       aria-label="Delete message"
                     >
                       Delete
