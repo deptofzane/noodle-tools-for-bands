@@ -24,7 +24,7 @@ const ICON_BTN_CLS =
   'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 disabled:opacity-40 dark:text-neutral-300 dark:hover:bg-neutral-800';
 const ROW_CLS = 'flex w-full items-center gap-3 px-3 py-2 lg:px-6';
 const TIME_CLS =
-  'shrink-0 font-mono text-[0.6875rem] tabular-nums text-neutral-500';
+  'shrink-0 font-mono text-[0.6875rem] tabular-nums minor-text-theme-colors';
 
 function PlayPauseIcon({ isPlaying }: { isPlaying: boolean }) {
   return isPlaying ? (
@@ -87,7 +87,7 @@ function TrackColumn({
             links out to the track. */}
         <span className="min-w-0 truncate text-sm font-medium">{title}</span>
         {total > 1 && (
-          <span className="shrink-0 text-xs tabular-nums text-neutral-500">
+          <span className="shrink-0 text-xs tabular-nums minor-text-theme-colors">
             {position} of {total}
           </span>
         )}
@@ -136,12 +136,12 @@ function TrackColumn({
       )}
       {/* Above the subtitle, which is where tempo and key land. */}
       {originalBand && !error && (
-        <p className="truncate text-[0.6875rem] text-neutral-500">
+        <p className="truncate text-[0.6875rem] minor-text-theme-colors">
           Originally by {originalBand}
         </p>
       )}
       {subtitle && !error && (
-        <p className="truncate text-[0.6875rem] text-neutral-500">{subtitle}</p>
+        <p className="truncate text-[0.6875rem] minor-text-theme-colors">{subtitle}</p>
       )}
     </div>
   );
@@ -529,7 +529,7 @@ export function MiniPlayer({
             onClick={() => setExpanded(true)}
             aria-label="Expand player"
             title="Expand player"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full minor-text-theme-colors hover:bg-neutral-100 hover:text-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
           >
             <svg
               viewBox="0 0 24 24"
@@ -554,7 +554,7 @@ export function MiniPlayer({
             }}
             aria-label="Close player"
             title="Close player"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full minor-text-theme-colors hover:bg-neutral-100 hover:text-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
           >
             <span aria-hidden="true" className="text-lg leading-none">
               ×

@@ -60,6 +60,38 @@
 }
 
 /*
+ * Toast entrance (app/ToastProvider.tsx).
+ *
+ * Slides in from whichever edge the toast is anchored to: down from the top on
+ * mobile, up from the bottom on desktop. One set of keyframes covers both —
+ * the direction is a custom property the component flips at `lg`, so there's
+ * no second animation to keep in step.
+ *
+ * A toast is a small thing appearing at the edge of a screen someone isn't
+ * looking at; the movement is what draws the eye. Reduced motion gets the
+ * fade alone, which still announces itself without the travel.
+ */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--toast-from, -0.5rem));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.toast-in {
+  animation: toast-in 180ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast-in {
+    animation: toast-in 180ms ease-out;
+    --toast-from: 0;
+  }
+}
+
+/*
  * The nav bar is fixed — to the bottom on mobile, the top on desktop — so it
  * covers page content unless the body reserves its height on the matching
  * side. Set on <body> only for signed-in routes, which are the ones that
@@ -95,7 +127,7 @@ body {
   @apply text-2xl font-semibold tracking-tight;
 }
 
-.theme-text-colors {
+.minor-text-theme-colors {
   @apply text-neutral-500 dark:text-neutral-400;
 }
 

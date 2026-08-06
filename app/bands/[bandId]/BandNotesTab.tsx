@@ -27,7 +27,7 @@ function LinkChip({ link, bandId }: { link: NoteLink; bandId: string }) {
   const external = link.kind === 'other' && /^https?:\/\//i.test(href ?? '');
   const inner = (
     <>
-      <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide text-neutral-500 dark:bg-neutral-800">
+      <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide minor-text-theme-colors dark:bg-neutral-800">
         {kindLabel(link.kind)}
       </span>
       <span className="truncate">{link.label}</span>
@@ -141,7 +141,7 @@ export function BandNotesTab({
             New note
           </Link>
         </div>
-        <span className="block truncate text-xs text-neutral-500">
+        <span className="block truncate text-xs minor-text-theme-colors">
           These are private unless you share them with the band
         </span>
       </div>
@@ -155,7 +155,7 @@ export function BandNotesTab({
       {notes === null ? (
         <LoadingBlock label="Loading notes" />
       ) : notes.length === 0 ? (
-        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
           No notes yet. “New note” starts one — it’s private to you unless you
           share it.
         </p>
@@ -206,7 +206,7 @@ export function BandNotesTab({
                         </span>
                       )}
                     </span>
-                    <span className="text-xs text-neutral-500">
+                    <span className="text-xs minor-text-theme-colors">
                       {mine ? 'You' : (note.authorName ?? 'A bandmate')} ·{' '}
                       {formatRelativeTime(note.updatedAt)}
                     </span>

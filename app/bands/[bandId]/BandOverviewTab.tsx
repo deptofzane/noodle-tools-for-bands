@@ -150,7 +150,7 @@ export function BandOverviewTab({
               </span>
               <span className="truncate font-medium">{show.title}</span>
             </span>
-            <span className="shrink-0 text-xs text-neutral-500">
+            <span className="shrink-0 text-xs minor-text-theme-colors">
               {formatDateShort(show.date)}
             </span>
           </button>
@@ -332,7 +332,7 @@ export function BandOverviewTab({
               {upcomingShows.map(renderShow)}
             </ul>
           ) : (
-            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
               No upcoming events. Use “Add event” to schedule one.
             </p>
           ))}
@@ -346,7 +346,7 @@ export function BandOverviewTab({
               onToggle={() => setPastShowsMinimized((v) => !v)}
               label="Past events"
             >
-              <h2 className="text-sm font-medium text-neutral-500">
+              <h2 className="text-sm font-medium minor-text-theme-colors">
                 Past events
               </h2>
             </MinimizeToggle>

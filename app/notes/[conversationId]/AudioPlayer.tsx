@@ -497,11 +497,11 @@ function AudioPlayerRail({
           {fileName}
         </h2>
         {originalBand && (
-          <p className="truncate text-xs text-neutral-500">
+          <p className="truncate text-xs minor-text-theme-colors">
             Originally by {originalBand}
           </p>
         )}
-        {songMeta && <p className="text-xs text-neutral-500">{songMeta}</p>}
+        {songMeta && <p className="text-xs minor-text-theme-colors">{songMeta}</p>}
       </div>
 
       {error ? (
@@ -512,7 +512,7 @@ function AudioPlayerRail({
         <div className="flex gap-3">
           {/* Progress, running top to bottom */}
           <div className="flex flex-col items-center gap-1 h-[28rem]">
-            <span className="font-mono text-[0.6875rem] tabular-nums text-neutral-500">
+            <span className="font-mono text-[0.6875rem] tabular-nums minor-text-theme-colors">
               {formatDuration(currentTime)}
             </span>
             <input
@@ -532,7 +532,7 @@ function AudioPlayerRail({
               // fills downward the way the song reads.
               className="h-[16rem] w-4 flex-1 accent-blue-600 [writing-mode:vertical-lr]"
             />
-            <span className="font-mono text-[0.6875rem] tabular-nums text-neutral-500">
+            <span className="font-mono text-[0.6875rem] tabular-nums minor-text-theme-colors">
               {formatDuration(duration)}
             </span>
           </div>
@@ -637,7 +637,7 @@ function AudioPlayerRail({
               >
                 <p
                   role="presentation"
-                  className="px-4 pb-1 pt-1 text-xs font-medium text-neutral-500 sm:px-3"
+                  className="px-4 pb-1 pt-1 text-xs font-medium minor-text-theme-colors sm:px-3"
                 >
                   Versions:
                 </p>
@@ -778,7 +778,7 @@ export function AudioPlayerView({
         <h2 className="truncate text-sm font-medium lg:max-w-[16rem] ">
           {fileName}
         </h2>
-        <span className="shrink-0 font-mono text-xs tabular-nums text-neutral-500">
+        <span className="shrink-0 font-mono text-xs tabular-nums minor-text-theme-colors">
           {formatDuration(currentTime)} / {formatDuration(duration)}
         </span>
       </div>

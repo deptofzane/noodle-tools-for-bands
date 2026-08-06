@@ -179,7 +179,7 @@ export function BandSetlistsTab({
                 stale={offline.isStale(sl)}
               />
             ) : null}
-            <span className="text-xs text-neutral-500">
+            <span className="text-xs minor-text-theme-colors">
               {songCountLabel(sl.songs)}
             </span>
             <ActionMenu label="Setlist actions" disabled={busy}>
@@ -292,7 +292,7 @@ export function BandSetlistsTab({
         {!setlistsMinimized && (
           <>
             {setlists.length === 0 && (
-              <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+              <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
                 No setlists yet. Use “Create setlist” to build one.
               </p>
             )}
@@ -302,7 +302,7 @@ export function BandSetlistsTab({
               </ul>
             )}
             {setlists.length > 0 && activeSetlists.length === 0 && (
-              <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+              <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
                 No active setlists. Use “Create setlist” to build one.
               </p>
             )}
@@ -318,11 +318,11 @@ export function BandSetlistsTab({
               onToggle={() => setArchivedMinimized((v) => !v)}
               label="Archived setlists"
             >
-              <h2 className="text-sm font-medium text-neutral-500">
+              <h2 className="text-sm font-medium minor-text-theme-colors">
                 Archived setlists
               </h2>
             </MinimizeToggle>
-            <span className="text-xs text-neutral-500">
+            <span className="text-xs minor-text-theme-colors">
               <span aria-hidden="true">·</span> {archivedSetlists.length}
             </span>
           </div>

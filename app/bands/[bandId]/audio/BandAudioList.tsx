@@ -74,7 +74,7 @@ export function BandAudioList({
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search audio…"
         aria-label="Search audio"
-        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:placeholder:text-neutral-500"
+        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:placeholder:minor-text-theme-colors"
       />
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
@@ -87,7 +87,7 @@ export function BandAudioList({
               <h2 className="text-sm font-medium">Audio</h2>
             </MinimizeToggle>
             {importProgress && (
-              <span className="truncate text-xs text-neutral-500">
+              <span className="truncate text-xs minor-text-theme-colors">
                 Importing {importProgress.current} of {importProgress.total}…
               </span>
             )}
@@ -116,7 +116,7 @@ export function BandAudioList({
           </div>
         </div>
         {!audioMinimized && activeSongs && activeSongs.length === 0 && (
-          <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+          <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
             No songs yet. Use “Create song” to start one from a name, or “Add
             audio” to add{' '}
             {canUseDrive ? 'from Drive or your device' : 'from your device'}.
@@ -127,7 +127,7 @@ export function BandAudioList({
           activeSongs.length > 0 &&
           visibleActive &&
           visibleActive.length === 0 && (
-            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
               No audio matches “{search.trim()}”.
             </p>
           )}
@@ -145,7 +145,7 @@ export function BandAudioList({
             onToggle={() => setArchivedMinimized((v) => !v)}
             label="Archived Audio"
           >
-            <h2 className="text-sm font-medium text-neutral-500">
+            <h2 className="text-sm font-medium minor-text-theme-colors">
               Archived Audio
             </h2>
           </MinimizeToggle>
@@ -155,7 +155,7 @@ export function BandAudioList({
             </ul>
           )}
           {!archivedMinimized && visibleArchived.length === 0 && (
-            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
               No archived audio matches “{search.trim()}”.
             </p>
           )}

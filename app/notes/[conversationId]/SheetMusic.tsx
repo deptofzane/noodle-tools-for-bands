@@ -452,12 +452,12 @@ export function SheetMusic({
               </div>
             )}
             {kind === 'other' && (
-              <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+              <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
                 Preview isn’t available for this file type.
               </p>
             )}
 
-            <div className="flex items-center justify-between gap-3 text-xs text-neutral-500">
+            <div className="flex items-center justify-between gap-3 text-xs minor-text-theme-colors">
               <a
                 href={viewUrl}
                 target="_blank"
@@ -516,7 +516,7 @@ export function SheetMusic({
                 {'{directives}'}), or plain source text.
               </p>
               <div className="mt-3 flex items-center gap-2 text-sm">
-                <span className="text-neutral-500">Format:</span>
+                <span className="minor-text-theme-colors">Format:</span>
                 {SHEET_TEXT_FORMATS.map((f) => (
                   <button
                     key={f.id}
@@ -527,7 +527,7 @@ export function SheetMusic({
                       'rounded-md px-2 py-1 text-xs font-medium ' +
                       (pasteFormat === f.id
                         ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100'
-                        : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800')
+                        : 'minor-text-theme-colors hover:bg-neutral-100 dark:hover:bg-neutral-800')
                     }
                   >
                     {f.label}

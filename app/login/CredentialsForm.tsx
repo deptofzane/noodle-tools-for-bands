@@ -63,7 +63,7 @@ export function CredentialsForm({ callbackUrl }: { callbackUrl: string }) {
       >
         {busy ? 'Signing in…' : 'Sign in with email'}
       </button>
-      <div className="mt-1 flex justify-between text-xs text-neutral-500">
+      <div className="mt-1 flex justify-between text-xs minor-text-theme-colors">
         <Link href="/signup" className="hover:underline">
           Create account
         </Link>

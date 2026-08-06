@@ -71,7 +71,7 @@ export function AnnotatedList() {
 
   if (items.length === 0) {
     return (
-      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
         No open conversations. Register audio in a{' '}
         <Link href="/bands" className="text-blue-600 underline">
           band
@@ -104,7 +104,7 @@ export function AnnotatedList() {
                   </span>
                 ) : null}
               </div>
-              <div className="mt-0.5 text-xs text-neutral-500">
+              <div className="mt-0.5 text-xs minor-text-theme-colors">
                 {item.bandName} · Updated{' '}
                 {formatRelativeTime(item.lastActivityAt)}
                 {item.lastActivityBy && (

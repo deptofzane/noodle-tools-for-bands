@@ -56,7 +56,7 @@ function PollResults({
                 {mine && <span aria-hidden="true">✓ </span>}
                 {o.text}
               </span>
-              <span className="shrink-0 tabular-nums text-neutral-500">
+              <span className="shrink-0 tabular-nums minor-text-theme-colors">
                 {o.votes} · {pct}%
               </span>
             </span>
@@ -127,7 +127,7 @@ export function PollCard({
           </span>
           <span className="min-w-0 truncate font-medium">{title}</span>
         </span>
-        <span className="shrink-0 text-xs text-neutral-500">
+        <span className="shrink-0 text-xs minor-text-theme-colors">
           {formatRelativeTime(createdAt)}
         </span>
       </button>
@@ -151,7 +151,7 @@ export function PollCard({
                 myVote={poll.myVote}
               />
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[0.6875rem] text-neutral-500">
+                <span className="text-[0.6875rem] minor-text-theme-colors">
                   {poll.totalVotes} {poll.totalVotes === 1 ? 'vote' : 'votes'}
                 </span>
                 <Link

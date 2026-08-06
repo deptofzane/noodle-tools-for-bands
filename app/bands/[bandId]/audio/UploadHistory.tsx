@@ -41,7 +41,7 @@ export function UploadHistory({
 
   if (uploads.length === 0) {
     return (
-      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
         Nothing uploaded yet. Audio you add shows up here, grouped by day.
       </p>
     );
@@ -63,7 +63,7 @@ export function UploadHistory({
               <h2 className="text-sm font-medium">{dayLabel(key)}</h2>
             </MinimizeToggle>
             <div className="flex shrink-0 items-center gap-1">
-              <span className="text-xs text-neutral-500">
+              <span className="text-xs minor-text-theme-colors">
                 {dayUploads.length}{' '}
                 {dayUploads.length === 1 ? 'upload' : 'uploads'}
               </span>
@@ -98,11 +98,11 @@ export function UploadHistory({
                   >
                     <span className="block truncate">{u.title}</span>
                     {/* The file, so two takes of one song are tellable apart. */}
-                    <span className="block truncate text-xs text-neutral-500">
+                    <span className="block truncate text-xs minor-text-theme-colors">
                       {u.label || u.fileName}
                     </span>
                   </Link>
-                  <span className="shrink-0 text-xs tabular-nums text-neutral-500">
+                  <span className="shrink-0 text-xs tabular-nums minor-text-theme-colors">
                     {timeLabel(u.createdAt)}
                   </span>
                 </li>

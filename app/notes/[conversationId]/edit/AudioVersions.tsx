@@ -210,7 +210,7 @@ export function AudioVersions({
   return (
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-medium">Audio versions</h2>
-      <p className="text-[0.6875rem] text-neutral-500">
+      <p className="text-[0.6875rem] minor-text-theme-colors">
         The default version is what plays when the song loads. Notes are shared
         across all versions.
       </p>
@@ -271,7 +271,7 @@ export function AudioVersions({
                         </span>
                       )}
                     </span>
-                    <span className="truncate text-[0.6875rem] text-neutral-500">
+                    <span className="truncate text-[0.6875rem] minor-text-theme-colors">
                       {v.label ? `${v.fileName} · ` : ''}
                       {v.songLength != null
                         ? formatDuration(v.songLength)
@@ -314,7 +314,7 @@ export function AudioVersions({
           ))}
         </ul>
       ) : (
-        <p className="rounded-md border border-neutral-200 px-3 py-4 text-center text-sm text-neutral-500 dark:border-neutral-800">
+        <p className="rounded-md border border-neutral-200 px-3 py-4 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
           No audio yet. Add a version below.
         </p>
       )}

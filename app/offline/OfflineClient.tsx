@@ -124,7 +124,7 @@ export function OfflineClient() {
         <h1 className="title-text">
           {online ? 'Downloaded setlists' : 'You’re offline'}
         </h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm minor-text-theme-colors">
           {online
             ? 'These setlists are saved on this device, so they keep working when the network doesn’t.'
             : 'No connection, so the rest of the app is out of reach. These setlists are saved on this device and still work.'}
@@ -134,7 +134,7 @@ export function OfflineClient() {
       {records === null ? (
         <LoadingBlock label="Loading downloads" />
       ) : records.length === 0 ? (
-        <div className="rounded-md border border-neutral-200 px-3 py-8 text-center text-sm text-neutral-500 dark:border-neutral-800">
+        <div className="rounded-md border border-neutral-200 px-3 py-8 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
           <p>Nothing is downloaded on this device.</p>
           <p className="mt-1">
             {online
@@ -154,7 +154,7 @@ export function OfflineClient() {
               >
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <span className="truncate font-medium">{rec.name}</span>
-                  <span className="text-xs text-neutral-500">
+                  <span className="text-xs minor-text-theme-colors">
                     {rec.songCount} song{rec.songCount === 1 ? '' : 's'}
                     {parts.length > 0 && ` · ${parts.join(' · ')}`}
                   </span>
@@ -207,7 +207,7 @@ export function OfflineClient() {
       )}
 
       {!online && (
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs minor-text-theme-colors">
           Anything else will be here when the connection is.
         </p>
       )}

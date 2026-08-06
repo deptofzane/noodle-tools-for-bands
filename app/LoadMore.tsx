@@ -17,7 +17,7 @@ export function LoadMore({
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs minor-text-theme-colors">
         {/* No total: counting the whole table to render a number nobody asked
             for costs a second query on every page. */}
         {shown} {shown === 1 ? noun : `${noun}s`}

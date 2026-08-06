@@ -47,7 +47,7 @@ export function ClosedPolls() {
   if (items === null) return <LoadingBlock label="Loading closed polls" />;
   if (items.length === 0)
     return (
-      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
         No closed polls yet. A poll lands here once someone closes it.
       </p>
     );
@@ -70,7 +70,7 @@ export function ClosedPolls() {
             >
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium">{poll.title}</div>
-                <div className="mt-0.5 text-xs text-neutral-500">
+                <div className="mt-0.5 text-xs minor-text-theme-colors">
                   {poll.bandName} · closed {formatRelativeTime(poll.closedAt)}
                   {!poll.voted && (
                     <>

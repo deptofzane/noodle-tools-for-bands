@@ -203,13 +203,13 @@ export function NoteItem({
             type="button"
             onClick={handleToggleResolved}
             disabled={isResolving}
-            className="text-xs text-neutral-500 sm:hover:text-neutral-900 disabled:opacity-50 sm:dark:hover:text-neutral-100"
+            className="text-xs minor-text-theme-colors sm:hover:text-neutral-900 disabled:opacity-50 sm:dark:hover:text-neutral-100"
           >
             {isResolved ? 'Reopen thread' : 'Resolve thread'}
           </button>
         )}
         {replyCount > 0 && (
-          <span className="text-xs text-neutral-500">
+          <span className="text-xs minor-text-theme-colors">
             <span aria-hidden="true">·</span> {replyLabel}
           </span>
         )}
@@ -233,7 +233,7 @@ export function NoteItem({
           )}
 
           {!isEditing && (
-            <div className="mt-2 flex items-center gap-2 text-xs text-neutral-500">
+            <div className="mt-2 flex items-center gap-2 text-xs minor-text-theme-colors">
               <button
                 type="button"
                 onClick={() => setIsReplying((v) => !v)}
@@ -384,7 +384,7 @@ function ReplyItem({
         </p>
       )}
       {reply.isMine && !isEditing && (
-        <div className="mt-1 flex items-center gap-2 text-xs text-neutral-500">
+        <div className="mt-1 flex items-center gap-2 text-xs minor-text-theme-colors">
           <button
             type="button"
             onClick={() => setIsEditing(true)}

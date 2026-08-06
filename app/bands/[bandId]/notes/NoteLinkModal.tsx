@@ -162,7 +162,7 @@ export function NoteLinkModal({
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="note-link-label" className="text-sm font-medium">
-              Label <span className="text-neutral-500">(optional)</span>
+              Label <span className="minor-text-theme-colors">(optional)</span>
             </label>
             <input
               id="note-link-label"
@@ -191,7 +191,7 @@ export function NoteLinkModal({
               {error}
             </p>
           ) : shown.length === 0 ? (
-            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
               {choices.length === 0
                 ? 'Nothing of this type in the band yet.'
                 : 'Nothing matches that.'}
@@ -214,7 +214,7 @@ export function NoteLinkModal({
                   >
                     <span className="truncate font-medium">{c.label}</span>
                     {c.hint && (
-                      <span className="truncate text-xs text-neutral-500">
+                      <span className="truncate text-xs minor-text-theme-colors">
                         {c.hint}
                       </span>
                     )}

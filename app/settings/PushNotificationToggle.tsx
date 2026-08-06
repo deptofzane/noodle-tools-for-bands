@@ -30,7 +30,7 @@ export function PushNotificationToggle() {
     <div className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
       <div className="min-w-0">
         <p className="font-medium">Push notifications</p>
-        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+        <p className="mt-1 text-xs minor-text-theme-colors dark:text-neutral-400">
           {description}
         </p>
       </div>
@@ -51,7 +51,7 @@ export function PushNotificationToggle() {
           Enable
         </button>
       ) : status === 'working' ? (
-        <span className="shrink-0 text-xs text-neutral-500">Working…</span>
+        <span className="shrink-0 text-xs minor-text-theme-colors">Working…</span>
       ) : status === 'checking' ? (
         <span className="shrink-0 text-xs text-neutral-400">…</span>
       ) : null}

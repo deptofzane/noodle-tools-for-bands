@@ -97,7 +97,7 @@ export function NoteForm({
         </button>
       </div>
 
-      <p className="text-sm text-neutral-500">{bandName}</p>
+      <p className="text-sm minor-text-theme-colors">{bandName}</p>
 
       <div className="flex flex-col gap-1">
         <label htmlFor="note-title" className="text-sm font-medium">
@@ -137,7 +137,7 @@ export function NoteForm({
           </button>
         </div>
         {links.length === 0 ? (
-          <p className="text-[0.6875rem] text-neutral-500">
+          <p className="text-[0.6875rem] minor-text-theme-colors">
             Optional — point this note at a song, event, venue, setlist, poll,
             or anything else.
           </p>
@@ -149,7 +149,7 @@ export function NoteForm({
                 className="flex items-center justify-between gap-2 rounded-md border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800"
               >
                 <span className="flex min-w-0 items-center gap-2">
-                  <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide text-neutral-500 dark:bg-neutral-800">
+                  <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide minor-text-theme-colors dark:bg-neutral-800">
                     {kindLabel(l.kind)}
                   </span>
                   <span className="truncate">{l.label}</span>
@@ -179,7 +179,7 @@ export function NoteForm({
         />
         <span>
           <span className="font-medium">Share with the band</span>
-          <span className="block text-[0.6875rem] text-neutral-500">
+          <span className="block text-[0.6875rem] minor-text-theme-colors">
             Off by default — only you can see this note. Sharing lets the band
             read it; editing and deleting stay with you.
           </span>

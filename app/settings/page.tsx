@@ -89,7 +89,7 @@ export default async function SettingsPage({
           <p className="font-medium">
             {session.user.name ?? session.user.email}
           </p>
-          <p className="text-xs text-neutral-500">{session.user.email}</p>
+          <p className="text-xs minor-text-theme-colors">{session.user.email}</p>
         </div>
         <form
           action={async () => {
@@ -111,7 +111,7 @@ export default async function SettingsPage({
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="font-medium">Google account</p>
-            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="mt-1 text-xs minor-text-theme-colors dark:text-neutral-400">
               {googleAccount
                 ? `Connected as ${googleAccount.email ?? 'your Google account'}. Used to import audio and sheet music from Drive.`
                 : 'Connect a Google account to import audio and sheet music from Drive. It doesn’t need to match your login email.'}
@@ -164,7 +164,7 @@ export default async function SettingsPage({
           )}
         </div>
         {googleAccount && !hasPassword && (
-          <p className="mt-2 text-[0.6875rem] text-neutral-500">
+          <p className="mt-2 text-[0.6875rem] minor-text-theme-colors">
             Set a password (via “Forgot password”) before disconnecting, so you
             don’t lose access.
           </p>
@@ -199,7 +199,7 @@ export default async function SettingsPage({
       <div className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
         <div>
           <p className="font-medium">Theme</p>
-          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-xs minor-text-theme-colors dark:text-neutral-400">
             Choose a light or dark color scheme. Defaults to your system
             preference until you change it.
           </p>
@@ -210,7 +210,7 @@ export default async function SettingsPage({
       <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
         <div>
           <p className="font-medium">Font size</p>
-          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-xs minor-text-theme-colors dark:text-neutral-400">
             Scale text and controls across the app. Sheet music keeps its own
             size (use the zoom in Practice or Live to resize charts).
           </p>

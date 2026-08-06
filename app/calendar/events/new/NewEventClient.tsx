@@ -198,7 +198,7 @@ export function NewEventClient({
 
   if (bands.length === 0) {
     return (
-      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
         You need to be in a band to create an event.
       </p>
     );
@@ -228,7 +228,7 @@ export function NewEventClient({
           onChange={setBandId}
           options={bands.map((b) => ({ value: b.id, label: b.name }))}
         />
-        <p className="text-[0.6875rem] text-neutral-500">
+        <p className="text-[0.6875rem] minor-text-theme-colors">
           The band that owns this event. Its members can see it; you can add
           others later.
         </p>
@@ -343,7 +343,7 @@ export function NewEventClient({
             </button>
           )}
         </div>
-        <p className="text-[0.6875rem] text-neutral-500">
+        <p className="text-[0.6875rem] minor-text-theme-colors">
           Optional — associate one of the band’s saved venues.
         </p>
       </div>
@@ -362,7 +362,7 @@ export function NewEventClient({
           ]}
         />
         {setlists.length === 0 && (
-          <p className="text-[0.6875rem] text-neutral-500">
+          <p className="text-[0.6875rem] minor-text-theme-colors">
             This band has no setlists yet.
           </p>
         )}
@@ -391,7 +391,7 @@ export function NewEventClient({
           rows={3}
           className={`${field} min-h-20`}
         />
-        <p className="text-[0.6875rem] text-neutral-500">
+        <p className="text-[0.6875rem] minor-text-theme-colors">
           Information about the event.
         </p>
       </CollapsibleSection>
@@ -405,7 +405,7 @@ export function NewEventClient({
           rows={3}
           className={`${field} min-h-20`}
         />
-        <p className="text-[0.6875rem] text-neutral-500">
+        <p className="text-[0.6875rem] minor-text-theme-colors">
           The band’s private notes — not shared to the calendar feed.
         </p>
       </CollapsibleSection>

@@ -198,7 +198,7 @@ export function NotificationPreferences({
       )}
 
       <div className="rounded-lg border border-neutral-200 dark:border-neutral-800">
-        <div className="flex items-center justify-end gap-5 px-4 py-2 text-[0.6875rem] font-medium text-neutral-500">
+        <div className="flex items-center justify-end gap-5 px-4 py-2 text-[0.6875rem] font-medium minor-text-theme-colors">
           <span className="w-11 text-center">In app</span>
           <span className="w-11 text-center">Push</span>
         </div>
@@ -213,7 +213,7 @@ export function NotificationPreferences({
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium">{label}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  <p className="text-xs minor-text-theme-colors dark:text-neutral-400">
                     {description}
                   </p>
                 </div>

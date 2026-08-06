@@ -186,7 +186,7 @@ export function NoteForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-      {header && <div className="text-xs text-neutral-500">{header}</div>}
+      {header && <div className="text-xs minor-text-theme-colors">{header}</div>}
       <div className="relative">
         <textarea
           ref={textareaRef}
@@ -220,7 +220,7 @@ export function NoteForm({
                 >
                   <span className="font-medium">{mentionLabel(m)}</span>
                   {m.email && m.email !== mentionLabel(m) && (
-                    <span className="text-[0.6875rem] text-neutral-500">
+                    <span className="text-[0.6875rem] minor-text-theme-colors">
                       {m.email}
                     </span>
                   )}
@@ -234,7 +234,7 @@ export function NoteForm({
         <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
       )}
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[0.625rem] text-neutral-500">
+        <span className="text-[0.625rem] minor-text-theme-colors">
           ⌘ Enter to submit
         </span>
         <div className="flex gap-2">

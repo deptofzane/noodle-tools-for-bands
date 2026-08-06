@@ -248,7 +248,7 @@ export function EditSongClient({
             </option>
           ))}
         </select>
-        <p className="text-[0.6875rem] text-neutral-500">
+        <p className="text-[0.6875rem] minor-text-theme-colors">
           Moving changes who can access this song — only members of the new band
           will see it.
         </p>
@@ -258,7 +258,7 @@ export function EditSongClient({
       <section className="flex flex-col gap-2">
         <label className="text-sm font-medium">Details</label>
         <div className="flex flex-col gap-1">
-          <span className="text-xs text-neutral-500">Original band</span>
+          <span className="text-xs minor-text-theme-colors">Original band</span>
           <input
             value={originalBand}
             onChange={(e) => setOriginalBand(e.target.value)}
@@ -269,7 +269,7 @@ export function EditSongClient({
         </div>
         <div className="flex gap-2">
           <div className="flex flex-1 flex-col gap-1">
-            <span className="text-xs text-neutral-500">BPM</span>
+            <span className="text-xs minor-text-theme-colors">BPM</span>
             <input
               type="number"
               inputMode="numeric"
@@ -282,7 +282,7 @@ export function EditSongClient({
             />
           </div>
           <div className="flex flex-1 flex-col gap-1">
-            <span className="text-xs text-neutral-500">Key</span>
+            <span className="text-xs minor-text-theme-colors">Key</span>
             <input
               value={key}
               onChange={(e) => setKey(e.target.value)}
@@ -292,7 +292,7 @@ export function EditSongClient({
             />
           </div>
         </div>
-        <p className="text-[0.6875rem] text-neutral-500">
+        <p className="text-[0.6875rem] minor-text-theme-colors">
           All optional — who the song is originally by (for covers), its tempo,
           and its musical key. Leave blank if unknown.
         </p>
@@ -315,7 +315,7 @@ export function EditSongClient({
       {/* Archive */}
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium">Archive</h2>
-        <p className="text-[0.6875rem] text-neutral-500">
+        <p className="text-[0.6875rem] minor-text-theme-colors">
           {archived
             ? 'This song is archived — it appears under “Archived Audio” on the band page.'
             : 'Archiving moves this song into a separate “Archived Audio” list on the band page. It keeps all of its notes and files.'}

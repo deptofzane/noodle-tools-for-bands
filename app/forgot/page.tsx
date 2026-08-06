@@ -56,7 +56,7 @@ export default function ForgotPage() {
             </button>
           </form>
         )}
-        <p className="mt-4 text-xs text-neutral-500">
+        <p className="mt-4 text-xs minor-text-theme-colors">
           <Link href="/login" className="hover:underline">
             Back to sign in
           </Link>

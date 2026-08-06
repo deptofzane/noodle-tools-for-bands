@@ -97,7 +97,7 @@ export default async function InvitePage({
               Log in
             </Link>
           </div>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs minor-text-theme-colors">
             Invite sent to {invite.email}.
           </p>
         </div>

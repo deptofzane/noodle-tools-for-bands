@@ -63,7 +63,7 @@ export function VenuePickerModal({
             <span className="w-3 shrink-0 text-blue-600 dark:text-blue-400">
               {selectedId === null ? '✓' : ''}
             </span>
-            <span className="text-neutral-500">No venue</span>
+            <span className="minor-text-theme-colors">No venue</span>
           </button>
         </li>
 
@@ -80,7 +80,7 @@ export function VenuePickerModal({
               <span className="min-w-0">
                 <span className="block truncate font-medium">{v.name}</span>
                 {v.address && (
-                  <span className="block truncate text-xs text-neutral-500">
+                  <span className="block truncate text-xs minor-text-theme-colors">
                     {v.address}
                   </span>
                 )}
@@ -90,7 +90,7 @@ export function VenuePickerModal({
         ))}
 
         {filtered.length === 0 && (
-          <li className="px-3 py-6 text-center text-sm text-neutral-500">
+          <li className="px-3 py-6 text-center text-sm minor-text-theme-colors">
             {venues.length === 0
               ? 'This band has no saved venues yet.'
               : 'No venues match your search.'}

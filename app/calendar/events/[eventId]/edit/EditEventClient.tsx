@@ -167,7 +167,7 @@ export function EditEventClient({
         <h1 className="title-text">Edit event</h1>
       </div>
 
-      <p className="text-sm text-neutral-500">{bandName}</p>
+      <p className="text-sm minor-text-theme-colors">{bandName}</p>
 
       <div className="flex flex-col gap-1">
         <label htmlFor="event-title" className="text-sm font-medium">
@@ -265,7 +265,7 @@ export function EditEventClient({
             </button>
           )}
         </div>
-        <p className="text-[0.6875rem] text-neutral-500">
+        <p className="text-[0.6875rem] minor-text-theme-colors">
           Optional — associate one of the band’s saved venues.
         </p>
       </div>
@@ -284,7 +284,7 @@ export function EditEventClient({
           ]}
         />
         {setlists.length === 0 && (
-          <p className="text-[0.6875rem] text-neutral-500">
+          <p className="text-[0.6875rem] minor-text-theme-colors">
             This band has no setlists yet.
           </p>
         )}
@@ -311,7 +311,7 @@ export function EditEventClient({
           rows={3}
           className={`${field} min-h-20`}
         />
-        <p className="text-[0.6875rem] text-neutral-500">
+        <p className="text-[0.6875rem] minor-text-theme-colors">
           Information about the event.
         </p>
       </CollapsibleSection>
@@ -325,7 +325,7 @@ export function EditEventClient({
           rows={3}
           className={`${field} min-h-20`}
         />
-        <p className="text-[0.6875rem] text-neutral-500">
+        <p className="text-[0.6875rem] minor-text-theme-colors">
           The band’s private notes — not shared to the calendar feed.
         </p>
       </CollapsibleSection>

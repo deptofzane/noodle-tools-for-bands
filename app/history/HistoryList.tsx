@@ -56,7 +56,7 @@ export function HistoryList() {
 
   if (items.length === 0) {
     return (
-      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
         Nothing in history yet. Conversations show up here when you close them
         from the notes page.
       </p>
@@ -83,7 +83,7 @@ export function HistoryList() {
                 <div className="truncate font-medium">
                   {item.audioFileName ?? 'Untitled audio'}
                 </div>
-                <div className="mt-0.5 text-xs text-neutral-500">
+                <div className="mt-0.5 text-xs minor-text-theme-colors">
                   {item.bandName} · Closed · last activity{' '}
                   {formatRelativeTime(item.lastActivityAt)}
                   {item.lastActivityBy && (

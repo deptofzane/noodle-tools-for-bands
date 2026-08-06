@@ -42,7 +42,7 @@ export default async function LoginPage({
           </button>
         </form>
 
-        <p className="mt-4 text-xs text-neutral-500">
+        <p className="mt-4 text-xs minor-text-theme-colors">
           You&apos;ll be asked to share your name and email. Drive access is
           requested separately, only when you open a folder.
         </p>

@@ -151,7 +151,7 @@ export function CalendarClient() {
         {WEEKDAYS.map((w) => (
           <div
             key={w}
-            className="bg-neutral-50 py-1.5 text-center text-xs font-medium text-neutral-500 dark:bg-neutral-900"
+            className="bg-neutral-50 py-1.5 text-center text-xs font-medium minor-text-theme-colors dark:bg-neutral-900"
           >
             {w}
           </div>
@@ -212,7 +212,7 @@ export function CalendarClient() {
             {formatDateLong(summaryDate)}
           </h2>
           {(eventsByDate[summaryDate] ?? []).length === 0 ? (
-            <p className="mt-3 text-sm text-neutral-500">
+            <p className="mt-3 text-sm minor-text-theme-colors">
               No events on this day.
             </p>
           ) : (
@@ -228,12 +228,12 @@ export function CalendarClient() {
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="truncate font-medium">{ev.title}</span>
                         {ev.time && (
-                          <span className="shrink-0 text-xs text-neutral-500">
+                          <span className="shrink-0 text-xs minor-text-theme-colors">
                             {formatTimeRange(ev.time, ev.endTime)}
                           </span>
                         )}
                       </div>
-                      <div className="truncate text-xs text-neutral-500">
+                      <div className="truncate text-xs minor-text-theme-colors">
                         {ev.bandName}
                         {loc ? ` · ${loc}` : ''}
                       </div>

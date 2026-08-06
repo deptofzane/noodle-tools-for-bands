@@ -53,7 +53,7 @@ export function UploadDayClient({
     return (
       <div className="flex flex-col gap-4">
         <h1 className="title-text">{label}</h1>
-        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
           Nothing was uploaded on this day.
         </p>
       </div>
@@ -65,7 +65,7 @@ export function UploadDayClient({
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-1">
           <h1 className="title-text">{label}</h1>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm minor-text-theme-colors">
             {items.length} {items.length === 1 ? 'upload' : 'uploads'}
             {totalSeconds > 0 && (
               <>
@@ -146,7 +146,7 @@ export function UploadDayClient({
                 >
                   {u.title}
                 </Link>
-                <span className="block truncate text-xs text-neutral-500">
+                <span className="block truncate text-xs minor-text-theme-colors">
                   {u.label || u.fileName}
                   {' · '}
                   {timeLabel(u.createdAt)}
@@ -155,7 +155,7 @@ export function UploadDayClient({
               </span>
 
               {u.songLength != null && (
-                <span className="shrink-0 text-xs tabular-nums text-neutral-500">
+                <span className="shrink-0 text-xs tabular-nums minor-text-theme-colors">
                   {formatDuration(u.songLength)}
                 </span>
               )}

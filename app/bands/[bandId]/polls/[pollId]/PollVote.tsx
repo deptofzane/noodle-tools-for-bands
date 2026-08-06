@@ -115,7 +115,7 @@ export function PollVote({
                     {mine && <span aria-hidden="true">✓ </span>}
                     {o.text}
                   </span>
-                  <span className="shrink-0 tabular-nums text-neutral-500">
+                  <span className="shrink-0 tabular-nums minor-text-theme-colors">
                     {o.votes} · {pct}%
                   </span>
                 </span>
@@ -124,7 +124,7 @@ export function PollVote({
           );
         })}
       </ul>
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs minor-text-theme-colors">
         {total} {total === 1 ? 'vote' : 'votes'}
         {closed ? ' · final results' : myVote ? '' : ' · tap an option to vote'}
       </p>

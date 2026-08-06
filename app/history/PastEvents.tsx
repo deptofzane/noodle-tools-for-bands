@@ -59,7 +59,7 @@ export function PastEvents() {
   if (items === null) return <LoadingBlock label="Loading past events" />;
   if (items.length === 0)
     return (
-      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
         No past events yet. Events move here the day after they happen.
       </p>
     );
@@ -84,7 +84,7 @@ export function PastEvents() {
               >
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{event.title}</div>
-                  <div className="mt-0.5 text-xs text-neutral-500">
+                  <div className="mt-0.5 text-xs minor-text-theme-colors">
                     {event.bandName} · {formatDateLong(event.date)}
                     {event.time && (
                       <> · {formatTimeRange(event.time, event.endTime)}</>

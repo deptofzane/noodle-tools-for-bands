@@ -178,7 +178,7 @@ export function EventSetlistActions({
                   <span className="w-3 shrink-0 text-blue-600 dark:text-blue-400">
                     {setlistId === '' ? '✓' : ''}
                   </span>
-                  <span className="text-neutral-500">No setlist</span>
+                  <span className="minor-text-theme-colors">No setlist</span>
                 </button>
               </li>
               {setlists.map((s) => (
@@ -196,7 +196,7 @@ export function EventSetlistActions({
                 </li>
               ))}
               {setlists.length === 0 && (
-                <li className="px-3 py-6 text-center text-sm text-neutral-500">
+                <li className="px-3 py-6 text-center text-sm minor-text-theme-colors">
                   This band has no other setlists.
                 </li>
               )}

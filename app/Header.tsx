@@ -246,7 +246,7 @@ export function Header() {
                   'flex min-w-0 flex-col items-center gap-1 rounded-md px-2 py-1 ' +
                   (isActive
                     ? 'font-medium text-cyan-600 dark:text-cyan-400'
-                    : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100')
+                    : 'minor-text-theme-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100')
                 }
               >
                 {link.icon}
@@ -348,7 +348,7 @@ export function Header() {
                         >
                           <span
                             aria-hidden="true"
-                            className="w-3 shrink-0 text-center text-xs text-neutral-500"
+                            className="w-3 shrink-0 text-center text-xs minor-text-theme-colors"
                           >
                             {isCurrent ? '✓' : ''}
                           </span>
@@ -369,7 +369,7 @@ export function Header() {
                         >
                           <span className="font-medium">Band</span>
                           <span className="ml-auto flex min-w-0 items-center gap-1.5">
-                            <span className="truncate text-sm text-neutral-500">
+                            <span className="truncate text-sm minor-text-theme-colors">
                               {currentBandName}
                             </span>
                             <span

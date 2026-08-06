@@ -499,7 +499,7 @@ function SheetView({
     content = (
       <Centered>
         <p className="text-lg font-medium">{song.title}</p>
-        <p className="mt-1 text-sm text-neutral-500">No sheet music.</p>
+        <p className="mt-1 text-sm minor-text-theme-colors">No sheet music.</p>
       </Centered>
     );
   } else if (kind === 'image') {

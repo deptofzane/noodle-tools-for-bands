@@ -115,7 +115,7 @@ export function PdfView({
           : null}
         {status === 'loading' && <LoadingBlock label="Loading PDF" />}
         {status === 'error' && (
-          <p className="py-8 text-center text-sm text-neutral-500">
+          <p className="py-8 text-center text-sm minor-text-theme-colors">
             Could not display this PDF.
           </p>
         )}

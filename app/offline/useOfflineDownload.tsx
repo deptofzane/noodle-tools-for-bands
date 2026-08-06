@@ -129,7 +129,7 @@ export function useOfflineDownload(): OfflineDownloadApi {
           />
           <span>
             <span className="font-medium">Sheet music</span>
-            <span className="block text-xs text-neutral-500">
+            <span className="block text-xs minor-text-theme-colors">
               Charts for Live and Practice.
             </span>
           </span>
@@ -143,7 +143,7 @@ export function useOfflineDownload(): OfflineDownloadApi {
           />
           <span>
             <span className="font-medium">Audio</span>
-            <span className="block text-xs text-neutral-500">
+            <span className="block text-xs minor-text-theme-colors">
               Practice tracks — larger download.
             </span>
           </span>

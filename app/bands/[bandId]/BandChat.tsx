@@ -247,7 +247,7 @@ export function BandChat({
         )}
 
         {loaded && messages.length === 0 && (
-          <p className="my-auto text-center text-sm text-neutral-500">
+          <p className="my-auto text-center text-sm minor-text-theme-colors">
             No messages yet. Say hello 👋
           </p>
         )}

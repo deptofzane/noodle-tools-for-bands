@@ -120,7 +120,7 @@ export function AddTrackToSetlistModal({
           label="Loading setlists"
         />
       ) : data.setlists.length === 0 ? (
-        <p className="mt-4 rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+        <p className="mt-4 rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
           No setlists yet. Create one first.
         </p>
       ) : (

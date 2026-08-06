@@ -94,7 +94,7 @@ export function SetlistNav({
                 className={
                   'min-w-0 truncate ' +
                   (s.isMarker
-                    ? 'text-xs font-semibold uppercase tracking-wide text-neutral-500'
+                    ? 'text-xs font-semibold uppercase tracking-wide minor-text-theme-colors'
                     : '')
                 }
               >

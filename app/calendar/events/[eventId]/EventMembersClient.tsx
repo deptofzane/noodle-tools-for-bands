@@ -87,7 +87,7 @@ export function EventMembersClient({
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-medium">People</h2>
       {members.length === 0 ? (
-        <p className="rounded-md border border-neutral-200 px-3 py-4 text-center text-sm text-neutral-500 dark:border-neutral-800">
+        <p className="rounded-md border border-neutral-200 px-3 py-4 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
           The owning band’s members can already see this. No one else has been
           added.
         </p>
@@ -103,7 +103,7 @@ export function EventMembersClient({
                   {m.name ?? m.email ?? 'Unknown'}
                 </div>
                 {m.email && m.name && (
-                  <div className="truncate text-xs text-neutral-500">
+                  <div className="truncate text-xs minor-text-theme-colors">
                     {m.email}
                   </div>
                 )}
@@ -113,7 +113,7 @@ export function EventMembersClient({
                   type="button"
                   onClick={() => handleRemove(m.userId)}
                   disabled={busy}
-                  className="shrink-0 text-xs text-neutral-500 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
+                  className="shrink-0 text-xs minor-text-theme-colors hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
                 >
                   Remove
                 </button>
@@ -141,7 +141,7 @@ export function EventMembersClient({
               {busy ? 'Adding…' : 'Add'}
             </button>
           </div>
-          <p className="text-[0.6875rem] text-neutral-500">
+          <p className="text-[0.6875rem] minor-text-theme-colors">
             They must have signed in to the app at least once.
           </p>
         </form>

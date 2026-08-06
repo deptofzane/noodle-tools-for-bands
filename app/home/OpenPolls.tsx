@@ -35,7 +35,7 @@ export function OpenPolls({ polls }: { polls: OpenPoll[] }) {
           {open ? '▾' : '▸'}
         </span>
         <h2 className="text-sm font-medium">Open polls</h2>
-        <span className="text-xs text-neutral-500">
+        <span className="text-xs minor-text-theme-colors">
           <span aria-hidden="true">·</span> {polls.length}
         </span>
       </button>
@@ -50,7 +50,7 @@ export function OpenPolls({ polls }: { polls: OpenPoll[] }) {
               >
                 <span className="text-sm font-medium">{p.title}</span>
                 {p.description && (
-                  <span className="whitespace-pre-wrap text-xs text-neutral-500">
+                  <span className="whitespace-pre-wrap text-xs minor-text-theme-colors">
                     {p.description}
                   </span>
                 )}

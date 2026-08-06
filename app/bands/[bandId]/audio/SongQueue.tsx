@@ -53,7 +53,7 @@ export function SongQueue() {
 
   if (queue.length === 0) {
     return (
-      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
         Nothing queued. Use a song’s play button, or “Add song to queue” from
         its menu, to build a queue.
       </p>
@@ -85,7 +85,7 @@ export function SongQueue() {
         </h2>
         <div className="flex shrink-0 items-center gap-3">
           {totalSeconds > 0 && (
-            <span className="text-xs text-neutral-500">
+            <span className="text-xs minor-text-theme-colors">
               {known.length === queue.length ? '' : '~'}
               {formatDuration(totalSeconds)}
             </span>
@@ -105,7 +105,7 @@ export function SongQueue() {
 
       {arranging ? (
         <>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs minor-text-theme-colors">
             Drag the handles to reorder. Playback keeps going.
           </p>
           <DndContext
@@ -212,19 +212,19 @@ export function SongQueue() {
                     </span>
                   )}
                   {t.originalBand && (
-                    <span className="block truncate text-xs text-neutral-500">
+                    <span className="block truncate text-xs minor-text-theme-colors">
                       Originally by {t.originalBand}
                     </span>
                   )}
                   {t.subtitle && (
-                    <span className="block truncate text-xs text-neutral-500">
+                    <span className="block truncate text-xs minor-text-theme-colors">
                       {t.subtitle}
                     </span>
                   )}
                 </span>
 
                 {t.durationSec != null && (
-                  <span className="shrink-0 text-xs tabular-nums text-neutral-500">
+                  <span className="shrink-0 text-xs tabular-nums minor-text-theme-colors">
                     {formatDuration(t.durationSec)}
                   </span>
                 )}
@@ -337,14 +337,14 @@ function SortableQueueRow({
           {track.title}
         </span>
         {track.subtitle && (
-          <span className="block truncate text-xs text-neutral-500">
+          <span className="block truncate text-xs minor-text-theme-colors">
             {track.subtitle}
           </span>
         )}
       </span>
 
       {track.durationSec != null && (
-        <span className="shrink-0 text-xs tabular-nums text-neutral-500">
+        <span className="shrink-0 text-xs tabular-nums minor-text-theme-colors">
           {formatDuration(track.durationSec)}
         </span>
       )}

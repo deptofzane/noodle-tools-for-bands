@@ -57,23 +57,31 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {/*
-        Anchored on both sides below `sm`, so the width comes from the space
+        Toasts sit at the opposite end of the screen from the nav bar, which
+        is pinned to the bottom until `lg` and to the top from there. So:
+        top on phones and tablets — where the bottom also holds the player bar
+        — and bottom-right on desktop. `env(safe-area-inset-top)` keeps them
+        clear of a notch.
+
+        Anchored on both sides below `lg`, so the width comes from the space
         available rather than being fixed: a `w-full` on a fixed element means
         the whole viewport, which `max-w-sm` then pinned to 384px — and with
         `right-4` also honored, the left edge went negative on anything
-        narrower than 400px (most phones). Bottom-right from `sm` up, where
-        there's room for it, and clear of the nav bar on mobile, where the
-        Header publishes its height as `--app-nav-h`.
+        narrower than 400px (most phones).
       */}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed inset-x-4 bottom-[calc(var(--app-nav-h)_+_1rem)] z-[100] mx-auto flex max-w-sm flex-col gap-2 sm:inset-x-auto sm:right-4 sm:bottom-4"
+        className="pointer-events-none fixed inset-x-4 top-[calc(env(safe-area-inset-top)_+_1rem)] z-[100] mx-auto flex max-w-sm flex-col gap-2 lg:inset-x-auto lg:top-auto lg:right-4 lg:bottom-4"
       >
         {toasts.map((t) => (
           <div
             key={t.id}
             role="status"
+            // `--toast-from` is the distance the entrance travels, and its
+            // sign is the direction: negative comes down from the top edge
+            // (mobile), positive rises from the bottom (desktop).
             className={
+              'toast-in [--toast-from:-0.75rem] lg:[--toast-from:0.75rem] ' +
               'pointer-events-auto flex items-start justify-between gap-3 rounded-md border px-3 py-2 text-sm shadow-lg ' +
               toastStyles(t.type)
             }

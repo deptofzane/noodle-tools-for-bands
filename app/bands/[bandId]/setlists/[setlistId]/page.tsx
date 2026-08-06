@@ -74,7 +74,7 @@ export default async function SetlistPage({
         <span className="w-5 shrink-0 text-right text-xs text-neutral-400">
           {songNo}
         </span>
-        <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        <span className="text-xs font-semibold uppercase tracking-wide minor-text-theme-colors">
           {s.name}
         </span>
       </li>
@@ -96,7 +96,7 @@ export default async function SetlistPage({
       <span className="flex justify-between">
         <div className="flex flex-col gap-1">
           <h1 className="title-text">{setlist.name}</h1>
-          <p className="text-sm text-neutral-500 pb-4">
+          <p className="text-sm minor-text-theme-colors pb-4">
             {songCount} {songCount === 1 ? 'song' : 'songs'}
             {songCount > 0 && (
               <>
@@ -118,7 +118,7 @@ export default async function SetlistPage({
       </span>
 
       {setlist.songs.length === 0 ? (
-        <p className="rounded-md border border-neutral-200 px-1 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+        <p className="rounded-md border border-neutral-200 px-1 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
           This setlist has no songs.
         </p>
       ) : (

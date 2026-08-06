@@ -210,7 +210,7 @@ export function NotesPanel({
     >
       <header className="flex items-center justify-between gap-2">
         <h2 className="text-sm font-medium">Notes</h2>
-        <div className="flex items-center gap-3 text-xs text-neutral-500">
+        <div className="flex items-center gap-3 text-xs minor-text-theme-colors">
           {notes && <span>{countAll(notes)} total</span>}
           {canCloseConversation && (
             <button
@@ -286,7 +286,7 @@ export function NotesPanel({
       {notes === null && !error && <LoadingBlock label="Loading notes" />}
 
       {notes && notes.length === 0 && (
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm minor-text-theme-colors">
           No notes yet. Add the first one.
         </p>
       )}
@@ -366,7 +366,7 @@ function ActivityHeader({
                 </span>{' '}
                 {describeKind(entry.kind)}
               </span>
-              <span className="shrink-0 font-mono text-[0.625rem] text-neutral-500">
+              <span className="shrink-0 font-mono text-[0.625rem] minor-text-theme-colors">
                 {formatRelativeTime(entry.at)}
               </span>
             </li>

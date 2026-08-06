@@ -340,7 +340,7 @@ export function BandAudioClient({
               '-mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition ' +
               (activeTab === tab
                 ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200')
+                : 'border-transparent minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
             }
           >
             {TAB_LABELS[tab]}
@@ -429,7 +429,7 @@ export function BandAudioClient({
           <h2 id="create-song-title" className="text-base font-semibold">
             Create song
           </h2>
-          <p className="mt-1 text-sm text-neutral-500">
+          <p className="mt-1 text-sm minor-text-theme-colors">
             Start a song from just a name. You can add audio, sheet music, and
             notes later.
           </p>
@@ -447,7 +447,7 @@ export function BandAudioClient({
               aria-label="Song name"
               autoFocus
               disabled={creating}
-              className="mt-4 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:placeholder:text-neutral-500"
+              className="mt-4 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:placeholder:minor-text-theme-colors"
             />
             <div className="mt-5 flex justify-end gap-2">
               <button

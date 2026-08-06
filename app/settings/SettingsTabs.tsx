@@ -45,7 +45,7 @@ export function SettingsTabs({
               '-mb-px shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition ' +
               (active === tab.id
                 ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200')
+                : 'border-transparent minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
             }
           >
             {tab.label}

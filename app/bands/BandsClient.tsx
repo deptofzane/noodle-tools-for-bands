@@ -109,7 +109,7 @@ export function BandsClient({ currentUserId }: { currentUserId: string }) {
       {bands === null && !error && <LoadingBlock />}
 
       {bands && bands.length === 0 && (
-        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
           You’re not in any bands yet. Create one above.
         </p>
       )}

@@ -111,7 +111,7 @@ export function RecentEvents({
           {open ? '▾' : '▸'}
         </span>
         <h2 className="text-sm font-medium">Recent events</h2>
-        <span className="text-xs text-neutral-500">
+        <span className="text-xs minor-text-theme-colors">
           <span aria-hidden="true">·</span> last 24 hours · {recent.length}
         </span>
       </button>
@@ -128,12 +128,12 @@ export function RecentEvents({
                   <span className="truncate text-sm font-medium">
                     {s.title}
                   </span>
-                  <span className="truncate text-[0.6875rem] text-neutral-500">
+                  <span className="truncate text-[0.6875rem] minor-text-theme-colors">
                     {s.bandName}
                     {s.location ? ` · ${s.location}` : ''}
                   </span>
                 </span>
-                <span className="shrink-0 text-[0.6875rem] text-neutral-500">
+                <span className="shrink-0 text-[0.6875rem] minor-text-theme-colors">
                   <span className="block font-medium text-neutral-700 dark:text-neutral-300">
                     {formatDateShort(s.date)}
                   </span>

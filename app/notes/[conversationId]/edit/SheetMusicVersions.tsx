@@ -322,7 +322,7 @@ export function SheetMusicVersions({
   return (
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-medium">Sheet music versions</h2>
-      <p className="text-[0.6875rem] text-neutral-500">
+      <p className="text-[0.6875rem] minor-text-theme-colors">
         The default is what members see unless they’ve chosen their own version
         to view. Notes are shared across all versions.
       </p>
@@ -397,7 +397,7 @@ export function SheetMusicVersions({
                           )}
                         </span>
                         {v.label && (
-                          <span className="truncate text-[0.6875rem] text-neutral-500">
+                          <span className="truncate text-[0.6875rem] minor-text-theme-colors">
                             {v.fileName}
                           </span>
                         )}
@@ -473,7 +473,7 @@ export function SheetMusicVersions({
                         </div>
                       )}
                       {previewKindResolved === 'other' && (
-                        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+                        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
                           Preview isn’t available for this file type.
                         </p>
                       )}
@@ -485,7 +485,7 @@ export function SheetMusicVersions({
           ))}
         </ul>
       ) : (
-        <p className="rounded-md border border-neutral-200 px-3 py-4 text-center text-sm text-neutral-500 dark:border-neutral-800">
+        <p className="rounded-md border border-neutral-200 px-3 py-4 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
           No sheet music yet. Add a version below.
         </p>
       )}
@@ -544,7 +544,7 @@ export function SheetMusicVersions({
                 chart ([C]lyrics with {'{directives}'}).
               </p>
               <div className="mt-3 flex items-center gap-2 text-sm">
-                <span className="text-neutral-500">Format:</span>
+                <span className="minor-text-theme-colors">Format:</span>
                 {SHEET_TEXT_FORMATS.map((f) => (
                   <button
                     key={f.id}
@@ -555,7 +555,7 @@ export function SheetMusicVersions({
                       'rounded-md px-2 py-1 text-xs font-medium ' +
                       (pasteFormat === f.id
                         ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100'
-                        : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800')
+                        : 'minor-text-theme-colors hover:bg-neutral-100 dark:hover:bg-neutral-800')
                     }
                   >
                     {f.label}
@@ -689,7 +689,7 @@ export function SheetMusicVersions({
             Edit sheet music
           </h2>
           <div className="mt-3 flex items-center gap-2 text-sm">
-            <span className="text-neutral-500">Format:</span>
+            <span className="minor-text-theme-colors">Format:</span>
             {SHEET_TEXT_FORMATS.map((f) => (
               <button
                 key={f.id}
@@ -700,7 +700,7 @@ export function SheetMusicVersions({
                   'rounded-md px-2 py-1 text-xs font-medium ' +
                   (editContentFormat === f.id
                     ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100'
-                    : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800')
+                    : 'minor-text-theme-colors hover:bg-neutral-100 dark:hover:bg-neutral-800')
                 }
               >
                 {f.label}

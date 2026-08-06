@@ -128,18 +128,18 @@ export function SongRow({
             {c.audioFileName ?? 'Untitled audio'}
           </span>
           {c.closed && (
-            <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+            <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium minor-text-theme-colors dark:bg-neutral-800 dark:text-neutral-400">
               closed
             </span>
           )}
         </div>
         {c.originalBand && (
-          <div className="mt-0.5 truncate text-xs text-neutral-500">
+          <div className="mt-0.5 truncate text-xs minor-text-theme-colors">
             Originally by {c.originalBand}
           </div>
         )}
-        {meta && <div className="mt-0.5 text-xs text-neutral-500">{meta}</div>}
-        <div className="mt-0.5 text-xs text-neutral-500">
+        {meta && <div className="mt-0.5 text-xs minor-text-theme-colors">{meta}</div>}
+        <div className="mt-0.5 text-xs minor-text-theme-colors">
           Updated {formatRelativeTime(c.updatedAt)}
         </div>
       </Link>

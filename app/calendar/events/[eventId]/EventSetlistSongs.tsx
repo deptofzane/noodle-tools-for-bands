@@ -114,7 +114,7 @@ export function EventSetlistSongs({
 
   if (songs.length === 0) {
     return (
-      <p className="text-sm text-neutral-500">This setlist has no songs.</p>
+      <p className="text-sm minor-text-theme-colors">This setlist has no songs.</p>
     );
   }
 
@@ -130,7 +130,7 @@ export function EventSetlistSongs({
             Play all
           </button>
         )}
-        <span className="shrink-0 text-sm text-neutral-500">
+        <span className="shrink-0 text-sm minor-text-theme-colors">
           Total length: &nbsp; {allLengthsKnown ? '' : '~'}
           {formatDuration(totalSeconds)}
         </span>
@@ -142,7 +142,7 @@ export function EventSetlistSongs({
             return (
               <li
                 key={s.id}
-                className="text-xs font-semibold uppercase tracking-wide text-neutral-500 pl-4"
+                className="text-xs font-semibold uppercase tracking-wide minor-text-theme-colors pl-4"
               >
                 {s.name}
               </li>

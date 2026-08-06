@@ -45,7 +45,7 @@ export function SetlistScreenState({
   return (
     <div className="mx-4 flex flex-col items-center gap-3 rounded-md border border-neutral-200 px-3 py-10 text-center dark:border-neutral-800">
       <p className="font-medium">{title}</p>
-      <p className="max-w-sm text-sm text-neutral-500">{detail}</p>
+      <p className="max-w-sm text-sm minor-text-theme-colors">{detail}</p>
       {state.status === 'offline' ? (
         // Plain <a>: a client-side navigation fetches from the server, which
         // is exactly what isn't available here.

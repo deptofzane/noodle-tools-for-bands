@@ -21,7 +21,7 @@ export default function DeleteAccountPage() {
     <main className="main-container flex flex-col gap-6 py-8">
       <div className="flex flex-col gap-1">
         <h1 className="title-text">Delete your account</h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm minor-text-theme-colors">
           Last updated {POLICY_UPDATED}
         </p>
       </div>

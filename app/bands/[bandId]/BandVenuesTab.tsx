@@ -155,7 +155,7 @@ export function BandVenuesTab({
                 )}
               </>
             ) : (
-              <p className="text-neutral-500">No details saved.</p>
+              <p className="minor-text-theme-colors">No details saved.</p>
             )}
           </div>
         )}
@@ -182,7 +182,7 @@ export function BandVenuesTab({
           (venues.length > 0 ? (
             <ul className="flex flex-col gap-2">{venues.map(renderVenue)}</ul>
           ) : (
-            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
               No venues yet. Use “Create venue” to add one.
             </p>
           ))}

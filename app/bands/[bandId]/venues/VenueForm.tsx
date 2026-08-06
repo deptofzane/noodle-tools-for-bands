@@ -112,7 +112,7 @@ export function VenueForm({
       </div>
 
       <h1 className="title-text">{isEdit ? 'Edit venue' : 'New venue'}</h1>
-      <p className="text-sm text-neutral-500">{bandName}</p>
+      <p className="text-sm minor-text-theme-colors">{bandName}</p>
 
       <div className="flex flex-col gap-1">
         <label htmlFor="venue-name" className="text-sm font-medium">

@@ -134,13 +134,13 @@ export function BandMembersTab({
           />
         )}
         {polls && polls.length === 0 && (
-          <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+          <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
             No polls yet. Use “New poll” to ask the band something.
           </p>
         )}
         {openPolls && openPolls.length > 0 && renderPollList(openPolls)}
         {polls && openPolls?.length === 0 && closedPolls.length > 0 && (
-          <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+          <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
             No open polls. Use “New poll” to ask the band something.
           </p>
         )}
@@ -156,7 +156,7 @@ export function BandMembersTab({
             <h2 className="text-sm font-medium">Members</h2>
           </MinimizeToggle>
           {membersMinimized && (
-            <span className="text-xs text-neutral-500">
+            <span className="text-xs minor-text-theme-colors">
               <span aria-hidden="true">·</span> {members.length}{' '}
               {members.length === 1 ? 'member' : 'members'}
             </span>
@@ -174,7 +174,7 @@ export function BandMembersTab({
                     {m.name ?? m.email ?? 'Unknown'}
                   </div>
                   {m.email && m.name && (
-                    <div className="truncate text-xs text-neutral-500">
+                    <div className="truncate text-xs minor-text-theme-colors">
                       {m.email}
                     </div>
                   )}
@@ -203,11 +203,11 @@ export function BandMembersTab({
               onToggle={() => setClosedMinimized((v) => !v)}
               label="Closed polls"
             >
-              <h2 className="text-sm font-medium text-neutral-500">
+              <h2 className="text-sm font-medium minor-text-theme-colors">
                 Closed polls
               </h2>
             </MinimizeToggle>
-            <span className="text-xs text-neutral-500">
+            <span className="text-xs minor-text-theme-colors">
               <span aria-hidden="true">·</span> {closedPolls.length}
             </span>
           </div>

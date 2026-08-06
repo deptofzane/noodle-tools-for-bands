@@ -79,7 +79,7 @@ function ChordChart({ text }: { text: string }) {
     }
     if (line.type === 'comment') {
       out.push(
-        <div key={i} className="italic text-neutral-500 dark:text-neutral-400">
+        <div key={i} className="italic minor-text-theme-colors dark:text-neutral-400">
           {line.text}
         </div>,
       );
@@ -93,7 +93,7 @@ function ChordChart({ text }: { text: string }) {
           out.push(
             <div
               key={i}
-              className="mt-2 text-[0.75em] font-semibold uppercase tracking-wide text-neutral-500"
+              className="mt-2 text-[0.75em] font-semibold uppercase tracking-wide minor-text-theme-colors"
             >
               {value}
             </div>,
@@ -127,7 +127,7 @@ function ChordChart({ text }: { text: string }) {
         out.push(
           <div
             key={i}
-            className="mt-2 text-[0.75em] font-semibold uppercase tracking-wide text-neutral-500"
+            className="mt-2 text-[0.75em] font-semibold uppercase tracking-wide minor-text-theme-colors"
           >
             {value || name.replace('start_of_', '')}
           </div>,
@@ -138,7 +138,7 @@ function ChordChart({ text }: { text: string }) {
       // key / capo / tempo / time and any other labelled directive.
       if (value)
         out.push(
-          <div key={i} className="text-[0.8em] text-neutral-500">
+          <div key={i} className="text-[0.8em] minor-text-theme-colors">
             <span className="capitalize">{name}</span>: {value}
           </div>,
         );
@@ -239,12 +239,12 @@ export function SheetText({
             type="button"
             onClick={() => setEditing(false)}
             disabled={saving}
-            className={`${smallBtn} text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800`}
+            className={`${smallBtn} minor-text-theme-colors hover:bg-neutral-100 dark:hover:bg-neutral-800`}
           >
             Cancel
           </button>
           <span className="flex items-center gap-2">
-            <label className="flex items-center gap-1 text-xs text-neutral-500">
+            <label className="flex items-center gap-1 text-xs minor-text-theme-colors">
               Format
               <select
                 value={format}
@@ -296,7 +296,7 @@ export function SheetText({
           <button
             type="button"
             onClick={startEditing}
-            className={`${smallBtn} text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800`}
+            className={`${smallBtn} minor-text-theme-colors hover:bg-neutral-100 dark:hover:bg-neutral-800`}
           >
             Edit
           </button>
@@ -313,7 +313,7 @@ export function SheetText({
                 ' ' +
                 (mode === m.id
                   ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100'
-                  : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800')
+                  : 'minor-text-theme-colors hover:bg-neutral-100 dark:hover:bg-neutral-800')
               }
             >
               {m.label}

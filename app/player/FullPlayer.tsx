@@ -153,12 +153,12 @@ export function FullPlayer({
               <h2 className="truncate text-lg font-semibold">{track.title}</h2>
             )}
             {track.subtitle && (
-              <p className="truncate text-sm text-neutral-500">
+              <p className="truncate text-sm minor-text-theme-colors">
                 {track.subtitle}
               </p>
             )}
             {queue.length > 1 && (
-              <p className="text-xs tabular-nums text-neutral-500">
+              <p className="text-xs tabular-nums minor-text-theme-colors">
                 {index + 1} of {queue.length}
               </p>
             )}
@@ -170,7 +170,7 @@ export function FullPlayer({
             </p>
           ) : (
             <div className="flex items-center gap-2">
-              <span className="shrink-0 font-mono text-xs tabular-nums text-neutral-500">
+              <span className="shrink-0 font-mono text-xs tabular-nums minor-text-theme-colors">
                 {formatDuration(currentTime)}
               </span>
               <input
@@ -184,7 +184,7 @@ export function FullPlayer({
                 aria-label="Seek"
                 className="min-w-0 flex-1 accent-blue-600"
               />
-              <span className="shrink-0 font-mono text-xs tabular-nums text-neutral-500">
+              <span className="shrink-0 font-mono text-xs tabular-nums minor-text-theme-colors">
                 {formatDuration(duration)}
               </span>
             </div>
@@ -297,7 +297,7 @@ export function FullPlayer({
               </PlayerProvider>
             ) : (
               <>
-                <h3 className="pb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
+                <h3 className="pb-2 text-xs font-medium uppercase tracking-wide minor-text-theme-colors">
                   Queue
                 </h3>
                 <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
@@ -338,7 +338,7 @@ export function FullPlayer({
                             {t.title}
                           </span>
                           {t.durationSec != null && (
-                            <span className="shrink-0 text-xs tabular-nums text-neutral-500">
+                            <span className="shrink-0 text-xs tabular-nums minor-text-theme-colors">
                               {formatDuration(t.durationSec)}
                             </span>
                           )}

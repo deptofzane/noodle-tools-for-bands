@@ -154,7 +154,7 @@ export function Practice({
     return (
       <>
         {header()}
-        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
           This setlist has no songs to practice.
         </p>
       </>
@@ -248,7 +248,7 @@ export function Practice({
           >
             <span className="text-sm">
               <span className="font-medium">{song.title}</span>
-              <span className="text-neutral-500">
+              <span className="minor-text-theme-colors">
                 {' '}
                 - {current + 1}/{total}
               </span>

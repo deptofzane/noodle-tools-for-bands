@@ -195,12 +195,12 @@ export function SetlistItemsEditor({
       </div>
 
       {items.length === 0 ? (
-        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
           {emptyText}
         </p>
       ) : (
         <>
-          {hint && <p className="text-xs text-neutral-500">{hint}</p>}
+          {hint && <p className="text-xs minor-text-theme-colors">{hint}</p>}
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -242,7 +242,7 @@ export function SetlistItemsEditor({
               <h2 id="add-songs-title" className="text-base font-semibold">
                 Add songs
               </h2>
-              <span className="text-xs text-neutral-500">
+              <span className="text-xs minor-text-theme-colors">
                 {selectedToAdd.size} selected
               </span>
             </div>
@@ -259,7 +259,7 @@ export function SetlistItemsEditor({
 
             <div className="min-h-0 flex-1 overflow-auto px-2">
               {candidates.length === 0 ? (
-                <p className="px-2 py-10 text-center text-sm text-neutral-500">
+                <p className="px-2 py-10 text-center text-sm minor-text-theme-colors">
                   {search.trim()
                     ? 'No matching songs.'
                     : 'No more songs to add.'}
@@ -402,7 +402,7 @@ function SortableRow({
       <span
         className={`min-w-0 flex-1 truncate ${
           isMarker
-            ? 'text-xs font-semibold uppercase tracking-wide text-neutral-500'
+            ? 'text-xs font-semibold uppercase tracking-wide minor-text-theme-colors'
             : 'font-medium'
         }`}
       >

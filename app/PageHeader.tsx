@@ -24,7 +24,7 @@ export function PageHeader({
   children?: ReactNode;
 }) {
   return (
-    <header className="flex items-center justify-between gap-2 text-xs text-neutral-500">
+    <header className="flex items-center justify-between gap-2 text-xs minor-text-theme-colors">
       <span className="flex min-w-0 items-center gap-2">
         <BackButton
           defaultHref={defaultHref}

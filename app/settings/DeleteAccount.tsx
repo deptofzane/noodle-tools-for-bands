@@ -83,7 +83,7 @@ export function DeleteAccount({ email }: { email: string | null }) {
       <p className="font-medium text-red-700 dark:text-red-400">
         Delete account
       </p>
-      <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+      <p className="mt-1 text-xs minor-text-theme-colors dark:text-neutral-400">
         Permanently removes your account and everything personal to it. Any band
         you’re the only owner of is deleted too, along with its songs and files
         — for everyone in it. This can’t be undone.

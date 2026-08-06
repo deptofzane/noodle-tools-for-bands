@@ -323,7 +323,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
                   {m.name ?? m.email ?? 'Unknown'}
                 </div>
                 {m.email && m.name && (
-                  <div className="truncate text-xs text-neutral-500">
+                  <div className="truncate text-xs minor-text-theme-colors">
                     {m.email}
                   </div>
                 )}
@@ -337,7 +337,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
                     type="button"
                     onClick={() => setPromoteTarget(m)}
                     disabled={promoting}
-                    className="text-xs text-neutral-500 hover:text-blue-600 disabled:opacity-50 dark:hover:text-blue-400"
+                    className="text-xs minor-text-theme-colors hover:text-blue-600 disabled:opacity-50 dark:hover:text-blue-400"
                   >
                     Make owner
                   </button>
@@ -347,7 +347,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
                     type="button"
                     onClick={() => setRemoveTarget(m)}
                     disabled={removing}
-                    className="text-xs text-neutral-500 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
+                    className="text-xs minor-text-theme-colors hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
                   >
                     Remove
                   </button>
@@ -373,7 +373,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
               {busy ? 'Adding…' : 'Add'}
             </button>
           </div>
-          <p className="text-[0.6875rem] text-neutral-500">
+          <p className="text-[0.6875rem] minor-text-theme-colors">
             They must have signed in to the app at least once — otherwise send
             an invite link below.
           </p>
@@ -399,7 +399,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
               {invitingBusy ? 'Creating…' : 'Create invite'}
             </button>
           </div>
-          <p className="text-[0.6875rem] text-neutral-500">
+          <p className="text-[0.6875rem] minor-text-theme-colors">
             They join {data.band.name} when they open the link and sign in with
             this email. Links expire in 21 days.
           </p>
@@ -439,7 +439,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
               >
                 <div className="min-w-0">
                   <div className="truncate">{inv.email}</div>
-                  <div className="text-xs text-neutral-500">
+                  <div className="text-xs minor-text-theme-colors">
                     Pending · expires{' '}
                     {new Date(inv.expiresAt).toLocaleDateString()}
                   </div>
@@ -448,7 +448,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
                   type="button"
                   onClick={() => handleRevokeInvite(inv.id)}
                   disabled={revokingId === inv.id}
-                  className="shrink-0 text-xs text-neutral-500 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
+                  className="shrink-0 text-xs minor-text-theme-colors hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
                 >
                   {revokingId === inv.id ? 'Revoking…' : 'Revoke'}
                 </button>

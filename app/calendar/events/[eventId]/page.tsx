@@ -51,7 +51,7 @@ export default async function EventPage({
 
       <div className="pb-4">
         <h1 className="title-text">{event.title}</h1>
-        <p className="mt-1 text-sm text-neutral-500">
+        <p className="mt-1 text-sm minor-text-theme-colors">
           <Link
             href={`/bands/${event.bandId}`}
             className="hover:underline hover:text-neutral-700 dark:hover:text-neutral-300"

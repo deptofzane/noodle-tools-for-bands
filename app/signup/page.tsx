@@ -31,7 +31,7 @@ export default async function SignupPage({
           callbackUrl={callbackUrl ?? '/home'}
         />
 
-        <p className="mt-4 text-xs text-neutral-500">
+        <p className="mt-4 text-xs minor-text-theme-colors">
           Already have an account?{' '}
           <Link href={loginHref} className="hover:underline">
             Sign in

@@ -238,7 +238,7 @@ export function NotificationList({
 
       {!minimized &&
         (items.length === 0 ? (
-          <p className="rounded-lg border border-neutral-200 px-3 py-6 text-center text-sm text-neutral-500 dark:border-neutral-800">
+          <p className="rounded-lg border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
             No notifications yet. Activity from your bands shows up here.
           </p>
         ) : (

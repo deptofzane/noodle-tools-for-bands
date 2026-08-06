@@ -52,7 +52,7 @@ export function CalendarSubscription({ token }: { token: string }) {
     <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
       <div>
         <p className="font-medium">Calendar subscription</p>
-        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+        <p className="mt-1 text-xs minor-text-theme-colors dark:text-neutral-400">
           Subscribe to your Sidestage events in Google Calendar, Apple Calendar,
           or Outlook. The feed is read-only and updates on your calendar app’s
           own schedule (Google can take a few hours). Keep this URL private —
@@ -73,7 +73,7 @@ export function CalendarSubscription({ token }: { token: string }) {
         </button>
       </div>
 
-      <details className="text-xs text-neutral-500 dark:text-neutral-400">
+      <details className="text-xs minor-text-theme-colors dark:text-neutral-400">
         <summary className="cursor-pointer">How to subscribe</summary>
         <ul className="mt-2 list-disc space-y-1 pl-5">
           <li>
@@ -98,7 +98,7 @@ export function CalendarSubscription({ token }: { token: string }) {
       <div className="flex items-center gap-2">
         {confirmingReset ? (
           <>
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">
+            <span className="text-xs minor-text-theme-colors dark:text-neutral-400">
               This invalidates the current link. Continue?
             </span>
             <button
@@ -113,7 +113,7 @@ export function CalendarSubscription({ token }: { token: string }) {
               type="button"
               onClick={() => setConfirmingReset(false)}
               disabled={resetting}
-              className="text-xs text-neutral-500 hover:underline"
+              className="text-xs minor-text-theme-colors hover:underline"
             >
               Cancel
             </button>
@@ -122,7 +122,7 @@ export function CalendarSubscription({ token }: { token: string }) {
           <button
             type="button"
             onClick={() => setConfirmingReset(true)}
-            className="text-xs text-neutral-500 hover:underline"
+            className="text-xs minor-text-theme-colors hover:underline"
           >
             Reset link
           </button>
