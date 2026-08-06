@@ -87,17 +87,19 @@ export function OfflineClient() {
       const sorted = [...list].sort((a, b) => b.downloadedAt - a.downloadedAt);
       setRecords(sorted);
 
-      const urls = sorted.flatMap((rec) => {
-        const base = `/bands/${rec.bandId}/setlists/${rec.setlistId}/practice`;
-        return [base, `${base}/live`];
-      });
+      // By setlist id, which is both what `isSetlistDataCached` takes and what
+      // the render asks `openable` for. This used to synthesise page URLs from
+      // the old `/bands/…/setlists/…/practice` scheme and check those instead:
+      // the lookup key never matched, so every entry read as un-downloaded and
+      // both buttons went dead the moment the device went offline.
       const checked = await Promise.all(
-        urls.map(async (url) => [url, await isSetlistDataCached(url)] as const),
+        sorted.map(
+          async (rec) =>
+            [rec.setlistId, await isSetlistDataCached(rec.setlistId)] as const,
+        ),
       );
       if (!cancelled) {
-        setOpenable(
-          new Set(checked.filter(([, ok]) => ok).map(([url]) => url)),
-        );
+        setOpenable(new Set(checked.filter(([, ok]) => ok).map(([id]) => id)));
       }
     });
     return () => {
