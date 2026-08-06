@@ -15,6 +15,8 @@ export interface UpcomingShow {
   title: string;
   /** Drives the colour coding — see app/calendar/eventColors.ts. */
   eventType: string | null;
+  /** Playable songs in the setlist; 0 when there's no setlist or only markers. */
+  setlistSongCount: number;
   date: string; // YYYY-MM-DD
   time: string | null;
   endTime: string | null;
@@ -116,21 +118,37 @@ export function UpcomingShows({
           {s.time && <span>{formatTimeRange(s.time, s.endTime)}</span>}
         </span>
       </Link>
-      {s.setlistId && (
-        <div className="flex shrink-0 flex-col gap-2 ml-2">
+      {/* Practice and Live have nothing to show for an empty setlist, so the
+          row says why and offers the one action that helps: opening the
+          setlist to put songs in it. */}
+      {s.setlistId && s.setlistSongCount > 0 && (
+        <div className="ml-2 flex shrink-0 flex-col gap-2">
           <Link
-            href={practiceHref(s.setlistId!)}
+            href={practiceHref(s.setlistId)}
             title="Practice this event’s setlist"
-            className="rounded-md border border-neutral-300 px-2.5 py-2 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+            className="rounded-md border border-neutral-300 px-2.5 py-2 text-center text-xs font-medium hover:bg-black/[0.04] dark:border-neutral-700 dark:hover:bg-white/[0.06]"
           >
             Practice
           </Link>
           <Link
-            href={liveHref(s.setlistId!)}
+            href={liveHref(s.setlistId)}
             title="Perform this event’s setlist live"
-            className="rounded-md border border-neutral-300 px-2.5 py-2 text-center text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+            className="rounded-md border border-neutral-300 px-2.5 py-2 text-center text-xs font-medium hover:bg-black/[0.04] dark:border-neutral-700 dark:hover:bg-white/[0.06]"
           >
             Live
+          </Link>
+        </div>
+      )}
+      {s.setlistId && s.setlistSongCount === 0 && (
+        <div className="ml-2 flex shrink-0 flex-col items-end gap-1">
+          <span className="text-[0.6875rem] minor-text-theme-colors">
+            This setlist has no songs
+          </span>
+          <Link
+            href={`/bands/${s.bandId}/setlists/${s.setlistId}`}
+            className="rounded-md border border-neutral-300 px-2.5 py-2 text-center text-xs font-medium hover:bg-black/[0.04] dark:border-neutral-700 dark:hover:bg-white/[0.06]"
+          >
+            View setlist
           </Link>
         </div>
       )}

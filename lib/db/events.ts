@@ -16,6 +16,7 @@ import {
   bands,
   eventMembers,
   events,
+  setlistSongs,
   setlists,
   users,
   venues,
@@ -37,6 +38,12 @@ export interface EventListItem {
   title: string;
   /** Drives the calendar's colour coding — see app/calendar/eventColors.ts. */
   eventType: string | null;
+  /**
+   * Playable songs in the event's setlist — markers (set breaks) don't count,
+   * and it's 0 when there's no setlist. What Practice and Live need to have
+   * anything to show.
+   */
+  setlistSongCount: number;
   date: string; // YYYY-MM-DD
   time: string | null;
   endTime: string | null;
@@ -150,6 +157,14 @@ export async function listEventsForUserInRange(
       endTime: events.endTime,
       location: events.location,
       setlistId: events.setlistId,
+      // Counted here rather than joined: a join would multiply the event
+      // row by its setlist length. Markers have no conversation, so a
+      // setlist of set breaks correctly counts zero.
+      setlistSongCount: sql<number>`(
+        select count(*)::int from ${setlistSongs}
+        where ${setlistSongs.setlistId} = ${events.setlistId}
+          and ${setlistSongs.conversationId} is not null
+      )`,
       venueName: venues.name,
       venueAddress: venues.address,
     })
@@ -197,6 +212,14 @@ export async function listPastEventsForUser(
         endTime: events.endTime,
         location: events.location,
         setlistId: events.setlistId,
+        // Counted here rather than joined: a join would multiply the event
+        // row by its setlist length. Markers have no conversation, so a
+        // setlist of set breaks correctly counts zero.
+        setlistSongCount: sql<number>`(
+          select count(*)::int from ${setlistSongs}
+          where ${setlistSongs.setlistId} = ${events.setlistId}
+            and ${setlistSongs.conversationId} is not null
+        )`,
         venueName: venues.name,
         venueAddress: venues.address,
       })
@@ -245,6 +268,14 @@ export async function getNextEventForUser(
       endTime: events.endTime,
       location: events.location,
       setlistId: events.setlistId,
+      // Counted here rather than joined: a join would multiply the event
+      // row by its setlist length. Markers have no conversation, so a
+      // setlist of set breaks correctly counts zero.
+      setlistSongCount: sql<number>`(
+        select count(*)::int from ${setlistSongs}
+        where ${setlistSongs.setlistId} = ${events.setlistId}
+          and ${setlistSongs.conversationId} is not null
+      )`,
       venueName: venues.name,
       venueAddress: venues.address,
     })
@@ -348,6 +379,14 @@ export async function listBandEvents(bandId: string): Promise<BandEvent[]> {
       details: events.details,
       notes: events.notes,
       setlistId: events.setlistId,
+      // Counted here rather than joined: a join would multiply the event
+      // row by its setlist length. Markers have no conversation, so a
+      // setlist of set breaks correctly counts zero.
+      setlistSongCount: sql<number>`(
+        select count(*)::int from ${setlistSongs}
+        where ${setlistSongs.setlistId} = ${events.setlistId}
+          and ${setlistSongs.conversationId} is not null
+      )`,
       setlistName: setlists.name,
       venueId: events.venueId,
       venueName: venues.name,
@@ -378,6 +417,14 @@ export async function getEventForUser(
       details: events.details,
       notes: events.notes,
       setlistId: events.setlistId,
+      // Counted here rather than joined: a join would multiply the event
+      // row by its setlist length. Markers have no conversation, so a
+      // setlist of set breaks correctly counts zero.
+      setlistSongCount: sql<number>`(
+        select count(*)::int from ${setlistSongs}
+        where ${setlistSongs.setlistId} = ${events.setlistId}
+          and ${setlistSongs.conversationId} is not null
+      )`,
       setlistName: setlists.name,
       venueId: events.venueId,
       venueName: venues.name,
