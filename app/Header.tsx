@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCurrentBand } from './CurrentBandProvider';
 import { startRouteProgress } from './RouteProgress';
+import { bandSwitchTarget } from '@/lib/routes';
 
 interface NavLink {
   href: string;
@@ -70,8 +71,18 @@ export function Header() {
   const selectBand = (id: string) => {
     setBandId(id);
     closeMenu();
+    // Stay on the page where possible — see `bandSwitchTarget`. Reading the
+    // live query string rather than `useSearchParams()` keeps this component
+    // out of a Suspense boundary; it's only read at click time, so there's no
+    // render to miss.
+    const target = bandSwitchTarget(
+      pathname,
+      typeof window === 'undefined' ? '' : window.location.search,
+      id,
+    );
+    if (!target) return;
     startRouteProgress(); // a button, so the link-click listener can't see it
-    router.push(`/bands/${id}`);
+    router.push(target);
   };
 
   // "Overview" and "Audio" jump to the currently-selected band's pages.

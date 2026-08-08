@@ -87,8 +87,8 @@ export function BandAudioList({
               <h2 className="text-sm font-medium">Audio</h2>
             </MinimizeToggle>
             {importProgress && (
-              <span className="truncate text-xs minor-text-theme-colors">
-                Importing {importProgress.current} of {importProgress.total}…
+              <span className="truncate text-xs minor-text-band-theme-colors">
+                ↑ {importProgress.current} of {importProgress.total}…
               </span>
             )}
           </span>

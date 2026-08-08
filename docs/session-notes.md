@@ -118,6 +118,14 @@ Last updated: 8 August 2026.
   doesn't page at all: it sends the two instants its local day spans
   (`?from=&to=`) and gets that day whole, which is also what lets it open a day
   older than the tab has paged back to.
+- **Switching bands stays on the page** (`bandSwitchTarget` in `lib/routes.ts`).
+  It used to always push Overview, which threw away wherever you were. Now: a
+  page that isn't about a band doesn't navigate at all (the current band is a
+  nav pointer, not what those pages show); `/bands/[id]` and `/bands/[id]/audio`
+  carry over with their query, so the open tab survives; anything deeper names
+  the *old* band's setlist/poll/venue/note and falls back to the new band's
+  Overview. Half-filled `new`/`edit` forms fall back for the same reason.
+  6 tests, no DB.
 - **Event colours are CSS custom properties keyed off `data-event-type`**, not a
   JS map — that's what lets the dark set apply through `.dark` without every
   component knowing the theme. `app/calendar/eventColors.ts` + `globals.css`.
@@ -198,7 +206,7 @@ Last updated: 8 August 2026.
 
 ## Test suite
 
-- `npm run test:db` — 86 node tests, ~7s, self-cleaning.
+- `npm run test:db` — 92 node tests, ~7s, self-cleaning.
 - `npm run test:e2e` — Playwright, 4 specs, against a **production build**
   (the service worker is disabled in dev, so offline specs run in dev prove
   nothing). Seeds and tears down its own band; ids are written to

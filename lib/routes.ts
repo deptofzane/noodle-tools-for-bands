@@ -32,6 +32,47 @@ export function practiceSongsApi(setlistId: string): string {
 }
 
 /**
+ * Where switching the current band should land you.
+ *
+ * Switching bands used to always push Overview, which threw away wherever you
+ * were — change band from the Calendar and you had to navigate back to it.
+ * The rule now is "stay put unless the URL names the band you just left":
+ *
+ *   - Nothing band-specific in the path (`/home`, `/calendar`, `/settings`,
+ *     a song, a practice screen) → `null`, meaning don't navigate at all. The
+ *     current band is only a pointer for the nav; the page is still the page.
+ *   - The band's own pages (`/bands/[id]`, `/bands/[id]/audio`) → the same
+ *     page of the new band, query string and all, so the open tab survives
+ *     the switch.
+ *   - Anything deeper → that URL names one of the *old* band's setlists,
+ *     polls, venues or notes, and the new band has no such thing. Falls back
+ *     to the new band's Overview rather than 404ing or, worse, resolving to
+ *     something that isn't what the URL described. Half-filled `new`/`edit`
+ *     forms land there too — carrying the path over would imply the entered
+ *     text came with it.
+ *
+ * Returns an absolute path, or null to stay where you are.
+ */
+export function bandSwitchTarget(
+  pathname: string,
+  search: string,
+  nextBandId: string,
+): string | null {
+  const match = /^\/bands\/([^/]+)(\/.*)?$/.exec(pathname);
+  if (!match) return null;
+
+  const [, currentBandId, rest = ''] = match;
+  // Already there — `/bands` itself never matches, so the band list stays put.
+  if (currentBandId === nextBandId) return null;
+
+  const section = rest.replace(/\/$/, '');
+  if (section === '' || section === '/audio') {
+    return `/bands/${nextBandId}${section}${search}`;
+  }
+  return `/bands/${nextBandId}`;
+}
+
+/**
  * Read `?song=` as a 0-based index. It's 1-based in the URL — a link that says
  * "song 7" should be the seventh song. Anything unparseable is ignored.
  */
