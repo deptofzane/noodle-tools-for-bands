@@ -10,12 +10,10 @@ import { getConversationMembership } from '@/lib/db/conversations';
 import {
   addSheetVersion,
   deleteSongFile,
-  getAudioVersionMeta,
-  getSheetVersionMeta,
-  getSongFileMeta,
-  streamAudioVersion,
-  streamSheetVersion,
-  streamSongFile,
+  getAudioVersionTarget,
+  getSheetVersionTarget,
+  getSongFileTarget,
+  streamStoredFile,
   updateSheetVersionContent,
   type SongFileKind,
 } from '@/lib/db/song-files';
@@ -59,33 +57,36 @@ export async function GET(
   // `?version=<id>`; without it we serve the song's default version.
   const versionId = url.searchParams.get('version');
 
-  const meta = versionId
+  // One lookup for both halves of the response: the headers describe this row
+  // and the bytes come from its storage key. Resolving them separately meant
+  // two identical queries per request, and a track's playback is many Range
+  // requests.
+  const target = versionId
     ? kind === 'audio'
-      ? await getAudioVersionMeta(conversationId, versionId)
-      : await getSheetVersionMeta(conversationId, versionId)
-    : await getSongFileMeta(conversationId, kind);
-  if (!meta) return new Response('not_found', { status: 404 });
+      ? await getAudioVersionTarget(conversationId, versionId)
+      : await getSheetVersionTarget(conversationId, versionId)
+    : await getSongFileTarget(conversationId, kind);
+  if (!target) return new Response('not_found', { status: 404 });
 
   const nameHint = url.searchParams.get('name');
   const contentType = resolveContentType(
-    meta.mimeType,
-    nameHint ?? meta.fileName,
+    target.mimeType,
+    nameHint ?? target.fileName,
   );
   const rangeHeader = req.headers.get('range') ?? undefined;
 
   let result;
   try {
-    result = versionId
-      ? kind === 'audio'
-        ? await streamAudioVersion(conversationId, versionId, rangeHeader)
-        : await streamSheetVersion(conversationId, versionId, rangeHeader)
-      : await streamSongFile(conversationId, kind, rangeHeader);
+    // A row whose object was never stored reads the same as a missing file.
+    result = target.storageKey
+      ? await streamStoredFile(target.storageKey, rangeHeader)
+      : null;
   } catch (err) {
     // Range the store can't satisfy → 416; anything else → 502.
     if (isRangeError(err)) {
       return new Response('range_not_satisfiable', {
         status: 416,
-        headers: { 'Content-Range': `bytes */${meta.sizeBytes}` },
+        headers: { 'Content-Range': `bytes */${target.sizeBytes}` },
       });
     }
     console.error('[files] stream failed', err);
@@ -97,7 +98,7 @@ export async function GET(
     'Content-Type': contentType,
     'Accept-Ranges': 'bytes',
     'Cache-Control': fileCacheControl(kind, versionId, url.searchParams),
-    'Content-Disposition': `inline; filename="${sanitizeFilename(meta.fileName)}"`,
+    'Content-Disposition': `inline; filename="${sanitizeFilename(target.fileName)}"`,
     // Don't let the browser re-interpret the bytes (e.g. a .txt sniffed as
     // HTML) — these are embedded same-origin.
     'X-Content-Type-Options': 'nosniff',

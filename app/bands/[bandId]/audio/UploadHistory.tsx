@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
 import { MinimizeToggle } from '../bandDetailShared';
-import type { BandUpload } from '@/lib/db/song-files';
+import { useBandUploads } from '../bandDetailHooks';
 import { dayLabel, groupByDay, timeLabel, uploadTrack } from './uploadDays';
 import { usePlaylistPlayer } from '../../../player/PlaylistPlayer';
+import { LoadMore } from '../../../LoadMore';
+import { LoadingBlock } from '../../../Spinner';
 
 /**
  * The Uploads tab: the band's audio files grouped by the day they arrived,
@@ -17,14 +19,21 @@ import { usePlaylistPlayer } from '../../../player/PlaylistPlayer';
  * Files, not songs: a second take of an existing song is an upload and belongs
  * here, while a song created without audio never was one. Read-only — per-song
  * actions live on the Songs tab.
+ *
+ * Loads its own pages rather than taking the list as a prop: this component is
+ * only mounted while its tab is open, which is what keeps the band's whole
+ * upload history off every other tab's load. A page can land mid-day, so the
+ * oldest day on screen may be partial until "Load more" fills it in — the
+ * per-day page always fetches its own day whole.
  */
-export function UploadHistory({
-  bandId,
-  uploads,
-}: {
-  bandId: string;
-  uploads: BandUpload[] | null;
-}) {
+export function UploadHistory({ bandId }: { bandId: string }) {
+  const {
+    items: uploads,
+    hasMore,
+    loadingMore,
+    error,
+    loadMore,
+  } = useBandUploads(bandId);
   const router = useRouter();
   const player = usePlaylistPlayer();
   /**
@@ -43,7 +52,15 @@ export function UploadHistory({
       return next;
     });
 
-  if (!uploads) return null;
+  if (error) {
+    return (
+      <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+        {error}
+      </p>
+    );
+  }
+
+  if (!uploads) return <LoadingBlock label="Loading uploads" />;
 
   if (uploads.length === 0) {
     return (
@@ -54,73 +71,84 @@ export function UploadHistory({
   }
 
   return (
-    <ul className="flex flex-col gap-3">
-      {groupByDay(uploads).map(([key, dayUploads], dayIndex) => {
-        // `groupByDay` is newest first, so index 0 is the latest upload day.
-        const open = (dayIndex === 0) !== toggled.has(key);
-        return (
-          <li
-            key={key}
-            className="rounded-lg border border-neutral-200 dark:border-neutral-800"
-          >
-            <div className="flex items-center justify-between gap-2 px-1">
-              <MinimizeToggle
-                minimized={!open}
-                onToggle={() => toggleDay(key)}
-                label={dayLabel(key)}
-              >
-                <h2 className="text-sm font-medium">{dayLabel(key)}</h2>
-              </MinimizeToggle>
-              <div className="flex shrink-0 items-center gap-1">
-                <span className="text-xs minor-text-theme-colors">
-                  {dayUploads.length}{' '}
-                  {dayUploads.length === 1 ? 'upload' : 'uploads'}
-                </span>
-                <ActionMenu label={`Actions for ${dayLabel(key)}`}>
-                  {/* Every row here is an audio file, so the whole day is
+    <>
+      <LoadMore
+        shown={uploads.length}
+        noun="upload"
+        hasMore={hasMore}
+        loading={loadingMore}
+        onLoadMore={() => void loadMore()}
+      />
+      <ul className="flex flex-col gap-3">
+        {groupByDay(uploads).map(([key, dayUploads], dayIndex) => {
+          // `groupByDay` is newest first, so index 0 is the latest upload day.
+          const open = (dayIndex === 0) !== toggled.has(key);
+          return (
+            <li
+              key={key}
+              className="rounded-lg border border-neutral-200 dark:border-neutral-800"
+            >
+              <div className="flex items-center justify-between gap-2 px-1">
+                <MinimizeToggle
+                  minimized={!open}
+                  onToggle={() => toggleDay(key)}
+                  label={dayLabel(key)}
+                >
+                  <h2 className="text-sm font-medium">{dayLabel(key)}</h2>
+                </MinimizeToggle>
+                <div className="flex shrink-0 items-center gap-1">
+                  <span className="text-xs minor-text-theme-colors">
+                    {dayUploads.length}{' '}
+                    {dayUploads.length === 1 ? 'upload' : 'uploads'}
+                  </span>
+                  <ActionMenu label={`Actions for ${dayLabel(key)}`}>
+                    {/* Every row here is an audio file, so the whole day is
                     playable — no need to filter the way a setlist does. */}
-                  <ActionMenuItem
-                    onClick={() => player.play(dayUploads.map(uploadTrack), 0)}
-                  >
-                    Play all
-                  </ActionMenuItem>
-                  <ActionMenuItem
-                    onClick={() =>
-                      router.push(`/bands/${bandId}/audio/uploads/${key}`)
-                    }
-                  >
-                    View tracks
-                  </ActionMenuItem>
-                </ActionMenu>
-              </div>
-            </div>
-            {open && (
-              <ul className="divide-y divide-neutral-200 border-t border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-                {dayUploads.map((u) => (
-                  <li
-                    key={u.fileId}
-                    className="flex items-center gap-2 pr-3 hover:bg-neutral-50 dark:hover:bg-neutral-900"
-                  >
-                    <Link
-                      href={`/notes/${u.conversationId}?from=audio`}
-                      className="min-w-0 flex-1 px-4 py-3 text-sm md:px-3 md:py-1.5"
+                    <ActionMenuItem
+                      onClick={() =>
+                        player.play(dayUploads.map(uploadTrack), 0)
+                      }
                     >
-                      <span className="block truncate">{u.title}</span>
-                      {/* The file, so two takes of one song are tellable apart. */}
-                      <span className="block truncate text-xs minor-text-theme-colors">
-                        {u.label || u.fileName}
+                      Play all
+                    </ActionMenuItem>
+                    <ActionMenuItem
+                      onClick={() =>
+                        router.push(`/bands/${bandId}/audio/uploads/${key}`)
+                      }
+                    >
+                      View tracks
+                    </ActionMenuItem>
+                  </ActionMenu>
+                </div>
+              </div>
+              {open && (
+                <ul className="divide-y divide-neutral-200 border-t border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+                  {dayUploads.map((u) => (
+                    <li
+                      key={u.fileId}
+                      className="flex items-center gap-2 pr-3 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                    >
+                      <Link
+                        href={`/notes/${u.conversationId}?from=audio`}
+                        className="min-w-0 flex-1 px-4 py-3 text-sm md:px-3 md:py-1.5"
+                      >
+                        <span className="block truncate">{u.title}</span>
+                        {/* The file, so two takes of one song are tellable apart. */}
+                        <span className="block truncate text-xs minor-text-theme-colors">
+                          {u.label || u.fileName}
+                        </span>
+                      </Link>
+                      <span className="shrink-0 text-xs tabular-nums minor-text-theme-colors">
+                        {timeLabel(u.createdAt)}
                       </span>
-                    </Link>
-                    <span className="shrink-0 text-xs tabular-nums minor-text-theme-colors">
-                      {timeLabel(u.createdAt)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }

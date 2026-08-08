@@ -90,7 +90,7 @@ export function BandAudioClient({
   const showToast = useToast();
   const canUseDrive = useCanUseDrive();
 
-  const { data, conversations, setlists, uploads, error, reload } =
+  const { data, conversations, setlists, error, reload } =
     useBandAudioData(bandId);
 
   // Mirror the active tab into the URL (?tab=…) so refresh and browser-back
@@ -374,9 +374,8 @@ export function BandAudioClient({
         />
       )}
 
-      {activeTab === 'uploads' && (
-        <UploadHistory bandId={bandId} uploads={uploads} />
-      )}
+      {/* Mounted only while its tab is open — that's what makes it lazy. */}
+      {activeTab === 'uploads' && <UploadHistory bandId={bandId} />}
 
       <ConfirmModal
         open={deleteTarget !== null}

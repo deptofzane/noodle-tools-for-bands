@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, lt } from 'drizzle-orm';
 import type { Readable } from 'node:stream';
 import {
   DeleteObjectsCommand,
@@ -338,19 +338,64 @@ async function getRow(conversationId: string, kind: SongFileKind) {
   return row ?? null;
 }
 
-export async function getSongFileMeta(
-  conversationId: string,
-  kind: SongFileKind,
-): Promise<SongFileMeta | null> {
-  const row = await getRow(conversationId, kind);
-  if (!row) return null;
+/**
+ * Everything serving one file takes: what to say about it, and where its
+ * bytes are.
+ *
+ * Serving used to resolve those separately — headers from a `…Meta` call,
+ * bytes from a `stream…` call — which ran the same lookup twice on every
+ * request, and audio playback is many Range requests per track. They're one
+ * row; read it once and pass it along.
+ */
+export interface SongFileTarget extends SongFileMeta {
+  /** Null for a row whose object was never stored. */
+  storageKey: string | null;
+}
+
+function toTarget(row: {
+  storageKey: string | null;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  songLength: number | null;
+  updatedAt: Date;
+}): SongFileTarget {
   return {
+    storageKey: row.storageKey,
     fileName: row.fileName,
     mimeType: row.mimeType,
     sizeBytes: row.sizeBytes,
     songLength: row.songLength,
     updatedAt: row.updatedAt.toISOString(),
   };
+}
+
+/** The describing half of a target, for callers that don't serve bytes. */
+function toMeta(target: SongFileTarget): SongFileMeta {
+  return {
+    fileName: target.fileName,
+    mimeType: target.mimeType,
+    sizeBytes: target.sizeBytes,
+    songLength: target.songLength,
+    updatedAt: target.updatedAt,
+  };
+}
+
+/** The song's default file of this kind, ready to serve. */
+export async function getSongFileTarget(
+  conversationId: string,
+  kind: SongFileKind,
+): Promise<SongFileTarget | null> {
+  const row = await getRow(conversationId, kind);
+  return row ? toTarget(row) : null;
+}
+
+export async function getSongFileMeta(
+  conversationId: string,
+  kind: SongFileKind,
+): Promise<SongFileMeta | null> {
+  const target = await getSongFileTarget(conversationId, kind);
+  return target ? toMeta(target) : null;
 }
 
 export async function hasSongFile(
@@ -367,6 +412,32 @@ const META_COLUMNS = {
   songLength: songFiles.songLength,
   updatedAt: songFiles.updatedAt,
 } as const;
+
+const TARGET_COLUMNS = {
+  ...META_COLUMNS,
+  storageKey: songFiles.storageKey,
+} as const;
+
+/** One named version of a song's file, scoped to its conversation. */
+async function getVersionTarget(
+  conversationId: string,
+  versionId: string,
+  kind: SongFileKind,
+): Promise<SongFileTarget | null> {
+  if (!isUuid(versionId)) return null;
+  const [row] = await db
+    .select(TARGET_COLUMNS)
+    .from(songFiles)
+    .where(
+      and(
+        eq(songFiles.id, versionId),
+        eq(songFiles.conversationId, conversationId),
+        eq(songFiles.kind, kind),
+      ),
+    )
+    .limit(1);
+  return row ? toTarget(row) : null;
+}
 
 // Sheet music is multi-version (see `addSheetVersion` and the sheet-music
 // versions section below); the old single-sheet `putSheetMusic` was removed.
@@ -517,9 +588,30 @@ export interface BandUpload {
   key: string | null;
 }
 
-/** Every audio file the band has uploaded, oldest first. */
-export async function listBandUploads(bandId: string): Promise<BandUpload[]> {
-  const rows = await db
+/**
+ * The band's audio files, newest first.
+ *
+ * Newest first and bounded because this list only grows: a band that has been
+ * going a while has thousands of files, and the Uploads tab shows the recent
+ * end of them. Callers page with `limit`/`offset` (see `lib/paging`).
+ *
+ * `from`/`to` fetch one window instead — the per-day page's use. The day being
+ * the *viewer's* local day is why the server can't take a day key, but the
+ * browser can turn one into the two instants that bound it, and those mean the
+ * same thing everywhere.
+ */
+export async function listBandUploads(
+  bandId: string,
+  opts: {
+    limit?: number;
+    offset?: number;
+    /** Inclusive lower bound on upload time. */
+    from?: Date;
+    /** Exclusive upper bound. */
+    to?: Date;
+  } = {},
+): Promise<BandUpload[]> {
+  const query = db
     .select({
       fileId: songFiles.id,
       conversationId: songFiles.conversationId,
@@ -536,8 +628,22 @@ export async function listBandUploads(bandId: string): Promise<BandUpload[]> {
     })
     .from(songFiles)
     .innerJoin(conversations, eq(conversations.id, songFiles.conversationId))
-    .where(and(eq(conversations.bandId, bandId), eq(songFiles.kind, 'audio')))
-    .orderBy(asc(songFiles.createdAt));
+    .where(
+      and(
+        eq(conversations.bandId, bandId),
+        eq(songFiles.kind, 'audio'),
+        opts.from ? gte(songFiles.createdAt, opts.from) : undefined,
+        opts.to ? lt(songFiles.createdAt, opts.to) : undefined,
+      ),
+    )
+    // Ties broken by id so paging can't repeat or skip a row when several
+    // files land in the same millisecond — a bulk import does exactly that.
+    .orderBy(desc(songFiles.createdAt), desc(songFiles.id))
+    .$dynamic();
+
+  const rows = await (opts.limit != null
+    ? query.limit(opts.limit).offset(opts.offset ?? 0)
+    : query);
 
   return rows.map((r) => ({
     ...r,
@@ -572,24 +678,21 @@ export async function listAudioVersions(
   return rows.map((r) => ({ ...r, updatedAt: r.updatedAt.toISOString() }));
 }
 
+/** One specific audio version, ready to serve (scoped to its conversation). */
+export async function getAudioVersionTarget(
+  conversationId: string,
+  versionId: string,
+): Promise<SongFileTarget | null> {
+  return getVersionTarget(conversationId, versionId, 'audio');
+}
+
 /** Metadata for one specific audio version (scoped to its conversation). */
 export async function getAudioVersionMeta(
   conversationId: string,
   versionId: string,
 ): Promise<SongFileMeta | null> {
-  if (!isUuid(versionId)) return null;
-  const [row] = await db
-    .select(META_COLUMNS)
-    .from(songFiles)
-    .where(
-      and(
-        eq(songFiles.id, versionId),
-        eq(songFiles.conversationId, conversationId),
-        eq(songFiles.kind, 'audio'),
-      ),
-    )
-    .limit(1);
-  return row ? { ...row, updatedAt: row.updatedAt.toISOString() } : null;
+  const target = await getAudioVersionTarget(conversationId, versionId);
+  return target ? toMeta(target) : null;
 }
 
 /**
@@ -729,11 +832,14 @@ export interface SongFileStream {
 
 /**
  * Fetch the bytes from object storage, honoring an HTTP Range header (the
- * store computes the range and returns 206 + Content-Range). Returns null
- * if the file doesn't exist. Throws on a Range the store can't satisfy —
- * the route maps that to 416.
+ * store computes the range and returns 206 + Content-Range). Throws on a
+ * Range the store can't satisfy — the route maps that to 416.
+ *
+ * Takes a key rather than a (conversation, version) pair so a caller that has
+ * already resolved the row — the serving route, via `SongFileTarget` — doesn't
+ * pay for the lookup twice.
  */
-async function streamKey(
+export async function streamStoredFile(
   storageKey: string,
   rangeHeader?: string,
 ): Promise<SongFileStream> {
@@ -759,9 +865,9 @@ export async function streamSongFile(
   kind: SongFileKind,
   rangeHeader?: string,
 ): Promise<SongFileStream | null> {
-  const row = await getRow(conversationId, kind);
-  if (!row?.storageKey) return null;
-  return streamKey(row.storageKey, rangeHeader);
+  const target = await getSongFileTarget(conversationId, kind);
+  if (!target?.storageKey) return null;
+  return streamStoredFile(target.storageKey, rangeHeader);
 }
 
 /** Stream one specific audio version (scoped to its conversation). */
@@ -770,20 +876,9 @@ export async function streamAudioVersion(
   versionId: string,
   rangeHeader?: string,
 ): Promise<SongFileStream | null> {
-  if (!isUuid(versionId)) return null;
-  const [row] = await db
-    .select({ storageKey: songFiles.storageKey })
-    .from(songFiles)
-    .where(
-      and(
-        eq(songFiles.id, versionId),
-        eq(songFiles.conversationId, conversationId),
-        eq(songFiles.kind, 'audio'),
-      ),
-    )
-    .limit(1);
-  if (!row?.storageKey) return null;
-  return streamKey(row.storageKey, rangeHeader);
+  const target = await getAudioVersionTarget(conversationId, versionId);
+  if (!target?.storageKey) return null;
+  return streamStoredFile(target.storageKey, rangeHeader);
 }
 
 export async function deleteSongFile(
@@ -938,23 +1033,19 @@ export async function listSheetVersions(
 }
 
 /** Metadata for one specific sheet-music version (scoped to its conversation). */
+export async function getSheetVersionTarget(
+  conversationId: string,
+  versionId: string,
+): Promise<SongFileTarget | null> {
+  return getVersionTarget(conversationId, versionId, 'sheet_music');
+}
+
 export async function getSheetVersionMeta(
   conversationId: string,
   versionId: string,
 ): Promise<SongFileMeta | null> {
-  if (!isUuid(versionId)) return null;
-  const [row] = await db
-    .select(META_COLUMNS)
-    .from(songFiles)
-    .where(
-      and(
-        eq(songFiles.id, versionId),
-        eq(songFiles.conversationId, conversationId),
-        eq(songFiles.kind, 'sheet_music'),
-      ),
-    )
-    .limit(1);
-  return row ? { ...row, updatedAt: row.updatedAt.toISOString() } : null;
+  const target = await getSheetVersionTarget(conversationId, versionId);
+  return target ? toMeta(target) : null;
 }
 
 /** Make `versionId` the default sheet for its song. */
@@ -1138,20 +1229,9 @@ export async function streamSheetVersion(
   versionId: string,
   rangeHeader?: string,
 ): Promise<SongFileStream | null> {
-  if (!isUuid(versionId)) return null;
-  const [row] = await db
-    .select({ storageKey: songFiles.storageKey })
-    .from(songFiles)
-    .where(
-      and(
-        eq(songFiles.id, versionId),
-        eq(songFiles.conversationId, conversationId),
-        eq(songFiles.kind, 'sheet_music'),
-      ),
-    )
-    .limit(1);
-  if (!row?.storageKey) return null;
-  return streamKey(row.storageKey, rangeHeader);
+  const target = await getSheetVersionTarget(conversationId, versionId);
+  if (!target?.storageKey) return null;
+  return streamStoredFile(target.storageKey, rangeHeader);
 }
 
 // ── Per-user sheet-version preference ────────────────────────────────

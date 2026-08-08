@@ -52,8 +52,12 @@ export function groupByDay(uploads: BandUpload[]): [string, BandUpload[]][] {
   return keys.map((key) => [key, uploadsForDay(uploads, key)]);
 }
 
-/** The uploads made on `key`, in the order they arrived. */
-export function uploadsForDay(
+/**
+ * The uploads made on `key`, in the order they arrived. Internal to the
+ * grouping now — the per-day page asks the server for its day rather than
+ * filtering a list it would have had to hold all of.
+ */
+function uploadsForDay(
   uploads: BandUpload[],
   key: string,
 ): BandUpload[] {

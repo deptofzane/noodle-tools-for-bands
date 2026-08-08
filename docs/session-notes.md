@@ -98,6 +98,17 @@ Last updated: 7 August 2026.
   migration. `app/offline/staleness.ts`, 10 tests.
 - **Only what was downloaded counts** for staleness: a sheets-only download
   isn't told to update because a new audio take landed.
+- **Serving a file resolves one row, not two.** `SongFileTarget` carries the
+  metadata *and* the storage key, because the headers and the bytes both come
+  from the same row and a track's playback is many Range requests. The
+  `…Meta`/`stream…` pairs still exist for callers that want one half.
+- **`/api/bands/[bandId]/uploads` is paged, newest first**, and the Uploads tab
+  fetches it itself rather than taking it as a prop — it only mounts while its
+  tab is open, so the other tabs no longer load a list they don't show. A page
+  can end mid-day, so the oldest day on screen may be partial. The per-day page
+  doesn't page at all: it sends the two instants its local day spans
+  (`?from=&to=`) and gets that day whole, which is also what lets it open a day
+  older than the tab has paged back to.
 - **Event colours are CSS custom properties keyed off `data-event-type`**, not a
   JS map — that's what lets the dark set apply through `.dark` without every
   component knowing the theme. `app/calendar/eventColors.ts` + `globals.css`.
@@ -178,7 +189,7 @@ Last updated: 7 August 2026.
 
 ## Test suite
 
-- `npm run test:db` — 84 node tests, ~7s, self-cleaning.
+- `npm run test:db` — 86 node tests, ~7s, self-cleaning.
 - `npm run test:e2e` — Playwright, 4 specs, against a **production build**
   (the service worker is disabled in dev, so offline specs run in dev prove
   nothing). Seeds and tears down its own band; ids are written to

@@ -79,12 +79,118 @@ test('band uploads: every audio file, songs and versions alike', async () => {
     assert.equal(t2.conversationId, one.id);
     assert.equal(t2.isDefault, false, 'a later version is not the default');
 
-    // Oldest first, so a day reads in the order it happened.
+    // Newest first: the list is bounded, so the recent end is the end that
+    // has to fit in the first page.
     const times = uploads.map((u) => Date.parse(u.createdAt));
     assert.deepEqual(
       times,
-      [...times].sort((a, b) => a - b),
-      'ascending',
+      [...times].sort((a, b) => b - a),
+      'descending',
+    );
+  } finally {
+    if (bandId) await deleteBand(bandId);
+    await deleteUsersByGoogleSub(SUBS);
+  }
+});
+
+test('band uploads: pages cover the list once, newest first', async () => {
+  let bandId: string | undefined;
+  try {
+    const owner = await upsertUser({
+      googleSub: 'BU_OWNER',
+      email: 'bu@x.com',
+      name: 'Owner',
+    });
+    const band = await createBand(owner.id, 'BU Band');
+    bandId = band.id;
+    const conv = await findOrCreateConversation(bandId, 'drive-page', 'Paged');
+
+    // Five takes in a row — a bulk import lands them close enough together
+    // that `created_at` alone can tie, which is what the id tiebreak is for.
+    for (let i = 0; i < 5; i++) {
+      await addAudioVersion({
+        conversationId: conv.id,
+        ...streamOf(Buffer.from(`take-${i}`)),
+        fileName: `take-${i}.mp3`,
+        mimeType: 'audio/mpeg',
+        driveFileId: `bu-page-${i}`,
+      });
+    }
+
+    const all = await listBandUploads(bandId);
+    assert.equal(all.length, 5, 'unpaged still returns everything');
+
+    const first = await listBandUploads(bandId, { limit: 2, offset: 0 });
+    const second = await listBandUploads(bandId, { limit: 2, offset: 2 });
+    const third = await listBandUploads(bandId, { limit: 2, offset: 4 });
+    assert.equal(first.length, 2);
+    assert.equal(second.length, 2);
+    assert.equal(third.length, 1, 'the last page is short');
+
+    const paged = [...first, ...second, ...third].map((u) => u.fileId);
+    assert.deepEqual(
+      paged,
+      all.map((u) => u.fileId),
+      'no row repeated or skipped across pages',
+    );
+    assert.equal(new Set(paged).size, 5, 'and every one distinct');
+  } finally {
+    if (bandId) await deleteBand(bandId);
+    await deleteUsersByGoogleSub(SUBS);
+  }
+});
+
+test('band uploads: a time window returns only that window', async () => {
+  let bandId: string | undefined;
+  try {
+    const owner = await upsertUser({
+      googleSub: 'BU_OWNER',
+      email: 'bu@x.com',
+      name: 'Owner',
+    });
+    const band = await createBand(owner.id, 'BU Band');
+    bandId = band.id;
+    const conv = await findOrCreateConversation(
+      bandId,
+      'drive-win',
+      'Windowed',
+    );
+
+    const before = new Date();
+    await addAudioVersion({
+      conversationId: conv.id,
+      ...streamOf(Buffer.from('EEEE')),
+      fileName: 'inside.mp3',
+      mimeType: 'audio/mpeg',
+      driveFileId: 'bu-inside',
+    });
+    const after = new Date(Date.now() + 1000);
+
+    // `from` is inclusive, `to` exclusive — the pair a local day turns into.
+    assert.equal(
+      (await listBandUploads(bandId, { from: before, to: after })).length,
+      1,
+      'inside the window',
+    );
+    assert.equal(
+      (
+        await listBandUploads(bandId, {
+          from: after,
+          to: new Date(Date.now() + 2000),
+        })
+      ).length,
+      0,
+      'a later window is empty',
+    );
+    assert.equal(
+      (
+        await listBandUploads(bandId, {
+          from: new Date(before.getTime() - 2000),
+          to: before,
+        })
+      ).length,
+      0,
+      'an earlier window is empty — `to` does not include its own instant',
     );
   } finally {
     if (bandId) await deleteBand(bandId);

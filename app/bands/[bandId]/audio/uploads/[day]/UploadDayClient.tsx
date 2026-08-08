@@ -3,13 +3,8 @@
 import Link from 'next/link';
 import { formatDuration } from '@/lib/format';
 import { usePlaylistPlayer } from '../../../../../player/PlaylistPlayer';
-import { useBandAudioData } from '../../../bandDetailHooks';
-import {
-  dayLabel,
-  timeLabel,
-  uploadsForDay,
-  uploadTrack,
-} from '../../uploadDays';
+import { useBandUploadsForDay } from '../../../bandDetailHooks';
+import { dayLabel, timeLabel, uploadTrack } from '../../uploadDays';
 import { LoadingBlock } from '../../../../../Spinner';
 
 /**
@@ -27,7 +22,7 @@ export function UploadDayClient({
   bandId: string;
   day: string;
 }) {
-  const { data, uploads, error } = useBandAudioData(bandId);
+  const { band, uploads, error } = useBandUploadsForDay(bandId, day);
   const player = usePlaylistPlayer();
 
   if (error) {
@@ -38,11 +33,15 @@ export function UploadDayClient({
     );
   }
 
-  if (!data) {
+  if (!band || !uploads) {
     return <LoadingBlock />;
   }
 
-  const items = uploadsForDay(uploads, day);
+  // The query already bounded this to the day; it arrives newest first and
+  // the page reads in the order the files landed.
+  const items = [...uploads].sort(
+    (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
+  );
   const label = dayLabel(day);
   const queue = items.map(uploadTrack);
 
@@ -75,7 +74,7 @@ export function UploadDayClient({
               </>
             )}
             {' · '}
-            {data.band.name}
+            {band.band.name}
           </p>
         </div>
         <button
