@@ -4,7 +4,7 @@ Carry-over context for picking this up cold. Not a changelog — `git log` has
 that. This is the state of play, the decisions that would otherwise get
 re-litigated, and the traps that already cost a day.
 
-Last updated: 7 August 2026.
+Last updated: 8 August 2026.
 
 ---
 
@@ -28,12 +28,20 @@ Last updated: 7 August 2026.
    that it exists. Google's verification and Play's review both mail it, and
    Play policy expects deletion requests to reach a human. Same for
    `noodle.band`, which the ICS UIDs and the default VAPID subject now name.
-4. **`/.well-known/assetlinks.json`.** Ordering trap: the SHA-256 comes from
+4. **Have the terms of service reviewed.** `app/TermsOfService.tsx` is a
+   plain-language draft describing how the app actually works — upload rights,
+   shared bands, no-warranty, account closure. Nobody with a law degree has
+   read it, and it hasn't been checked against any jurisdiction's
+   requirements. It's shown in full on `/about` (public, alongside the privacy
+   policy). The policy text itself now lives in `app/PrivacyPolicy.tsx` and is
+   rendered by both `/privacy` and `/about`, so edit it in one place;
+   `/privacy` stays the URL Play and Google were given.
+5. **`/.well-known/assetlinks.json`.** Ordering trap: the SHA-256 comes from
    Play App Signing, which you only get *after* uploading the first bundle. So:
    Bubblewrap build → internal testing upload → copy fingerprint → publish
    assetlinks → verify. Skip it and the TWA shows a browser address bar.
-5. **Bubblewrap + internal testing track.** New apps must target API 35.
-6. **Play data-safety form.** Must match the privacy policy — email, name,
+6. **Bubblewrap + internal testing track.** New apps must target API 35.
+7. **Play data-safety form.** Must match the privacy policy — email, name,
    audio/sheet uploads, push tokens, Drive access, Sentry. Inconsistency
    between the two is a common rejection.
 
@@ -44,7 +52,7 @@ Last updated: 7 August 2026.
 - **Analytics.** Recommended Plausible or Umami (cookieless, no consent
   banner). Explicitly *not* PostHog/session replay: it would record song
   titles, private notes, and band chat. **Adding any analytics means editing
-  `app/privacy/page.tsx` and the data-safety form in the same change** — the
+  `app/PrivacyPolicy.tsx` and the data-safety form in the same change** — the
   policy currently says there is no tracking.
 - **Content-Security-Policy.** Only `frame-ancestors 'none'` today. A real one
   has to enumerate the Google Picker (gstatic), the inline pre-paint theme

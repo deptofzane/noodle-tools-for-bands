@@ -1,7 +1,6 @@
 import { auth, signIn } from '@/auth';
 import { redirect } from 'next/navigation';
-// TODO: comment back in when email is available
-// import { CredentialsForm } from './CredentialsForm';
+import { CredentialsForm } from './CredentialsForm';
 
 export default async function LoginPage({
   searchParams,
@@ -16,9 +15,10 @@ export default async function LoginPage({
 
   return (
     <main className="flex flex-col min-h-screen items-center justify-center px-6">
-      <h3 className="font-serif mb-2 text-4xl">
+      <h3 className="font-serif text-4xl">
         noo<span className="text-cyan-600">dle</span>
       </h3>
+      <span className="m-0 pb-3 minor-text-theme-colors text-sm"><span className="text-cyan-600">tools</span> for bands</span>
       <div className="w-full max-w-sm rounded-lg border border-neutral-200 p-8 dark:border-neutral-800">
         <h1 className="title-text">Sign in</h1>
         <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
@@ -47,14 +47,13 @@ export default async function LoginPage({
           requested separately, only when you open a folder.
         </p>
 
-        {/* TODO: comment in when email is available */}
-        {/* <div className="my-6 flex items-center gap-3 text-xs text-neutral-400">
+        <div className="my-6 flex items-center gap-3 text-xs text-neutral-400">
           <span className="h-px flex-1 bg-neutral-200 dark:bg-neutral-900" />
           or
           <span className="h-px flex-1 bg-neutral-200 dark:bg-neutral-900" />
         </div>
 
-        <CredentialsForm callbackUrl={callbackUrl ?? '/home'} /> */}
+        <CredentialsForm callbackUrl={callbackUrl ?? '/home'} />
       </div>
     </main>
   );

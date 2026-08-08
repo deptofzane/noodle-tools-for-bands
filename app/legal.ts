@@ -10,3 +10,10 @@ export const CONTACT_EMAIL = 'noodlehelp@yahoo.com';
 
 /** Bump when either page's substance changes, not for wording tweaks. */
 export const POLICY_UPDATED = '5 August 2026';
+
+/**
+ * The terms' own date, separate because the two documents change for
+ * different reasons — a new sub-processor moves the policy, a new rule about
+ * uploads moves the terms.
+ */
+export const TERMS_UPDATED = '8 August 2026';

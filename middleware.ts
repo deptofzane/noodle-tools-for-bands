@@ -33,6 +33,10 @@ const PUBLIC_PATHS = new Set<string>([
   // redirect would read as a missing policy.
   '/privacy',
   '/delete-account',
+  // About carries both legal documents in full, so it answers to the same
+  // requirement — and someone deciding whether to sign up should be able to
+  // read the terms before they do.
+  '/about',
   // The offline screen. It holds no server data — what it lists comes from the
   // device's own IndexedDB — and the service worker precaches it to serve when
   // a navigation fails. Behind auth, that precache would be a login redirect,

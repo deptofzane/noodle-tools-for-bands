@@ -93,6 +93,7 @@ export function Header() {
     },
     { href: '/history', label: 'History' },
     { href: '/settings', label: 'Settings', menuOnly: true },
+    { href: '/about', label: 'About', menuOnly: true },
   ];
   // Desktop: everything but `menuOnly` sits inline in the bar.
   const inlineLinks = navLinks.filter((l) => !l.menuOnly);
