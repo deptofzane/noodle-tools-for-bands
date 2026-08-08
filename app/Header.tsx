@@ -220,11 +220,13 @@ export function Header() {
       <nav className="mx-auto flex max-w-5xl flex-row items-center justify-between gap-1 px-3 py-3 lg:px-6 bg-white dark:bg-neutral-900">
         <span className="flex flex-row items-center gap-2">
           <Link key="/home" href="/home">
+            {/* The wordmark splits so the second half can carry the accent;
+                the monogram is the mobile stand-in for the same mark. */}
             <h3 className="mb-2 font-serif text-4xl hidden lg:inline">
-              side<span className="text-cyan-600">stage</span>
+              noo<span className="text-cyan-600">dle</span>
             </h3>
             <span className="w-8 h-8 flex items-center justify-center lg:hidden border border-cyan-600 rounded-full">
-              <h3 className="font-serif text-2xl text-center mb-1">s</h3>
+              <h3 className="font-serif text-2xl text-center mb-1">n</h3>
             </span>
           </Link>
         </span>

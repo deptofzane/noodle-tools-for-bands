@@ -1,4 +1,4 @@
-# Sidestage
+# Noodle
 
 Built as an experiment to gain experience working with Claude Code
 
@@ -82,9 +82,9 @@ Make sure **Google Picker API** is enabled in APIs & Services → Library.
 Local dev uses Postgres 17; Docker is the quickest:
 
 ```bash
-docker run --name sidestage-pg \
-  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=sidestage \
-  -p 5432:5432 -v sidestage-pg-data:/var/lib/postgresql/data -d postgres:17
+docker run --name noodle-pg \
+  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=noodle \
+  -p 5432:5432 -v noodle-pg-data:/var/lib/postgresql/data -d postgres:17
 ```
 
 (See `docs/postgres-phase-1-setup.md` for native/alternative setups.)
@@ -95,9 +95,9 @@ Song files (audio + sheet music) live in S3-compatible object storage.
 Locally, run MinIO (production uses Cloudflare R2):
 
 ```bash
-docker run -d --name sidestage-minio -p 9000:9000 -p 9001:9001 \
+docker run -d --name noodle-minio -p 9000:9000 -p 9001:9001 \
   -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-  -v sidestage-minio-data:/data minio/minio server /data --console-address ":9001"
+  -v noodle-minio-data:/data minio/minio server /data --console-address ":9001"
 ```
 
 ### 5. Configure environment
@@ -113,13 +113,13 @@ AUTH_SECRET=<openssl rand -base64 32>
 AUTH_GOOGLE_ID=<OAuth client ID>
 AUTH_GOOGLE_SECRET=<OAuth client secret>
 NEXT_PUBLIC_GOOGLE_API_KEY=<API key>
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/sidestage
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/noodle
 # DATABASE_SSL stays unset/false locally — only managed Postgres needs it.
 # Object storage — local MinIO (for R2: S3_ENDPOINT=https://<acct>.r2.cloudflarestorage.com,
 # creds = an R2 API token, S3_FORCE_PATH_STYLE can be false).
 S3_ENDPOINT=http://localhost:9000
 S3_REGION=auto
-S3_BUCKET=sidestage
+S3_BUCKET=noodle
 S3_ACCESS_KEY_ID=minioadmin
 S3_SECRET_ACCESS_KEY=minioadmin
 S3_FORCE_PATH_STYLE=true

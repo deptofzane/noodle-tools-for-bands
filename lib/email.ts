@@ -5,7 +5,7 @@ import { Resend } from 'resend';
  * dev), the send is skipped and the link is logged instead — so the flow is
  * still testable and the caller can safely always report success.
  */
-const FROM = process.env.EMAIL_FROM ?? 'Sidestage <onboarding@resend.dev>';
+const FROM = process.env.EMAIL_FROM ?? 'Noodle <onboarding@resend.dev>';
 
 export async function sendPasswordResetEmail(
   to: string,
@@ -22,8 +22,8 @@ export async function sendPasswordResetEmail(
   await resend.emails.send({
     from: FROM,
     to,
-    subject: 'Reset your Sidestage password',
-    text: `Reset your Sidestage password:\n${resetUrl}\n\nThis link expires in 30 minutes. If you didn't request it, you can ignore this email.`,
-    html: `<p>Reset your Sidestage password:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>This link expires in 30 minutes. If you didn't request it, you can ignore this email.</p>`,
+    subject: 'Reset your Noodle password',
+    text: `Reset your Noodle password:\n${resetUrl}\n\nThis link expires in 30 minutes. If you didn't request it, you can ignore this email.`,
+    html: `<p>Reset your Noodle password:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>This link expires in 30 minutes. If you didn't request it, you can ignore this email.</p>`,
   });
 }

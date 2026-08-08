@@ -38,7 +38,7 @@ declare const self: ServiceWorkerGlobalScope;
  * the old one are dropped rather than lingering to their 60-day expiry. The
  * v2 scheme keys on the version id (see the audio rule below).
  */
-const AUDIO_CACHE = 'sidestage-audio-v2';
+const AUDIO_CACHE = 'noodle-audio-v2';
 
 const offlineRuntimeCaching: RuntimeCaching[] = [
   // Sheet-music file bytes. URLs are versioned (`?version=&v=updatedAt`) and
@@ -49,7 +49,7 @@ const offlineRuntimeCaching: RuntimeCaching[] = [
       sameOrigin &&
       /^\/api\/conversations\/[^/]+\/files\/sheet_music/.test(url.pathname),
     handler: new CacheFirst({
-      cacheName: 'sidestage-files',
+      cacheName: 'noodle-files',
       matchOptions: { ignoreVary: true },
       plugins: [
         new CacheableResponsePlugin({ statuses: [0, 200] }),
@@ -100,7 +100,7 @@ const offlineRuntimeCaching: RuntimeCaching[] = [
     matcher: ({ url, sameOrigin }) =>
       sameOrigin && url.pathname.endsWith('/sheet-music-versions'),
     handler: new NetworkFirst({
-      cacheName: 'sidestage-meta',
+      cacheName: 'noodle-meta',
       networkTimeoutSeconds: 3,
       matchOptions: { ignoreVary: true },
       plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
@@ -114,7 +114,7 @@ const offlineRuntimeCaching: RuntimeCaching[] = [
       sameOrigin &&
       /^\/api\/setlists\/[^/]+\/practice-songs$/.test(url.pathname),
     handler: new NetworkFirst({
-      cacheName: 'sidestage-meta',
+      cacheName: 'noodle-meta',
       networkTimeoutSeconds: 3,
       matchOptions: { ignoreVary: true },
       plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
@@ -133,7 +133,7 @@ const offlineRuntimeCaching: RuntimeCaching[] = [
       request.mode === 'navigate' &&
       /\/setlists\/[^/]+\/practice(\/live)?\/?$/.test(url.pathname),
     handler: new NetworkFirst({
-      cacheName: 'sidestage-pages',
+      cacheName: 'noodle-pages',
       networkTimeoutSeconds: 3,
       matchOptions: { ignoreVary: true },
       plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
@@ -189,7 +189,7 @@ serwist.addEventListeners();
 // --- Keeping downloaded page shells usable across deploys -------------------
 
 /** Cache holding the downloaded Practice/Live documents. Matches the rule above. */
-const PAGES_CACHE = 'sidestage-pages';
+const PAGES_CACHE = 'noodle-pages';
 
 /**
  * Re-fetch every cached page shell when a new service worker takes over.
@@ -231,18 +231,24 @@ async function refreshCachedPageShells(): Promise<void> {
 }
 
 /**
- * Drop audio cached under a retired key scheme.
+ * Drop caches this build no longer writes to.
  *
- * Renaming the cache is what makes the new scheme take effect; without this
- * the old one would simply sit there holding a copy of every downloaded song
- * until its 60-day expiry.
+ * Two kinds: audio cached under a retired key scheme (renaming the cache is
+ * what makes a new scheme take effect), and everything under the app's former
+ * `sidestage-` name. Without this they'd sit there holding a copy of every
+ * downloaded song until their 60-day expiry — on a phone, that can be
+ * gigabytes of audio no code will ever read again.
  */
-async function dropStaleAudioCaches(): Promise<void> {
+async function dropStaleCaches(): Promise<void> {
   try {
     const names = await caches.keys();
     await Promise.all(
       names
-        .filter((n) => n.startsWith('sidestage-audio') && n !== AUDIO_CACHE)
+        .filter(
+          (n) =>
+            n.startsWith('sidestage-') ||
+            (n.startsWith('noodle-audio') && n !== AUDIO_CACHE),
+        )
         .map((n) => caches.delete(n)),
     );
   } catch {
@@ -251,9 +257,7 @@ async function dropStaleAudioCaches(): Promise<void> {
 }
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    Promise.all([refreshCachedPageShells(), dropStaleAudioCaches()]),
-  );
+  event.waitUntil(Promise.all([refreshCachedPageShells(), dropStaleCaches()]));
 });
 
 // --- Web Push -------------------------------------------------------------
@@ -276,7 +280,7 @@ self.addEventListener('push', (event) => {
     // Non-JSON payload — fall back to plain text as the body.
     data = { body: event.data?.text() };
   }
-  const title = data.title || 'Sidestage';
+  const title = data.title || 'Noodle';
   const url = data.url || '/home';
   event.waitUntil(
     self.registration.showNotification(title, {

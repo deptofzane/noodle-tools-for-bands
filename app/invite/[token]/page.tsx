@@ -23,7 +23,7 @@ export default async function InvitePage({
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <main className="flex min-h-screen flex-col items-center justify-center px-6">
       <h3 className="mb-2 font-serif text-4xl">
-        side<span className="text-cyan-600">stage</span>
+        noo<span className="text-cyan-600">dle</span>
       </h3>
       <div className="w-full max-w-sm rounded-lg border border-neutral-200 p-8 dark:border-neutral-800">
         {children}
@@ -47,7 +47,7 @@ export default async function InvitePage({
             href="/home"
             className="text-blue-600 hover:underline dark:text-blue-400"
           >
-            Go to Sidestage
+            Go to Noodle
           </Link>
         </p>
       </Shell>
@@ -63,7 +63,7 @@ export default async function InvitePage({
       <h1 className="title-text">Join {invite.bandName}</h1>
       <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
         You’ve been invited to join{' '}
-        <span className="font-medium">{invite.bandName}</span> on Sidestage.
+        <span className="font-medium">{invite.bandName}</span> on Noodle.
       </p>
 
       {user && emailMismatch ? (

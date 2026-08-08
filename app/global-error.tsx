@@ -91,7 +91,7 @@ export default function GlobalError({
         <style dangerouslySetInnerHTML={{ __html: STYLES }} />
         <div style={{ maxWidth: '28rem', textAlign: 'center' }}>
           <h1 style={{ fontSize: '1.5rem', margin: '0 0 0.5rem' }}>
-            Sidestage couldn’t start
+            Noodle couldn’t start
           </h1>
           <p
             style={{

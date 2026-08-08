@@ -4,7 +4,7 @@ import { CONTACT_EMAIL, POLICY_UPDATED } from '../legal';
 
 export const metadata: Metadata = {
   title: 'Privacy policy',
-  description: 'What Sidestage collects, why, and how to get rid of it.',
+  description: 'What Noodle collects, why, and how to get rid of it.',
 };
 
 /**
@@ -29,7 +29,7 @@ export default function PrivacyPage() {
 
       <Section title="The short version">
         <p>
-          Sidestage stores what a band needs to rehearse together: your account,
+          Noodle stores what a band needs to rehearse together: your account,
           the audio and sheet music you upload, and the notes you write about
           them. There is no advertising and no tracking, and nothing is sold or
           shared with anyone outside the services listed below.

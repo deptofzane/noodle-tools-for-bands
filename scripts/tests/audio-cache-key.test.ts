@@ -38,7 +38,7 @@ test('audio cache key: a versionless URL is left as the bare path', () => {
 
 test('audio cache key: absolute and relative URLs agree', () => {
   assert.equal(
-    canonicalAudioKey(`https://sidestage.app${AUDIO}?version=v1`),
+    canonicalAudioKey(`https://noodle.band${AUDIO}?version=v1`),
     canonicalAudioKey(`${AUDIO}?version=v1`),
   );
 });

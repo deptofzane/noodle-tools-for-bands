@@ -14,7 +14,7 @@
  * mounted (or not) independently.
  */
 
-const FOCUS_EVENT = 'sidestage:audio-focus';
+const FOCUS_EVENT = 'noodle:audio-focus';
 
 /** Announce that `owner` just started playing; other players should pause. */
 export function claimAudioFocus(owner: string): void {

@@ -11,13 +11,13 @@
 
 import { practiceSongsApi } from '@/lib/routes';
 
-const DB_NAME = 'sidestage-offline';
+const DB_NAME = 'noodle-offline';
 const STORE = 'setlists';
 /** Legacy: per-setlist Practice/Live documents from before the shared shells. */
-const PAGES_CACHE = 'sidestage-pages'; // must match app/sw.ts
-const DATA_CACHE = 'sidestage-meta'; // must match app/sw.ts
-const SHEET_CACHE = 'sidestage-files'; // must match app/sw.ts
-const AUDIO_CACHE = 'sidestage-audio-v2'; // must match app/sw.ts
+const PAGES_CACHE = 'noodle-pages'; // must match app/sw.ts
+const DATA_CACHE = 'noodle-meta'; // must match app/sw.ts
+const SHEET_CACHE = 'noodle-files'; // must match app/sw.ts
+const AUDIO_CACHE = 'noodle-audio-v2'; // must match app/sw.ts
 
 const CHOICES_KEY = 'offline:downloadChoices';
 
@@ -105,7 +105,29 @@ export interface OfflineSong {
 
 // ---- tiny IndexedDB helpers (no dependency) --------------------------------
 
+/**
+ * The database this app kept its download records in before the rename.
+ *
+ * Its contents are unreachable now — the records point at cache entries the
+ * service worker deletes on activate — so it's dropped rather than migrated.
+ * A download has to be taken again after the rename either way; leaving the
+ * old database behind would just be a store nothing reads.
+ */
+const LEGACY_DB_NAME = 'sidestage-offline';
+let legacyDropped = false;
+
+function dropLegacyDb(): void {
+  if (legacyDropped || typeof indexedDB === 'undefined') return;
+  legacyDropped = true;
+  try {
+    indexedDB.deleteDatabase(LEGACY_DB_NAME);
+  } catch {
+    // Best-effort: an open handle elsewhere just defers it to the next load.
+  }
+}
+
 function openDb(): Promise<IDBDatabase> {
+  dropLegacyDb();
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, 1);
     req.onupgradeneeded = () => {

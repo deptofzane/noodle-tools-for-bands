@@ -12,8 +12,8 @@
  *   - Timed events with no stored end get a default duration (2h).
  */
 
-const UID_DOMAIN = 'sidestage.app';
-const DEFAULT_PRODID = '-//Sidestage//Calendar//EN';
+const UID_DOMAIN = 'noodle.band';
+const DEFAULT_PRODID = '-//Noodle//Calendar//EN';
 export const DEFAULT_EVENT_DURATION_MINUTES = 120;
 
 export interface IcsEvent {

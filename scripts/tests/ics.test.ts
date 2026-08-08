@@ -20,27 +20,27 @@ function lines(ics: string): string[] {
 }
 
 test('ics: wrapper + required calendar properties', () => {
-  const ics = buildCalendar({ name: 'Sidestage', events: [baseEvent] });
+  const ics = buildCalendar({ name: 'Noodle', events: [baseEvent] });
   const l = lines(ics);
   assert.equal(l[0], 'BEGIN:VCALENDAR');
   assert.ok(ics.includes('\r\nVERSION:2.0\r\n'), 'VERSION present');
   assert.ok(ics.includes('METHOD:PUBLISH'), 'publish method');
-  assert.ok(ics.includes('X-WR-CALNAME:Sidestage'), 'calendar name');
+  assert.ok(ics.includes('X-WR-CALNAME:Noodle'), 'calendar name');
   assert.ok(ics.endsWith('END:VCALENDAR\r\n'), 'ends with VCALENDAR + CRLF');
 });
 
 test('ics: timed event uses floating local time + default 2h end', () => {
-  const ics = buildCalendar({ name: 'Sidestage', events: [baseEvent] });
+  const ics = buildCalendar({ name: 'Noodle', events: [baseEvent] });
   assert.ok(ics.includes('DTSTART:20260721T190000'), 'floating start, no Z');
   assert.ok(!ics.includes('DTSTART:20260721T190000Z'), 'no UTC marker on start');
   assert.ok(ics.includes('DTEND:20260721T210000'), 'start + 2h');
-  assert.ok(ics.includes('UID:abc-123@sidestage.app'), 'stable UID');
+  assert.ok(ics.includes('UID:abc-123@noodle.band'), 'stable UID');
   assert.ok(ics.includes('DTSTAMP:20260720T123000Z'), 'DTSTAMP in UTC');
 });
 
 test('ics: an explicit end time is used verbatim', () => {
   const ics = buildCalendar({
-    name: 'Sidestage',
+    name: 'Noodle',
     events: [{ ...baseEvent, endTime: '22:30' }],
   });
   assert.ok(ics.includes('DTSTART:20260721T190000'), 'start');
@@ -49,7 +49,7 @@ test('ics: an explicit end time is used verbatim', () => {
 
 test('ics: an end at/before the start rolls into the next day', () => {
   const ics = buildCalendar({
-    name: 'Sidestage',
+    name: 'Noodle',
     events: [{ ...baseEvent, time: '22:00', endTime: '01:00' }],
   });
   assert.ok(ics.includes('DTSTART:20260721T220000'), 'late start');
@@ -58,7 +58,7 @@ test('ics: an end at/before the start rolls into the next day', () => {
 
 test('ics: default duration is configurable', () => {
   const ics = buildCalendar({
-    name: 'Sidestage',
+    name: 'Noodle',
     events: [baseEvent],
     defaultDurationMinutes: 90,
   });
@@ -67,7 +67,7 @@ test('ics: default duration is configurable', () => {
 
 test('ics: end crossing midnight rolls the date forward', () => {
   const ics = buildCalendar({
-    name: 'Sidestage',
+    name: 'Noodle',
     events: [{ ...baseEvent, time: '23:30' }],
   });
   assert.ok(ics.includes('DTSTART:20260721T233000'), 'late start');
@@ -76,7 +76,7 @@ test('ics: end crossing midnight rolls the date forward', () => {
 
 test('ics: all-day event (no time) uses VALUE=DATE with exclusive end', () => {
   const ics = buildCalendar({
-    name: 'Sidestage',
+    name: 'Noodle',
     events: [{ ...baseEvent, time: null }],
   });
   assert.ok(ics.includes('DTSTART;VALUE=DATE:20260721'), 'date-valued start');
@@ -86,7 +86,7 @@ test('ics: all-day event (no time) uses VALUE=DATE with exclusive end', () => {
 
 test('ics: TEXT values are escaped', () => {
   const ics = buildCalendar({
-    name: 'Sidestage',
+    name: 'Noodle',
     events: [
       {
         ...baseEvent,
@@ -101,7 +101,7 @@ test('ics: TEXT values are escaped', () => {
 
 test('ics: long lines are folded to <=75 octets', () => {
   const ics = buildCalendar({
-    name: 'Sidestage',
+    name: 'Noodle',
     events: [{ ...baseEvent, title: 'A'.repeat(200) }],
   });
   const enc = new TextEncoder();
@@ -118,7 +118,7 @@ test('ics: long lines are folded to <=75 octets', () => {
 test('ics: multi-byte characters are not split across a fold', () => {
   // 40 emoji (4 bytes each in UTF-8) forces folds; none may split a char.
   const ics = buildCalendar({
-    name: 'Sidestage',
+    name: 'Noodle',
     events: [{ ...baseEvent, title: '🎸'.repeat(40) }],
   });
   // If a fold split a code point, the round-tripped title would corrupt.

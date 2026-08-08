@@ -5,7 +5,7 @@
  * disposable behind rather than data that looks real.
  */
 export const E2E = {
-  email: 'e2e-player@sidestage.test',
+  email: 'e2e-player@noodle.test',
   password: 'e2e-password-9f2a',
   name: 'E2E Player',
   bandName: 'E2E Test Band',

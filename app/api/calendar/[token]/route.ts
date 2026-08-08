@@ -69,13 +69,13 @@ export async function GET(
     updatedAt: ev.updatedAt,
   }));
 
-  const body = buildCalendar({ name: 'Sidestage', events: icsEvents });
+  const body = buildCalendar({ name: 'Noodle', events: icsEvents });
 
   return new NextResponse(body, {
     status: 200,
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
-      'Content-Disposition': 'inline; filename="sidestage.ics"',
+      'Content-Disposition': 'inline; filename="noodle.ics"',
       'Cache-Control': 'private, max-age=3600',
     },
   });

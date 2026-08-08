@@ -12,9 +12,9 @@ Stack decisions: **Next.js + Drizzle + Postgres on a long-lived Node server**
 Docker (most reproducible):
 
 ```bash
-docker run --name sidestage-pg \
+docker run --name noodle-pg \
   -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=sidestage \
+  -e POSTGRES_DB=noodle \
   -p 5432:5432 -d postgres:17
 ```
 
@@ -24,7 +24,7 @@ or Postgres.app with the PG 17 server selected.
 If a container from an earlier attempt is holding the name/port, remove it first:
 
 ```bash
-docker rm -f sidestage-pg
+docker rm -f noodle-pg
 ```
 
 Note: a Postgres 17 data directory isn't readable by older server binaries, so
@@ -36,7 +36,7 @@ In **`.env.local`** (Next and the steps below read this; it's already gitignored
 by Next's default `.gitignore` via `.env*.local`):
 
 ```
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/sidestage"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/noodle"
 ```
 
 Confirm it's ignored: `git check-ignore .env.local` should print the path.

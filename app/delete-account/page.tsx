@@ -5,7 +5,7 @@ import { CONTACT_EMAIL, POLICY_UPDATED } from '../legal';
 export const metadata: Metadata = {
   title: 'Delete your account',
   description:
-    'How to delete your Sidestage account, what is removed, and what remains.',
+    'How to delete your Noodle account, what is removed, and what remains.',
 };
 
 /**

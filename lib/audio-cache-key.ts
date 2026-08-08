@@ -17,7 +17,7 @@
  * moving target under a fixed key is the bug this exists to prevent.
  */
 export function canonicalAudioKey(url: string): string {
-  const u = new URL(url, 'https://sidestage.invalid');
+  const u = new URL(url, 'https://noodle.invalid');
   const version = u.searchParams.get('version');
   u.search = version ? `?version=${version}` : '';
   return u.pathname + u.search;

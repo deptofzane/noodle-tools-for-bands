@@ -17,7 +17,7 @@ export function PushNotificationToggle() {
         return 'Notifications are blocked for this site. Re-enable them in your browser or OS settings, then reload.';
       case 'unsupported':
         return isIosSafari() && !isStandalone()
-          ? 'To get notifications on iPhone/iPad, install Sidestage to your Home Screen first (Share → Add to Home Screen), then open it from there.'
+          ? 'To get notifications on iPhone/iPad, install Noodle to your Home Screen first (Share → Add to Home Screen), then open it from there.'
           : 'This device or browser doesn’t support push notifications.';
       case 'on':
         return 'You’ll get a push on this device for new activity in your bands (respecting your muted types below).';

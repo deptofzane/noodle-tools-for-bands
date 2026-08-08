@@ -23,10 +23,11 @@ Last updated: 7 August 2026.
    the same as moving Testing → In production; until it moves, only accounts on
    the test list can sign in. `drive.file` is not a *restricted* scope, so no
    CASA assessment — that's why `drive.readonly` was dropped.
-3. **Confirm `CONTACT_EMAIL`** in `app/legal.ts`. It's currently a guess
-   (`sidestagesupport@gmail.com`) carrying a TODO. Google's verification and
-   Play's review both mail it, and Play policy expects deletion requests to
-   reach a human.
+3. **Confirm `CONTACT_EMAIL`** in `app/legal.ts` (`noodlehelp@yahoo.com`) and
+   register the mailbox — it still carries a TODO because nobody has checked
+   that it exists. Google's verification and Play's review both mail it, and
+   Play policy expects deletion requests to reach a human. Same for
+   `noodle.band`, which the ICS UIDs and the default VAPID subject now name.
 4. **`/.well-known/assetlinks.json`.** Ordering trap: the SHA-256 comes from
    Play App Signing, which you only get *after* uploading the first bundle. So:
    Bubblewrap build → internal testing upload → copy fingerprint → publish

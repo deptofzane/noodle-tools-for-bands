@@ -16,15 +16,15 @@ import { ToastProvider } from './ToastProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Sidestage',
+  title: 'Noodle',
   description: 'Timestamped, collaborative notes on Google Drive audio.',
-  applicationName: 'Sidestage',
+  applicationName: 'Noodle',
   // Launches the installed PWA full-screen on iOS and names the home-screen
   // icon. The manifest handles Android/desktop install.
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Sidestage',
+    title: 'Noodle',
   },
   icons: {
     icon: [

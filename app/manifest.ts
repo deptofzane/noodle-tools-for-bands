@@ -2,13 +2,13 @@ import type { MetadataRoute } from 'next';
 
 /**
  * Web app manifest (served at /manifest.webmanifest; Next injects the <link>
- * automatically). Makes Sidestage installable to the home screen on
+ * automatically). Makes Noodle installable to the home screen on
  * tablets/phones and launches it chrome-free in `standalone` mode.
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Sidestage',
-    short_name: 'Sidestage',
+    name: 'Noodle',
+    short_name: 'Noodle',
     description:
       'Setlists, sheet music, and practice tools for your band — on stage and off.',
     id: '/',

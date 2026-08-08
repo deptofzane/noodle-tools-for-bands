@@ -56,7 +56,7 @@ export function downloadedFingerprints(
 
   const prints: Fingerprint[] = [];
   for (const raw of record.urls) {
-    const url = new URL(raw, 'https://sidestage.invalid');
+    const url = new URL(raw, 'https://noodle.invalid');
     const conversationId = url.pathname.split('/')[3];
     const version = url.searchParams.get('version');
     if (!conversationId || !version) continue;
