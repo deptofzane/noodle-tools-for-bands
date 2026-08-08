@@ -28,6 +28,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      // Smallest first: the 16 and 32 are drawn for those sizes rather than
+      // scaled down from the install icon, which turns to mush in a tab.
+      { url: '/icons/favicon-16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/icons/favicon-32.png', sizes: '32x32', type: 'image/png' },
       { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
