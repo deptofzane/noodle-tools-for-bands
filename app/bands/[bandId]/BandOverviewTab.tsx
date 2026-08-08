@@ -4,7 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
-import { formatDateLong, formatDateShort, formatTimeRange } from '@/lib/format';
+import {
+  formatDateRange,
+  formatDateShort,
+  formatTimeRange,
+} from '@/lib/format';
 import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
 import { ConfirmModal } from '../../ConfirmModal';
 import { useTrackPending } from '../../PendingActionProvider';
@@ -163,7 +167,7 @@ export function BandOverviewTab({
               </span>
             </span>
             <span className="shrink-0 text-xs minor-text-theme-colors">
-              {formatDateShort(show.date)}
+              {formatDateRange(show.date, show.endDate, formatDateShort)}
             </span>
           </button>
           <ActionMenu label="Event actions">
@@ -247,7 +251,7 @@ export function BandOverviewTab({
           <div className="flex flex-col gap-1 border-t border-neutral-200 px-4 py-3 text-sm md:px-3 dark:border-neutral-800">
             <div>
               <span className="font-medium">Date:</span>{' '}
-              {formatDateLong(show.date)}
+              {formatDateRange(show.date, show.endDate)}
             </div>
             {show.venueName && (
               <div>

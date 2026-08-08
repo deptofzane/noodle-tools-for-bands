@@ -44,11 +44,15 @@ export interface EventListItem {
    * anything to show.
    */
   setlistSongCount: number;
-  date: string; // YYYY-MM-DD
+  date: string; // YYYY-MM-DD start
+  /** Last day, inclusive; null when it ends the day it starts. */
+  endDate: string | null;
   time: string | null;
   endTime: string | null;
   location: string | null;
   setlistId: string | null;
+  /** Display name of whoever created it — see `eventLabel`. */
+  createdByName: string | null;
   venueName: string | null;
   venueAddress: string | null;
 }
@@ -58,7 +62,9 @@ export interface BandEvent {
   title: string;
   /** Drives the colour coding — see app/calendar/eventColors.ts. */
   eventType: string | null;
-  date: string; // YYYY-MM-DD
+  date: string; // YYYY-MM-DD start
+  /** Last day, inclusive; null when it ends the day it starts. */
+  endDate: string | null;
   time: string | null;
   endTime: string | null;
   location: string | null;
@@ -67,6 +73,8 @@ export interface BandEvent {
   setlistId: string | null;
   setlistName: string | null;
   venueId: string | null;
+  /** Display name of whoever created it — see `eventLabel`. */
+  createdByName: string | null;
   venueName: string | null;
 }
 
@@ -96,11 +104,38 @@ async function userBandIds(userId: string): Promise<string[]> {
   return rows.map((r) => r.bandId);
 }
 
+/**
+ * The event's real last day, in SQL: `coalesce(end_date, date)`.
+ *
+ * Every "is this in range / past / upcoming" question compares against this
+ * and never against `date` alone — a festival that started on Friday is not
+ * a past event on Saturday. Matches `events_end_date_idx`, which indexes the
+ * same expression, so the filters stay index-backed.
+ */
+const lastDay = sql`coalesce(${events.endDate}, ${events.date})`;
+
+/**
+ * Store null rather than a same-day end date.
+ *
+ * "Ends the day it starts" already had a representation before this column
+ * existed — null — and every row written back then means exactly that.
+ * Keeping one spelling means a single-day event reads the same whether it
+ * was made before or after multi-day events existed, so nothing has to ask
+ * which era a row is from. An end before the start is nonsense and is
+ * treated the same way; the API rejects it before we get here.
+ */
+function normalizeEndDate(date: string, endDate: string | null): string | null {
+  if (!endDate || endDate <= date) return null;
+  return endDate;
+}
+
 export async function createEvent(input: {
   bandId: string;
   title: string;
   eventType: string | null;
   date: string;
+  /** Last day, inclusive. Null (or equal to `date`) means a single day. */
+  endDate: string | null;
   time: string | null;
   endTime: string | null;
   location: string | null;
@@ -117,6 +152,7 @@ export async function createEvent(input: {
       title: input.title,
       eventType: input.eventType,
       date: input.date,
+      endDate: normalizeEndDate(input.date, input.endDate),
       time: input.time,
       endTime: input.endTime,
       location: input.location,
@@ -153,6 +189,7 @@ export async function listEventsForUserInRange(
       title: events.title,
       eventType: events.eventType,
       date: events.date,
+      endDate: events.endDate,
       time: events.time,
       endTime: events.endTime,
       location: events.location,
@@ -165,6 +202,7 @@ export async function listEventsForUserInRange(
         where ${setlistSongs.setlistId} = ${events.setlistId}
           and ${setlistSongs.conversationId} is not null
       )`,
+      createdByName: users.name,
       venueName: venues.name,
       venueAddress: venues.address,
     })
@@ -175,8 +213,11 @@ export async function listEventsForUserInRange(
       eventMembers,
       and(eq(eventMembers.eventId, events.id), eq(eventMembers.userId, userId)),
     )
+    .leftJoin(users, eq(users.id, events.createdBy))
     .leftJoin(venues, eq(venues.id, events.venueId))
-    .where(and(gte(events.date, from), lte(events.date, to), visible))
+    // Overlap, not containment: a multi-day event belongs to every
+    // window it touches, including the months its middle falls in.
+    .where(and(lte(events.date, to), gte(lastDay, from), visible))
     .orderBy(asc(events.date), asc(events.time));
 
   return rows;
@@ -208,6 +249,7 @@ export async function listPastEventsForUser(
         title: events.title,
         eventType: events.eventType,
         date: events.date,
+        endDate: events.endDate,
         time: events.time,
         endTime: events.endTime,
         location: events.location,
@@ -220,6 +262,7 @@ export async function listPastEventsForUser(
           where ${setlistSongs.setlistId} = ${events.setlistId}
             and ${setlistSongs.conversationId} is not null
         )`,
+        createdByName: users.name,
         venueName: venues.name,
         venueAddress: venues.address,
       })
@@ -233,8 +276,9 @@ export async function listPastEventsForUser(
           eq(eventMembers.userId, userId),
         ),
       )
+      .leftJoin(users, eq(users.id, events.createdBy))
       .leftJoin(venues, eq(venues.id, events.venueId))
-      .where(and(lt(events.date, before), visible))
+      .where(and(lt(lastDay, before), visible))
       .orderBy(desc(events.date), desc(events.time))
       .limit(window ? window.limit : Number.MAX_SAFE_INTEGER)
       .offset(window ? window.offset : 0)
@@ -264,6 +308,7 @@ export async function getNextEventForUser(
       title: events.title,
       eventType: events.eventType,
       date: events.date,
+      endDate: events.endDate,
       time: events.time,
       endTime: events.endTime,
       location: events.location,
@@ -276,6 +321,7 @@ export async function getNextEventForUser(
         where ${setlistSongs.setlistId} = ${events.setlistId}
           and ${setlistSongs.conversationId} is not null
       )`,
+      createdByName: users.name,
       venueName: venues.name,
       venueAddress: venues.address,
     })
@@ -285,8 +331,10 @@ export async function getNextEventForUser(
       eventMembers,
       and(eq(eventMembers.eventId, events.id), eq(eventMembers.userId, userId)),
     )
+    .leftJoin(users, eq(users.id, events.createdBy))
     .leftJoin(venues, eq(venues.id, events.venueId))
-    .where(and(gte(events.date, from), visible))
+    // An event running right now is still ahead of you, not behind.
+    .where(and(gte(lastDay, from), visible))
     .orderBy(asc(events.date), asc(events.time))
     .limit(1);
   return row ?? null;
@@ -296,12 +344,18 @@ export interface FeedEvent {
   id: string;
   bandName: string;
   title: string;
-  date: string; // YYYY-MM-DD
+  /** Drives the colour coding and the time-off label. */
+  eventType: string | null;
+  date: string; // YYYY-MM-DD start
+  /** Last day, inclusive; null when it ends the day it starts. */
+  endDate: string | null;
   time: string | null;
   endTime: string | null;
   location: string | null;
   details: string | null;
   setlistName: string | null;
+  /** Display name of whoever created it — see `eventLabel`. */
+  createdByName: string | null;
   venueName: string | null;
   venueAddress: string | null;
   updatedAt: Date;
@@ -334,32 +388,42 @@ export async function listEventsForFeed(
       ? or(inArray(events.bandId, bandIds), eq(eventMembers.userId, userId))
       : eq(eventMembers.userId, userId);
 
-  return db
-    .select({
-      id: events.id,
-      bandName: bands.name,
-      title: events.title,
-      eventType: events.eventType,
-      date: events.date,
-      time: events.time,
-      endTime: events.endTime,
-      location: events.location,
-      details: events.details,
-      setlistName: setlists.name,
-      venueName: venues.name,
-      venueAddress: venues.address,
-      updatedAt: events.updatedAt,
-    })
-    .from(events)
-    .innerJoin(bands, eq(bands.id, events.bandId))
-    .leftJoin(
-      eventMembers,
-      and(eq(eventMembers.eventId, events.id), eq(eventMembers.userId, userId)),
-    )
-    .leftJoin(setlists, eq(setlists.id, events.setlistId))
-    .leftJoin(venues, eq(venues.id, events.venueId))
-    .where(and(gte(events.date, from), lte(events.date, to), visible))
-    .orderBy(asc(events.date), asc(events.time));
+  return (
+    db
+      .select({
+        id: events.id,
+        bandName: bands.name,
+        title: events.title,
+        eventType: events.eventType,
+        date: events.date,
+        endDate: events.endDate,
+        time: events.time,
+        endTime: events.endTime,
+        location: events.location,
+        details: events.details,
+        setlistName: setlists.name,
+        createdByName: users.name,
+        venueName: venues.name,
+        venueAddress: venues.address,
+        updatedAt: events.updatedAt,
+      })
+      .from(events)
+      .innerJoin(bands, eq(bands.id, events.bandId))
+      .leftJoin(
+        eventMembers,
+        and(
+          eq(eventMembers.eventId, events.id),
+          eq(eventMembers.userId, userId),
+        ),
+      )
+      .leftJoin(setlists, eq(setlists.id, events.setlistId))
+      .leftJoin(users, eq(users.id, events.createdBy))
+      .leftJoin(venues, eq(venues.id, events.venueId))
+      // Overlap, not containment: a multi-day event belongs to every
+      // window it touches, including the months its middle falls in.
+      .where(and(lte(events.date, to), gte(lastDay, from), visible))
+      .orderBy(asc(events.date), asc(events.time))
+  );
 }
 
 /**
@@ -373,6 +437,7 @@ export async function listBandEvents(bandId: string): Promise<BandEvent[]> {
       title: events.title,
       eventType: events.eventType,
       date: events.date,
+      endDate: events.endDate,
       time: events.time,
       endTime: events.endTime,
       location: events.location,
@@ -389,10 +454,12 @@ export async function listBandEvents(bandId: string): Promise<BandEvent[]> {
       )`,
       setlistName: setlists.name,
       venueId: events.venueId,
+      createdByName: users.name,
       venueName: venues.name,
     })
     .from(events)
     .leftJoin(setlists, eq(setlists.id, events.setlistId))
+    .leftJoin(users, eq(users.id, events.createdBy))
     .leftJoin(venues, eq(venues.id, events.venueId))
     .where(eq(events.bandId, bandId))
     .orderBy(desc(events.date), asc(events.time));
@@ -411,6 +478,7 @@ export async function getEventForUser(
       title: events.title,
       eventType: events.eventType,
       date: events.date,
+      endDate: events.endDate,
       time: events.time,
       endTime: events.endTime,
       location: events.location,
@@ -427,12 +495,14 @@ export async function getEventForUser(
       )`,
       setlistName: setlists.name,
       venueId: events.venueId,
+      createdByName: users.name,
       venueName: venues.name,
       venueAddress: venues.address,
     })
     .from(events)
     .innerJoin(bands, eq(bands.id, events.bandId))
     .leftJoin(setlists, eq(setlists.id, events.setlistId))
+    .leftJoin(users, eq(users.id, events.createdBy))
     .leftJoin(venues, eq(venues.id, events.venueId))
     .where(eq(events.id, eventId))
     .limit(1);
@@ -449,6 +519,7 @@ export async function updateEvent(
     title: string;
     eventType: string | null;
     date: string;
+    endDate: string | null;
     time: string | null;
     endTime: string | null;
     location: string | null;
@@ -460,7 +531,11 @@ export async function updateEvent(
 ): Promise<void> {
   await db
     .update(events)
-    .set({ ...fields, updatedAt: sql`now()` })
+    .set({
+      ...fields,
+      endDate: normalizeEndDate(fields.date, fields.endDate),
+      updatedAt: sql`now()`,
+    })
     .where(eq(events.id, eventId));
 }
 

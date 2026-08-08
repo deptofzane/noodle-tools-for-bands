@@ -13,11 +13,13 @@ import { AutoTextarea } from '@/app/AutoTextarea';
 import { CollapsibleSection } from '@/app/CollapsibleSection';
 import { VenuePickerModal, type PickableVenue } from '../../VenuePickerModal';
 import { EventTypeField } from '../../EventTypeField';
+import { isTimeOff, TIME_OFF_TITLE } from '../../../eventLabel';
 
 interface EventFields {
   title: string;
   eventType: string;
   date: string;
+  endDate: string;
   time: string;
   endTime: string;
   location: string;
@@ -84,6 +86,15 @@ export function EditEventClient({
       return { ...prev, time: v, endTime };
     });
 
+  const setStartDate = (v: string) =>
+    setFields((prev) => ({
+      ...prev,
+      date: v,
+      // An end that now precedes the start is no longer a range the form can
+      // submit, so drop it rather than hold an invalid pair.
+      endDate: prev.endDate && v && prev.endDate < v ? '' : prev.endDate,
+    }));
+
   const eventHref = `/calendar/events/${eventId}`;
 
   // No `router.refresh()` here: it would refetch *this* route, the one being
@@ -94,7 +105,10 @@ export function EditEventClient({
     else router.push(eventHref);
   };
 
-  const canSave = Boolean(fields.title.trim() && fields.date && !busy);
+  const timeOff = isTimeOff(fields.eventType);
+  const canSave = Boolean(
+    (timeOff || fields.title.trim()) && fields.date && !busy,
+  );
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -104,7 +118,10 @@ export function EditEventClient({
         const r = await fetch(`/api/events/${eventId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(fields),
+          body: JSON.stringify({
+            ...fields,
+            title: timeOff ? TIME_OFF_TITLE : fields.title,
+          }),
         });
         await ensureOk(r);
       });
@@ -169,18 +186,22 @@ export function EditEventClient({
 
       <p className="text-sm minor-text-theme-colors">{bandName}</p>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="event-title" className="text-sm font-medium">
-          Title
-        </label>
-        <input
-          id="event-title"
-          value={fields.title}
-          onChange={(e) => set('title', e.target.value)}
-          maxLength={255}
-          className={field}
-        />
-      </div>
+      {/* Time off is named after whoever booked it, so there is no title to
+          edit — and switching an event to Time off retires the one it had. */}
+      {!timeOff && (
+        <div className="flex flex-col gap-1">
+          <label htmlFor="event-title" className="text-sm font-medium">
+            Title
+          </label>
+          <input
+            id="event-title"
+            value={fields.title}
+            onChange={(e) => set('title', e.target.value)}
+            maxLength={255}
+            className={field}
+          />
+        </div>
+      )}
 
       <EventTypeField
         value={fields.eventType}
@@ -197,9 +218,25 @@ export function EditEventClient({
             id="event-date"
             type="date"
             value={fields.date}
-            onChange={(e) => set('date', e.target.value)}
+            onChange={(e) => setStartDate(e.target.value)}
             className={field}
           />
+        </div>
+        <div className="flex flex-1 flex-col gap-1">
+          <label htmlFor="event-end-date" className="text-sm font-medium">
+            End date
+          </label>
+          <input
+            id="event-end-date"
+            type="date"
+            value={fields.endDate}
+            min={fields.date || undefined}
+            onChange={(e) => set('endDate', e.target.value)}
+            className={field}
+          />
+          <span className="text-xs minor-text-theme-colors">
+            Leave blank for a single day.
+          </span>
         </div>
         <div className="flex flex-1 flex-col gap-1">
           <label htmlFor="event-time" className="text-sm font-medium">

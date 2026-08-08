@@ -64,6 +64,23 @@ export function formatDateLong(s: string): string {
   });
 }
 
+/**
+ * An event's dates: one day, or a range when it spans several.
+ *
+ * `format` picks the underlying formatter, so a list row stays terse ("Jul
+ * 17 – Jul 19, 2026") while a detail page reads long. A null or same-day end
+ * is a single day and formats exactly as it did before end dates existed —
+ * which is most events, and they shouldn't grow a dash.
+ */
+export function formatDateRange(
+  date: string,
+  endDate: string | null,
+  format: (s: string) => string = formatDateLong,
+): string {
+  if (!endDate || endDate <= date) return format(date);
+  return `${format(date)} – ${format(endDate)}`;
+}
+
 /** "2026-07-15" → "Jul 15, 2026" (UTC to avoid a day shift). */
 export function formatDateShort(s: string): string {
   const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);

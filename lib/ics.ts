@@ -19,7 +19,13 @@ export const DEFAULT_EVENT_DURATION_MINUTES = 120;
 export interface IcsEvent {
   id: string;
   title: string;
-  date: string; // YYYY-MM-DD
+  date: string; // YYYY-MM-DD start
+  /**
+   * Last day, inclusive; null when it ends the day it starts. A timed event's
+   * `endTime` is a time on *this* day, which is what lets a festival run
+   * 10:00 Friday to 23:00 Sunday as one VEVENT.
+   */
+  endDate: string | null;
   time: string | null; // HH:MM start, or null for an all-day event
   /**
    * HH:MM end. When set (and earlier than or equal to `time`) it's treated as
@@ -125,24 +131,38 @@ function buildVEvent(ev: IcsEvent, durationMinutes: number): string {
   lines.push(prop('UID', `${ev.id}@${UID_DOMAIN}`));
   lines.push(prop('DTSTAMP', formatUtcStamp(ev.updatedAt)));
 
+  // The day the event actually finishes on. Everything below ends on this
+  // day, not on `date` — that is the whole difference a multi-day event makes.
+  const lastDay = ev.endDate && ev.endDate > ev.date ? ev.endDate : ev.date;
+  const spansDays = lastDay !== ev.date;
+
   if (ev.time) {
     const start = wallClockToDate(ev.date, ev.time);
     let end: Date;
     if (ev.endTime) {
-      end = wallClockToDate(ev.date, ev.endTime);
-      // An end at or before the start means it runs into the next day.
-      if (end.getTime() <= start.getTime()) {
+      end = wallClockToDate(lastDay, ev.endTime);
+      // An end at or before the start means it runs past midnight — but only
+      // guess that for a single-day event. With an explicit last day the end
+      // time belongs to that day and needs no rescuing: 23:00 Friday to 02:00
+      // Sunday is a real span, not a typo to bump forward a day.
+      if (!spansDays && end.getTime() <= start.getTime()) {
         end = new Date(end.getTime() + 24 * 60 * 60_000);
       }
     } else {
-      end = new Date(start.getTime() + durationMinutes * 60_000);
+      // No end time: the default duration, on the last day rather than the
+      // first, so a multi-day event doesn't collapse to its opening evening.
+      end = new Date(
+        wallClockToDate(lastDay, ev.time).getTime() + durationMinutes * 60_000,
+      );
     }
     lines.push(prop('DTSTART', dateTimeCompact(start)));
     lines.push(prop('DTEND', dateTimeCompact(end)));
   } else {
-    // All-day: DTEND is exclusive, so it lands on the next day.
+    // All-day: DTEND is exclusive, so it lands on the day after the last one.
     const start = wallClockToDate(ev.date, null);
-    const end = new Date(start.getTime() + 24 * 60 * 60_000);
+    const end = new Date(
+      wallClockToDate(lastDay, null).getTime() + 24 * 60 * 60_000,
+    );
     lines.push(prop('DTSTART;VALUE=DATE', dateCompact(start)));
     lines.push(prop('DTEND;VALUE=DATE', dateCompact(end)));
   }

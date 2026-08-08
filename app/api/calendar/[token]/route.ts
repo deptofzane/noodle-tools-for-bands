@@ -3,6 +3,7 @@ import { getUserIdByFeedToken } from '@/lib/db/calendarFeeds';
 import { listEventsForFeed, type FeedEvent } from '@/lib/db/events';
 import { buildCalendar, type IcsEvent } from '@/lib/ics';
 import { rateLimitByIp } from '@/lib/rate-limit';
+import { eventLabel } from '@/app/calendar/eventLabel';
 
 /**
  * GET /api/calendar/<token> — a read-only iCalendar feed of the events
@@ -59,8 +60,9 @@ export async function GET(
   const events = await listEventsForFeed(userId);
   const icsEvents: IcsEvent[] = events.map((ev) => ({
     id: ev.id,
-    title: `${ev.bandName}: ${ev.title}`,
+    title: `${ev.bandName}: ${eventLabel(ev)}`,
     date: ev.date,
+    endDate: ev.endDate,
     time: ev.time,
     endTime: ev.endTime,
     location: eventLocation(ev),

@@ -124,6 +124,8 @@ export interface Show {
   /** Drives the colour coding — see app/calendar/eventColors.ts. */
   eventType: string | null;
   date: string;
+  /** Last day, inclusive; null when it ends the day it starts. */
+  endDate: string | null;
   time: string | null;
   endTime: string | null;
   location: string | null;

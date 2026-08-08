@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ensureOk } from '@/lib/api';
-import { formatDateShort, formatTimeRange } from '@/lib/format';
+import { formatDateRange, formatDateShort, formatTimeRange } from '@/lib/format';
 import { Modal } from '../Modal';
 import { useToast } from '../ToastProvider';
 import { completionInstant } from './eventTiming';
 import type { UpcomingShow } from './UpcomingShows';
 import { usePersistedBoolean } from '../usePersistedBoolean';
 import { eventColorKey } from '../calendar/eventColors';
+import { eventLabel } from '../calendar/eventLabel';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -52,7 +53,7 @@ export function RecentEvents({
   const canManage = new Set(bandIds);
 
   const openNotes = async (s: UpcomingShow) => {
-    setTarget({ id: s.id, title: s.title });
+    setTarget({ id: s.id, title: eventLabel(s) });
     setNotes('');
     setLoading(true);
     try {
@@ -131,7 +132,7 @@ export function RecentEvents({
               >
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate text-sm font-medium text-[color:var(--event-accent)]">
-                    {s.title}
+                    {eventLabel(s)}
                   </span>
                   <span className="truncate text-[0.6875rem] minor-text-theme-colors">
                     <span className="minor-text-band-theme-colors">
@@ -142,7 +143,7 @@ export function RecentEvents({
                 </span>
                 <span className="shrink-0 text-[0.6875rem] minor-text-theme-colors">
                   <span className="block font-medium text-neutral-700 dark:text-neutral-300">
-                    {formatDateShort(s.date)}
+                    {formatDateRange(s.date, s.endDate, formatDateShort)}
                   </span>
                   {s.time && <span>{formatTimeRange(s.time, s.endTime)}</span>}
                 </span>

@@ -12,6 +12,7 @@ export const EVENT_COLOR_KEYS = [
   'practice',
   'writing',
   'studio',
+  'time-off',
   'other',
 ] as const;
 
@@ -23,6 +24,7 @@ const BY_LABEL: Record<string, EventColorKey> = {
   practice: 'practice',
   'writing session': 'writing',
   studio: 'studio',
+  'time off': 'time-off',
 };
 
 /**

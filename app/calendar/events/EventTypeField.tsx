@@ -9,6 +9,7 @@ export const EVENT_TYPE_PRESETS = [
   'Practice',
   'Writing session',
   'Studio',
+  'Time off',
 ];
 
 /** Sentinel for the "type your own" option — not a value that gets saved. */

@@ -4,7 +4,7 @@ import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { getEventForUser, listEventMembers } from '@/lib/db/events';
 import { getSetlist } from '@/lib/db/setlists';
-import { formatDateLong, formatTimeRange } from '@/lib/format';
+import { formatDateRange, formatTimeRange } from '@/lib/format';
 import { PageHeader } from '../../../PageHeader';
 import { MapLink } from '../../../MapLink';
 import { CollapsibleSection } from '../../../CollapsibleSection';
@@ -12,6 +12,7 @@ import { EventMembersClient } from './EventMembersClient';
 import { EventSetlistActions } from './EventSetlistActions';
 import { EventSetlistSongs } from './EventSetlistSongs';
 import { eventColorKey } from '../../eventColors';
+import { eventLabel } from '../../eventLabel';
 
 /**
  * Event detail. Server shell — access-guarded via getEventForUser (band
@@ -51,7 +52,7 @@ export default async function EventPage({
       </PageHeader>
 
       <div className="pb-4">
-        <h1 className="title-text">{event.title}</h1>
+        <h1 className="title-text">{eventLabel(event)}</h1>
         <p className="mt-1 text-sm minor-text-theme-colors">
           <Link
             href={`/bands/${event.bandId}`}
@@ -80,7 +81,7 @@ export default async function EventPage({
         )}
         <div>
           <span className="font-medium">Date:</span>{' '}
-          {formatDateLong(event.date)}
+          {formatDateRange(event.date, event.endDate)}
         </div>
         {event.time && (
           <div>

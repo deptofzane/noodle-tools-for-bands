@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { formatDateShort, formatTimeRange } from '@/lib/format';
+import { formatDateRange, formatDateShort, formatTimeRange } from '@/lib/format';
 import { completionInstant } from './eventTiming';
 import { liveHref, practiceHref } from '@/lib/routes';
 import { usePersistedBoolean } from '../usePersistedBoolean';
 import { eventColorKey } from '../calendar/eventColors';
+import { eventLabel } from '../calendar/eventLabel';
 
 export interface UpcomingShow {
   id: string;
@@ -15,9 +16,13 @@ export interface UpcomingShow {
   title: string;
   /** Drives the colour coding — see app/calendar/eventColors.ts. */
   eventType: string | null;
+  /** Display name of whoever created it — see `eventLabel`. */
+  createdByName: string | null;
   /** Playable songs in the setlist; 0 when there's no setlist or only markers. */
   setlistSongCount: number;
   date: string; // YYYY-MM-DD
+  /** Last day, inclusive; null when it ends the day it starts. */
+  endDate: string | null;
   time: string | null;
   endTime: string | null;
   location: string | null;
@@ -104,7 +109,7 @@ export function UpcomingShows({
       >
         <span className="flex min-w-0 flex-col">
           <span className="truncate text-sm font-medium text-[color:var(--event-accent)]">
-            {s.title}
+            {eventLabel(s)}
           </span>
           <span className="truncate text-[0.6875rem] minor-text-theme-colors">
             <span className="minor-text-band-theme-colors">{s.bandName}</span>
@@ -113,7 +118,7 @@ export function UpcomingShows({
         </span>
         <span className="shrink-0 text-[0.6875rem] minor-text-theme-colors">
           <span className="block font-medium text-neutral-700 dark:text-neutral-300">
-            {formatDateShort(s.date)}
+            {formatDateRange(s.date, s.endDate, formatDateShort)}
           </span>
           {s.time && <span>{formatTimeRange(s.time, s.endTime)}</span>}
         </span>

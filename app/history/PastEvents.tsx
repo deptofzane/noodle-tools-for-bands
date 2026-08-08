@@ -2,18 +2,24 @@
 
 import { useCallback } from 'react';
 import Link from 'next/link';
-import { formatDateLong, formatTimeRange } from '@/lib/format';
+import { formatDateRange, formatTimeRange } from '@/lib/format';
 import { LoadingBlock } from '../Spinner';
 import { PAGE_SIZE } from '@/lib/paging';
 import { LoadMore } from '../LoadMore';
 import { usePagedList } from '../usePagedList';
+import { eventLabel } from '../calendar/eventLabel';
 
 interface PastEvent {
   id: string;
   bandId: string;
   bandName: string;
   title: string;
+  /** Drives the colour coding and the time-off label. */
+  eventType: string | null;
+  createdByName: string | null;
   date: string;
+  /** Last day, inclusive; null when it ends the day it starts. */
+  endDate: string | null;
   time: string | null;
   endTime: string | null;
   location: string | null;
@@ -83,9 +89,10 @@ export function PastEvents() {
                 className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-neutral-50 md:px-3 md:py-1.5 dark:hover:bg-neutral-900"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium">{event.title}</div>
+                  <div className="truncate font-medium">{eventLabel(event)}</div>
                   <div className="mt-0.5 text-xs minor-text-theme-colors">
-                    {event.bandName} · {formatDateLong(event.date)}
+                    {event.bandName} ·{' '}
+                    {formatDateRange(event.date, event.endDate)}
                     {event.time && (
                       <> · {formatTimeRange(event.time, event.endTime)}</>
                     )}

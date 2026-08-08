@@ -128,6 +128,13 @@
   --event-accent: #6b47b8;
   --event-fill: #f3f0f9;
 }
+/* Time off is nobody's band activity, so it takes the one hue the four
+   working types leave free — rose reads as away rather than as another
+   kind of session. */
+[data-event-type='time-off'] {
+  --event-accent: #a3356b;
+  --event-fill: #f9eff4;
+}
 
 .dark [data-event-type] {
   --event-accent: #a5adcb;
@@ -148,6 +155,10 @@
 .dark [data-event-type='studio'] {
   --event-accent: #c6a0f6;
   --event-fill: #3a3244;
+}
+.dark [data-event-type='time-off'] {
+  --event-accent: #f5bde6;
+  --event-fill: #423040;
 }
 
 /*

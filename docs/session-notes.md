@@ -12,10 +12,11 @@ Last updated: 8 August 2026.
 
 ### Blocking a Play Store release
 
-1. **Deploy migrations 0039–0045.** On disk, unapplied in production. Four
+1. **Deploy migrations 0039–0046.** On disk, unapplied in production. Five
    landed recently (`original_band`, `notifications.day`,
-   `notifications.multi_actor`, `notifications.upload_count`) and the app will
-   500 on any of them. Release command: `node scripts/migrate.mjs`.
+   `notifications.multi_actor`, `notifications.upload_count`, `events.end_date`)
+   and the app will 500 on any of them. Release command:
+   `node scripts/migrate.mjs`.
    0045 backfills and de-duplicates before it adds a unique index — in
    production that part is a no-op (no rollup has a `day` until 0043 lands),
    but it matters for any database that already has rollups.
@@ -126,9 +127,37 @@ Last updated: 8 August 2026.
   the *old* band's setlist/poll/venue/note and falls back to the new band's
   Overview. Half-filled `new`/`edit` forms fall back for the same reason.
   6 tests, no DB.
+- **An event's last day is `coalesce(end_date, date)`** — never `date` alone.
+  `end_date` is null for a single-day event, which is what every row written
+  before multi-day events existed already meant, so there was no backfill;
+  `normalizeEndDate` keeps that the one spelling by storing null for a
+  same-day end. Range queries test *overlap* (`date <= to AND lastDay >= from`)
+  so a festival appears in every month it passes through, and past/upcoming
+  compare `lastDay`, so an event running today is still ahead of you.
+  `events_end_date_idx` indexes the same expression. A backwards range is
+  rejected by the API rather than flattened — it's a typo in the second date,
+  and silently dropping it shows one day where someone meant a week.
+- **The month grid draws events as bars, not per-day chips.** `layoutWeekBars`
+  (`app/calendar/eventBars.ts`) cuts each event into one segment per week it
+  touches and assigns lanes greedily, longest-first; the week row's height
+  follows the lane count. Bars live in a `pointer-events-none` overlay so the
+  cell underneath still owns the tap that opens the day summary. Single-day
+  events are one-column bars — two alignment systems in one grid was the
+  alternative. A segment cut by a week boundary is drawn flat and without its
+  accent edge; that edge *is* the continuation signal, since an arrow glyph
+  there rendered as an emoji box.
 - **Event colours are CSS custom properties keyed off `data-event-type`**, not a
   JS map — that's what lets the dark set apply through `.dark` without every
   component knowing the theme. `app/calendar/eventColors.ts` + `globals.css`.
+- **Time off is labelled from its creator, not its title** (`eventLabel` in
+  `app/calendar/eventLabel.ts`): "Time off - Steve". Derived at display time
+  so the name follows a rename and nobody can edit an event to claim it's
+  someone else's; the column still stores plain "Time off" so anything not
+  taught about this — a notification written at insert time — still reads
+  sensibly. Both event forms hide the title field for this type. Every event
+  query joins `users` for `createdByName`, and `LabelledEvent.createdByName`
+  is deliberately **required, not optional**: optional let three surfaces
+  compile while silently rendering a nameless "Time off".
 - **Untyped events are grey** (`other`). An event nobody categorised shouldn't
   outrank one someone did.
 - **Toasts sit at the opposite end of the screen from the nav bar** — top on
@@ -206,7 +235,7 @@ Last updated: 8 August 2026.
 
 ## Test suite
 
-- `npm run test:db` — 92 node tests, ~7s, self-cleaning.
+- `npm run test:db` — 118 node tests, ~7s, self-cleaning.
 - `npm run test:e2e` — Playwright, 4 specs, against a **production build**
   (the service worker is disabled in dev, so offline specs run in dev prove
   nothing). Seeds and tears down its own band; ids are written to

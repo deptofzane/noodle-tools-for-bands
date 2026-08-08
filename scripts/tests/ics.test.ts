@@ -6,6 +6,7 @@ const baseEvent: IcsEvent = {
   id: 'abc-123',
   title: 'Gig',
   date: '2026-07-21',
+  endDate: null,
   time: '19:00',
   endTime: null,
   location: null,
@@ -32,7 +33,10 @@ test('ics: wrapper + required calendar properties', () => {
 test('ics: timed event uses floating local time + default 2h end', () => {
   const ics = buildCalendar({ name: 'Noodle', events: [baseEvent] });
   assert.ok(ics.includes('DTSTART:20260721T190000'), 'floating start, no Z');
-  assert.ok(!ics.includes('DTSTART:20260721T190000Z'), 'no UTC marker on start');
+  assert.ok(
+    !ics.includes('DTSTART:20260721T190000Z'),
+    'no UTC marker on start',
+  );
   assert.ok(ics.includes('DTEND:20260721T210000'), 'start + 2h');
   assert.ok(ics.includes('UID:abc-123@noodle.band'), 'stable UID');
   assert.ok(ics.includes('DTSTAMP:20260720T123000Z'), 'DTSTAMP in UTC');
@@ -80,7 +84,10 @@ test('ics: all-day event (no time) uses VALUE=DATE with exclusive end', () => {
     events: [{ ...baseEvent, time: null }],
   });
   assert.ok(ics.includes('DTSTART;VALUE=DATE:20260721'), 'date-valued start');
-  assert.ok(ics.includes('DTEND;VALUE=DATE:20260722'), 'exclusive next-day end');
+  assert.ok(
+    ics.includes('DTEND;VALUE=DATE:20260722'),
+    'exclusive next-day end',
+  );
   assert.ok(!ics.includes('T000000'), 'no midnight time component');
 });
 
@@ -95,7 +102,10 @@ test('ics: TEXT values are escaped', () => {
       },
     ],
   });
-  assert.ok(ics.includes('SUMMARY:Rock\\, Paper\\; Scissors'), 'comma + semicolon');
+  assert.ok(
+    ics.includes('SUMMARY:Rock\\, Paper\\; Scissors'),
+    'comma + semicolon',
+  );
   assert.ok(ics.includes('Line 1\\nLine 2 \\\\ done'), 'newline + backslash');
 });
 
@@ -124,4 +134,83 @@ test('ics: multi-byte characters are not split across a fold', () => {
   // If a fold split a code point, the round-tripped title would corrupt.
   const unfolded = ics.replace(/\r\n /g, '');
   assert.ok(unfolded.includes('SUMMARY:' + '🎸'.repeat(40)), 'emoji intact');
+});
+
+test('ics: a multi-day timed event ends on its last day', () => {
+  // 10:00 Friday to 23:00 Sunday is one VEVENT, not three.
+  const ics = buildCalendar({
+    name: 'Noodle',
+    events: [
+      {
+        ...baseEvent,
+        date: '2026-07-17',
+        endDate: '2026-07-19',
+        time: '10:00',
+        endTime: '23:00',
+      },
+    ],
+  });
+  assert.ok(ics.includes('DTSTART:20260717T100000'), 'starts on the first day');
+  assert.ok(ics.includes('DTEND:20260719T230000'), 'ends on the last day');
+});
+
+test('ics: an end time before the start only wraps on a single-day event', () => {
+  // Single day: 23:00 → 02:00 is the small hours of the next morning.
+  const wrapped = buildCalendar({
+    name: 'Noodle',
+    events: [{ ...baseEvent, endDate: null, time: '23:00', endTime: '02:00' }],
+  });
+  assert.ok(wrapped.includes('DTEND:20260722T020000'), 'bumped a day forward');
+
+  // With an explicit last day the end time belongs to that day — nothing to
+  // rescue, and bumping would overshoot by a day.
+  const spanned = buildCalendar({
+    name: 'Noodle',
+    events: [
+      {
+        ...baseEvent,
+        date: '2026-07-21',
+        endDate: '2026-07-23',
+        time: '23:00',
+        endTime: '02:00',
+      },
+    ],
+  });
+  assert.ok(spanned.includes('DTEND:20260723T020000'), 'not bumped');
+});
+
+test('ics: a multi-day all-day event ends the day after its last', () => {
+  // DTEND is exclusive for VALUE=DATE, so a Fri–Sun event ends on Monday.
+  const ics = buildCalendar({
+    name: 'Noodle',
+    events: [
+      {
+        ...baseEvent,
+        date: '2026-07-17',
+        endDate: '2026-07-19',
+        time: null,
+        endTime: null,
+      },
+    ],
+  });
+  assert.ok(ics.includes('DTSTART;VALUE=DATE:20260717'));
+  assert.ok(ics.includes('DTEND;VALUE=DATE:20260720'), 'exclusive end');
+});
+
+test('ics: a multi-day event with no end time runs to the last day', () => {
+  // The default duration applies on the final day, not the first — otherwise
+  // a three-day event collapses to its opening two hours.
+  const ics = buildCalendar({
+    name: 'Noodle',
+    events: [
+      {
+        ...baseEvent,
+        date: '2026-07-17',
+        endDate: '2026-07-19',
+        time: '10:00',
+        endTime: null,
+      },
+    ],
+  });
+  assert.ok(ics.includes('DTEND:20260719T120000'), 'two hours on the last day');
 });

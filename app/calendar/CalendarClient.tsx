@@ -6,6 +6,8 @@ import { Modal } from '../Modal';
 import { useTrackPending } from '../PendingActionProvider';
 import { formatDateLong, formatTime12h, formatTimeRange } from '@/lib/format';
 import { eventColorKey } from './eventColors';
+import { layoutWeekBars, lastDayOf } from './eventBars';
+import { eventLabel } from './eventLabel';
 import { useCurrentBand } from '../CurrentBandProvider';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -27,10 +29,13 @@ const MONTHS = [
 interface CalendarEvent {
   id: string;
   title: string;
-  date: string; // YYYY-MM-DD
+  date: string; // YYYY-MM-DD start
+  endDate: string | null;
   time: string | null;
   endTime: string | null;
   eventType: string | null;
+  /** Display name of whoever created it — see `eventLabel`. */
+  createdByName: string | null;
   bandName: string;
   location: string | null;
   venueName: string | null;
@@ -38,6 +43,15 @@ interface CalendarEvent {
 }
 
 const pad = (n: number) => n.toString().padStart(2, '0');
+
+// Bar geometry, in px because the overlay is positioned against the cell box
+// rather than flowing inside it. `BAR_TOP_PX` clears the day number (p-1 plus
+// a 24px circle); the pitch is one bar plus the gap under it.
+const BAR_TOP_PX = 30;
+const BAR_PITCH_PX = 18;
+const BAR_BOTTOM_PX = 6;
+/** Keeps a quiet week the same height it has always been. */
+const MIN_CELL_PX = 96;
 
 /** An event's display location: prefer its venue (name + address). */
 function displayLocation(ev: CalendarEvent): string | null {
@@ -58,9 +72,7 @@ export function CalendarClient() {
     year: today.getFullYear(),
     month: today.getMonth(),
   });
-  const [eventsByDate, setEventsByDate] = useState<
-    Record<string, CalendarEvent[]>
-  >({});
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   // The day whose shows-summary is open (YYYY-MM-DD), or null.
   const [summaryDate, setSummaryDate] = useState<string | null>(null);
   const { bandId: currentBandId } = useCurrentBand();
@@ -72,8 +84,15 @@ export function CalendarClient() {
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
   while (cells.length % 7 !== 0) cells.push(null);
 
+  const weeks: (number | null)[][] = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+
   const dateStr = (d: number) =>
     `${view.year}-${pad(view.month + 1)}-${pad(d)}`;
+
+  /** Everything covering this day — a multi-day event counts on all of them. */
+  const eventsOn = (day: string) =>
+    events.filter((ev) => ev.date <= day && lastDayOf(ev) >= day);
   const isToday = (d: number) =>
     today.getFullYear() === view.year &&
     today.getMonth() === view.month &&
@@ -88,9 +107,7 @@ export function CalendarClient() {
       });
       if (!r.ok) return;
       const d = (await r.json()) as { events: CalendarEvent[] };
-      const byDate: Record<string, CalendarEvent[]> = {};
-      for (const ev of d.events) (byDate[ev.date] ??= []).push(ev);
-      setEventsByDate(byDate);
+      setEvents(d.events);
     } catch {
       // Non-fatal: the grid still renders without events.
     }
@@ -166,60 +183,109 @@ export function CalendarClient() {
         </span>
       </div>
 
-      <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200 dark:border-neutral-800 dark:bg-neutral-800">
-        {WEEKDAYS.map((w) => (
-          <div
-            key={w}
-            className="bg-neutral-50 py-1.5 text-center text-xs font-medium minor-text-theme-colors dark:bg-neutral-900"
-          >
-            {w}
-          </div>
-        ))}
-        {cells.map((d, i) => (
-          <div
-            key={i}
-            className={
-              'min-h-24 ' +
-              (d === null
-                ? 'bg-neutral-50/60 dark:bg-neutral-900/40'
-                : 'bg-white dark:bg-neutral-900')
-            }
-          >
-            {d !== null && (
-              // The whole cell is clickable — even with no events — and opens
-              // that day's summary modal.
-              <button
-                type="button"
-                onClick={() => setSummaryDate(dateStr(d))}
-                aria-label={`Events on ${dateStr(d)}`}
-                className="flex h-full w-full flex-col gap-1 p-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-900"
+      <div className="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800">
+        <div className="grid grid-cols-7 gap-px bg-neutral-200 dark:bg-neutral-800">
+          {WEEKDAYS.map((w) => (
+            <div
+              key={w}
+              className="bg-neutral-50 py-1.5 text-center text-xs font-medium minor-text-theme-colors dark:bg-neutral-900"
+            >
+              {w}
+            </div>
+          ))}
+        </div>
+
+        {/* One row per week. Events are drawn as bars in an overlay rather
+            than as chips inside each cell, so a multi-day event is a single
+            bar across the days it covers. The overlay is click-through: the
+            cell underneath still owns the tap that opens the day summary,
+            which is where an event is actually read. */}
+        {weeks.map((week, wi) => {
+          const days = week.map((d) => (d === null ? null : dateStr(d)));
+          const { segments, laneCount } = layoutWeekBars(days, events);
+          const minHeight = Math.max(
+            MIN_CELL_PX,
+            BAR_TOP_PX + laneCount * BAR_PITCH_PX + BAR_BOTTOM_PX,
+          );
+          return (
+            <div key={wi} className="relative">
+              <div className="grid grid-cols-7 gap-px bg-neutral-200 dark:bg-neutral-800">
+                {week.map((d, i) => (
+                  <div
+                    key={i}
+                    style={{ minHeight }}
+                    className={
+                      d === null
+                        ? 'bg-neutral-50/60 dark:bg-neutral-900/40'
+                        : 'bg-white dark:bg-neutral-900'
+                    }
+                  >
+                    {d !== null && (
+                      // The whole cell is clickable — even with no events —
+                      // and opens that day's summary modal.
+                      <button
+                        type="button"
+                        onClick={() => setSummaryDate(dateStr(d))}
+                        aria-label={`Events on ${dateStr(d)}`}
+                        className="flex h-full w-full flex-col items-start p-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                      >
+                        <span
+                          className={
+                            isToday(d)
+                              ? 'inline-flex h-6 w-6 items-center justify-center rounded-full bg-cyan-600 text-xs font-medium text-white'
+                              : 'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs text-neutral-600 dark:text-neutral-400'
+                          }
+                        >
+                          {d}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 grid grid-cols-7 gap-px px-1"
+                style={{
+                  top: BAR_TOP_PX,
+                  gridAutoRows: `${BAR_PITCH_PX}px`,
+                }}
               >
-                <span
-                  className={
-                    isToday(d)
-                      ? 'inline-flex h-6 w-6 items-center justify-center rounded-full bg-cyan-600 text-xs font-medium text-white'
-                      : 'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs text-neutral-600 dark:text-neutral-400'
-                  }
-                >
-                  {d}
-                </span>
-                <span className="flex w-full flex-col gap-0.5">
-                  {(eventsByDate[dateStr(d)] ?? []).map((ev) => (
-                    <span
-                      key={ev.id}
-                      title={ev.title}
-                      data-event-type={eventColorKey(ev.eventType)}
-                      className="truncate rounded border-l-2 border-[var(--event-accent)] bg-[var(--event-fill)] px-1 py-0.5 text-[0.6875rem] text-[var(--event-accent)]"
-                    >
-                      {ev.title}
-                      {ev.time ? ` ${formatTime12h(ev.time)}` : ''}
-                    </span>
-                  ))}
-                </span>
-              </button>
-            )}
-          </div>
-        ))}
+                {segments.map((seg) => (
+                  <span
+                    // A week-crossing event contributes one segment per week,
+                    // so the column keeps the key unique within this row.
+                    key={`${seg.event.id}-${seg.startCol}`}
+                    title={eventLabel(seg.event)}
+                    data-event-type={eventColorKey(seg.event.eventType)}
+                    style={{
+                      gridColumn: `${seg.startCol + 1} / span ${seg.endCol - seg.startCol + 1}`,
+                      gridRow: seg.lane + 1,
+                    }}
+                    className={
+                      'truncate bg-[var(--event-fill)] px-1 text-[0.6875rem] leading-4 text-[var(--event-accent)] ' +
+                      // A cut end is drawn flat and without its accent edge,
+                      // so a bar reads as continuing past the week rather
+                      // than as a separate event that happens to abut it.
+                      // That edge is the whole signal — an arrow glyph here
+                      // rendered as an emoji box in the grid's font.
+                      (seg.continuesBefore
+                        ? 'rounded-l-none '
+                        : 'rounded-l border-l-2 border-[var(--event-accent)] ') +
+                      (seg.continuesAfter ? 'rounded-r-none' : 'rounded-r')
+                    }
+                  >
+                    {eventLabel(seg.event)}
+                    {!seg.continuesBefore && seg.event.time
+                      ? ` ${formatTime12h(seg.event.time)}`
+                      : ''}
+                  </span>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {summaryDate && (
@@ -231,13 +297,13 @@ export function CalendarClient() {
           <h2 id="day-summary-title" className="text-base font-semibold">
             {formatDateLong(summaryDate)}
           </h2>
-          {(eventsByDate[summaryDate] ?? []).length === 0 ? (
+          {eventsOn(summaryDate).length === 0 ? (
             <p className="mt-3 text-sm minor-text-theme-colors">
               No events on this day.
             </p>
           ) : (
             <ul className="mt-3 flex max-h-72 flex-col gap-1 overflow-auto">
-              {(eventsByDate[summaryDate] ?? []).map((ev) => {
+              {eventsOn(summaryDate).map((ev) => {
                 const loc = displayLocation(ev);
                 return (
                   <li key={ev.id}>
@@ -247,7 +313,7 @@ export function CalendarClient() {
                       className="block rounded-md border border-neutral-200 border-l-[3px] border-l-[var(--event-accent)] px-3 py-2 hover:bg-neutral-50 dark:border-neutral-800 dark:border-l-[var(--event-accent)] dark:hover:bg-neutral-900"
                     >
                       <div className="flex items-baseline justify-between gap-2">
-                        <span className="truncate font-medium">{ev.title}</span>
+                        <span className="truncate font-medium">{eventLabel(ev)}</span>
                         {ev.time && (
                           <span className="shrink-0 text-xs minor-text-theme-colors">
                             {formatTimeRange(ev.time, ev.endTime)}

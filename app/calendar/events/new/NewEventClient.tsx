@@ -12,6 +12,7 @@ import { AutoTextarea } from '@/app/AutoTextarea';
 import { CollapsibleSection } from '@/app/CollapsibleSection';
 import { VenuePickerModal, type PickableVenue } from '../VenuePickerModal';
 import { EventTypeField } from '../EventTypeField';
+import { isTimeOff, TIME_OFF_TITLE } from '../../eventLabel';
 
 interface BandOption {
   id: string;
@@ -69,6 +70,7 @@ export function NewEventClient({
   const [title, setTitle] = useState('');
   const [eventType, setEventType] = useState('');
   const [date, setDate] = useState(defaultDate);
+  const [endDate, setEndDate] = useState('');
   const [time, setTime] = useState('');
   const [endTime, setEndTime] = useState('');
   // While false, the end time auto-follows the start (start + default). Once
@@ -129,7 +131,10 @@ export function NewEventClient({
     };
   }, [bandId]);
 
-  const canSave = Boolean(bandId && title.trim() && date && !busy);
+  // Time off carries no title of its own, so it can't be the thing that
+  // blocks saving.
+  const timeOff = isTimeOff(eventType);
+  const canSave = Boolean(bandId && (timeOff || title.trim()) && date && !busy);
 
   const handleCreate = async () => {
     if (!canSave) return;
@@ -141,9 +146,10 @@ export function NewEventClient({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             bandId,
-            title: title.trim(),
+            title: timeOff ? TIME_OFF_TITLE : title.trim(),
             eventType,
             date,
+            endDate,
             time,
             endTime,
             location,
@@ -234,18 +240,22 @@ export function NewEventClient({
         </p>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="event-title" className="text-sm font-medium">
-          Title
-        </label>
-        <input
-          id="event-title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          maxLength={255}
-          className={field}
-        />
-      </div>
+      {/* Time off is named after whoever booked it — "Time off - Steve",
+          derived at display time — so there is nothing here to fill in. */}
+      {!timeOff && (
+        <div className="flex flex-col gap-1">
+          <label htmlFor="event-title" className="text-sm font-medium">
+            Title
+          </label>
+          <input
+            id="event-title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={255}
+            className={field}
+          />
+        </div>
+      )}
 
       <EventTypeField
         value={eventType}
@@ -262,9 +272,31 @@ export function NewEventClient({
             id="event-date"
             type="date"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setDate(v);
+              // A end that now precedes the start is no longer a range the
+              // form can submit, so drop it rather than hold an invalid pair.
+              if (endDate && v && endDate < v) setEndDate('');
+            }}
             className={field}
           />
+        </div>
+        <div className="flex flex-1 flex-col gap-1">
+          <label htmlFor="event-end-date" className="text-sm font-medium">
+            End date
+          </label>
+          <input
+            id="event-end-date"
+            type="date"
+            value={endDate}
+            min={date || undefined}
+            onChange={(e) => setEndDate(e.target.value)}
+            className={field}
+          />
+          <span className="text-xs minor-text-theme-colors">
+            Leave blank for a single day.
+          </span>
         </div>
         <div className="flex flex-1 flex-col gap-1">
           <label htmlFor="event-time" className="text-sm font-medium">

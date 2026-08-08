@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { DATE_RE, parseEndDate } from '@/lib/event-dates';
 import { requireUser } from '@/lib/api-guard';
 import { getMembership } from '@/lib/db/bands';
 import { createEvent, listEventsForUserInRange } from '@/lib/db/events';
@@ -6,6 +7,7 @@ import { getSetlist } from '@/lib/db/setlists';
 import { getVenue } from '@/lib/db/venues';
 import { notify } from '@/lib/db/notifications';
 import { addHoursToTime, DEFAULT_EVENT_DURATION_HOURS } from '@/lib/format';
+import { isTimeOff, TIME_OFF_TITLE } from '@/app/calendar/eventLabel';
 
 const TIME_RE = /^\d{2}:\d{2}$/;
 
@@ -34,7 +36,6 @@ function resolveEndTime(
  *     belongs to. If a start `time` is given, `endTime` defaults to two hours
  *     later. A setlistId, if given, must belong to that band.
  */
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * Event kinds are free text (bands name their own), so this is only a sanity
@@ -66,7 +67,7 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => null);
   const bandId = typeof body?.bandId === 'string' ? body.bandId : '';
-  const title = typeof body?.title === 'string' ? body.title.trim() : '';
+  const titleInput = typeof body?.title === 'string' ? body.title.trim() : '';
   const date = typeof body?.date === 'string' ? body.date : '';
   const str = (v: unknown) => {
     const t = typeof v === 'string' ? v.trim() : '';
@@ -78,6 +79,13 @@ export async function POST(req: Request) {
       { error: 'bad_band', message: 'A band is required.' },
       { status: 400 },
     );
+  // Time off is labelled from its creator, so a client has no title to send.
+  // Filling it here keeps the NOT NULL column honest and means a caller that
+  // omits it gets an event rather than a confusing 400.
+  const eventType = str(body?.eventType);
+  const title =
+    !titleInput && isTimeOff(eventType) ? TIME_OFF_TITLE : titleInput;
+
   if (!title || title.length > 255)
     return NextResponse.json(
       { error: 'bad_title', message: 'Title must be 1–255 characters.' },
@@ -89,7 +97,13 @@ export async function POST(req: Request) {
       { status: 400 },
     );
 
-  const eventType = str(body?.eventType);
+  const end = parseEndDate(date, body?.endDate);
+  if (!end.ok)
+    return NextResponse.json(
+      { error: 'bad_end_date', message: end.message },
+      { status: 400 },
+    );
+
   if (eventType && eventType.length > MAX_EVENT_TYPE)
     return NextResponse.json(
       {
@@ -134,6 +148,7 @@ export async function POST(req: Request) {
     title,
     eventType,
     date,
+    endDate: end.endDate,
     time,
     endTime: resolveEndTime(time, str(body?.endTime)),
     location: str(body?.location),

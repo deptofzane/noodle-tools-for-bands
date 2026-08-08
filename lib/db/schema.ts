@@ -625,10 +625,21 @@ export const events = pgTable(
     // presets, but it's free text so a band can name its own; null on events
     // created before types existed, and whenever none is chosen.
     eventType: text('event_type'),
-    date: date('date', { mode: 'string' }).notNull(), // YYYY-MM-DD
+    date: date('date', { mode: 'string' }).notNull(), // YYYY-MM-DD start
+    /**
+     * Last day of a multi-day event (YYYY-MM-DD), inclusive.
+     *
+     * Null means the event ends the day it starts, which is what every event
+     * written before this column existed meant — so there is no backfill and
+     * no default. Read it as `coalesce(end_date, date)`: that expression is
+     * the event's real last day, and it's what "is this in range / past /
+     * upcoming" has to compare against, never `date` alone.
+     */
+    endDate: date('end_date', { mode: 'string' }),
     time: text('time'), // HH:MM start, optional
     // HH:MM end. Only meaningful with a start `time`; defaults to two hours
-    // after the start. Null for all-day (no start) events.
+    // after the start. Null for all-day (no start) events. On a multi-day
+    // event it is a time on `end_date`, not on `date`.
     endTime: text('end_time'),
     location: text('location'),
     // Public-facing info about the event.
@@ -658,6 +669,10 @@ export const events = pgTable(
   (t) => [
     index('events_band_idx').on(t.bandId),
     index('events_date_idx').on(t.date),
+    // Range/past/upcoming all filter on the event's last day, which is
+    // `coalesce(end_date, date)` — index the expression itself so those
+    // queries stay index-backed rather than scanning.
+    index('events_end_date_idx').on(sql`coalesce(${t.endDate}, ${t.date})`),
   ],
 );
 
