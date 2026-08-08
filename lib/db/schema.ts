@@ -268,6 +268,18 @@ export const notifications = pgTable(
      * name entirely when this is set.
      */
     multiActor: boolean('multi_actor').notNull().default(false),
+    /**
+     * How many uploads a rollup stands for.
+     *
+     * The count used to live only inside `subject_label` ("5 uploads") and be
+     * parsed back out to increment it, which made every addition a
+     * read-modify-write: two uploads landing together both read 5 and both
+     * wrote 6. Here it can be incremented in the same statement that finds the
+     * row. The label is now display text derived from it, not the storage.
+     *
+     * 1 for non-rollup rows, where it means nothing.
+     */
+    uploadCount: integer('upload_count').notNull().default(1),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -277,6 +289,13 @@ export const notifications = pgTable(
     // Finding the band's rollup for a given day, on every upload.
     index('notifications_band_day_idx').on(t.bandId, t.day),
     index('notifications_created_idx').on(t.createdAt),
+    // At most one rollup per band per day, enforced by the database rather
+    // than by the reading half of a read-then-write. This is the index
+    // `notifyUploadBatch`'s ON CONFLICT infers, so its predicate has to stay
+    // in step with that query's.
+    uniqueIndex('notifications_band_day_rollup_unique')
+      .on(t.bandId, t.day)
+      .where(sql`${t.kind} = 'audio-added' and ${t.subjectId} is null`),
   ],
 );
 

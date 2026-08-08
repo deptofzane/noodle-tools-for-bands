@@ -4,7 +4,6 @@ import {
   eq,
   gt,
   inArray,
-  isNull,
   lt,
   notInArray,
   or,
@@ -155,6 +154,21 @@ export async function createNotification(
 }
 
 /**
+ * Fan out a mobile push in the background — never blocks or breaks the
+ * action. Dynamically imported so `lib/push` (web-push) stays out of this
+ * module's static graph and there's no import cycle. Names are passed in from
+ * the insert that just ran so the push path doesn't re-query them.
+ */
+function firePush(
+  input: CreateNotificationInput,
+  names: { actorName: string | null; bandName: string | null },
+): void {
+  void import('../push')
+    .then((m) => m.sendEventPush(input, names))
+    .catch((err) => console.error('[push] fan-out failed', err));
+}
+
+/**
  * Best-effort notification creation: never throws, so a feed problem can't
  * break the mutation that triggered it. Failures are logged.
  */
@@ -166,27 +180,7 @@ export async function notify(input: CreateNotificationInput): Promise<void> {
     console.error('[notifications] create failed', err);
     return;
   }
-  // Fan out a mobile push in the background — never blocks or breaks the
-  // action. Dynamically imported so `lib/push` (web-push) stays out of this
-  // module's static graph and there's no import cycle. Names are reused from
-  // the insert above so the push path doesn't re-query them.
-  void import('../push')
-    .then((m) => m.sendEventPush(input, names))
-    .catch((err) => console.error('[push] fan-out failed', err));
-}
-
-/**
- * How many uploads a rollup already stands for.
- *
- * The count only survives in the label we wrote, and a rollup of exactly one
- * is labelled with the file's name instead of a count — so anything that
- * isn't our own "N uploads" format is a named single upload, worth 1. The
- * match is strict rather than a leading-integer parse so a song called "5"
- * can't be mistaken for a count.
- */
-function labelCount(subjectLabel: string | null): number {
-  const m = /^(\d+) uploads?$/.exec(subjectLabel ?? '');
-  return m ? Number(m[1]) : 1;
+  firePush(input, names);
 }
 
 function uploadLabel(n: number): string {
@@ -236,64 +230,88 @@ export async function notifyUploadBatch(input: {
 }): Promise<void> {
   if (input.added <= 0) return;
 
-  const [existing] = await db
-    .select({
-      id: notifications.id,
-      subjectLabel: notifications.subjectLabel,
-      actorId: notifications.actorId,
-      multiActor: notifications.multiActor,
-    })
-    .from(notifications)
-    .where(
-      and(
-        eq(notifications.bandId, input.bandId),
-        eq(notifications.kind, 'audio-added'),
-        // Rollups carry no subject; a single named upload does.
-        isNull(notifications.subjectId),
-        eq(notifications.day, input.day),
-      ),
-    )
-    .orderBy(desc(notifications.createdAt))
-    .limit(1);
+  const name = input.name?.trim();
+  const notification: CreateNotificationInput = {
+    bandId: input.bandId,
+    actorId: input.actorId,
+    kind: 'audio-added',
+    subjectType: 'conversation',
+    // Rollups carry no subject even when named: `subjectId is null` is what
+    // marks a row as the day's rollup, and the day's next upload has to find
+    // this one.
+    subjectId: null,
+    // The day's first upload is what pushes, so this is the label the push
+    // reads — a lone upload names the song rather than counting to one.
+    subjectLabel: input.added === 1 && name ? name : uploadLabel(input.added),
+    day: input.day,
+  };
 
-  if (!existing) {
-    const name = input.name?.trim();
-    await notify({
-      bandId: input.bandId,
-      actorId: input.actorId,
-      kind: 'audio-added',
-      subjectType: 'conversation',
-      // Still no subject even when named: `subjectId` is what marks a row as
-      // the day's rollup, and tomorrow's second upload has to find this one.
-      subjectId: null,
-      subjectLabel: input.added === 1 && name ? name : uploadLabel(input.added),
-      day: input.day,
-    });
-    return;
-  }
-
-  // Re-attribute to whoever just added: the row now describes their action,
-  // and `audio-added` is self-visible, so nobody loses it from their feed.
-  const [actor] = await db
-    .select({ name: users.name })
-    .from(users)
-    .where(eq(users.id, input.actorId))
-    .limit(1);
-
-  await db
-    .update(notifications)
-    .set({
-      subjectLabel: uploadLabel(
-        labelCount(existing.subjectLabel) + input.added,
-      ),
-      actorId: input.actorId,
+  try {
+    const [[actor], [band]] = await Promise.all([
+      db
+        .select({ name: users.name })
+        .from(users)
+        .where(eq(users.id, input.actorId))
+        .limit(1),
+      db
+        .select({ name: bands.name })
+        .from(bands)
+        .where(eq(bands.id, input.bandId))
+        .limit(1),
+    ]);
+    const names = {
       actorName: actor?.name ?? null,
-      // Sticky once set: a third uploader doesn't un-share the day, and a
-      // second batch from the first uploader doesn't either.
-      multiActor: existing.multiActor || existing.actorId !== input.actorId,
-      createdAt: sql`now()`,
-    })
-    .where(eq(notifications.id, existing.id));
+      bandName: band?.name ?? null,
+    };
+
+    // Find-or-create and increment in one statement. Two uploads landing at
+    // the same moment used to read the same count and write the same total,
+    // or both miss the row and create two; the day's row is now claimed by
+    // `notifications_band_day_rollup_unique` and the count moves under the
+    // row lock the conflict takes.
+    const [row] = await db
+      .insert(notifications)
+      .values({
+        ...notification,
+        actorName: names.actorName,
+        bandName: names.bandName,
+        uploadCount: input.added,
+      })
+      .onConflictDoUpdate({
+        target: [notifications.bandId, notifications.day],
+        // Narrows the conflict to the partial index above; without it
+        // Postgres has no unique index covering (band_id, day) to infer.
+        targetWhere: sql`${notifications.kind} = 'audio-added' and ${notifications.subjectId} is null`,
+        set: {
+          uploadCount: sql`${notifications.uploadCount} + ${input.added}`,
+          // Always a count from here on: the row already stood for at least
+          // one upload and this adds at least one more, so the singular case
+          // and the file name both belong to the insert above.
+          subjectLabel: sql`(${notifications.uploadCount} + ${input.added}) || ' uploads'`,
+          // Re-attribute to whoever just added: the row now describes their
+          // action, and `audio-added` is self-visible, so nobody loses it
+          // from their feed.
+          actorId: input.actorId,
+          actorName: names.actorName,
+          // Sticky once set: a third uploader doesn't un-share the day, and a
+          // second batch from the first uploader doesn't either. Both sides
+          // read the pre-update row, so this is the *previous* actor.
+          multiActor: sql`${notifications.multiActor} or ${notifications.actorId} <> ${input.actorId}`,
+          // Back to the top of the feed, and unread again — a running total
+          // only acts like news if it re-arrives.
+          createdAt: sql`now()`,
+        },
+      })
+      // `xmax = 0` distinguishes the insert from the update: only the day's
+      // first upload interrupts anyone.
+      .returning({ inserted: sql<boolean>`xmax = 0` });
+
+    if (row?.inserted) firePush(notification, names);
+  } catch (err) {
+    // Same contract as `notify`: a feed problem must not fail the upload that
+    // triggered it — the file is already stored by the time we get here.
+    console.error('[notifications] upload rollup failed', err);
+  }
 }
 
 /** Notification kinds the user has muted (default: none). */

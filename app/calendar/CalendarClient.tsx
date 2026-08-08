@@ -7,7 +7,6 @@ import { useTrackPending } from '../PendingActionProvider';
 import { formatDateLong, formatTime12h, formatTimeRange } from '@/lib/format';
 import { eventColorKey } from './eventColors';
 import { useCurrentBand } from '../CurrentBandProvider';
-import { BAND_ACTIVE_TAB_KEY } from '../bands/[bandId]/bandTabs';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [
@@ -151,23 +150,11 @@ export function CalendarClient() {
             one band's page — so this goes to whichever band the app is
             currently "in", and isn't offered until there is one. The band
             list resolves after mount, so this appears a beat late rather
-            than pointing somewhere useless in the meantime.
-
-            The stored tab is set on the way out because the band page
-            restores it on arrival; `?tab=events` alone doesn't survive the
-            trip (Overview strips the param, being its default). */}
+            than pointing somewhere useless in the meantime. */}
         <span className="flex justify-end gap-2 flex-wrap ml-2 ">
           {currentBandId && (
             <Link
               href={`/bands/${currentBandId}?tab=events`}
-              onClick={() => {
-                try {
-                  localStorage.setItem(BAND_ACTIVE_TAB_KEY, 'events');
-                } catch {
-                  // Private mode or storage disabled — the link still works,
-                  // it just lands on whatever tab was last remembered.
-                }
-              }}
               className="btn-outline text-wrap"
             >
               Events

@@ -2,6 +2,7 @@ import { Readable } from 'node:stream';
 import { fileToNodeStream, uploadLimit } from '@/lib/upload-limit';
 import { fetchDropboxFile } from '@/lib/dropbox';
 import { resolveContentType } from '@/lib/serve-mime';
+import { fileCacheControl } from '@/lib/serve-cache';
 import { auth } from '@/auth';
 import { getDriveClient } from '@/lib/drive';
 import { getCurrentDbUser } from '@/lib/current-user';
@@ -53,9 +54,10 @@ export async function GET(
     return new Response('forbidden', { status: 403 });
   }
 
+  const url = new URL(req.url);
   // Both audio and sheet music can request a specific version via
   // `?version=<id>`; without it we serve the song's default version.
-  const versionId = new URL(req.url).searchParams.get('version');
+  const versionId = url.searchParams.get('version');
 
   const meta = versionId
     ? kind === 'audio'
@@ -64,7 +66,7 @@ export async function GET(
     : await getSongFileMeta(conversationId, kind);
   if (!meta) return new Response('not_found', { status: 404 });
 
-  const nameHint = new URL(req.url).searchParams.get('name');
+  const nameHint = url.searchParams.get('name');
   const contentType = resolveContentType(
     meta.mimeType,
     nameHint ?? meta.fileName,
@@ -94,7 +96,7 @@ export async function GET(
   const headers: Record<string, string> = {
     'Content-Type': contentType,
     'Accept-Ranges': 'bytes',
-    'Cache-Control': 'private, max-age=300',
+    'Cache-Control': fileCacheControl(kind, versionId, url.searchParams),
     'Content-Disposition': `inline; filename="${sanitizeFilename(meta.fileName)}"`,
     // Don't let the browser re-interpret the bytes (e.g. a .txt sniffed as
     // HTML) — these are embedded same-origin.

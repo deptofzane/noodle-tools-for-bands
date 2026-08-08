@@ -29,10 +29,17 @@ export function BandDetailClient({
   bandId,
   currentUserId,
   initialTab = 'chat',
+  tabFromUrl = false,
 }: {
   bandId: string;
   currentUserId: string;
   initialTab?: BandTab;
+  /**
+   * Whether `initialTab` came from an explicit `?tab=`. Can't be re-derived on
+   * the client: the URL-mirror effect below strips the param for the default
+   * tab before any other effect gets to read it.
+   */
+  tabFromUrl?: boolean;
 }) {
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<BandTab>(initialTab);
@@ -65,12 +72,12 @@ export function BandDetailClient({
 
   // On a fresh nav to /bands/[id] (no ?tab=), restore the last-used tab. An
   // explicit ?tab= (deep link / back-nav) always wins and is remembered.
+  // Reads `tabFromUrl` rather than window.location: the effect above has
+  // already deleted `?tab=events` by the time this one runs.
   useEffect(() => {
-    const urlTab = new URLSearchParams(window.location.search).get('tab');
     try {
-      if (urlTab) {
-        if (isBandTab(urlTab))
-          localStorage.setItem(BAND_ACTIVE_TAB_KEY, urlTab);
+      if (tabFromUrl) {
+        localStorage.setItem(BAND_ACTIVE_TAB_KEY, initialTab);
         return;
       }
       const saved = localStorage.getItem(BAND_ACTIVE_TAB_KEY);
@@ -78,6 +85,9 @@ export function BandDetailClient({
     } catch {
       // ignore
     }
+    // Mount-only, as before: this decides the *initial* tab, and re-running it
+    // later would yank the tab out from under someone mid-visit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (error) {

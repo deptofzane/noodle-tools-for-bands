@@ -20,6 +20,7 @@ async function rollups(bandId: string) {
       id: notifications.id,
       day: notifications.day,
       subjectLabel: notifications.subjectLabel,
+      uploadCount: notifications.uploadCount,
       actorId: notifications.actorId,
       actorName: notifications.actorName,
       multiActor: notifications.multiActor,
@@ -210,6 +211,51 @@ test('upload rollup: a second uploader makes the day nameless, for good', async 
     row = await forDay(bandId, day);
     assert.equal(row?.multiActor, true, 'sticky — no reclaiming the credit');
     assert.equal(row?.subjectLabel, '7 uploads');
+  } finally {
+    if (bandId) await deleteBand(bandId);
+    await deleteUsersByGoogleSub(SUBS);
+  }
+});
+
+test('upload rollup: simultaneous uploads all land on one row', async () => {
+  let bandId: string | undefined;
+  try {
+    const a = await upsertUser({
+      googleSub: 'UR_A',
+      email: 'ura@x.com',
+      name: 'Ann',
+    });
+    const b = await upsertUser({
+      googleSub: 'UR_B',
+      email: 'urb@x.com',
+      name: 'Bo',
+    });
+    const band = await createBand(a.id, 'UR Band');
+    bandId = band.id;
+    await addMember(band.id, b.id, 'member');
+    const day = '2026-08-04';
+
+    // A rehearsal: both members' files arrive at once, none of them waiting
+    // for the last to be counted. Read-then-write lost these — either two
+    // callers read the same total and wrote the same one back, or both found
+    // no row and created one each.
+    await Promise.all(
+      Array.from({ length: 8 }, (_, i) =>
+        notifyUploadBatch({
+          bandId: bandId!,
+          actorId: i % 2 === 0 ? a.id : b.id,
+          added: 1,
+          day,
+          name: `take-${i}.wav`,
+        }),
+      ),
+    );
+
+    const rows = await rollups(bandId);
+    assert.equal(rows.length, 1, 'one row for the day, however they raced');
+    assert.equal(rows[0]?.uploadCount, 8, 'every upload counted');
+    assert.equal(rows[0]?.subjectLabel, '8 uploads');
+    assert.equal(rows[0]?.multiActor, true, 'two uploaders, nobody named');
   } finally {
     if (bandId) await deleteBand(bandId);
     await deleteUsersByGoogleSub(SUBS);

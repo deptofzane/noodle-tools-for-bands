@@ -136,9 +136,9 @@ export function BandNotesTab({
     <section className="flex flex-col gap-2">
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-medium">Notes</h2>
+          <h2 className="text-sm font-medium">Personal notes</h2>
           <Link href={`/bands/${bandId}/notes/new`} className="btn-outline">
-            New note
+            New personal note
           </Link>
         </div>
         <span className="block truncate text-xs minor-text-theme-colors">

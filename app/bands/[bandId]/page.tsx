@@ -36,6 +36,7 @@ export default async function BandDetailPage({
         bandId={bandId}
         currentUserId={currentUserId}
         initialTab={isBandTab(tab) ? tab : DEFAULT_BAND_TAB}
+        tabFromUrl={isBandTab(tab)}
       />
     </main>
   );
