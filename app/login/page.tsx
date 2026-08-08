@@ -18,7 +18,7 @@ export default async function LoginPage({
       <h3 className="font-serif text-4xl">
         noo<span className="text-cyan-600">dle</span>
       </h3>
-      <span className="m-0 pb-3 minor-text-theme-colors text-sm"><span className="text-cyan-600">tools</span> for bands</span>
+      <span className="m-0 pb-3 minor-text-theme-colors text-sm">tools for<span className="text-cyan-600"> bands</span></span>
       <div className="w-full max-w-sm rounded-lg border border-neutral-200 p-8 dark:border-neutral-800">
         <h1 className="title-text">Sign in</h1>
         <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
