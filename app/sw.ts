@@ -1,4 +1,5 @@
 import { defaultCache } from '@serwist/next/worker';
+import { appIcons } from '@/lib/app-icons';
 import { canonicalAudioKey } from '@/lib/audio-cache-key';
 import {
   CacheableResponsePlugin,
@@ -285,8 +286,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || '',
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      icon: appIcons.icon192,
+      badge: appIcons.icon192,
       tag: data.tag,
       data: { url },
     }),

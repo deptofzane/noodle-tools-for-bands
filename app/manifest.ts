@@ -1,4 +1,23 @@
 import type { MetadataRoute } from 'next';
+import { appIcons } from '@/lib/app-icons';
+
+type ManifestIcon = NonNullable<MetadataRoute.Manifest['icons']>[number];
+
+/**
+ * `purpose: "any maskable"` — one icon serving both roles.
+ *
+ * The art is drawn for masking already: a full-bleed backdrop with the motif
+ * centered across 62.5% of the canvas, comfortably inside the 80% safe zone, so
+ * no platform mask can clip it. The manifest spec makes `purpose` a
+ * space-separated set precisely so one file can say this; Next's type predates
+ * that and permits a single keyword, hence the cast.
+ *
+ * Listing the file once matters. It used to appear twice — the same `src` as
+ * `any` and again as `maskable` — and a duplicate `src` leaves icon selection
+ * up to how a given browser walks the list, which is not something to leave
+ * ambiguous when Firefox on Android is one of the readers.
+ */
+const ANY_MASKABLE = 'any maskable' as ManifestIcon['purpose'];
 
 /**
  * Web app manifest (served at /manifest.webmanifest; Next injects the <link>
@@ -20,30 +39,16 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: 'any',
     icons: [
       {
-        src: '/icons/icon-192.png',
+        src: appIcons.icon192,
         sizes: '192x192',
         type: 'image/png',
-        purpose: 'any',
+        purpose: ANY_MASKABLE,
       },
       {
-        src: '/icons/icon-512.png',
+        src: appIcons.icon512,
         sizes: '512x512',
         type: 'image/png',
-        purpose: 'any',
-      },
-      // Same art doubles as maskable: the backdrop is full-bleed and the motif
-      // sits inside the safe zone, so platform masking won't clip it.
-      {
-        src: '/icons/icon-192.png',
-        sizes: '192x192',
-        type: 'image/png',
-        purpose: 'maskable',
-      },
-      {
-        src: '/icons/icon-512.png',
-        sizes: '512x512',
-        type: 'image/png',
-        purpose: 'maskable',
+        purpose: ANY_MASKABLE,
       },
     ],
   };

@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata, Viewport } from 'next';
 import { auth } from '@/auth';
+import { appIcons } from '@/lib/app-icons';
 import { googlePickerAppId, hasAllDriveScopes } from '@/lib/google';
 import { Header } from './Header';
 import { CurrentBandProvider } from './CurrentBandProvider';
@@ -30,12 +31,12 @@ export const metadata: Metadata = {
     icon: [
       // Smallest first: the 16 and 32 are drawn for those sizes rather than
       // scaled down from the install icon, which turns to mush in a tab.
-      { url: '/icons/favicon-16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/icons/favicon-32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { url: appIcons.favicon16, sizes: '16x16', type: 'image/png' },
+      { url: appIcons.favicon32, sizes: '32x32', type: 'image/png' },
+      { url: appIcons.icon192, sizes: '192x192', type: 'image/png' },
+      { url: appIcons.icon512, sizes: '512x512', type: 'image/png' },
     ],
-    apple: '/icons/apple-touch-icon.png',
+    apple: appIcons.appleTouch,
   },
 };
 
