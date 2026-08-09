@@ -237,7 +237,7 @@ export function BandSetlistsTab({
             href={`/bands/${bandId}/setlists/${sl.id}`}
             className="flex min-w-0 flex-1 items-start flex-col justify-start gap-3 rounded hover:bg-neutral-50 dark:hover:bg-neutral-900"
           >
-            <ul className="flex flex-col gap-0.5 px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">
+            <ul className="flex flex-col gap-0.5 px-4 py-3 text-sm minor-text-theme-colors">
               {sl.songs.map((s, i) => {
                 const meta = s.conversationId
                   ? formatSongMeta(s.bpm, s.key)
@@ -255,7 +255,7 @@ export function BandSetlistsTab({
                     <ol>
                       {i + 1} &nbsp; {s.name}
                       {meta && (
-                        <span className="text-neutral-400"> · {meta}</span>
+                        <span className="minor-text-theme-colors"> · {meta}</span>
                       )}
                     </ol>
                   </li>

@@ -158,7 +158,7 @@ export function SongQueue() {
                       ? `Pause ${t.title}`
                       : `Play ${t.title}`
                   }
-                  className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                  className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 bg-blue-50 hover:bg-blue-100 dark:border-neutral-700 dark:text-neutral-200 dark:bg-blue-700 dark:hover:bg-blue-500"
                 >
                   {isCurrent && isPlaying ? (
                     <svg

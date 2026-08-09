@@ -16,6 +16,13 @@
  *     fills the tile and the stroke is heavier.
  *   - **tiny** (16px favicon) — no ring at all; see the variant's note.
  *
+ * PNGs only — there's deliberately no `app/favicon.ico`. The 16 and 32 above
+ * are declared explicitly in `app/layout.tsx`, which is what browsers pick
+ * from; an .ico only ever answered bare `/favicon.ico` hits, and Next's file
+ * convention gives it a fixed URL that can't carry the `?v=` the rest of the
+ * icons use (see lib/app-icons.ts), so it was the one file guaranteed to go on
+ * serving stale art out of the service worker's image cache.
+ *
  * Run: `npx tsx scripts/make-icons.ts`
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -93,48 +100,13 @@ async function main() {
     ['public/icons/favicon-16.png', 16, 'tiny'],
   ];
 
-  const written: Record<string, Buffer> = {};
   for (const [path, size, variant] of targets) {
     await page.setViewportSize({ width: size, height: size });
     await page.setContent(markup(size, VARIANTS[variant]));
     const png = await page.screenshot({ omitBackground: false });
     writeFileSync(path, png);
-    written[path] = png;
     console.log(`${path}  ${size}×${size}  (${variant})`);
   }
-
-  // A .ico is a tiny directory of images; every browser in use reads PNG
-  // entries, so the 16 and 32 above are embedded verbatim rather than
-  // re-encoded as BMP.
-  const entries = [
-    { size: 16, png: written['public/icons/favicon-16.png']! },
-    { size: 32, png: written['public/icons/favicon-32.png']! },
-  ];
-  const header = Buffer.alloc(6);
-  header.writeUInt16LE(0, 0); // reserved
-  header.writeUInt16LE(1, 2); // type: icon
-  header.writeUInt16LE(entries.length, 4);
-
-  const dir = Buffer.alloc(16 * entries.length);
-  let offset = header.length + dir.length;
-  entries.forEach((e, i) => {
-    const at = i * 16;
-    dir.writeUInt8(e.size === 256 ? 0 : e.size, at); // width
-    dir.writeUInt8(e.size === 256 ? 0 : e.size, at + 1); // height
-    dir.writeUInt8(0, at + 2); // palette
-    dir.writeUInt8(0, at + 3); // reserved
-    dir.writeUInt16LE(1, at + 4); // colour planes
-    dir.writeUInt16LE(32, at + 6); // bits per pixel
-    dir.writeUInt32LE(e.png.length, at + 8);
-    dir.writeUInt32LE(offset, at + 12);
-    offset += e.png.length;
-  });
-
-  writeFileSync(
-    'app/favicon.ico',
-    Buffer.concat([header, dir, ...entries.map((e) => e.png)]),
-  );
-  console.log('app/favicon.ico  16+32');
 
   await browser.close();
 }
