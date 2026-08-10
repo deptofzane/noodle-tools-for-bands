@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import { useCurrentBand } from './CurrentBandProvider';
 import { startRouteProgress } from './RouteProgress';
 import { bandSwitchTarget } from '@/lib/routes';
@@ -48,8 +49,15 @@ interface NavLink {
  * highlight. Routes outside this nav (notably `/notes/[conversationId]`)
  * leave the header un-highlighted, which is the least-wrong choice —
  * none of these links is a precise "parent" of that route.
+ *
+ * The menu's top level is bracketed by the signed-in account: the email at the
+ * top (a label, not a target) and Sign out at the very bottom, below every
+ * link at both breakpoints. `userEmail` is threaded down from the layout's
+ * session rather than read here — the Header has no session of its own, and
+ * adding a SessionProvider to fetch one client-side would cost a round trip
+ * for a string the server already rendered with.
  */
-export function Header() {
+export function Header({ userEmail }: { userEmail?: string | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -373,6 +381,32 @@ export function Header() {
                   </>
                 ) : (
                   <>
+                    {/* Who you're signed in as. Deliberately not a menuitem:
+                        it's a label, so it takes no focus and has no hover or
+                        active state to suggest otherwise. `role="presentation"`
+                        keeps it out of the menu's item list without hiding the
+                        text, which is still worth announcing. */}
+                    {userEmail && (
+                      <>
+                        <div
+                          role="presentation"
+                          className="px-4 pb-1.5 pt-2 lg:px-3"
+                        >
+                          <span
+                            title={userEmail}
+                            className="block truncate text-xs minor-text-theme-colors"
+                          >
+                            {userEmail}
+                          </span>
+                        </div>
+
+                        <span
+                          aria-hidden="true"
+                          className="my-1 border-t border-neutral-200 dark:border-neutral-800"
+                        />
+                      </>
+                    )}
+
                     {bands.length > 0 && (
                       <>
                         <button
@@ -434,6 +468,25 @@ export function Header() {
                         />
                       ))}
                     </span>
+
+                    {/* Last at either breakpoint: it sits outside the two
+                        link groups above, which are the parts that swap. */}
+                    <span
+                      aria-hidden="true"
+                      className="my-1 border-t border-neutral-200 dark:border-neutral-800"
+                    />
+
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        closeMenu();
+                        void signOut({ callbackUrl: '/login' });
+                      }}
+                      className={menuItemClass(false)}
+                    >
+                      Sign out
+                    </button>
                   </>
                 )}
               </div>

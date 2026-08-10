@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { Modal } from '../../../Modal';
 import { PickerButton, type PickedFile } from '../../../PickerButton';
+import { AUDIO_PICKER_FILTER } from '@/lib/picker-filters';
 import {
   DropboxChooserButton,
   type DropboxPickedFile,
@@ -361,6 +362,7 @@ export function AudioVersions({
               <PickerButton
                 apiKey={apiKey}
                 multiple={false}
+                filter={AUDIO_PICKER_FILTER}
                 label="Choose from Google Drive"
                 onPick={(files) => {
                   setChooseOpen(false);

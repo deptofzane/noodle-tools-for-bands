@@ -4,6 +4,7 @@ import { ensureOk } from '@/lib/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal } from '../../Modal';
 import { PickerButton, type PickedFile } from '../../PickerButton';
+import { SHEET_PICKER_FILTER } from '@/lib/picker-filters';
 import {
   DropboxChooserButton,
   type DropboxPickedFile,
@@ -576,6 +577,7 @@ export function SheetMusic({
                   <PickerButton
                     apiKey={apiKey}
                     multiple={false}
+                    filter={SHEET_PICKER_FILTER}
                     label="Choose from Google Drive"
                     onPick={(files) => {
                       setChooseOpen(false);

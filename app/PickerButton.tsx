@@ -2,14 +2,19 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { usePickerAppId } from './DriveCapabilityProvider';
+import { rejectionMessage, type PickerFilter } from '@/lib/picker-filters';
 
 /**
  * Reusable Google Picker button.
  *
  * Loads the Picker SDK once, fetches a short-lived OAuth token from
  * `/api/drive/token` on click, and invokes `onPick` with the selected
- * file(s). Used to register audio under a band. Audio files only
- * (folders disabled); multi-select enabled.
+ * file(s). Folders are never selectable; multi-select is opt-out.
+ *
+ * Given a `filter`, the picker opens on a view narrowed to those MIME types
+ * and offers an unfiltered view beside it, and anything picked is re-checked
+ * locally before `onPick` sees it — see lib/picker-filters.ts for why one
+ * layer isn't enough.
  */
 
 type PickerWindow = {
@@ -60,6 +65,7 @@ export function PickerButton({
   label = 'Add audio',
   disabled = false,
   multiple = true,
+  filter,
 }: {
   apiKey: string;
   onPick: (files: PickedFile[]) => void;
@@ -67,6 +73,8 @@ export function PickerButton({
   disabled?: boolean;
   /** Allow selecting more than one file. */
   multiple?: boolean;
+  /** What to list, and what to accept back. Unfiltered when omitted. */
+  filter?: PickerFilter;
 }) {
   const appId = usePickerAppId();
   const [pickerReady, setPickerReady] = useState(false);
@@ -125,25 +133,36 @@ export function PickerButton({
       return;
     }
 
-    // Audio only. Drive's audio MIME labels are inconsistent, so we don't
-    // constrain mimeTypes here and instead let the user pick; the band
-    // registration accepts whatever they choose.
-    const view = new w.google.picker.DocsView()
-      .setIncludeFolders(false)
-      .setSelectFolderEnabled(false);
+    const newView = () =>
+      new w.google!.picker.DocsView()
+        .setIncludeFolders(false)
+        .setSelectFolderEnabled(false);
 
-    let builder = new w.google.picker.PickerBuilder().addView(view);
+    let builder = new w.google.picker.PickerBuilder();
+    if (filter) {
+      // The narrowed view first, so the picker opens on it; the unfiltered one
+      // sits beside it as a tab. That second view is the escape hatch for
+      // files Drive mislabels or has no type for — without it, a filter turns
+      // "Drive says this .mp3 is octet-stream" into a file the user can't
+      // reach at all. Labels are left to the picker: View.setLabel is
+      // deprecated.
+      builder = builder
+        .addView(newView().setMimeTypes(filter.mimeTypes.join(',')))
+        .addView(newView());
+    } else {
+      builder = builder.addView(newView());
+    }
     if (multiple) {
       builder = builder.enableFeature(
         w.google.picker.Feature.MULTISELECT_ENABLED,
       );
     }
-    // On phones, size the dialog to the viewport so it's effectively
-    // full-screen (the Picker clamps to the window, so this maxes it out).
-    // Desktop keeps the default centered dialog.
-    if (window.innerWidth <= 640) {
-      builder = builder.setSize(window.innerWidth, window.innerHeight);
-    }
+    // No setSize: the picker's documented bounds are a minimum of 566×350 and
+    // a maximum of 1051×650, so asking for a phone's viewport (typically
+    // 390–430 CSS px wide) was clamped *up* to 566 and rendered a dialog wider
+    // than the screen — pushing the selection controls and the Select button
+    // off the right edge, which is what made multi-select unusable on a phone.
+    // The picker's own responsive layout handles narrow viewports.
     // `setAppId` is what makes Drive grant the picked files to this app under
     // the narrow `drive.file` scope. Without it the Picker still works, but
     // every later files.get on the result 404s.
@@ -159,12 +178,30 @@ export function PickerButton({
           name: d.name,
           mimeType: d.mimeType,
         }));
-        if (files.length > 0) onPick(files);
+        if (files.length === 0) return;
+        if (!filter) {
+          onPick(files);
+          return;
+        }
+        // Partial acceptance: importing the valid files and naming the ones
+        // skipped beats discarding a good multi-file selection over one stray
+        // jpg. With `multiple` off there's only ever one, so this reads as a
+        // plain rejection.
+        const accepted = files.filter((f) => filter.accepts(f));
+        if (accepted.length < files.length) {
+          setError(
+            rejectionMessage(
+              files.filter((f) => !filter.accepts(f)),
+              filter,
+            ),
+          );
+        }
+        if (accepted.length > 0) onPick(accepted);
       })
       .build();
 
     picker.setVisible(true);
-  }, [apiKey, appId, onPick, multiple]);
+  }, [apiKey, appId, onPick, multiple, filter]);
 
   return (
     <div className="flex flex-col gap-1">

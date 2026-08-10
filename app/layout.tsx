@@ -134,7 +134,9 @@ export default async function RootLayout({
                 <CurrentBandProvider enabled={isSignedIn}>
                   <PlaylistPlayerProvider userKey={session?.user?.sub ?? null}>
                     {children}
-                    {isSignedIn && <Header />}
+                    {isSignedIn && (
+                      <Header userEmail={session?.user?.email ?? null} />
+                    )}
                     <OfflineBanner />
                   </PlaylistPlayerProvider>
                 </CurrentBandProvider>

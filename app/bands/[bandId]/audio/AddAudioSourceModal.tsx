@@ -1,5 +1,6 @@
 import { Modal } from '../../../Modal';
 import { PickerButton, type PickedFile } from '../../../PickerButton';
+import { AUDIO_PICKER_FILTER } from '@/lib/picker-filters';
 import {
   DropboxChooserButton,
   type DropboxPickedFile,
@@ -50,6 +51,7 @@ export function AddAudioSourceModal({
           <PickerButton
             apiKey={apiKey}
             label="Choose from Google Drive"
+            filter={AUDIO_PICKER_FILTER}
             onPick={onPickDrive}
           />
         ) : (
