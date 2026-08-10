@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -12,6 +13,7 @@ import {
 import { createAudioEngine, type AudioEngine } from '@/lib/audio';
 import { claimAudioFocus, subscribeAudioFocus } from './audioFocus';
 import { MiniPlayer } from './MiniPlayer';
+import { useMediaSession } from './useMediaSession';
 
 /** One queued item. Any page can build these and call `play`. */
 export type PlaylistTrack = {
@@ -225,6 +227,13 @@ export function PlaylistPlayerProvider({
   // Don't let the mount pass — when the queue is still empty — erase what the
   // last session saved before the restore below has had a chance to read it.
   const skipSaveRef = useRef(true);
+  // `isPlaying` for the callbacks that outlive the render that set it — `toggle`
+  // and the Media Session handlers, which must stay stable.
+  const isPlayingRef = useRef(false);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
 
   const track = queue[index] ?? null;
   const src = track?.src ?? null;
@@ -324,6 +333,19 @@ export function PlaylistPlayerProvider({
         setIsPlaying(false);
       },
       onSeek: (sec) => setCurrentTime(sec),
+      // Playback changed without going through this app — a Bluetooth or
+      // headset button, a car head unit, an incoming call. Follow it, so the
+      // button reflects what's actually happening and `toggle` does the right
+      // thing on the next tap. `wantPlayRef` moves too: it's what a track
+      // change consults, and an externally paused player shouldn't start
+      // playing again just because the queue advanced.
+      onPlayStateChange: (playing) => {
+        wantPlayRef.current = playing;
+        setIsPlaying(playing);
+        // Resuming from a headset with the bar dismissed should bring it back,
+        // the same as pressing play in the app does.
+        if (playing) setDismissed(false);
+      },
     });
     engineRef.current = engine;
     currentSrcRef.current = src;
@@ -457,21 +479,37 @@ export function PlaylistPlayerProvider({
     });
   }, []);
 
-  const toggle = useCallback(() => {
+  const pausePlayback = useCallback(() => {
     const engine = engineRef.current;
     if (!engine) return;
-    if (engine.isPlaying()) {
-      engine.pause();
-      wantPlayRef.current = false;
-      setIsPlaying(false);
-    } else {
-      claimAudioFocus(FOCUS_OWNER);
-      setDismissed(false);
-      engine.play();
-      wantPlayRef.current = true;
-      setIsPlaying(true);
-    }
+    engine.pause();
+    wantPlayRef.current = false;
+    setIsPlaying(false);
   }, []);
+
+  const resumePlayback = useCallback(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    claimAudioFocus(FOCUS_OWNER);
+    setDismissed(false);
+    engine.play();
+    wantPlayRef.current = true;
+    setIsPlaying(true);
+  }, []);
+
+  /**
+   * Branches on our own state rather than `engine.isPlaying()`.
+   *
+   * Howler's flag only records what *it* was told to do, so after anything
+   * paused the audio from outside the app it still reports playing — and this
+   * would then pause an already-paused track, taking two taps to get going
+   * again. `isPlaying` is kept true to the element by `onPlayStateChange`
+   * below, which makes it the honest thing to ask.
+   */
+  const toggle = useCallback(() => {
+    if (isPlayingRef.current) pausePlayback();
+    else resumePlayback();
+  }, [pausePlayback, resumePlayback]);
 
   const previous = useCallback(() => {
     const engine = engineRef.current;
@@ -562,6 +600,37 @@ export function PlaylistPlayerProvider({
       }),
     [],
   );
+
+  const getPosition = useCallback(
+    () => engineRef.current?.getCurrentTime() ?? 0,
+    [],
+  );
+
+  // Hands the OS the transport controls. Registering these is what stops the
+  // browser acting on the audio element behind our back when a media key
+  // arrives — see the hook's header.
+  const mediaActions = useMemo(
+    () => ({
+      play: resumePlayback,
+      pause: pausePlayback,
+      next,
+      previous,
+      seek,
+      stop: close,
+      getPosition,
+    }),
+    [resumePlayback, pausePlayback, next, previous, seek, close, getPosition],
+  );
+
+  useMediaSession({
+    track,
+    isPlaying,
+    duration,
+    rate,
+    canNext: index + 1 < queue.length,
+    canPrevious: queue.length > 0,
+    actions: mediaActions,
+  });
 
   const value: PlaylistPlayerValue = {
     queue,

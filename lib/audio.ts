@@ -78,7 +78,46 @@ export type AudioEngineOptions = {
    * the rAF tick-loop only runs while playing.
    */
   onSeek?: (currentSec: number) => void;
+  /**
+   * Fires when playback starts or stops for a reason this app didn't initiate
+   * — a Bluetooth or headset control, a car head unit, an incoming call, or
+   * the OS handing audio focus to another app.
+   *
+   * Needed because none of those go through `play()`/`pause()` here: the
+   * browser acts on the underlying <audio> element directly, and Howler never
+   * finds out (it listens only for `ended` and `error`, so `isPlaying()` keeps
+   * reporting the last state *it* was told about). Without this, the UI's
+   * play/pause button silently disagrees with what the audio is doing.
+   *
+   * Only external changes are reported — see `reportPlayState` for how they're
+   * told apart from our own pauses and from the internal pause/play pair that
+   * `Howl.seek()` performs on every scrub.
+   */
+  onPlayStateChange?: (playing: boolean) => void;
 };
+
+/**
+ * Coalescing window for the element's play/pause events, in ms. Scrubbing can
+ * emit a burst of them; this collapses each burst into one reading of the
+ * element's settled state.
+ */
+const PLAY_STATE_SETTLE_MS = 50;
+
+/**
+ * The <audio> element Howler is driving, or null.
+ *
+ * `_sounds[0]._node` is private, which is exactly why this reach-in lives in
+ * this file: lib/audio.ts is the one place allowed to know what's behind the
+ * engine (see the header). With `html5: true` and a truthy `preload`, Howler
+ * builds the Sound and obtains the node during construction, so this is
+ * populated by the time `createAudioEngine` returns.
+ */
+function html5Node(sound: Howl): HTMLAudioElement | null {
+  const sounds = (
+    sound as unknown as { _sounds?: Array<{ _node?: HTMLAudioElement }> }
+  )._sounds;
+  return sounds?.[0]?._node ?? null;
+}
 
 export function createAudioEngine(opts: AudioEngineOptions): AudioEngine {
   const sound = new Howl({
@@ -97,6 +136,43 @@ export function createAudioEngine(opts: AudioEngineOptions): AudioEngine {
       }
     },
   });
+
+  /**
+   * Mirror the element's real state out, but only when it's news.
+   *
+   * The element is paused in three different situations and only one of them
+   * should reach the caller:
+   *
+   *   - Something outside the app paused us (Bluetooth, a phone call). Howler
+   *     wasn't told, so it still reports playing while the element is paused.
+   *     That disagreement is the signal, and it's the case this exists for.
+   *   - We paused it ourselves. Howler's flag agrees with the element, and
+   *     whoever called `pause()` has already updated its own state.
+   *   - `Howl.seek()` pauses and replays the element around every position
+   *     change (see its implementation). Howler's flag is set for this too, so
+   *     it reads as internal — which is what keeps scrubbing from flickering
+   *     the play button, however long the resume takes to buffer.
+   *
+   * Playing is unconditional: an element that is playing is playing, whoever
+   * started it.
+   */
+  const node = html5Node(sound);
+  let settleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const reportPlayState = () => {
+    if (settleTimer) clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => {
+      settleTimer = null;
+      if (!node) return;
+      if (!node.paused) opts.onPlayStateChange?.(true);
+      else if (sound.playing()) opts.onPlayStateChange?.(false);
+    }, PLAY_STATE_SETTLE_MS);
+  };
+
+  if (node && opts.onPlayStateChange) {
+    node.addEventListener('play', reportPlayState);
+    node.addEventListener('pause', reportPlayState);
+  }
 
   return {
     /**
@@ -134,6 +210,15 @@ export function createAudioEngine(opts: AudioEngineOptions): AudioEngine {
      * where the sound was never successfully constructed.
      */
     destroy: () => {
+      // Before `unload()`, which hands the element back to Howler's shared
+      // html5 pool: a listener left attached would ride the recycled node into
+      // whatever track is created next and report its state onto a dead engine.
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = null;
+      if (node && opts.onPlayStateChange) {
+        node.removeEventListener('play', reportPlayState);
+        node.removeEventListener('pause', reportPlayState);
+      }
       try {
         sound.stop();
       } catch {
