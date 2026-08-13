@@ -77,13 +77,22 @@ export function UploadDayClient({
             {band.band.name}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => player.play(queue, 0)}
-          className="shrink-0 btn-primary"
-        >
-          Play all
-        </button>
+        <span className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => player.play(queue, 0)}
+            className="btn-primary"
+          >
+            Play all
+          </button>
+          <button
+            type="button"
+            onClick={() => player.playShuffled(queue)}
+            className="btn-outline"
+          >
+            Shuffle all
+          </button>
+        </span>
       </div>
 
       <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">

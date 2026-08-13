@@ -7,6 +7,7 @@ import { useOfflineDownload } from '../../../../offline/useOfflineDownload';
 import { setlistQueue, type Setlist } from '../../bandDetailShared';
 import { OfflineBadge } from '../../../../offline/OfflineBadge';
 import { usePlaylistPlayer } from '../../../../player/PlaylistPlayer';
+import { shuffledCopy } from '../../../../player/queueOrder';
 import { liveHref, practiceHref } from '@/lib/routes';
 
 /**
@@ -42,6 +43,9 @@ export function SetlistActions({
   // setlist — and empty, when nothing in it has audio yet.
   const queue = setlistQueue({ name, songs });
   const playAll = () => player.play(queue, 0);
+  // A one-off scramble, not the player's shuffle mode: a setlist's order is
+  // deliberate, and a mode left on would keep reordering later plays of it.
+  const shuffleAll = () => player.play(shuffledCopy(queue), 0);
 
   const downloadLabel = downloading
     ? `↓ ${Math.round(offline.progress * 100)}%`
@@ -67,9 +71,18 @@ export function SetlistActions({
       {/* Desktop: individual buttons. */}
       <span className="hidden items-center gap-2 md:flex">
         {queue.length > 0 && (
-          <button type="button" onClick={playAll} className="btn-outline h-9">
-            Play all
-          </button>
+          <>
+            <button type="button" onClick={playAll} className="btn-outline h-9">
+              Play all
+            </button>
+            <button
+              type="button"
+              onClick={shuffleAll}
+              className="btn-outline h-9"
+            >
+              Shuffle all
+            </button>
+          </>
         )}
         <Link href={practice} className="btn-outline h-9">
           Practice
@@ -104,7 +117,12 @@ export function SetlistActions({
       <span className="md:hidden">
         <ActionMenu label="Setlist actions">
           {queue.length > 0 && (
-            <ActionMenuItem onClick={playAll}>Play all songs</ActionMenuItem>
+            <>
+              <ActionMenuItem onClick={playAll}>Play all songs</ActionMenuItem>
+              <ActionMenuItem onClick={shuffleAll}>
+                Shuffle all songs
+              </ActionMenuItem>
+            </>
           )}
           <ActionMenuItem onClick={() => router.push(practice)}>
             Practice

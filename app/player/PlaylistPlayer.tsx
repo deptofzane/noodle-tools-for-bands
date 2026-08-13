@@ -57,6 +57,14 @@ type PlaylistPlayerValue = {
   /** Load `tracks` and start at `startIndex`. Replaces any current queue. */
   play: (tracks: PlaylistTrack[], startIndex?: number) => void;
   /**
+   * Load `tracks`, switch shuffle on, and start somewhere random in them.
+   *
+   * The queue keeps the order it was given — shuffle is a traversal mode, not
+   * a rearrangement — so turning shuffle off afterwards plays the list as it
+   * was handed over, and the shuffle button reflects what's happening.
+   */
+  playShuffled: (tracks: PlaylistTrack[]) => void;
+  /**
    * Append `tracks` to the end of the queue without interrupting playback.
    * With nothing queued they become the queue, loaded but paused.
    */
@@ -557,6 +565,19 @@ export function PlaylistPlayerProvider({
     }
   }, [setHistory]);
 
+  const playShuffled = useCallback(
+    (tracks: PlaylistTrack[]) => {
+      if (tracks.length === 0) return;
+      // Set the mode before starting, so the first track is already part of a
+      // shuffled pass rather than the head of an ordered one. `play` clears the
+      // pass history, so there's nothing stale to carry in.
+      shuffleRef.current = true;
+      setShuffle(true);
+      play(tracks, Math.floor(Math.random() * tracks.length));
+    },
+    [play],
+  );
+
   const enqueue = useCallback((tracks: PlaylistTrack[]) => {
     if (tracks.length === 0) return;
     // Adding to a hidden queue should show it — otherwise the action looks
@@ -812,6 +833,7 @@ export function PlaylistPlayerProvider({
     duration,
     error,
     play,
+    playShuffled,
     enqueue,
     reorder,
     remove,

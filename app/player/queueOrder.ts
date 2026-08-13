@@ -98,6 +98,31 @@ export function advance(
 }
 
 /**
+ * A shuffled copy of `items` (Fisher–Yates), leaving the original alone.
+ *
+ * For scrambling a queue *once*, before it's handed to the player, rather than
+ * switching the player into shuffle mode. That distinction matters for a
+ * setlist: its order is a deliberate decision, and a mode that stays on after
+ * the fact could quietly reorder a set someone meant to play straight through.
+ * A one-off queue is spent the moment it's built.
+ *
+ * `random` is injectable so a test can pin the permutation.
+ */
+export function shuffledCopy<T>(
+  items: readonly T[],
+  random: () => number = Math.random,
+): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    const swap = out[i]!;
+    out[i] = out[j]!;
+    out[j] = swap;
+  }
+  return out;
+}
+
+/**
  * Whether there's anywhere to go. Separate because it must be safe to call
  * while rendering — `nextIndex` picks at random, so asking it would give a
  * different answer each time.

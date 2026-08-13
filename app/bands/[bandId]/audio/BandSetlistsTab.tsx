@@ -14,6 +14,7 @@ import { useToast } from '../../../ToastProvider';
 import { useOfflineDownload } from '../../../offline/useOfflineDownload';
 import { OfflineBadge } from '../../../offline/OfflineBadge';
 import { usePlaylistPlayer } from '../../../player/PlaylistPlayer';
+import { shuffledCopy } from '../../../player/queueOrder';
 import { liveHref, practiceHref } from '@/lib/routes';
 import {
   MinimizeToggle,
@@ -130,6 +131,17 @@ export function BandSetlistsTab({
     player.play(queue, 0);
   };
 
+  // A one-off scramble, not the player's shuffle mode: a setlist's order is
+  // deliberate, and a mode left on would keep reordering later plays of it.
+  const shuffleAll = (sl: Setlist) => {
+    const queue = setlistQueue(sl);
+    if (queue.length === 0) {
+      showToast('No songs with audio in this setlist.');
+      return;
+    }
+    player.play(shuffledCopy(queue), 0);
+  };
+
   // Same songs, but appended — whatever is playing keeps playing.
   const queueAll = (sl: Setlist) => {
     const tracks = setlistQueue(sl);
@@ -185,6 +197,9 @@ export function BandSetlistsTab({
             <ActionMenu label="Setlist actions" disabled={busy}>
               <ActionMenuItem onClick={() => playAll(sl)}>
                 Play all songs
+              </ActionMenuItem>
+              <ActionMenuItem onClick={() => shuffleAll(sl)}>
+                Shuffle all songs
               </ActionMenuItem>
               <ActionMenuItem onClick={() => queueAll(sl)}>
                 Add songs to queue

@@ -113,6 +113,13 @@ export function UploadHistory({ bandId }: { bandId: string }) {
                     </ActionMenuItem>
                     <ActionMenuItem
                       onClick={() =>
+                        player.playShuffled(dayUploads.map(uploadTrack))
+                      }
+                    >
+                      Shuffle all
+                    </ActionMenuItem>
+                    <ActionMenuItem
+                      onClick={() =>
                         router.push(`/bands/${bandId}/audio/uploads/${key}`)
                       }
                     >
