@@ -14,6 +14,12 @@ import { createAudioEngine, type AudioEngine } from '@/lib/audio';
 import { claimAudioFocus, subscribeAudioFocus } from './audioFocus';
 import { MiniPlayer } from './MiniPlayer';
 import { useMediaSession } from './useMediaSession';
+import {
+  advance,
+  hasNextIndex,
+  previousIndex,
+  type RepeatMode,
+} from './queueOrder';
 
 /** One queued item. Any page can build these and call `play`. */
 export type PlaylistTrack = {
@@ -70,6 +76,25 @@ type PlaylistPlayerValue = {
   next: () => void;
   /** Restart the track, or step back when already near its start. */
   previous: () => void;
+  /**
+   * Whether `next` has anywhere to go. Not `index + 1 < queue.length` — under
+   * shuffle the queue is walked out of order, so this is "anything left
+   * unplayed this pass", which callers can't derive from the index alone.
+   */
+  hasNext: boolean;
+  /**
+   * Play the queue in a random order rather than front to back. Affects `next`,
+   * `previous`, and the roll-on at the end of a track; the queue itself keeps
+   * its order, so the list on screen doesn't rearrange under the user.
+   */
+  shuffle: boolean;
+  toggleShuffle: () => void;
+  /**
+   * `all` starts over when the queue (or shuffle pass) is spent; `one` replays
+   * the current track when it ends. Cycles off → all → one.
+   */
+  repeat: RepeatMode;
+  cycleRepeat: () => void;
   seek: (sec: number) => void;
   /**
    * Jump to a queue position without changing what the player is doing — a
@@ -235,6 +260,53 @@ export function PlaylistPlayerProvider({
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
+  /**
+   * The live index, for the transport callbacks.
+   *
+   * They used to reach it through a functional `setIndex`, which can't work
+   * for shuffle: choosing the next track has to record the one being left, and
+   * a state updater that mutates something isn't pure — React would run it
+   * twice in development (Strict Mode) and remember the departure twice.
+   * Kept in step here instead, and updated as each move is made so two quick
+   * presses don't both read the same starting point.
+   */
+  const indexRef = useRef(0);
+
+  useEffect(() => {
+    indexRef.current = index;
+  }, [index]);
+
+  const [shuffle, setShuffle] = useState(false);
+  const shuffleRef = useRef(false);
+  /**
+   * Tracks already reached in this shuffle pass, oldest first — what stops a
+   * shuffle repeating itself, and what `previous` walks back through.
+   *
+   * Ids rather than positions: the queue can be reordered or have entries
+   * removed mid-pass, which would silently repoint every stored position. An
+   * id that's no longer in the queue is simply skipped. (A queue holding the
+   * same track twice marks both played at once — rare, and the alternative
+   * costs the robustness above.)
+   */
+  const [shuffleHistory, setShuffleHistory] = useState<string[]>([]);
+  const shuffleHistoryRef = useRef<string[]>([]);
+
+  /** Write both at once, the way `queue`/`queueRef` are kept in step. */
+  const setHistory = useCallback((ids: string[]) => {
+    shuffleHistoryRef.current = ids;
+    setShuffleHistory(ids);
+  }, []);
+
+  const [repeat, setRepeat] = useState<RepeatMode>('off');
+  const repeatRef = useRef<RepeatMode>('off');
+
+  const cycleRepeat = useCallback(() => {
+    const order: RepeatMode[] = ['off', 'all', 'one'];
+    const nextMode = order[(order.indexOf(repeatRef.current) + 1) % order.length]!;
+    repeatRef.current = nextMode;
+    setRepeat(nextMode);
+  }, []);
+
   const track = queue[index] ?? null;
   const src = track?.src ?? null;
 
@@ -389,29 +461,74 @@ export function PlaylistPlayerProvider({
     return () => cancelAnimationFrame(raf);
   }, [isPlaying]);
 
-  const next = useCallback(() => {
-    setIndex((i) => {
-      if (i + 1 >= queueRef.current.length) return i;
-      wantPlayRef.current = true;
-      return i + 1;
-    });
-  }, []);
+  /** Where the queue goes after `from` — see app/player/queueOrder.ts. */
+  const advanceFrom = useCallback(
+    (from: number) =>
+      advance(
+        queueRef.current,
+        from,
+        shuffleHistoryRef.current,
+        shuffleRef.current,
+        repeatRef.current === 'all',
+      ),
+    [],
+  );
 
-  // End of a track: roll on, or stop on the last one (leaving the bar up so
-  // the queue can be replayed).
+  /** Move to `target`, remembering the departure so `previous` can undo it. */
+  const stepTo = useCallback(
+    (from: number, target: number, resetPass = false) => {
+      if (shuffleRef.current) {
+        const leaving = queueRef.current[from];
+        // A new pass starts from this track alone; otherwise remember where we
+        // came from so `previous` can walk back.
+        setHistory(
+          resetPass
+            ? leaving
+              ? [leaving.id]
+              : []
+            : leaving
+              ? [...shuffleHistoryRef.current, leaving.id]
+              : shuffleHistoryRef.current,
+        );
+      }
+      indexRef.current = target;
+      wantPlayRef.current = true;
+      setIndex(target);
+    },
+    [setHistory],
+  );
+
+  const next = useCallback(() => {
+    const from = indexRef.current;
+    const move = advanceFrom(from);
+    if (!move) return;
+    stepTo(from, move.target, move.resetPass);
+  }, [advanceFrom, stepTo]);
+
+  // End of a track: replay it under repeat-one, otherwise roll on — or stop
+  // when the queue (or shuffle pass) is spent, leaving the bar up so it can be
+  // replayed.
   useEffect(() => {
     onEndRef.current = () => {
-      setIndex((i) => {
-        if (i + 1 >= queueRef.current.length) {
-          wantPlayRef.current = false;
-          setIsPlaying(false);
-          return i;
-        }
+      if (repeatRef.current === 'one') {
+        const engine = engineRef.current;
+        engine?.seek(0);
+        setCurrentTime(0);
+        engine?.play();
         wantPlayRef.current = true;
-        return i + 1;
-      });
+        setIsPlaying(true);
+        return;
+      }
+      const from = indexRef.current;
+      const move = advanceFrom(from);
+      if (!move) {
+        wantPlayRef.current = false;
+        setIsPlaying(false);
+        return;
+      }
+      stepTo(from, move.target, move.resetPass);
     };
-  }, []);
+  }, [advanceFrom, stepTo]);
 
   const play = useCallback((tracks: PlaylistTrack[], startIndex = 0) => {
     const target = tracks[startIndex];
@@ -421,7 +538,11 @@ export function PlaylistPlayerProvider({
     setDismissed(false);
     queueRef.current = tracks;
     setQueue(tracks);
+    indexRef.current = startIndex;
     setIndex(startIndex);
+    // A new list is a new shuffle pass; the old one's history describes tracks
+    // that may not even be here any more.
+    setHistory([]);
     wantPlayRef.current = true;
     // Same audio as the live engine — the song we land on is the one already
     // loaded (playing this track again, or picking a set whose first song is
@@ -434,7 +555,7 @@ export function PlaylistPlayerProvider({
       engineRef.current.play();
       setIsPlaying(true);
     }
-  }, []);
+  }, [setHistory]);
 
   const enqueue = useCallback((tracks: PlaylistTrack[]) => {
     if (tracks.length === 0) return;
@@ -514,21 +635,41 @@ export function PlaylistPlayerProvider({
   const previous = useCallback(() => {
     const engine = engineRef.current;
     const elapsed = engine?.getCurrentTime() ?? 0;
-    if (elapsed > RESTART_THRESHOLD_SEC) {
+    const restart = () => {
       engine?.seek(0);
       setCurrentTime(0);
+    };
+    if (elapsed > RESTART_THRESHOLD_SEC) {
+      restart();
       return;
     }
-    setIndex((i) => {
-      if (i === 0) {
-        engine?.seek(0);
-        setCurrentTime(0);
-        return i;
+
+    // Shuffled, "back" means where the pass actually came from, not the
+    // position before this one. Entries removed from the queue since are
+    // skipped rather than treated as the end of the road.
+    if (shuffleRef.current) {
+      const back = previousIndex(queueRef.current, shuffleHistoryRef.current);
+      if (!back) {
+        setHistory([]);
+        restart();
+        return;
       }
+      setHistory(back.history);
+      indexRef.current = back.target;
       wantPlayRef.current = true;
-      return i - 1;
-    });
-  }, []);
+      setIndex(back.target);
+      return;
+    }
+
+    const from = indexRef.current;
+    if (from === 0) {
+      restart();
+      return;
+    }
+    indexRef.current = from - 1;
+    wantPlayRef.current = true;
+    setIndex(from - 1);
+  }, [setHistory]);
 
   const seek = useCallback((sec: number) => {
     const engine = engineRef.current;
@@ -565,14 +706,34 @@ export function PlaylistPlayerProvider({
 
   // Step to another track in place. Unlike `play`, this leaves `wantPlayRef`
   // alone, so the new track picks up whatever the player was already doing.
-  const goTo = useCallback((target: number) => {
-    setIndex((i) => {
-      if (target === i || target < 0 || target >= queueRef.current.length) {
-        return i;
+  const goTo = useCallback(
+    (target: number) => {
+      const q = queueRef.current;
+      const from = indexRef.current;
+      if (target === from || target < 0 || target >= q.length) return;
+      // Still a track change, so a shuffle pass counts it — otherwise a manual
+      // jump could be handed straight back by the next random pick.
+      if (shuffleRef.current) {
+        const leaving = q[from];
+        if (leaving) setHistory([...shuffleHistoryRef.current, leaving.id]);
       }
-      return target;
-    });
-  }, []);
+      indexRef.current = target;
+      setIndex(target);
+    },
+    [setHistory],
+  );
+
+  /**
+   * Both directions start a fresh pass: switching shuffle on shouldn't count
+   * what was already played against it, and switching it off leaves nothing
+   * worth remembering.
+   */
+  const toggleShuffle = useCallback(() => {
+    const on = !shuffleRef.current;
+    shuffleRef.current = on;
+    setShuffle(on);
+    setHistory([]);
+  }, [setHistory]);
 
   const setRate = useCallback((r: number) => {
     rateRef.current = r;
@@ -606,6 +767,16 @@ export function PlaylistPlayerProvider({
     [],
   );
 
+  // From state, and deliberately not via `nextIndexFrom` — that picks at
+  // random, so asking it during a render would answer differently each time.
+  const hasNext = hasNextIndex(
+    queue,
+    index,
+    shuffleHistory,
+    shuffle,
+    repeat === 'all',
+  );
+
   // Hands the OS the transport controls. Registering these is what stops the
   // browser acting on the audio element behind our back when a media key
   // arrives — see the hook's header.
@@ -627,7 +798,7 @@ export function PlaylistPlayerProvider({
     isPlaying,
     duration,
     rate,
-    canNext: index + 1 < queue.length,
+    canNext: hasNext,
     canPrevious: queue.length > 0,
     actions: mediaActions,
   });
@@ -647,6 +818,11 @@ export function PlaylistPlayerProvider({
     toggle,
     next,
     previous,
+    hasNext,
+    shuffle,
+    toggleShuffle,
+    repeat,
+    cycleRepeat,
     seek,
     goTo,
     rate,

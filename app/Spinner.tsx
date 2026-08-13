@@ -6,6 +6,24 @@ const SIZE = {
   lg: 'h-8 w-8 border-2',
 } as const;
 
+/** Ring colours. The head is the quarter that reads as motion. */
+const TONE = {
+  /** The app's spinner: neutral track, cyan head. Right on page backgrounds. */
+  brand:
+    'border-neutral-300 border-t-cyan-600 dark:border-neutral-700 dark:border-t-cyan-400',
+  /**
+   * White ring for spinners inside a filled control — `btn-primary` is white
+   * on blue, where the brand cyan has almost nothing to contrast against.
+   *
+   * Deliberately not `currentColor`: the track needs to be a faded version of
+   * the head, and Tailwind can't build an opacity modifier on `currentColor`
+   * (`border-current/25` compiles to nothing, which leaves the CSS default of
+   * a fully opaque `currentColor` on all four sides — a solid ring with no
+   * visible head, so it reads as static rather than spinning).
+   */
+  onFilled: 'border-white/30 border-t-white',
+} as const;
+
 /**
  * The app's loading indicator: a ring with one colored quarter, spinning.
  * Same look as the nav's in-flight action spinner, so "something is working"
@@ -17,10 +35,13 @@ const SIZE = {
  */
 export function Spinner({
   size = 'md',
+  tone = 'brand',
   label = 'Loading',
   className = '',
 }: {
   size?: keyof typeof SIZE;
+  /** Ring colour. Use `current` inside filled buttons — see `TONE`. */
+  tone?: keyof typeof TONE;
   /** Announced to screen readers; name the thing when it's not obvious. */
   label?: string;
   className?: string;
@@ -29,7 +50,7 @@ export function Spinner({
     <span
       role="status"
       aria-label={label}
-      className={`inline-block shrink-0 animate-spin rounded-full border-neutral-300 border-t-cyan-600 dark:border-neutral-700 dark:border-t-cyan-400 ${SIZE[size]} ${className}`}
+      className={`inline-block shrink-0 animate-spin rounded-full ${TONE[tone]} ${SIZE[size]} ${className}`}
     />
   );
 }

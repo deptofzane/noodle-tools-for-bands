@@ -23,7 +23,7 @@ import {
   sheetFormatFile,
   type SheetTextFormat,
 } from '@/lib/sheet-preview';
-import { LoadingBlock } from '../../../Spinner';
+import { LoadingBlock, Spinner } from '../../../Spinner';
 
 /** The text format a version was saved as, derived from its file name. */
 function formatFromFileName(fileName: string): SheetTextFormat {
@@ -499,8 +499,14 @@ export function SheetMusicVersions({
             setChooseOpen(true);
           }}
           disabled={busy}
-          className="btn-outline"
+          className="btn-outline inline-flex items-center gap-2"
         >
+          {/* Decorative: the label already reads "Adding…". */}
+          {busy && (
+            <span aria-hidden="true" className="flex">
+              <Spinner size="xs" />
+            </span>
+          )}
           {busy ? 'Adding…' : 'Add version'}
         </button>
       </div>
@@ -587,8 +593,14 @@ export function SheetMusicVersions({
                   type="button"
                   onClick={() => void savePaste()}
                   disabled={busy || !pasteText.trim()}
-                  className="btn-primary"
+                  className="btn-primary inline-flex items-center gap-2"
                 >
+                  {/* Decorative: the label already reads "Saving…". */}
+                  {busy && (
+                    <span aria-hidden="true" className="flex">
+                      <Spinner size="xs" tone="onFilled" />
+                    </span>
+                  )}
                   {busy ? 'Saving…' : 'Add version'}
                 </button>
               </div>
@@ -735,8 +747,14 @@ export function SheetMusicVersions({
               disabled={
                 editContentLoading || savingContent || !editContentText.trim()
               }
-              className="btn-primary"
+              className="btn-primary inline-flex items-center gap-2"
             >
+              {/* Decorative: the label already reads "Saving…". */}
+              {savingContent && (
+                <span aria-hidden="true" className="flex">
+                  <Spinner size="xs" tone="onFilled" />
+                </span>
+              )}
               {savingContent ? 'Saving…' : 'Save'}
             </button>
           </div>

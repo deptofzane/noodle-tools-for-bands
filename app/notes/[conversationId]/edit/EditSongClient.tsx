@@ -7,6 +7,7 @@ import { useCanGoBack } from '../../../NavigationHistoryProvider';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
+import { Spinner } from '../../../Spinner';
 import { AudioVersions, type AudioVersionMeta } from './AudioVersions';
 import {
   SheetMusicVersions,
@@ -215,8 +216,14 @@ export function EditSongClient({
           type="button"
           onClick={handleSaveAll}
           disabled={!canSave}
-          className="btn-primary"
+          className="btn-primary inline-flex items-center gap-2"
         >
+          {/* Decorative: the label already reads "Saving…". */}
+          {busy && (
+            <span aria-hidden="true" className="flex">
+              <Spinner size="xs" tone="onFilled" />
+            </span>
+          )}
           {busy ? 'Saving…' : 'Save'}
         </button>
       </div>

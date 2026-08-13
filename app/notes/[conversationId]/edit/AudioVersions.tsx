@@ -11,6 +11,7 @@ import {
   type DropboxPickedFile,
 } from '../../../DropboxChooserButton';
 import { ConnectDriveButton } from '../../../ConnectDriveButton';
+import { Spinner } from '../../../Spinner';
 
 const AUDIO_EXTENSIONS = [
   '.mp3',
@@ -325,8 +326,16 @@ export function AudioVersions({
           type="button"
           onClick={openChooser}
           disabled={busy}
-          className="btn-outline"
+          className="btn-outline inline-flex items-center gap-2"
         >
+          {/* Decorative: the label beside it already reads "Adding…", so the
+              spinner stays out of the accessibility tree rather than making
+              the button announce its state twice. */}
+          {busy && (
+            <span aria-hidden="true" className="flex">
+              <Spinner size="xs" />
+            </span>
+          )}
           {busy ? 'Adding…' : 'Add version'}
         </button>
       </div>

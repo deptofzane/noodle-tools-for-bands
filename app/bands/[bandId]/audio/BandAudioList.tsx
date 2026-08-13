@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { Spinner } from '../../../Spinner';
 import { MinimizeToggle, type Conversation } from '../bandDetailShared';
 import { SongRow } from './SongRow';
 
@@ -86,39 +88,41 @@ export function BandAudioList({
             >
               <h2 className="text-sm font-medium">Audio</h2>
             </MinimizeToggle>
-            {importProgress && (
-              <span className="truncate text-xs minor-text-band-theme-colors">
-                ↑ {importProgress.current} of {importProgress.total}…
+            {/* Progress sits beside the heading now that the actions are in a
+                menu: a disabled kebab can't be opened to read a busy label, so
+                this is the only place the work is visible. `role="status"` is
+                on the wrapper so the count itself is what gets announced. */}
+            {importProgress || audioBusy ? (
+              <span
+                role="status"
+                className="flex min-w-0 items-center gap-1.5"
+              >
+                {/* Decorative — the text beside it already says what's
+                    happening, so the spinner stays out of the accessibility
+                    tree rather than announcing a second time. */}
+                <span aria-hidden="true" className="flex">
+                  <Spinner size="xs" />
+                </span>
+                <span className="truncate text-xs minor-text-band-theme-colors">
+                  {importProgress
+                    ? `↑ ${importProgress.current} of ${importProgress.total}…`
+                    : 'Adding…'}
+                </span>
               </span>
-            )}
+            ) : null}
           </span>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onCreateSong}
-              disabled={audioBusy || importProgress !== null}
-              className="btn-outline"
-            >
-              Create song
-            </button>
-            <button
-              type="button"
-              onClick={onOpenChooser}
-              disabled={audioBusy || importProgress !== null}
-              className="btn-outline"
-            >
-              {importProgress
-                ? 'Importing…'
-                : audioBusy
-                  ? 'Adding…'
-                  : 'Add audio'}
-            </button>
-          </div>
+          <ActionMenu
+            label="Audio actions"
+            disabled={audioBusy || importProgress !== null}
+          >
+            <ActionMenuItem onClick={onCreateSong}>Create song without audio</ActionMenuItem>
+            <ActionMenuItem onClick={onOpenChooser}>Upload audio file(s)</ActionMenuItem>
+          </ActionMenu>
         </div>
         {!audioMinimized && activeSongs && activeSongs.length === 0 && (
           <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
-            No songs yet. Use “Create song” to start one from a name, or “Add
-            audio” to add{' '}
+            No songs yet. Use the ⋯ menu above to “Create song without audio” from a name, or
+            “Upload audio file(s)”{' '}
             {canUseDrive ? 'from Drive or your device' : 'from your device'}.
           </p>
         )}

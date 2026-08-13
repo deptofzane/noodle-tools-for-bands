@@ -12,6 +12,14 @@ import {
   type PlayerControls,
 } from '../notes/[conversationId]/PlayerContext';
 import { NotesPanel } from '../notes/[conversationId]/NotesPanel';
+import type { RepeatMode } from './queueOrder';
+
+/** Hover text per repeat mode — what the button is currently doing. */
+const REPEAT_TITLE: Record<RepeatMode, string> = {
+  off: 'Repeat off',
+  all: 'Repeat all',
+  one: 'Repeat this song',
+};
 
 /**
  * The maximized player: the bottom bar's contents blown up to full screen with
@@ -42,6 +50,11 @@ export function FullPlayer({
     toggle,
     next,
     previous,
+    hasNext,
+    shuffle,
+    toggleShuffle,
+    repeat,
+    cycleRepeat,
     seek,
     play,
     remove,
@@ -101,8 +114,6 @@ export function FullPlayer({
   }, [index]);
 
   if (!track) return null;
-
-  const hasNext = index + 1 < queue.length;
 
   return (
     <div
@@ -191,6 +202,42 @@ export function FullPlayer({
           )}
 
           <div className="flex items-center justify-center gap-6">
+            {/* A mode, not a transport action, so it's a toggle: `aria-pressed`
+                carries the state, and the blue matches the play button rather
+                than inventing a second "on" colour. Pointless below two
+                tracks. */}
+            <button
+              type="button"
+              onClick={toggleShuffle}
+              disabled={queue.length < 2}
+              aria-pressed={shuffle}
+              aria-label="Shuffle"
+              title={shuffle ? 'Shuffle on' : 'Shuffle off'}
+              className={
+                'flex h-11 w-11 items-center justify-center rounded-full disabled:opacity-40 ' +
+                (shuffle
+                  ? 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-neutral-800'
+                  : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800')
+              }
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M16 3h5v5" />
+                <path d="M4 20 21 3" />
+                <path d="M21 16v5h-5" />
+                <path d="m15 15 6 6" />
+                <path d="m4 4 5 5" />
+              </svg>
+            </button>
             <button
               type="button"
               onClick={previous}
@@ -254,6 +301,40 @@ export function FullPlayer({
                 aria-hidden="true"
               >
                 <path d="M15 6h2v12h-2zM5 6l9 6-9 6z" />
+              </svg>
+            </button>
+            {/* Three states rather than a toggle, so `aria-pressed` would be a
+                lie — the label carries the current mode instead, and clicking
+                cycles off → all → one. */}
+            <button
+              type="button"
+              onClick={cycleRepeat}
+              aria-label={`Repeat: ${repeat}`}
+              title={REPEAT_TITLE[repeat]}
+              className={
+                'flex h-11 w-11 items-center justify-center rounded-full ' +
+                (repeat === 'off'
+                  ? 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
+                  : 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-neutral-800')
+              }
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m17 2 4 4-4 4" />
+                <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+                <path d="m7 22-4-4 4-4" />
+                <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+                {/* The "1" that distinguishes repeat-one from repeat-all. */}
+                {repeat === 'one' && <path d="M11 10h1v4" />}
               </svg>
             </button>
           </div>
