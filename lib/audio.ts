@@ -43,6 +43,26 @@ import { Howl, Howler } from 'howler';
  */
 Howler.html5PoolSize = 30;
 
+/**
+ * Start playback once the browser reports it *can* play, not once it thinks it
+ * can play the whole file without pausing.
+ *
+ * Howler decides a sound is ready in two places that disagree with each other:
+ * it starts immediately when `readyState >= 3` (HAVE_FUTURE_DATA, the
+ * `canplay` level), but when it has to wait it waits for `canplaythrough`
+ * (readyState 4, HAVE_ENOUGH_DATA). An element parked at exactly 3 — plenty of
+ * data to begin — therefore never starts. For a long rehearsal recording on a
+ * slow connection, reaching 4 can take a very long time or never happen at all.
+ *
+ * Setting this aligns the event with the threshold Howler itself checks. It's
+ * an internal field, which is part of why the Howler surface is confined to
+ * this file.
+ */
+(Howler as unknown as { _canPlayEvent: string })._canPlayEvent = 'canplay';
+
+/** `HTMLMediaElement.HAVE_FUTURE_DATA` — enough buffered to begin playing. */
+const HAVE_FUTURE_DATA = 3;
+
 export type AudioEngine = {
   play: () => void;
   pause: () => void;
@@ -159,6 +179,36 @@ export function createAudioEngine(opts: AudioEngineOptions): AudioEngine {
   const node = html5Node(sound);
   let settleTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /**
+   * Break the load deadlock before asking Howler to play.
+   *
+   * `preload: 'metadata'` below tells the browser to read the headers and stop
+   * fetching. Howler, for its part, refuses to call `node.play()` until the
+   * element has buffered (see the `_canPlayEvent` note above) — so the browser
+   * is waiting to be played and Howler is waiting for it to buffer, and the
+   * one action that would resolve it is the one neither will take. The song
+   * sits at 0:00 with no error, because nothing has actually failed.
+   *
+   * It only bites sometimes: `preload` is a hint, and a small file, a fast
+   * connection, or a service-worker cache hit all overshoot it and reach a
+   * playable state anyway. That's also why playing the song a second time
+   * appears to fix it — by then the bytes are cached.
+   *
+   * Promoting to `auto` is what lets the fetch continue; `load()` is what
+   * restarts one the browser has already parked, since raising `preload`
+   * afterwards only permits more buffering rather than guaranteeing it.
+   *
+   * Skipped once Howler has loaded, which is both when no deadlock is possible
+   * and when `load()` would do harm: it resets `currentTime`, and a track
+   * paused partway through must not restart from the top.
+   */
+  const primeForPlayback = () => {
+    if (!node || sound.state() === 'loaded') return;
+    if (node.readyState >= HAVE_FUTURE_DATA) return;
+    node.preload = 'auto';
+    node.load();
+  };
+
   const reportPlayState = () => {
     if (settleTimer) clearTimeout(settleTimer);
     settleTimer = setTimeout(() => {
@@ -185,7 +235,9 @@ export function createAudioEngine(opts: AudioEngineOptions): AudioEngine {
      * lives here rather than in each of them.
      */
     play: () => {
-      if (!sound.playing()) sound.play();
+      if (sound.playing()) return;
+      primeForPlayback();
+      sound.play();
     },
     pause: () => sound.pause(),
     seek: (sec: number) => {
