@@ -38,6 +38,10 @@ export function SetlistActions({
   const target = { bandId, setlistId, name, songs };
   const practice = practiceHref(setlistId);
   const live = liveHref(setlistId);
+  const edit = `/bands/${bandId}/setlists/${setlistId}/edit`;
+  // Markers (set breaks) don't count — a setlist of nothing but breaks has
+  // nothing to play, practise, or download.
+  const hasSongs = songs.some((s) => s.conversationId);
 
   // Markers and songs with no audio drop out, so this can be shorter than the
   // setlist — and empty, when nothing in it has audio yet.
@@ -69,7 +73,11 @@ export function SetlistActions({
       ) : null}
 
       {/* Desktop: individual buttons. */}
-      <span className="hidden items-center gap-2 md:flex">
+      <span
+        className={
+          (hasSongs ? 'hidden md:flex' : 'hidden') + ' items-center gap-2'
+        }
+      >
         {queue.length > 0 && (
           <>
             <button type="button" onClick={playAll} className="btn-outline h-9">
@@ -113,41 +121,56 @@ export function SetlistActions({
         )}
       </span>
 
-      {/* Mobile: one kebab holding all three. */}
-      <span className="md:hidden">
-        <ActionMenu label="Setlist actions">
-          {queue.length > 0 && (
-            <>
-              <ActionMenuItem onClick={playAll}>Play all songs</ActionMenuItem>
-              <ActionMenuItem onClick={shuffleAll}>
-                Shuffle all songs
-              </ActionMenuItem>
-            </>
-          )}
-          <ActionMenuItem onClick={() => router.push(practice)}>
-            Practice
-          </ActionMenuItem>
-          <ActionMenuItem onClick={() => router.push(live)}>
-            Live
-          </ActionMenuItem>
-          {rec ? (
-            <>
-              <ActionMenuItem onClick={() => offline.openDownload(target)}>
-                {downloading ? 'Downloading…' : 'Update offline copy'}
-              </ActionMenuItem>
-              <ActionMenuItem
-                onClick={() => void offline.remove({ bandId, setlistId, name })}
-              >
-                Remove offline copy
-              </ActionMenuItem>
-            </>
-          ) : (
-            <ActionMenuItem onClick={() => offline.openDownload(target)}>
-              {downloading ? 'Downloading…' : 'Download for offline'}
+      {/*
+        The overflow menu, shown at every width now that it carries "Edit
+        setlist" — which used to sit in the page header. On desktop that's all
+        it holds, since the rest are already buttons to its left; on mobile it
+        holds everything. Grouping rather than a second <ActionMenu> keeps one
+        menu to open and one place for the item order.
+      */}
+      <ActionMenu label="Setlist actions">
+        <ActionMenuItem onClick={() => router.push(edit)}>
+          Edit setlist
+        </ActionMenuItem>
+        {hasSongs && (
+          <span role="none" className="flex flex-col md:hidden">
+            {queue.length > 0 && (
+              <>
+                <ActionMenuItem onClick={playAll}>
+                  Play all songs
+                </ActionMenuItem>
+                <ActionMenuItem onClick={shuffleAll}>
+                  Shuffle all songs
+                </ActionMenuItem>
+              </>
+            )}
+            <ActionMenuItem onClick={() => router.push(practice)}>
+              Practice
             </ActionMenuItem>
-          )}
-        </ActionMenu>
-      </span>
+            <ActionMenuItem onClick={() => router.push(live)}>
+              Live
+            </ActionMenuItem>
+            {rec ? (
+              <>
+                <ActionMenuItem onClick={() => offline.openDownload(target)}>
+                  {downloading ? 'Downloading…' : 'Update offline copy'}
+                </ActionMenuItem>
+                <ActionMenuItem
+                  onClick={() =>
+                    void offline.remove({ bandId, setlistId, name })
+                  }
+                >
+                  Remove offline copy
+                </ActionMenuItem>
+              </>
+            ) : (
+              <ActionMenuItem onClick={() => offline.openDownload(target)}>
+                {downloading ? 'Downloading…' : 'Download for offline'}
+              </ActionMenuItem>
+            )}
+          </span>
+        )}
+      </ActionMenu>
 
       {offline.modal}
     </span>

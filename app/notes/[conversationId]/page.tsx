@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { getCurrentDbUser } from '@/lib/current-user';
@@ -8,6 +7,7 @@ import { PlayerProvider } from './PlayerContext';
 import { AudioPlayer } from './AudioPlayer';
 import { SheetMusic } from './SheetMusic';
 import { SongDetails } from './SongDetails';
+import { SongActions } from './SongActions';
 import { NotesPanel } from './NotesPanel';
 import { PageHeader } from '../../PageHeader';
 
@@ -79,14 +79,7 @@ export default async function NotesPage({
 
   return (
     <main className="main-container">
-      <PageHeader defaultHref={backHref} defaultHrefName={backName}>
-        <Link
-          href={`/notes/${conversationId}/edit`}
-          className="hover:text-neutral-900 dark:hover:text-neutral-100 py-4"
-        >
-          Edit song
-        </Link>
-      </PageHeader>
+      <PageHeader defaultHref={backHref} defaultHrefName={backName} />
       {/* The song, not the version being played — the player's own title
           shows which version that is. */}
       {audio && <p className="text-sm text-neutral-200 mx-auto">{fileName}</p>}
@@ -116,16 +109,23 @@ export default async function NotesPage({
               No audio yet. Add audio from the Edit song page.
             </p>
           )}
-          {(conversation.originalBand ||
-            conversation.bpm != null ||
-            conversation.key ||
-            sheetMusic) && (
-            <SongDetails>
-              <span className="flex justify-around items-center">
-                {(conversation.originalBand ||
-                  conversation.bpm != null ||
-                  conversation.key) && (
-                  <div className="flex flex-col items-center gap-1 text-sm text-neutral-600 dark:text-neutral-400">
+          {/* Always rendered, unlike before: the header row now carries the
+              song's kebab (Edit / Practice / Live), and a song with no tempo,
+              key, or sheet music yet would otherwise have nowhere to edit it
+              from. The body still shows only what exists. */}
+          <SongDetails
+            actions={
+              <SongActions
+                conversationId={conversationId}
+                hasSheetMusic={Boolean(sheetMusic)}
+              />
+            }
+          >
+            <span className="flex justify-around items-center">
+              {(conversation.originalBand ||
+                conversation.bpm != null ||
+                conversation.key) && (
+                <div className="flex flex-col items-center gap-1 text-sm text-neutral-600 dark:text-neutral-400">
                     {conversation.originalBand && (
                       <span>
                         Originally by{' '}
@@ -153,34 +153,17 @@ export default async function NotesPage({
                           </span>
                         )}
                       </div>
-                    )}
-                  </div>
-                )}
-                {sheetMusic && (
-                  <div className="flex gap-2 justify-center">
-                    <Link
-                      href={`/notes/${conversationId}/practice`}
-                      className="rounded-md border h-12 md:h-9 flex items-center border-neutral-300 px-4 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
-                    >
-                      Practice
-                    </Link>
-                    <Link
-                      href={`/notes/${conversationId}/live`}
-                      className="rounded-md border h-12 md:h-9 flex items-center border-neutral-300 px-4 md:px-3 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
-                    >
-                      Live
-                    </Link>
-                  </div>
-                )}
-              </span>
-              <SheetMusic
-                conversationId={conversationId}
-                apiKey={apiKey}
-                initial={sheetMusic}
-                startClosed={false}
-              />
-            </SongDetails>
-          )}
+                  )}
+                </div>
+              )}
+            </span>
+            <SheetMusic
+              conversationId={conversationId}
+              apiKey={apiKey}
+              initial={sheetMusic}
+              startClosed={false}
+            />
+          </SongDetails>
           <NotesPanel
             conversationId={conversationId}
             currentUserId={user.id}

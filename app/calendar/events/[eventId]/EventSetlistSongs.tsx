@@ -12,7 +12,6 @@ import {
   usePlaylistPlayer,
   type PlaylistTrack,
 } from '../../../player/PlaylistPlayer';
-import { shuffledCopy } from '../../../player/queueOrder';
 
 interface SongItem {
   id: string;
@@ -121,28 +120,9 @@ export function EventSetlistSongs({
 
   return (
     <>
+      {/* Play all / Shuffle all moved to the section's kebab (see
+          EventSetlistActions), leaving this to state the set's length. */}
       <div className="flex flex-col items-start justify-between gap-2">
-        {queue.length > 0 && (
-          <span className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => player.play(queue, 0)}
-              className="btn-outline"
-            >
-              Play all
-            </button>
-            {/* A one-off scramble, not the player's shuffle mode: a setlist's
-                order is deliberate, and a mode left on would keep reordering
-                later plays of it. */}
-            <button
-              type="button"
-              onClick={() => player.play(shuffledCopy(queue), 0)}
-              className="btn-outline"
-            >
-              Shuffle all
-            </button>
-          </span>
-        )}
         <span className="shrink-0 text-sm minor-text-theme-colors">
           Total length: &nbsp; {allLengthsKnown ? '' : '~'}
           {formatDuration(totalSeconds)}

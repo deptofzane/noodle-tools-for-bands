@@ -83,16 +83,7 @@ export default async function SetlistPage({
 
   return (
     <main className="main-container">
-      <PageHeader defaultHref={`/bands/${bandId}`} defaultHrefName="Band">
-        <span className="flex items-center gap-3">
-          <Link
-            href={`/bands/${bandId}/setlists/${setlistId}/edit`}
-            className="hover:text-neutral-900 dark:hover:text-neutral-100"
-          >
-            Edit setlist
-          </Link>
-        </span>
-      </PageHeader>
+      <PageHeader defaultHref={`/bands/${bandId}`} defaultHrefName="Band" />
       <span className="flex justify-between">
         <div className="flex flex-col gap-1">
           <h1 className="title-text">{setlist.name}</h1>
@@ -107,14 +98,15 @@ export default async function SetlistPage({
             )}
           </p>
         </div>
-        {songCount > 0 && (
-          <SetlistActions
-            bandId={bandId}
-            setlistId={setlistId}
-            name={setlist.name}
-            songs={setlist.songs}
-          />
-        )}
+        {/* Rendered even for an empty setlist: it now carries "Edit setlist",
+            which is exactly what an empty one needs. The playback and offline
+            actions inside it gate themselves on there being songs. */}
+        <SetlistActions
+          bandId={bandId}
+          setlistId={setlistId}
+          name={setlist.name}
+          songs={setlist.songs}
+        />
       </span>
 
       {setlist.songs.length === 0 ? (

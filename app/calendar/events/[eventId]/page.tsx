@@ -6,6 +6,7 @@ import { getEventForUser, listEventMembers } from '@/lib/db/events';
 import { getSetlist } from '@/lib/db/setlists';
 import { formatDateRange, formatTimeRange } from '@/lib/format';
 import { PageHeader } from '../../../PageHeader';
+import { setlistQueue } from '../../../bands/[bandId]/bandDetailShared';
 import { MapLink } from '../../../MapLink';
 import { CollapsibleSection } from '../../../CollapsibleSection';
 import { EventMembersClient } from './EventMembersClient';
@@ -39,17 +40,7 @@ export default async function EventPage({
 
   return (
     <main className="main-container">
-      <PageHeader defaultHref="/calendar" defaultHrefName="Calendar">
-        {canManage && (
-          <Link
-            href={`/calendar/events/${eventId}/edit`}
-            className="hover:text-neutral-900 dark:hover:text-neutral-100"
-          >
-            {/* className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900" */}
-            Edit event
-          </Link>
-        )}
-      </PageHeader>
+      <PageHeader defaultHref="/calendar" defaultHrefName="Calendar" />
 
       <div className="pb-4">
         <h1 className="title-text">{eventLabel(event)}</h1>
@@ -63,8 +54,10 @@ export default async function EventPage({
         </p>
       </div>
 
-      {/* <section className="flex flex-col gap-2 rounded-lg text-sm mb-4"> */}
-      <section className="flex flex-col gap-2 rounded-lg text-sm mb-4">
+      {/* Edit sits opposite the event's facts rather than in the back-nav
+          header, where it read as part of the navigation. */}
+      <div className="mb-4 flex items-start justify-between gap-3">
+      <section className="flex flex-col gap-2 rounded-lg text-sm">
         {event.eventType && (
           <div>
             <span className="font-medium">Type:</span>{' '}
@@ -116,6 +109,15 @@ export default async function EventPage({
           </div>
         )}
       </section>
+        {canManage && (
+          <Link
+            href={`/calendar/events/${eventId}/edit`}
+            className="btn-outline shrink-0"
+          >
+            Edit event
+          </Link>
+        )}
+      </div>
 
       {event.details && (
         <section className="rounded-lg text-sm mb-4">
@@ -162,6 +164,10 @@ export default async function EventPage({
                   // download would save nothing playable.
                   audioVersionId: s.audioVersionId,
                 }))}
+                queue={setlistQueue({
+                  name: setlist.name,
+                  songs: setlist.songs,
+                })}
                 fields={{
                   title: event.title,
                   date: event.date,

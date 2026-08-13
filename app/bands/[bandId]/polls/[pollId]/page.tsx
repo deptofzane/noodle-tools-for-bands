@@ -31,16 +31,7 @@ export default async function PollPage({
         defaultHref={`/bands/${bandId}?tab=polls`}
         defaultHrefName="Band"
         canGoBack={false}
-      >
-        {!poll.closed && (
-          <Link
-            href={`/bands/${bandId}/polls/${pollId}/edit`}
-            className="hover:text-neutral-900 dark:hover:text-neutral-100"
-          >
-            Edit poll
-          </Link>
-        )}
-      </PageHeader>
+      />
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
@@ -67,6 +58,20 @@ export default async function PollPage({
           initialMyVote={poll.myVote}
           closed={poll.closed}
         />
+
+        {/* Below the results rather than in the back-nav header: voting is what
+            someone came here to do, and editing is the afterthought. Still
+            hidden once the poll is closed — there's nothing left to change. */}
+        {!poll.closed && (
+          <div className="flex">
+            <Link
+              href={`/bands/${bandId}/polls/${pollId}/edit`}
+              className="btn-outline"
+            >
+              Edit poll
+            </Link>
+          </div>
+        )}
       </div>
     </main>
   );

@@ -10,6 +10,11 @@ import { useToast } from '../../../ToastProvider';
 import { useOfflineDownload } from '../../../offline/useOfflineDownload';
 import type { OfflineSong } from '../../../offline/offlineSetlists';
 import { LoadingBlock } from '../../../Spinner';
+import {
+  usePlaylistPlayer,
+  type PlaylistTrack,
+} from '../../../player/PlaylistPlayer';
+import { shuffledCopy } from '../../../player/queueOrder';
 import { liveHref, practiceHref } from '@/lib/routes';
 
 /** The event's current fields, resent on PATCH (which replaces all of them). */
@@ -35,6 +40,7 @@ export function EventSetlistActions({
   setlistId,
   setlistName,
   songs,
+  queue,
   fields,
 }: {
   bandId: string;
@@ -43,9 +49,16 @@ export function EventSetlistActions({
   setlistName: string;
   /** The setlist's items, for offline download (markers are ignored). */
   songs: OfflineSong[];
+  /**
+   * The same setlist as a player queue. Built by the page rather than here so
+   * it uses the one `setlistQueue` every other surface does; shorter than
+   * `songs`, since markers and songs without audio drop out.
+   */
+  queue: PlaylistTrack[];
   fields: EventSetlistPatchFields;
 }) {
   const router = useRouter();
+  const player = usePlaylistPlayer();
   const trackPending = useTrackPending();
   const showToast = useToast();
   const offline = useOfflineDownload();
@@ -108,6 +121,20 @@ export function EventSetlistActions({
   return (
     <div className="self-end">
       <ActionMenu label="Setlist actions" disabled={busy}>
+        {queue.length > 0 && (
+          <>
+            <ActionMenuItem onClick={() => player.play(queue, 0)}>
+              Play all
+            </ActionMenuItem>
+            {/* One-off scramble, not the player's shuffle mode — a setlist's
+                order is deliberate. Same call the other setlist surfaces make. */}
+            <ActionMenuItem
+              onClick={() => player.play(shuffledCopy(queue), 0)}
+            >
+              Shuffle all
+            </ActionMenuItem>
+          </>
+        )}
         <ActionMenuItem onClick={() => router.push(practiceHref(setlistId))}>
           Practice
         </ActionMenuItem>
