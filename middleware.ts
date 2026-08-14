@@ -37,6 +37,10 @@ const PUBLIC_PATHS = new Set<string>([
   // requirement — and someone deciding whether to sign up should be able to
   // read the terms before they do.
   '/about',
+  // Help, for the plainest reason of all: someone who can't get past the login
+  // screen is the person most likely to need it, and putting it behind auth
+  // would hide it from exactly them.
+  '/help',
   // The offline screen. It holds no server data — what it lists comes from the
   // device's own IndexedDB — and the service worker precaches it to serve when
   // a navigation fails. Behind auth, that precache would be a login redirect,

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
+import { HelpDialog } from './HelpDialog';
 import { useCurrentBand } from './CurrentBandProvider';
 import { startRouteProgress } from './RouteProgress';
 import { bandSwitchTarget } from '@/lib/routes';
@@ -65,6 +66,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
   // which takes over the whole dropdown until "Back".
   const [bandsOpen, setBandsOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [helpOpen, setHelpOpen] = useState(false);
   const { bands, bandId: selectedBandId, band, setBandId } = useCurrentBand();
   const menuRef = useRef<HTMLDivElement>(null);
   const scrimRef = useRef<HTMLDivElement>(null);
@@ -469,6 +471,22 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
                       ))}
                     </span>
 
+                    {/* Outside the two link groups above, so it shows at both
+                        breakpoints. Opens over the page rather than navigating
+                        to /help: help is read *about* whatever you're stuck on,
+                        so closing it should put you back there untouched. */}
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        closeMenu();
+                        setHelpOpen(true);
+                      }}
+                      className={menuItemClass(false)}
+                    >
+                      Help
+                    </button>
+
                     {/* Last at either breakpoint: it sits outside the two
                         link groups above, which are the parts that swap. */}
                     <span
@@ -494,6 +512,11 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
           </div>
         </div>
       </nav>
+
+      {/* Mounted outside the dropdown so closing the menu doesn't take it with
+          it — and only while open, since it owns Escape and a history entry
+          for its lifetime. */}
+      {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
     </div>
   );
 }

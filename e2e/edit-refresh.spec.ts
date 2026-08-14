@@ -20,7 +20,10 @@ test('renaming a song shows on the song page after Save', async ({ page }) => {
   await page.goto(`/notes/${songId}`);
   await expect(page.getByText(E2E.songName).first()).toBeVisible();
 
-  await page.getByRole('link', { name: 'Edit song' }).click();
+  // Edit lives in the song's kebab, on the "Song details" header row — it used
+  // to be a link in the back-nav header.
+  await page.getByRole('button', { name: 'Song actions' }).click();
+  await page.getByRole('menuitem', { name: 'Edit song' }).click();
   await expect(page).toHaveURL(new RegExp(`/notes/${songId}/edit$`));
 
   const name = page.locator('input[type="text"], input:not([type])').first();
