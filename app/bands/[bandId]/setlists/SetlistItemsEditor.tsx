@@ -5,6 +5,7 @@ import {
   useMemo,
   useState,
   type Dispatch,
+  type ReactNode,
   type SetStateAction,
 } from 'react';
 import {
@@ -59,6 +60,9 @@ export function SetlistItemsEditor({
   songPool,
   emptyText,
   hint,
+  allowMarkers = true,
+  allowDuplicates = false,
+  renderItemActions,
 }: {
   items: SetlistItem[];
   onItemsChange: Dispatch<SetStateAction<SetlistItem[]>>;
@@ -66,6 +70,22 @@ export function SetlistItemsEditor({
   emptyText: string;
   /** Optional reorder hint shown above the list when it's non-empty. */
   hint?: string;
+  /**
+   * Whether set break / encore / other can be added. Albums are only songs —
+   * there's no such thing as a set break on a record.
+   */
+  allowMarkers?: boolean;
+  /**
+   * Whether a song already in the list can be added again. Setlists say no (a
+   * song is played once); albums say yes, since the same song can appear twice
+   * pinned to different takes.
+   */
+  allowDuplicates?: boolean;
+  /**
+   * Extra control on each row, before the remove button — the album editor's
+   * version picker. Rows stay drag-reorderable regardless.
+   */
+  renderItemActions?: (item: SetlistItem) => ReactNode;
 }) {
   const [addOpen, setAddOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -117,18 +137,18 @@ export function SetlistItemsEditor({
     setOtherOpen(false);
   };
 
-  // Songs available to add: the pool minus songs already in the list,
-  // alphabetical, filtered by the search box.
+  // Songs available to add: the pool, alphabetical, filtered by the search
+  // box — minus what's already in the list, unless duplicates are allowed.
   const candidates = useMemo(() => {
-    const inSetlist = new Set(
+    const already = new Set(
       items.filter((s) => s.conversationId).map((s) => s.conversationId),
     );
     const q = search.trim().toLowerCase();
     return songPool
-      .filter((s) => !inSetlist.has(s.conversationId))
+      .filter((s) => allowDuplicates || !already.has(s.conversationId))
       .filter((s) => !q || s.name.toLowerCase().includes(q))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [songPool, items, search]);
+  }, [songPool, items, search, allowDuplicates]);
 
   const openAdd = () => {
     setSearch('');
@@ -176,22 +196,26 @@ export function SetlistItemsEditor({
         <button type="button" onClick={openAdd} className={addBtnClass}>
           Add songs
         </button>
-        <button type="button" onClick={addSetBreak} className={addBtnClass}>
-          Add set break
-        </button>
-        <button type="button" onClick={addEncore} className={addBtnClass}>
-          Add encore
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setOtherName('');
-            setOtherOpen(true);
-          }}
-          className={addBtnClass}
-        >
-          Add other
-        </button>
+        {allowMarkers && (
+          <>
+            <button type="button" onClick={addSetBreak} className={addBtnClass}>
+              Add set break
+            </button>
+            <button type="button" onClick={addEncore} className={addBtnClass}>
+              Add encore
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setOtherName('');
+                setOtherOpen(true);
+              }}
+              className={addBtnClass}
+            >
+              Add other
+            </button>
+          </>
+        )}
       </div>
 
       {items.length === 0 ? (
@@ -218,6 +242,7 @@ export function SetlistItemsEditor({
                     name={s.name}
                     isMarker={!s.conversationId}
                     onRemove={() => handleRemove(s.id)}
+                    actions={renderItemActions?.(s)}
                   />
                 ))}
               </ul>
@@ -363,11 +388,14 @@ function SortableRow({
   name,
   isMarker,
   onRemove,
+  actions,
 }: {
   id: string;
   name: string;
   isMarker: boolean;
   onRemove: () => void;
+  /** Caller-supplied control, between the name and the remove button. */
+  actions?: ReactNode;
 }) {
   const {
     attributes,
@@ -408,6 +436,7 @@ function SortableRow({
       >
         {name}
       </span>
+      {actions}
       <button
         type="button"
         onClick={onRemove}

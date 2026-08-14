@@ -223,6 +223,7 @@ export const notificationKind = pgEnum('notification_kind', [
   'setlist-created',
   'audio-added',
   'song-created',
+  'album-created',
 ]);
 
 // What a notification points at, for building its link.
@@ -232,6 +233,7 @@ export const notificationSubject = pgEnum('notification_subject', [
   'band',
   'poll',
   'setlist',
+  'album',
 ]);
 
 export const notifications = pgTable(
@@ -608,6 +610,86 @@ export const setlistSongs = pgTable(
       .on(t.setlistId, t.conversationId)
       .where(sql`conversation_id is not null`),
   ],
+);
+
+// ── Albums ───────────────────────────────────────────────────────────
+// A named, ordered collection of a band's songs — deliberately its own thing
+// rather than a flavour of setlist. Setlists are performance artifacts and get
+// dragged through Practice, Live, events and offline downloads; albums are how
+// a band files its recordings. Sharing one table would mean every existing
+// setlist query silently returning albums unless it remembered to filter, and
+// there are a lot of them.
+//
+// The difference that matters in the data: an album track can pin a *specific*
+// audio version, where a setlist always plays the song's current default.
+export const albums = pgTable(
+  'albums',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    bandId: uuid('band_id')
+      .notNull()
+      .references(() => bands.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    // Mirrors setlists: hidden from the active list, reversible.
+    archived: boolean('archived').notNull().default(false),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index('albums_band_idx').on(t.bandId)],
+);
+
+/**
+ * A song's place on an album, optionally pinned to one audio version.
+ *
+ * Unlike `setlist_songs` there is no unique index on (album, song): a song may
+ * appear more than once on one album, which is the point of pinning — the same
+ * recording can sit in the running order twice as different takes.
+ *
+ * The three pin columns move together and encode three states without a join:
+ *
+ *   - all null                          → follow the song's current default
+ *   - `audioVersionId` set              → pinned, and the version still exists
+ *   - `audioVersionId` null, snapshot   → pinned, and the version was deleted
+ *     set
+ *
+ * That last state is why `audioVersionId` is ON DELETE SET NULL rather than
+ * CASCADE, and why the snapshot exists at all: deleting an audio version hard-
+ * deletes its row and its bytes (see `deleteAudioVersion`), so without a copy
+ * of the name there would be nothing left to tell the user what they lost. Same
+ * idea as `user_note_links.label`. Playback falls back to the song's default
+ * and the album flags the track until someone resolves it.
+ */
+export const albumTracks = pgTable(
+  'album_tracks',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    albumId: uuid('album_id')
+      .notNull()
+      .references(() => albums.id, { onDelete: 'cascade' }),
+    // Cascades, unlike the version pin above: a deleted song is gone from the
+    // whole app, so a tombstone for it would be debris nobody can act on.
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => conversations.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    /** The pinned version, or null to follow the song's default. */
+    audioVersionId: uuid('audio_version_id').references(() => songFiles.id, {
+      onDelete: 'set null',
+    }),
+    /** Snapshot of the pinned version, kept readable after it's deleted. */
+    pinnedFileName: text('pinned_file_name'),
+    pinnedLabel: text('pinned_label'),
+    /** Seconds, so a lost pin can still show the length it had. */
+    pinnedLength: integer('pinned_length'),
+  },
+  (t) => [index('album_tracks_album_idx').on(t.albumId)],
 );
 
 // ── Events (calendar) ────────────────────────────────────────────────

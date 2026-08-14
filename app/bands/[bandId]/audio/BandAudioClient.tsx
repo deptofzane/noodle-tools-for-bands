@@ -350,6 +350,7 @@ export function BandAudioClient({
 
       {activeTab === 'songs' && (
         <BandAudioList
+          bandId={bandId}
           conversations={conversations}
           bandName={data?.band.name ?? null}
           canUseDrive={canUseDrive}

@@ -72,6 +72,8 @@ function pushBody(
       return `${who} added audio: ${subjectLabel ?? 'Untitled'}`;
     case 'song-created':
       return `${who} created a song: ${subjectLabel ?? 'Untitled'}`;
+    case 'album-created':
+      return `${who} created an album: ${subjectLabel ?? 'Untitled'}`;
   }
 }
 
@@ -99,6 +101,12 @@ function pushUrl(
       return subjectId
         ? `/bands/${bandId}/setlists/${subjectId}`
         : `/bands/${bandId}`;
+    case 'album':
+      return subjectId
+        ? `/bands/${bandId}/albums/${subjectId}`
+        // No album to point at: the Songs tab in album view is the nearest
+        // useful place, and it's where albums are browsed from.
+        : `/bands/${bandId}/audio?tab=songs`;
   }
 }
 

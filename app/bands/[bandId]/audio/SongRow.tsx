@@ -23,6 +23,7 @@ export function SongRow({
   bandName,
   disabled,
   onAddToSetlist,
+  onAddToAlbum,
   onEdit,
   onView,
   onToggleArchive,
@@ -33,6 +34,8 @@ export function SongRow({
   bandName: string | null;
   disabled: boolean;
   onAddToSetlist: (c: Conversation) => void;
+  /** Omitted where there's no album modal to open — the action then hides. */
+  onAddToAlbum?: (c: Conversation) => void;
   onEdit: (c: Conversation) => void;
   onView: (c: Conversation) => void;
   onToggleArchive: (c: Conversation) => void;
@@ -174,6 +177,12 @@ export function SongRow({
         <ActionMenuItem onClick={() => onAddToSetlist(c)}>
           Add to setlist
         </ActionMenuItem>
+        {/* Optional: surfaces only where the parent can host the modal. */}
+        {onAddToAlbum && (
+          <ActionMenuItem onClick={() => onAddToAlbum(c)}>
+            Add to album
+          </ActionMenuItem>
+        )}
         <ActionMenuItem onClick={() => onToggleArchive(c)}>
           {c.archived ? 'Unarchive song' : 'Archive song'}
         </ActionMenuItem>

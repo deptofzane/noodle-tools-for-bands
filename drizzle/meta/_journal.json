@@ -330,6 +330,20 @@
       "when": 1786225613024,
       "tag": "0046_nebulous_kinsey_walden",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1786747560648,
+      "tag": "0047_magical_cargill",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1786750779675,
+      "tag": "0048_solid_payback",
+      "breakpoints": true
     }
   ]
 }

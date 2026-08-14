@@ -23,9 +23,16 @@ export interface NotificationItem {
     | 'poll-cancelled'
     | 'poll-auto-closed'
     | 'setlist-created'
+    | 'album-created'
     | 'audio-added'
     | 'song-created';
-  subjectType: 'conversation' | 'event' | 'band' | 'poll' | 'setlist';
+  subjectType:
+    | 'conversation'
+    | 'event'
+    | 'band'
+    | 'poll'
+    | 'setlist'
+    | 'album';
   subjectId: string | null;
   subjectLabel: string | null;
   /** Upload rollups only: the day they cover. */
@@ -65,6 +72,10 @@ function hrefFor(n: NotificationItem): string {
       return n.subjectId
         ? `/bands/${n.bandId}/setlists/${n.subjectId}`
         : `/bands/${n.bandId}`;
+    case 'album':
+      return n.subjectId
+        ? `/bands/${n.bandId}/albums/${n.subjectId}`
+        : `/bands/${n.bandId}/audio?tab=songs`;
   }
 }
 
@@ -104,6 +115,8 @@ function messageFor(n: NotificationItem): string {
         : `${who} added audio: ${n.subjectLabel ?? 'Untitled'}`;
     case 'song-created':
       return `${who} created a song: ${n.subjectLabel ?? 'Untitled'}`;
+    case 'album-created':
+      return `${who} created an album: ${n.subjectLabel ?? 'Untitled'}`;
   }
 }
 

@@ -1,10 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
 import { Spinner } from '../../../Spinner';
+import { usePersistedBoolean } from '../../../usePersistedBoolean';
 import { MinimizeToggle, type Conversation } from '../bandDetailShared';
 import { SongRow } from './SongRow';
+import { BandAlbumList } from './BandAlbumList';
+import { AddToAlbumModal } from './AddToAlbumModal';
+import type { AlbumWithTracks } from '@/lib/db/albums';
 
 /**
  * The Audio page's body: a search box that filters both the active Audio list
@@ -13,6 +18,7 @@ import { SongRow } from './SongRow';
  * action handlers, and owns the "Add audio" source modal.
  */
 export function BandAudioList({
+  bandId,
   conversations,
   bandName,
   canUseDrive,
@@ -27,6 +33,7 @@ export function BandAudioList({
   onToggleArchive,
   onDelete,
 }: {
+  bandId: string;
   conversations: Conversation[] | null;
   bandName: string | null;
   canUseDrive: boolean;
@@ -44,6 +51,41 @@ export function BandAudioList({
   const [search, setSearch] = useState('');
   const [audioMinimized, setAudioMinimized] = useState(false);
   const [archivedMinimized, setArchivedMinimized] = useState(true);
+  const router = useRouter();
+
+  /**
+   * Songs or albums. Persisted, so someone who organises by album stays there.
+   */
+  const [albumView, setAlbumView] = usePersistedBoolean(
+    'audioSongsAlbumView',
+    false,
+  );
+
+  /**
+   * Albums, fetched only once album view is first opened.
+   *
+   * The Songs tab already ships every song; pulling every album and its tracks
+   * as well would be paid for by everyone, including the majority who never
+   * switch. Kept after the first load so toggling back and forth is instant.
+   */
+  // Song whose "Add to album" modal is open.
+  const [albumTarget, setAlbumTarget] = useState<Conversation | null>(null);
+  const [albums, setAlbums] = useState<AlbumWithTracks[] | null>(null);
+  useEffect(() => {
+    if (!albumView || albums) return;
+    let cancelled = false;
+    fetch(`/api/bands/${bandId}/albums?tracks=1`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('failed'))))
+      .then((d: { albums: AlbumWithTracks[] }) => {
+        if (!cancelled) setAlbums(d.albums);
+      })
+      .catch(() => {
+        if (!cancelled) setAlbums([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [albumView, albums, bandId]);
 
   const activeSongs = conversations?.filter((c) => !c.archived) ?? null;
   const archivedSongs = conversations?.filter((c) => c.archived) ?? [];
@@ -61,6 +103,7 @@ export function BandAudioList({
       bandName={bandName}
       disabled={rowsDisabled}
       onAddToSetlist={onAddToSetlist}
+      onAddToAlbum={setAlbumTarget}
       onEdit={onEditSong}
       onView={onViewSong}
       onToggleArchive={onToggleArchive}
@@ -74,8 +117,8 @@ export function BandAudioList({
         type="search"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search audio…"
-        aria-label="Search audio"
+        placeholder={albumView ? 'Search albums and songs…' : 'Search audio…'}
+        aria-label={albumView ? 'Search albums and songs' : 'Search audio'}
         className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:placeholder:minor-text-theme-colors"
       />
       <section className="flex flex-col gap-2">
@@ -84,9 +127,11 @@ export function BandAudioList({
             <MinimizeToggle
               minimized={audioMinimized}
               onToggle={() => setAudioMinimized((v) => !v)}
-              label="Audio"
+              label={albumView ? 'Albums' : 'Audio'}
             >
-              <h2 className="text-sm font-medium">Audio</h2>
+              <h2 className="text-sm font-medium">
+                {albumView ? 'Albums' : 'Audio'}
+              </h2>
             </MinimizeToggle>
             {/* Progress sits beside the heading now that the actions are in a
                 menu: a disabled kebab can't be opened to read a busy label, so
@@ -111,15 +156,72 @@ export function BandAudioList({
               </span>
             ) : null}
           </span>
-          <ActionMenu
-            label="Audio actions"
-            disabled={audioBusy || importProgress !== null}
-          >
-            <ActionMenuItem onClick={onCreateSong}>Create song without audio</ActionMenuItem>
-            <ActionMenuItem onClick={onOpenChooser}>Upload audio file(s)</ActionMenuItem>
-          </ActionMenu>
+          <span className="flex shrink-0 items-center gap-1">
+            {/* Songs or albums. A two-state segmented control rather than a
+                checkbox: both destinations are named, so neither reads as the
+                "off" position of the other. */}
+            <span
+              role="group"
+              aria-label="View"
+              className="flex items-center rounded-md border border-neutral-300 p-0.5 text-xs dark:border-neutral-700"
+            >
+              {([false, true] as const).map((wantAlbums) => (
+                <button
+                  key={String(wantAlbums)}
+                  type="button"
+                  onClick={() => setAlbumView(wantAlbums)}
+                  aria-pressed={albumView === wantAlbums}
+                  className={
+                    'rounded px-2 py-1 ' +
+                    (albumView === wantAlbums
+                      ? 'bg-neutral-100 font-medium text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
+                      : 'minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
+                  }
+                >
+                  {wantAlbums ? 'Albums' : 'Songs'}
+                </button>
+              ))}
+            </span>
+            <ActionMenu
+              label="Audio actions"
+              disabled={audioBusy || importProgress !== null}
+            >
+              {albumView ? (
+                <ActionMenuItem
+                  onClick={() => router.push(`/bands/${bandId}/albums/new`)}
+                >
+                  Create album
+                </ActionMenuItem>
+              ) : (
+                <>
+                  <ActionMenuItem onClick={onCreateSong}>
+                    Create song without audio
+                  </ActionMenuItem>
+                  <ActionMenuItem onClick={onOpenChooser}>
+                    Upload audio file(s)
+                  </ActionMenuItem>
+                </>
+              )}
+            </ActionMenu>
+          </span>
         </div>
-        {!audioMinimized && activeSongs && activeSongs.length === 0 && (
+        {!audioMinimized && albumView && (
+          <BandAlbumList
+            bandId={bandId}
+            albums={albums}
+            conversations={conversations}
+            search={search}
+            bandName={bandName}
+            rowsDisabled={rowsDisabled}
+            onAddToSetlist={onAddToSetlist}
+            onAddToAlbum={setAlbumTarget}
+            onEditSong={onEditSong}
+            onViewSong={onViewSong}
+            onToggleArchive={onToggleArchive}
+            onDelete={onDelete}
+          />
+        )}
+        {!audioMinimized && !albumView && activeSongs && activeSongs.length === 0 && (
           <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
             No songs yet. Use the ⋯ menu above to “Create song without audio” from a name, or
             “Upload audio file(s)”{' '}
@@ -127,6 +229,7 @@ export function BandAudioList({
           </p>
         )}
         {!audioMinimized &&
+          !albumView &&
           activeSongs &&
           activeSongs.length > 0 &&
           visibleActive &&
@@ -135,14 +238,14 @@ export function BandAudioList({
               No audio matches “{search.trim()}”.
             </p>
           )}
-        {!audioMinimized && visibleActive && visibleActive.length > 0 && (
+        {!audioMinimized && !albumView && visibleActive && visibleActive.length > 0 && (
           <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
             {visibleActive.map(row)}
           </ul>
         )}
       </section>
 
-      {archivedSongs.length > 0 && (
+      {!albumView && archivedSongs.length > 0 && (
         <section className="flex flex-col gap-2">
           <MinimizeToggle
             minimized={archivedMinimized}
@@ -164,6 +267,17 @@ export function BandAudioList({
             </p>
           )}
         </section>
+      )}
+
+      {albumTarget && (
+        <AddToAlbumModal
+          bandId={bandId}
+          target={albumTarget}
+          onClose={() => setAlbumTarget(null)}
+          // The cached album list is now stale — drop it so album view
+          // refetches rather than showing a song it doesn't know was added.
+          onAdded={() => setAlbums(null)}
+        />
       )}
     </>
   );

@@ -15,6 +15,7 @@ type Kind =
   | 'poll-cancelled'
   | 'poll-auto-closed'
   | 'setlist-created'
+  | 'album-created'
   | 'audio-added'
   | 'song-created';
 
@@ -80,6 +81,11 @@ const KINDS: { kind: Kind; label: string; description: string }[] = [
     kind: 'setlist-created',
     label: 'New setlists',
     description: 'When a setlist is created in one of your bands.',
+  },
+  {
+    kind: 'album-created',
+    label: 'New albums',
+    description: 'When an album is created in one of your bands.',
   },
   {
     kind: 'audio-added',

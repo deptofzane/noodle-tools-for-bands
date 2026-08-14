@@ -108,6 +108,51 @@ export function setlistQueue(sl: {
     }));
 }
 
+/**
+ * An album's tracks as a player queue, in order.
+ *
+ * The sibling of `setlistQueue`, and different in one way that matters: a
+ * setlist always plays a song's current default, while an album track may pin
+ * a specific version — so the src names whatever `resolveTrack` decided, which
+ * is the pin when it still exists and the song's default when it doesn't.
+ *
+ * Unplayable tracks drop out, exactly as songs without audio drop out of a
+ * setlist queue: a queue position isn't an album position. Tracks whose pin was
+ * lost stay in — they play the default, and the album page is what says so.
+ */
+export function albumQueue(album: {
+  name: string;
+  tracks: {
+    conversationId: string;
+    name: string;
+    audioVersionId: string | null;
+    audioStoredName: string | null;
+    audioMimeType: string | null;
+    songLength: number | null;
+    originalBand: string | null;
+    bpm: number | null;
+    key: string | null;
+  }[];
+}): PlaylistTrack[] {
+  return album.tracks
+    .filter((t) => t.audioVersionId && t.audioStoredName)
+    .map((t) => ({
+      id: t.conversationId,
+      title: t.name,
+      src:
+        `/api/conversations/${t.conversationId}/files/audio` +
+        `?version=${t.audioVersionId}&name=${encodeURIComponent(t.audioStoredName!)}`,
+      fileName: t.audioStoredName!,
+      mimeType: t.audioMimeType ?? undefined,
+      href: `/notes/${t.conversationId}`,
+      originalBand: t.originalBand ?? undefined,
+      bpm: t.bpm,
+      songKey: t.key,
+      subtitle: album.name,
+      durationSec: t.songLength ?? undefined,
+    }));
+}
+
 export interface Venue {
   id: string;
   name: string;
