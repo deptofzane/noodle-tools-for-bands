@@ -23,6 +23,7 @@ type PickerWindow = {
     picker: {
       Action: { PICKED: string; CANCEL: string };
       Feature: { MULTISELECT_ENABLED: string };
+      DocsViewMode: { GRID: string; LIST: string };
       DocsView: new () => PickerDocsView;
       PickerBuilder: new () => PickerBuilder;
     };
@@ -33,6 +34,7 @@ interface PickerDocsView {
   setIncludeFolders: (v: boolean) => PickerDocsView;
   setSelectFolderEnabled: (v: boolean) => PickerDocsView;
   setMimeTypes: (mimeTypes: string) => PickerDocsView;
+  setMode: (mode: string) => PickerDocsView;
 }
 
 interface PickerBuilder {
@@ -58,6 +60,25 @@ export interface PickedFile {
 }
 
 const PICKER_SCRIPT_SRC = 'https://apis.google.com/js/api.js';
+
+/**
+ * Dialog size, and the knob to turn when the picker looks wrong.
+ *
+ * Google clamps this to a minimum of 566×350 and a **maximum of 1051×650** —
+ * so the picker can never fill a tall desktop window, and asking for more just
+ * gets you 1051×650. Sizing it explicitly is still worth doing because the
+ * dialog is auto-centred when a size is set, which is what stops it sitting in
+ * the upper part of the screen.
+ *
+ * Applied only when the viewport can actually hold it. On a phone the clamp
+ * works against you: a 390px-wide screen asking for anything gets at least 566
+ * back, and a dialog wider than the window pushes the Select button off the
+ * right edge — which is what made multi-select unusable there. Below the
+ * minimum we set nothing and let the picker's own responsive layout take over.
+ */
+const PICKER_SIZE = { width: 1051, height: 650 } as const;
+/** Google's documented floor; under this, don't size the dialog at all. */
+const PICKER_MIN = { width: 566, height: 350 } as const;
 
 export function PickerButton({
   apiKey,
@@ -136,7 +157,12 @@ export function PickerButton({
     const newView = () =>
       new w.google!.picker.DocsView()
         .setIncludeFolders(false)
-        .setSelectFolderEnabled(false);
+        .setSelectFolderEnabled(false)
+        // List, not the default grid: these are audio files and charts, where
+        // the name is the only thing that identifies one. A grid of identical
+        // generic file icons costs a row of vertical space per item and tells
+        // you nothing.
+        .setMode(w.google!.picker.DocsViewMode.LIST);
 
     let builder = new w.google.picker.PickerBuilder();
     if (filter) {
@@ -157,12 +183,18 @@ export function PickerButton({
         w.google.picker.Feature.MULTISELECT_ENABLED,
       );
     }
-    // No setSize: the picker's documented bounds are a minimum of 566×350 and
-    // a maximum of 1051×650, so asking for a phone's viewport (typically
-    // 390–430 CSS px wide) was clamped *up* to 566 and rendered a dialog wider
-    // than the screen — pushing the selection controls and the Select button
-    // off the right edge, which is what made multi-select unusable on a phone.
-    // The picker's own responsive layout handles narrow viewports.
+    // Size it only where it fits — see PICKER_SIZE for why both halves matter.
+    // Sizing also auto-centres the dialog, which is what keeps it off the top
+    // edge; leaving it unset is what left it sitting in the upper half.
+    if (
+      window.innerWidth >= PICKER_MIN.width &&
+      window.innerHeight >= PICKER_MIN.height
+    ) {
+      builder = builder.setSize(
+        Math.min(PICKER_SIZE.width, window.innerWidth),
+        Math.min(PICKER_SIZE.height, window.innerHeight),
+      );
+    }
     // `setAppId` is what makes Drive grant the picked files to this app under
     // the narrow `drive.file` scope. Without it the Picker still works, but
     // every later files.get on the result 404s.
