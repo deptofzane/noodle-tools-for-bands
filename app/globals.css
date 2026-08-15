@@ -205,6 +205,11 @@ body {
   @apply text-blue-600 dark:text-indigo-300;
 }
 
+/* 
+ * this is an override for the google picker size that only works on 
+ * actual mobile screens, it does not work in the mobile responsive 
+ * mode of desktop browser devtools
+ */
 .picker {
   height: 100% !important;
   width: 100% !important;
