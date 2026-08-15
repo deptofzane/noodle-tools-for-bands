@@ -1,10 +1,18 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { formatDuration } from '@/lib/format';
+import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
 import { LoadingBlock } from '../../../Spinner';
 import { usePersistedStringSet } from '../../../usePersistedStringSet';
-import { MinimizeToggle, type Conversation } from '../bandDetailShared';
+import { usePlaylistPlayer } from '../../../player/PlaylistPlayer';
+import { shuffledCopy } from '../../../player/queueOrder';
+import {
+  albumQueue,
+  MinimizeToggle,
+  type Conversation,
+} from '../bandDetailShared';
 import { SongRow } from './SongRow';
 import { effectiveOpen, filterAlbums, unassociated } from './albumView';
 import type { AlbumWithTracks } from '@/lib/db/albums';
@@ -49,6 +57,8 @@ export function BandAlbumList({
   // The user's own expand/collapse choices. Search-driven expansion is layered
   // on top at render and deliberately never written here — see `effectiveOpen`.
   const [openIds, toggleOpen] = usePersistedStringSet('albumViewOpen');
+  const router = useRouter();
+  const player = usePlaylistPlayer();
 
   if (!albums || !conversations)
     return <LoadingBlock label="Loading albums" />;
@@ -112,12 +122,42 @@ export function BandAlbumList({
                   {!nameMatched && search.trim() ? ' matching' : ''}
                   {seconds > 0 ? ` · ${formatDuration(seconds)}` : ''}
                 </span>
-                <Link
-                  href={`/bands/${bandId}/albums/${album.id}`}
-                  className="text-xs text-blue-600 hover:underline dark:text-blue-400"
-                >
-                  Open
-                </Link>
+                {/* Play all / Shuffle all take the *whole* album, not the
+                    filtered `tracks` above: the label says all, and a search
+                    that happens to be narrowing the view shouldn't quietly
+                    change what playing the record means. */}
+                <ActionMenu label={`Actions for ${album.name}`}>
+                  <ActionMenuItem
+                    onClick={() =>
+                      router.push(`/bands/${bandId}/albums/${album.id}`)
+                    }
+                  >
+                    View album
+                  </ActionMenuItem>
+                  <ActionMenuItem
+                    onClick={() =>
+                      router.push(`/bands/${bandId}/albums/${album.id}/edit`)
+                    }
+                  >
+                    Edit album
+                  </ActionMenuItem>
+                  {albumQueue(album).length > 0 && (
+                    <>
+                      <ActionMenuItem
+                        onClick={() => player.play(albumQueue(album), 0)}
+                      >
+                        Play all
+                      </ActionMenuItem>
+                      <ActionMenuItem
+                        onClick={() =>
+                          player.play(shuffledCopy(albumQueue(album)), 0)
+                        }
+                      >
+                        Shuffle all
+                      </ActionMenuItem>
+                    </>
+                  )}
+                </ActionMenu>
               </span>
             </div>
             {isOpen && (
