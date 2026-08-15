@@ -35,6 +35,11 @@ interface PickerDocsView {
   setSelectFolderEnabled: (v: boolean) => PickerDocsView;
   setMimeTypes: (mimeTypes: string) => PickerDocsView;
   setMode: (mode: string) => PickerDocsView;
+  /**
+   * Optional because it's deprecated upstream — see `labelled` below for why
+   * it's called anyway, and what happens if Google ever removes it.
+   */
+  setLabel?: (label: string) => PickerDocsView;
 }
 
 interface PickerBuilder {
@@ -42,6 +47,7 @@ interface PickerBuilder {
   setAppId: (appId: string) => PickerBuilder;
   enableFeature: (feature: string) => PickerBuilder;
   setSize: (width: number, height: number) => PickerBuilder;
+  setTitle: (title: string) => PickerBuilder;
   setOAuthToken: (token: string) => PickerBuilder;
   setDeveloperKey: (key: string) => PickerBuilder;
   setCallback: (cb: (data: PickerCallbackData) => void) => PickerBuilder;
@@ -154,6 +160,19 @@ export function PickerButton({
       return;
     }
 
+    /**
+     * Name a view's tab.
+     *
+     * `View.setLabel` is marked deprecated by Google with no replacement
+     * offered, and without it every DocsView is labelled "Google Drive" — so a
+     * narrowed view and the unfiltered one beside it are two identical tabs.
+     * That's worse than depending on a deprecated call, so it's called through
+     * this guard: if the method is ever removed the tabs simply go back to
+     * being unlabelled, instead of the picker failing to open.
+     */
+    const labelled = (view: PickerDocsView, label: string) =>
+      typeof view.setLabel === 'function' ? view.setLabel(label) : view;
+
     const newView = () =>
       new w.google!.picker.DocsView()
         .setIncludeFolders(false)
@@ -170,11 +189,18 @@ export function PickerButton({
       // sits beside it as a tab. That second view is the escape hatch for
       // files Drive mislabels or has no type for — without it, a filter turns
       // "Drive says this .mp3 is octet-stream" into a file the user can't
-      // reach at all. Labels are left to the picker: View.setLabel is
-      // deprecated.
+      // reach at all.
       builder = builder
-        .addView(newView().setMimeTypes(filter.mimeTypes.join(',')))
-        .addView(newView());
+        .addView(
+          labelled(
+            newView().setMimeTypes(filter.mimeTypes.join(',')),
+            filter.viewLabel,
+          ),
+        )
+        .addView(labelled(newView(), 'All files'));
+      // Not deprecated, unlike setLabel — so even if the tab names stop
+      // working, the dialog still says what it's for.
+      builder = builder.setTitle(`Choose ${filter.viewLabel.toLowerCase()}`);
     } else {
       builder = builder.addView(newView());
     }

@@ -39,7 +39,7 @@ export function AddAudioSourceModal({
       size="sm"
     >
       <h2 id="audio-source-title" className="text-base font-semibold">
-        Add audio
+        Upload audio file(s)
       </h2>
       <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
         {canUseDrive

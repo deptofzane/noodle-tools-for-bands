@@ -23,6 +23,14 @@ import { previewKind } from './sheet-preview';
 export interface PickerFilter {
   /** MIME types the filtered Drive view lists. Not a guarantee — see above. */
   mimeTypes: string[];
+  /**
+   * Name for the narrowed tab, and the basis of the dialog's title.
+   *
+   * Without it the picker labels every DocsView "Google Drive", so the
+   * narrowed view and the unfiltered one beside it are two identical tabs with
+   * no way to tell which is which.
+   */
+  viewLabel: string;
   /** Whether a picked file is something this button can actually import. */
   accepts: (file: { name: string; mimeType?: string }) => boolean;
   /** Used in the rejection message: "cover.jpg isn't an audio file." */
@@ -37,6 +45,7 @@ export interface PickerFilter {
  * owns silently isn't in the picker.
  */
 export const AUDIO_PICKER_FILTER: PickerFilter = {
+  viewLabel: 'Audio',
   mimeTypes: [
     'audio/mpeg',
     'audio/mp3',
@@ -70,6 +79,7 @@ export const AUDIO_PICKER_FILTER: PickerFilter = {
  * `accepts` recognises them by extension, so importing one still works.
  */
 export const SHEET_PICKER_FILTER: PickerFilter = {
+  viewLabel: 'Sheet music',
   mimeTypes: [
     'application/pdf',
     'image/png',
