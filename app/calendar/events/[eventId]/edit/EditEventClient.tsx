@@ -102,7 +102,7 @@ export function EditEventClient({
   // root layout, where it outlives this component.
   const leave = () => {
     if (canGoBack()) router.back();
-    else router.push(eventHref);
+    else router.replace(eventHref);
   };
 
   const timeOff = isTimeOff(fields.eventType);
@@ -127,7 +127,8 @@ export function EditEventClient({
       });
       showToast('Event saved.', 'success');
       router.refresh();
-      router.push(eventHref);
+      // `replace`, not `push`: a form left in history is what Back returns to.
+      router.replace(eventHref);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setBusy(false);
@@ -366,6 +367,20 @@ export function EditEventClient({
           The band’s private notes — not shared to the calendar feed.
         </p>
       </CollapsibleSection>
+
+      <div className="flex items-center gap-2 justify-between">
+        <button type="button" onClick={leave} className="btn-outline">
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!canSave}
+          className="btn-primary"
+        >
+          {busy ? 'Saving…' : 'Save'}
+        </button>
+      </div>
 
       {venuePickerOpen && (
         <VenuePickerModal

@@ -261,7 +261,8 @@ export function EditBandClient({ bandId }: { bandId: string }) {
       });
       // Refresh the header's band picker (it's mounted separately).
       window.dispatchEvent(new Event('bands:changed'));
-      router.push('/bands');
+      // `replace`: Back must not return to an editor for something now deleted.
+      router.replace('/bands');
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setDeleteOpen(false);

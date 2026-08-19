@@ -47,7 +47,8 @@ export function AlbumActions({ album }: { album: AlbumWithTracks }) {
       // The songs are untouched — only their filing under this album is gone.
       showToast('Album deleted.', 'success');
       router.refresh();
-      router.push(`/bands/${album.bandId}/audio?tab=songs`);
+      // `replace`: Back must not return to an editor for something now deleted.
+      router.replace(`/bands/${album.bandId}/audio?tab=songs`);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setDeleteOpen(false);

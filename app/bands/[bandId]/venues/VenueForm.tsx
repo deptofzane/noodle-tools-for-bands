@@ -64,7 +64,7 @@ export function VenueForm({
   // root layout, where it outlives this component.
   const leave = () => {
     if (canGoBack()) router.back();
-    else router.push(venuesHref);
+    else router.replace(venuesHref);
   };
 
   const canSave = Boolean(fields.name.trim() && !busy);
@@ -88,7 +88,8 @@ export function VenueForm({
       });
       showToast(isEdit ? 'Venue saved.' : 'Venue created.', 'success');
       router.refresh();
-      router.push(venuesHref);
+      // `replace`, not `push`: a form left in history is what Back returns to.
+      router.replace(venuesHref);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setBusy(false);
@@ -97,20 +98,6 @@ export function VenueForm({
 
   return (
     <div className="mt-2 flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <button type="button" onClick={leave} className="btn-outline">
-          Cancel
-        </button>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={!canSave}
-          className="btn-primary"
-        >
-          {busy ? 'Saving…' : isEdit ? 'Save' : 'Create venue'}
-        </button>
-      </div>
-
       <h1 className="title-text">{isEdit ? 'Edit venue' : 'New venue'}</h1>
       <p className="text-sm minor-text-theme-colors">{bandName}</p>
 
@@ -195,6 +182,19 @@ export function VenueForm({
           maxLength={5000}
           className={`${field} resize-y`}
         />
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <button type="button" onClick={leave} className="btn-outline">
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!canSave}
+          className="btn-primary"
+        >
+          {busy ? 'Saving…' : isEdit ? 'Save' : 'Create venue'}
+        </button>
       </div>
     </div>
   );

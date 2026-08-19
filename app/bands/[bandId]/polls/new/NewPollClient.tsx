@@ -67,7 +67,7 @@ export function NewPollClient({ bandId }: { bandId: string }) {
         return data.id;
       });
       showToast('Poll created.', 'success');
-      router.push(`/bands/${bandId}/polls/${id}`);
+      router.replace(`/bands/${bandId}/polls/${id}`);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setBusy(false);

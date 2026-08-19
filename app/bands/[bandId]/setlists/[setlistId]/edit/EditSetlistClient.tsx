@@ -55,7 +55,7 @@ export function EditSetlistClient({
   // root layout, where it outlives this component.
   const leave = () => {
     if (canGoBack()) router.back();
-    else router.push(viewHref);
+    else router.replace(viewHref);
   };
 
   const handleSave = async () => {
@@ -77,7 +77,8 @@ export function EditSetlistClient({
       });
       showToast('Setlist saved.', 'success');
       router.refresh();
-      router.push(viewHref);
+      // `replace`, not `push`: a form left in history is what Back returns to.
+      router.replace(viewHref);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setSaving(false);
@@ -109,6 +110,20 @@ export function EditSetlistClient({
         emptyText="Nothing in this setlist yet. Add songs, a set break, or something custom."
         hint="Drag the handle to reorder (or focus it and use the arrow keys); remove an item with ✕."
       />
+
+      <footer className="flex flex-wrap items-center justify-between gap-2">
+        <button type="button" onClick={leave} className="btn-outline">
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!dirty || saving}
+          className="btn-primary"
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+      </footer>
     </div>
   );
 }

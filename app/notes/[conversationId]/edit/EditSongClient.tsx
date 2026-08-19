@@ -117,7 +117,7 @@ export function EditSongClient({
   // the song page has to reflect.
   const leave = () => {
     if (canGoBack()) router.back();
-    else router.push(songHref);
+    else router.replace(songHref);
   };
 
   // Cancel: confirm first if there are unsaved edits, otherwise leave directly.
@@ -197,7 +197,8 @@ export function EditSongClient({
       // Same cache problem as `leave()`: without this the list still holds a
       // payload containing the song that was just deleted.
       router.refresh();
-      router.push('/open-conversations');
+      // `replace`: Back must not return to an editor for something now deleted.
+      router.replace('/open-conversations');
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setDeleteOpen(false);
@@ -211,20 +212,6 @@ export function EditSongClient({
       <div className="flex items-center justify-between gap-2">
         <button type="button" onClick={handleCancel} className="btn-outline">
           {dirty ? 'Cancel' : 'Back'}
-        </button>
-        <button
-          type="button"
-          onClick={handleSaveAll}
-          disabled={!canSave}
-          className="btn-primary inline-flex items-center gap-2"
-        >
-          {/* Decorative: the label already reads "Saving…". */}
-          {busy && (
-            <span aria-hidden="true" className="flex">
-              <Spinner size="xs" tone="onFilled" />
-            </span>
-          )}
-          {busy ? 'Saving…' : 'Save'}
         </button>
       </div>
 
@@ -304,6 +291,27 @@ export function EditSongClient({
           and its musical key. Leave blank if unknown.
         </p>
       </section>
+
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={handleSaveAll}
+          disabled={!canSave}
+          className="btn-primary inline-flex items-center gap-2 w-full justify-center"
+        >
+          {/* Decorative: the label already reads "Saving…". */}
+          {busy && (
+            <span aria-hidden="true" className="flex">
+              <Spinner size="xs" tone="onFilled" />
+            </span>
+          )}
+          {busy ? 'Saving…' : 'Save'}
+        </button>
+      </div>
+
+      <p className="text-[0.6875rem] minor-text-theme-colors">
+        Audio and sheet music will save automatically as soon as it’s uploaded.
+      </p>
 
       {/* Audio versions */}
       <AudioVersions

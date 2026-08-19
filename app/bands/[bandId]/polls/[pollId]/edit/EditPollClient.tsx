@@ -88,7 +88,7 @@ export function EditPollClient({
         await ensureOk(r);
       });
       showToast('Poll updated.', 'success');
-      router.push(pollHref);
+      router.replace(pollHref);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setBusy(false);
@@ -106,7 +106,8 @@ export function EditPollClient({
         await ensureOk(r, [204]);
       });
       showToast('Poll cancelled.', 'success');
-      router.push(`/bands/${bandId}?tab=polls`);
+      // `replace`: Back must not return to an editor for something now deleted.
+      router.replace(`/bands/${bandId}?tab=polls`);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setCancelling(false);
@@ -125,7 +126,7 @@ export function EditPollClient({
         await ensureOk(r, [204]);
       });
       showToast('Poll closed.', 'success');
-      router.push(pollHref);
+      router.replace(pollHref);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setClosing(false);

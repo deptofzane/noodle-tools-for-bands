@@ -164,7 +164,8 @@ export function NewEventClient({
         return data.id;
       });
       showToast('Event created.', 'success');
-      router.push(`/calendar/events/${id}`);
+      // `replace`, not `push`: a form left in history is what Back returns to.
+      router.replace(`/calendar/events/${id}`);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setBusy(false);
@@ -441,6 +442,17 @@ export function NewEventClient({
           The band’s private notes — not shared to the calendar feed.
         </p>
       </CollapsibleSection>
+
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          onClick={handleCreate}
+          disabled={!canSave}
+          className="shrink-0 btn-primary"
+        >
+          {busy ? 'Creating…' : 'Create'}
+        </button>
+      </div>
 
       {venuePickerOpen && (
         <VenuePickerModal

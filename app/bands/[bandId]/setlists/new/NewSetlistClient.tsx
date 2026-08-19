@@ -55,7 +55,8 @@ export function NewSetlistClient({
         await ensureOk(r);
       });
       showToast('Setlist created.', 'success');
-      router.push(`/bands/${bandId}`);
+      // `replace`, not `push`: a form left in history is what Back returns to.
+      router.replace(`/bands/${bandId}`);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setBusy(false);
@@ -94,6 +95,16 @@ export function NewSetlistClient({
             : 'Nothing added yet. Add songs, a set break, or something custom.'
         }
       />
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          onClick={handleDone}
+          disabled={busy || !name.trim()}
+          className="shrink-0 btn-primary"
+        >
+          {busy ? 'Saving…' : 'Done'}
+        </button>
+      </div>
     </div>
   );
 }

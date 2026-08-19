@@ -421,7 +421,7 @@ function SortableRow({
       <button
         type="button"
         aria-label={`Reorder ${name}`}
-        className="cursor-grab touch-none px-1 text-neutral-400 hover:text-neutral-700 active:cursor-grabbing dark:hover:text-neutral-200"
+        className="unselectable cursor-grab touch-none px-1 text-neutral-400 hover:text-neutral-700 active:cursor-grabbing dark:hover:text-neutral-200"
         {...attributes}
         {...listeners}
       >

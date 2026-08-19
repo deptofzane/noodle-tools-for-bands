@@ -91,9 +91,9 @@ export function AlbumEditor({
   const canSave = nameTrim !== '' && !busy;
 
   const leave = () => {
-    if (albumId) router.push(`/bands/${bandId}/albums/${albumId}`);
+    if (albumId) router.replace(`/bands/${bandId}/albums/${albumId}`);
     else if (canGoBack()) router.back();
-    else router.push(`/bands/${bandId}/audio?tab=songs`);
+    else router.replace(`/bands/${bandId}/audio?tab=songs`);
   };
 
   const setVersion = (
@@ -148,7 +148,7 @@ export function AlbumEditor({
       });
       showToast(albumId ? 'Album saved.' : 'Album created.', 'success');
       router.refresh();
-      router.push(`/bands/${bandId}/albums/${id}`);
+      router.replace(`/bands/${bandId}/albums/${id}`);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setBusy(false);

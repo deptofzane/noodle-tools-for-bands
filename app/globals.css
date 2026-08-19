@@ -218,6 +218,15 @@ body {
   position: fixed !important;
 }
 
+/* this makes text on the set list screen unselectable when rearrangine on iOs */
+.unselectable {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none;   /* Safari */
+  -moz-user-select: none;      /* Old Firefox versions */
+  -ms-user-select: none;       /* Internet Explorer/Edge */
+  user-select: none;           /* Non-prefixed version (Chrome, Edge, Opera, Firefox) */
+}
+
 /*
  * Button styles. Padding is roomier on mobile (px-4 py-3) and tighter on
  * desktop (md:px-3 md:py-1.5). `disabled:opacity-50` is a no-op on links.
