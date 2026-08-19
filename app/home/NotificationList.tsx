@@ -5,6 +5,10 @@ import Link from 'next/link';
 import { formatRelativeTime } from '@/lib/format';
 import { usePersistedBoolean } from '../usePersistedBoolean';
 import { Spinner } from '../Spinner';
+import {
+  describeEventChange,
+  describeSongChange,
+} from '@/lib/notification-changes';
 import { NotificationPlayButton } from './NotificationPlayButton';
 import { isPlayableNotification } from './notificationTracks';
 
@@ -35,6 +39,10 @@ export interface NotificationItem {
     | 'album';
   subjectId: string | null;
   subjectLabel: string | null;
+  /** Fields an edit touched; null on rows written before this existed. */
+  changedFields: string[] | null;
+  /** The subject's previous name, on renames. */
+  previousLabel: string | null;
   /** Upload rollups only: the day they cover. */
   day: string | null;
   /** True when a rollup collected uploads from more than one person. */
@@ -89,10 +97,24 @@ function messageFor(n: NotificationItem): string {
       return `${who} posted in ${band} chat`;
     case 'event-added':
       return `${who} added an event: ${n.subjectLabel ?? 'Untitled'}`;
-    case 'song-updated':
-      return `${who} updated ${n.subjectLabel ?? 'a song'}`;
-    case 'event-updated':
-      return `${who} updated the event: ${n.subjectLabel ?? 'Untitled'}`;
+    case 'song-updated': {
+      // Names what changed when the row records it; older rows have no field
+      // list, so they keep the wording they were written with.
+      const said = describeSongChange(n.changedFields, n.subjectLabel ?? 'a song', {
+        previousLabel: n.previousLabel,
+        bandName: n.bandName,
+      });
+      return said ? `${who} ${said}` : `${who} updated ${n.subjectLabel ?? 'a song'}`;
+    }
+    case 'event-updated': {
+      const said = describeEventChange(
+        n.changedFields,
+        n.subjectLabel ?? 'Untitled',
+      );
+      return said
+        ? `${who} ${said}`
+        : `${who} updated the event: ${n.subjectLabel ?? 'Untitled'}`;
+    }
     case 'band-updated':
       return `${who} updated ${band}${n.subjectLabel ? ` (${n.subjectLabel})` : ''}`;
     case 'poll-created':

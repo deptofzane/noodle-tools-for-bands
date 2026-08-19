@@ -69,9 +69,14 @@ export async function PATCH(
     return NextResponse.json({ error: 'bad_body' }, { status: 400 });
 
   let conversation = membership.conversation;
-  // Track whether a content edit (rename / move / archive) happened, so we
-  // notify once at the end — not for plain open/close toggles.
-  let edited = false;
+  // What the edit actually touched, so the notification can name it rather
+  // than saying "updated a song". Also decides *whether* to notify: an empty
+  // list means nothing changed, and a save that changed nothing shouldn't
+  // reach the band's feed.
+  const changed: string[] = [];
+  // The name before any rename, captured before `conversation` is reassigned
+  // below — afterwards only the new name is in scope.
+  const previousName = conversation.audioFileName;
 
   if (typeof body.name === 'string') {
     const name = body.name.trim();
@@ -80,8 +85,12 @@ export async function PATCH(
         { error: 'bad_name', message: 'Name must be 1–255 characters.' },
         { status: 400 },
       );
-    conversation = await renameConversation(conversationId, name);
-    edited = true;
+    // Compare first: renaming to the same string is a no-op, and used to
+    // notify the whole band anyway.
+    if (name !== (conversation.audioFileName ?? null)) {
+      conversation = await renameConversation(conversationId, name);
+      changed.push('name');
+    }
   }
 
   if (typeof body.bandId === 'string' && body.bandId !== conversation.bandId) {
@@ -93,7 +102,7 @@ export async function PATCH(
       );
     try {
       conversation = await moveConversation(conversationId, body.bandId);
-      edited = true;
+      changed.push('band');
     } catch (err) {
       if (err instanceof ConversationConflictError)
         return NextResponse.json(
@@ -110,8 +119,15 @@ export async function PATCH(
   }
 
   if (typeof body.archived === 'boolean') {
-    conversation = await setConversationArchived(conversationId, body.archived);
-    edited = true;
+    // Same no-op guard as the rename: only report an actual change, and say
+    // which direction it went so the wording can differ.
+    if (body.archived !== conversation.archived) {
+      conversation = await setConversationArchived(
+        conversationId,
+        body.archived,
+      );
+      changed.push(body.archived ? 'archived' : 'unarchived');
+    }
   }
 
   // Optional song metadata (original band / tempo / key). Present-but-unchanged
@@ -177,10 +193,12 @@ export async function PATCH(
     meta.key !== undefined
   ) {
     conversation = await setConversationMeta(conversationId, meta);
-    edited = true;
+    // `meta` only carries keys whose value actually differs, so its keys are
+    // exactly the fields that changed.
+    changed.push(...Object.keys(meta));
   }
 
-  if (edited) {
+  if (changed.length > 0) {
     await notify({
       bandId: conversation.bandId,
       actorId: user.id,
@@ -188,6 +206,10 @@ export async function PATCH(
       subjectType: 'conversation',
       subjectId: conversationId,
       subjectLabel: conversation.audioFileName,
+      changedFields: changed,
+      // Only meaningful on a rename; harmless otherwise, and the phrasing
+      // helper reads it only when 'name' is in the list.
+      previousLabel: changed.includes('name') ? previousName : null,
     });
   }
 

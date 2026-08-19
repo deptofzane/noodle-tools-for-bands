@@ -45,6 +45,13 @@ export interface NotificationDTO {
   subjectType: NotificationSubject;
   subjectId: string | null;
   subjectLabel: string | null;
+  /**
+   * Which fields an edit touched, for kinds that report it. Null on rows
+   * written before this existed — phrasing falls back to the generic wording.
+   */
+  changedFields: string[] | null;
+  /** The subject's previous name, on renames. */
+  previousLabel: string | null;
   /** Upload rollups only: the day they cover (see the schema comment). */
   day: string | null;
   /** True when a rollup collected uploads from more than one person. */
@@ -117,6 +124,10 @@ export interface CreateNotificationInput {
   /** Uploader's local day, on upload rollups. See the schema comment. */
   day?: string | null;
   subjectLabel?: string | null;
+  /** Field tokens an edit touched — see the schema comment for why tokens. */
+  changedFields?: string[] | null;
+  /** The subject's name before a rename; `subjectLabel` holds the new one. */
+  previousLabel?: string | null;
 }
 
 /**
@@ -149,6 +160,8 @@ export async function createNotification(
     subjectType: input.subjectType,
     subjectId: input.subjectId ?? null,
     subjectLabel: input.subjectLabel ?? null,
+    changedFields: input.changedFields ?? null,
+    previousLabel: input.previousLabel ?? null,
     day: input.day ?? null,
   });
   return { actorName, bandName };
@@ -410,6 +423,8 @@ export async function listNotifications(
       subjectType: notifications.subjectType,
       subjectId: notifications.subjectId,
       subjectLabel: notifications.subjectLabel,
+      changedFields: notifications.changedFields,
+      previousLabel: notifications.previousLabel,
       day: notifications.day,
       multiActor: notifications.multiActor,
       bandId: notifications.bandId,

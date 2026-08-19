@@ -344,6 +344,13 @@
       "when": 1786750779675,
       "tag": "0048_solid_payback",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1787163680740,
+      "tag": "0049_glorious_groot",
+      "breakpoints": true
     }
   ]
 }

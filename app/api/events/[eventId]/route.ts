@@ -113,7 +113,7 @@ export async function PATCH(
   }
 
   const time = str(body?.time);
-  await updateEvent(eventId, {
+  const next = {
     title,
     eventType,
     date,
@@ -125,15 +125,36 @@ export async function PATCH(
     notes: str(body?.notes),
     setlistId,
     venueId,
-  });
-  await notify({
-    bandId: event.bandId,
-    actorId: user.id,
-    kind: 'event-updated',
-    subjectType: 'event',
-    subjectId: eventId,
-    subjectLabel: title,
-  });
+  };
+
+  /**
+   * What the edit touched.
+   *
+   * The client submits the whole event every time, so unlike the song route
+   * there's no partial payload to read this off — it can only come from
+   * comparing with `event`, the pre-update row already loaded above for the
+   * permission check. No extra query.
+   */
+  const changed = (Object.keys(next) as (keyof typeof next)[]).filter(
+    (k) => next[k] !== (event[k] ?? null),
+  );
+
+  await updateEvent(eventId, next);
+
+  // Only when something actually changed. This route used to notify
+  // unconditionally, so opening an event and pressing Save without touching
+  // anything told the whole band it had been updated.
+  if (changed.length > 0) {
+    await notify({
+      bandId: event.bandId,
+      actorId: user.id,
+      kind: 'event-updated',
+      subjectType: 'event',
+      subjectId: eventId,
+      subjectLabel: title,
+      changedFields: changed,
+    });
+  }
   return NextResponse.json({ ok: true });
 }
 

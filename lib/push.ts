@@ -11,6 +11,10 @@ import {
   deletePushSubscription,
   listPushTargets,
 } from './db/push-subscriptions';
+import {
+  describeEventChange,
+  describeSongChange,
+} from './notification-changes';
 
 /**
  * Web Push fan-out for notifications. Mirrors the in-app feed's phrasing and
@@ -42,6 +46,8 @@ function pushBody(
   who: string,
   band: string,
   subjectLabel: string | null,
+  changedFields: string[] | null,
+  previousLabel: string | null,
 ): string {
   switch (kind) {
     case 'song-comment':
@@ -50,10 +56,19 @@ function pushBody(
       return `${who} posted in ${band} chat`;
     case 'event-added':
       return `${who} added an event: ${subjectLabel ?? 'Untitled'}`;
-    case 'song-updated':
-      return `${who} updated ${subjectLabel ?? 'a song'}`;
-    case 'event-updated':
-      return `${who} updated the event: ${subjectLabel ?? 'Untitled'}`;
+    case 'song-updated': {
+      const said = describeSongChange(changedFields, subjectLabel ?? 'a song', {
+        previousLabel,
+        bandName: band,
+      });
+      return said ? `${who} ${said}` : `${who} updated ${subjectLabel ?? 'a song'}`;
+    }
+    case 'event-updated': {
+      const said = describeEventChange(changedFields, subjectLabel ?? 'Untitled');
+      return said
+        ? `${who} ${said}`
+        : `${who} updated the event: ${subjectLabel ?? 'Untitled'}`;
+    }
     case 'band-updated':
       return `${who} updated ${band}${subjectLabel ? ` (${subjectLabel})` : ''}`;
     case 'poll-created':
@@ -156,6 +171,8 @@ export async function sendEventPush(
       actorName ?? 'Someone',
       bandName ?? 'the band',
       input.subjectLabel ?? null,
+      input.changedFields ?? null,
+      input.previousLabel ?? null,
     ),
     url: pushUrl(
       input.subjectType,

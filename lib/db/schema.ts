@@ -282,6 +282,23 @@ export const notifications = pgTable(
      * 1 for non-rollup rows, where it means nothing.
      */
     uploadCount: integer('upload_count').notNull().default(1),
+    /**
+     * Which fields an edit touched, e.g. `['date','time']` — what turns
+     * "updated the event" into "updated the date and time on it".
+     *
+     * Field *tokens*, deliberately, not a rendered sentence: the wording lives
+     * in the UI, so the feed and a push can phrase the same row differently
+     * and the plural rules can be changed later without rewriting rows. Null
+     * on everything written before this existed, which is why every phrasing
+     * site keeps its old generic branch as a fallback.
+     */
+    changedFields: text('changed_fields').array(),
+    /**
+     * What the subject was called before, on renames only — so a notification
+     * can say "renamed Blue Room to Wildfire" rather than naming the result
+     * alone. `subject_label` always holds the *current* name.
+     */
+    previousLabel: text('previous_label'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
