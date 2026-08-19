@@ -14,7 +14,11 @@ import { usePersistedStringSet } from '../../usePersistedStringSet';
 import { PAGE_SIZE } from '@/lib/paging';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
-import { NOTE_LINK_KINDS, noteLinkHref } from '@/lib/note-links';
+import {
+  NOTE_LINK_KINDS,
+  externalNoteUrl,
+  noteLinkHref,
+} from '@/lib/note-links';
 import type { NoteLink, UserNote } from '@/lib/db/user-notes';
 
 function kindLabel(kind: NoteLink['kind']): string {
@@ -22,9 +26,22 @@ function kindLabel(kind: NoteLink['kind']): string {
 }
 
 /** A note's link as a chip — a link when it leads somewhere, text when it doesn't. */
-function LinkChip({ link, bandId }: { link: NoteLink; bandId: string }) {
+function LinkChip({
+  link,
+  bandId,
+  onExternal,
+}: {
+  link: NoteLink;
+  bandId: string;
+  /** Asked to confirm before leaving the app. */
+  onExternal: (url: string) => void;
+}) {
   const href = noteLinkHref(link, bandId);
-  const external = link.kind === 'other' && /^https?:\/\//i.test(href ?? '');
+  // `other` links are free text; this is what decides whether one is openable
+  // and supplies the scheme when the author didn't type one.
+  const externalUrl =
+    link.kind === 'other' ? externalNoteUrl(href) : null;
+  const external = externalUrl !== null;
   const inner = (
     <>
       <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide minor-text-theme-colors dark:bg-neutral-900">
@@ -41,10 +58,18 @@ function LinkChip({ link, bandId }: { link: NoteLink; bandId: string }) {
     return <span className={shell}>{inner}</span>;
   if (external)
     return (
+      // Still a real anchor, not a button: right-click "copy link address" and
+      // middle-click keep working, and those bypass the prompt deliberately —
+      // someone doing either has already said where they're going.
       <a
-        href={href}
+        href={externalUrl}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={(e) => {
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+          e.preventDefault();
+          onExternal(externalUrl);
+        }}
         className={`${shell} hover:bg-neutral-50 dark:hover:bg-neutral-900`}
       >
         {inner}
@@ -84,6 +109,9 @@ export function BandNotesTab({
   const showToast = useToast();
   const [deleteTarget, setDeleteTarget] = useState<UserNote | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // External link awaiting confirmation. One modal for the whole tab rather
+  // than one per chip — only one can be open at a time.
+  const [externalUrl, setExternalUrl] = useState<string | null>(null);
 
   // Collapsed unless the id is in the set, so notes start minimized and a
   // brand-new one doesn't spring open on the next visit.
@@ -239,7 +267,12 @@ export function BandNotesTab({
                 {open && note.links.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {note.links.map((l) => (
-                      <LinkChip key={l.id} link={l} bandId={bandId} />
+                      <LinkChip
+                        key={l.id}
+                        link={l}
+                        bandId={bandId}
+                        onExternal={setExternalUrl}
+                      />
                     ))}
                   </div>
                 )}
@@ -258,6 +291,30 @@ export function BandNotesTab({
           onLoadMore={() => void loadMore()}
         />
       )}
+
+      {/*
+        Leaving the app is worth a beat's confirmation: a note's links are
+        pasted by a bandmate, and in the installed app a tap otherwise hands
+        the screen to a site with no address bar explaining where you went.
+
+        `window.open` covers both cases the same way — a new tab in a browser,
+        and the system browser from the installed app, because the destination
+        is cross-origin and so isn't captured back into the app's scope. It's
+        called straight from the confirm click, so it counts as a user gesture
+        and isn't treated as a popup.
+      */}
+      <ConfirmModal
+        open={externalUrl !== null}
+        title="Open this link?"
+        description={`Are you sure you want to open this link to ${externalUrl ?? ''}?`}
+        confirmLabel="Open link"
+        onConfirm={() => {
+          if (externalUrl)
+            window.open(externalUrl, '_blank', 'noopener,noreferrer');
+          setExternalUrl(null);
+        }}
+        onCancel={() => setExternalUrl(null)}
+      />
 
       <ConfirmModal
         open={deleteTarget !== null}
