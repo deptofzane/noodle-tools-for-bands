@@ -10,6 +10,20 @@ export const SHEET_TEXT_FORMATS: { id: SheetTextFormat; label: string }[] = [
   { id: 'chordpro', label: 'ChordPro' },
 ];
 
+/**
+ * What a freshly pasted chart starts as.
+ *
+ * Source, not Markdown: a chart pasted from anywhere else is plain text whose
+ * line breaks and column alignment *are* the chart. Markdown collapses those,
+ * so the default silently reformatted the thing being pasted, and getting it
+ * back meant knowing to switch first.
+ *
+ * Only the starting selection for a *new* paste. What an existing file is read
+ * back as comes from its extension — see `formatFromFileName` — so nothing
+ * already saved changes meaning.
+ */
+export const DEFAULT_SHEET_TEXT_FORMAT: SheetTextFormat = 'source';
+
 /** The filename + MIME to save a pasted sheet under, encoding its format. */
 export function sheetFormatFile(format: SheetTextFormat): {
   name: string;

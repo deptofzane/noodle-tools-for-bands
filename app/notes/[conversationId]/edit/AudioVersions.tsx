@@ -11,6 +11,7 @@ import {
   type DropboxPickedFile,
 } from '../../../DropboxChooserButton';
 import { ConnectDriveButton } from '../../../ConnectDriveButton';
+import { usePersistedBoolean } from '../../../usePersistedBoolean';
 import { Spinner } from '../../../Spinner';
 
 const AUDIO_EXTENSIONS = [
@@ -59,6 +60,20 @@ export function AudioVersions({
   const [versions, setVersions] = useState<AudioVersionMeta[]>(initial);
   const [busy, setBusy] = useState(false);
   const [chooseOpen, setChooseOpen] = useState(false);
+  /**
+   * Whether an added version takes over as the song's default.
+   *
+   * Per device rather than per song: it's a working habit — someone tracking
+   * takes wants the newest one to be what the band hears — so it should hold
+   * across songs and visits without being set again each time.
+   *
+   * Named for the setting, not `makeDefault`, which is already the action that
+   * promotes an existing version below.
+   */
+  const [defaultOnUpload, setDefaultOnUpload] = usePersistedBoolean(
+    'audioDefaultOnUpload',
+    true,
+  );
   const [deleteTarget, setDeleteTarget] = useState<AudioVersionMeta | null>(
     null,
   );
@@ -90,6 +105,7 @@ export function AudioVersions({
       await trackPending(async () => {
         const form = new FormData();
         form.append('file', file);
+        form.append('makeDefault', String(defaultOnUpload));
         const res = await fetch(uploadEndpoint(), {
           method: 'POST',
           body: form,
@@ -114,7 +130,7 @@ export function AudioVersions({
         const res = await fetch(uploadEndpoint(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ makeDefault: defaultOnUpload, ...payload }),
         });
         await ensureOk(res);
         await refresh();
@@ -339,6 +355,19 @@ export function AudioVersions({
           {busy ? 'Adding…' : 'Add version'}
         </button>
       </div>
+
+      {/* Under the container, so it reads as a setting for whatever is added
+          next rather than a property of the list above it. Applies to every
+          source in the chooser — upload, Drive and Dropbox alike. */}
+      <label className="flex items-center gap-2 text-xs minor-text-theme-colors">
+        <input
+          type="checkbox"
+          checked={defaultOnUpload}
+          onChange={(e) => setDefaultOnUpload(e.target.checked)}
+          className="h-4 w-4"
+        />
+        Make new versions the default
+      </label>
 
       <input
         ref={inputRef}

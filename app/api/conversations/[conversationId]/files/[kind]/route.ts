@@ -32,6 +32,10 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const VALID_KINDS: SongFileKind[] = ['audio', 'sheet_music'];
+/** Matches the rename endpoint's ceiling, so a label can't be set here
+ * that the edit screen would then refuse. */
+const MAX_LABEL_LEN = 100;
+
 const MAX_SHEET_BYTES = 25 * 1024 * 1024; // 25 MB
 
 function parseKind(raw: string): SongFileKind | null {
@@ -148,10 +152,14 @@ export async function POST(
     sizeBytes: number;
     fileName: string;
     mimeType: string;
+    label?: string | null;
     driveFileId?: string | null;
   }) =>
     replaceVersionId
-      ? updateSheetVersionContent({
+      ? // A replace keeps the existing version's label along with its default
+        // flag and per-user preferences, so any label sent with one is ignored
+        // rather than quietly overwriting what's there.
+        updateSheetVersionContent({
           conversationId,
           versionId: replaceVersionId,
           body: v.body,
@@ -380,6 +388,14 @@ export async function POST(
   }
 
   const fileName = file.name || 'sheet-music';
+  // Optional, and named at upload time so a pasted chart can be titled in the
+  // same step rather than uploaded and then renamed. Trimmed to the same
+  // ceiling the rename endpoint uses.
+  const rawLabel = form?.get('label');
+  const label =
+    typeof rawLabel === 'string' && rawLabel.trim()
+      ? rawLabel.trim().slice(0, MAX_LABEL_LEN)
+      : null;
   // Allowlist the content type — `accept` on the input is only a hint,
   // and serving arbitrary user files inline (HTML/SVG) is an XSS vector.
   const mimeType = normalizeSheetMime(file.type, fileName);
@@ -400,6 +416,7 @@ export async function POST(
       sizeBytes: file.size,
       fileName,
       mimeType,
+      label,
     }),
   );
   if (!version) return Response.json({ error: 'not_found' }, { status: 404 });

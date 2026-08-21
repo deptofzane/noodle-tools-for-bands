@@ -454,10 +454,15 @@ export interface AudioVersion {
 }
 
 /**
- * Add a new audio version to a song. The first audio version for a
- * conversation automatically becomes the default; subsequent ones don't.
- * Runs the "is this the first?" check and the insert in one transaction so
- * the default flag stays consistent with the partial unique index.
+ * Add a new audio version to a song.
+ *
+ * The first audio version always becomes the default, since a song with audio
+ * and no default would play nothing. After that it depends on `makeDefault`.
+ *
+ * The check, the demotion and the insert share one transaction: the partial
+ * unique index permits a single default per song, so clearing the old one and
+ * setting the new one in separate statements would leave a window with none —
+ * and a concurrent read there would see a song whose audio can't be played.
  */
 export async function addAudioVersion(input: {
   conversationId: string;
@@ -467,6 +472,13 @@ export async function addAudioVersion(input: {
   mimeType: string;
   label?: string | null;
   driveFileId?: string | null;
+  /**
+   * Promote this version to the song's default, demoting whatever held it.
+   *
+   * Omitted means the old behaviour — only the first version is default — so
+   * callers that create a song from an upload are unaffected.
+   */
+  makeDefault?: boolean;
 }): Promise<AudioVersion> {
   const key = audioVersionKey(input.conversationId, randomUUID());
   await putObjectStream(key, input.body, input.mimeType, input.sizeBytes);
@@ -490,7 +502,21 @@ export async function addAudioVersion(input: {
         ),
       )
       .limit(1);
-    const isDefault = existing.length === 0;
+    const isDefault = existing.length === 0 || input.makeDefault === true;
+    // Demote the incumbent before inserting, or the index rejects the second
+    // default row.
+    if (isDefault && existing.length > 0) {
+      await tx
+        .update(songFiles)
+        .set({ isDefault: false })
+        .where(
+          and(
+            eq(songFiles.conversationId, input.conversationId),
+            eq(songFiles.kind, 'audio'),
+            eq(songFiles.isDefault, true),
+          ),
+        );
+    }
 
     const [inserted] = await tx
       .insert(songFiles)

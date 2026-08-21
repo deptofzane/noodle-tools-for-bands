@@ -19,6 +19,7 @@ import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
 import {
   previewKind,
+  DEFAULT_SHEET_TEXT_FORMAT,
   SHEET_TEXT_FORMATS,
   sheetFormatFile,
   type SheetTextFormat,
@@ -65,7 +66,12 @@ export function SheetMusicVersions({
   const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
   const [pasteMode, setPasteMode] = useState(false);
   const [pasteText, setPasteText] = useState('');
-  const [pasteFormat, setPasteFormat] = useState<SheetTextFormat>('markdown');
+  // Optional title for a pasted chart, so it can be named in the same step
+  // rather than added and then renamed.
+  const [pasteLabel, setPasteLabel] = useState('');
+  const [pasteFormat, setPasteFormat] = useState<SheetTextFormat>(
+    DEFAULT_SHEET_TEXT_FORMAT,
+  );
   const [deleteTarget, setDeleteTarget] = useState<SheetVersionMeta | null>(
     null,
   );
@@ -133,7 +139,7 @@ export function SheetMusicVersions({
   const doneToast = (replacing: string | null) =>
     replacing ? 'Sheet music updated.' : 'Version added.';
 
-  const addLocal = async (file: File) => {
+  const addLocal = async (file: File, label?: string) => {
     if (busy) return;
     const replacing = replaceTargetId;
     setBusy(true);
@@ -141,6 +147,9 @@ export function SheetMusicVersions({
       await trackPending(async () => {
         const form = new FormData();
         form.append('file', file);
+        // Omitted rather than sent empty; a replace ignores it either way,
+        // since overwriting a file keeps the version's existing label.
+        if (label?.trim()) form.append('label', label.trim());
         const res = await fetch(postUrl(replacing), {
           method: 'POST',
           body: form,
@@ -195,10 +204,12 @@ export function SheetMusicVersions({
     if (!text.trim() || busy) return;
     const f = sheetFormatFile(pasteFormat);
     const file = new File([text], f.name, { type: f.type });
+    const label = pasteLabel;
     setChooseOpen(false);
     setPasteMode(false);
     setPasteText('');
-    await addLocal(file);
+    setPasteLabel('');
+    await addLocal(file, label);
   };
 
   const makeDefault = async (id: string) => {
@@ -569,6 +580,19 @@ export function SheetMusicVersions({
                   </button>
                 ))}
               </div>
+              <label className="mt-3 flex flex-col gap-1">
+                <span className="text-sm minor-text-theme-colors">
+                  Label <span className="text-xs">(optional)</span>
+                </span>
+                <input
+                  type="text"
+                  value={pasteLabel}
+                  onChange={(e) => setPasteLabel(e.target.value)}
+                  maxLength={100}
+                  placeholder="e.g. Bass chart, Capo 2"
+                  className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+                />
+              </label>
               <textarea
                 value={pasteText}
                 onChange={(e) => setPasteText(e.target.value)}
@@ -583,6 +607,7 @@ export function SheetMusicVersions({
                   onClick={() => {
                     setPasteMode(false);
                     setPasteText('');
+                    setPasteLabel('');
                   }}
                   disabled={busy}
                   className="btn-ghost"
@@ -651,7 +676,8 @@ export function SheetMusicVersions({
                 <button
                   type="button"
                   onClick={() => {
-                    setPasteFormat('markdown');
+                    setPasteFormat(DEFAULT_SHEET_TEXT_FORMAT);
+                    setPasteLabel('');
                     setPasteMode(true);
                   }}
                   className="btn-outline"

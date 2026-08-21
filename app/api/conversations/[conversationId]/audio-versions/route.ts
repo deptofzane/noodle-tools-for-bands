@@ -18,8 +18,10 @@ import { fetchDropboxFile } from '@/lib/dropbox';
  *   POST → add a new version, from a local upload (multipart `file`) or a
  *          Drive import (JSON `{ driveFileId }`). Optional `label`.
  *
- * A song's first audio version is automatically its default; added
- * versions are not. Both require band membership.
+ * A song's first audio version is always its default. After that, pass
+ * `makeDefault` (JSON boolean, or the string "true" in multipart) to promote
+ * the new version and demote the incumbent; without it, added versions are
+ * not default. Both require band membership.
  */
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -74,6 +76,10 @@ export async function POST(
   if (contentType.includes('application/json')) {
     const body = await req.json().catch(() => null);
     const label = typeof body?.label === 'string' ? body.label.trim() : '';
+    // Opt-in, and sent by the edit screen for every source. Absent means the
+    // old rule (only the first version is default), so other callers are
+    // unaffected.
+    const makeDefault = body?.makeDefault === true;
 
     // Dropbox: stream the direct link server-side (no OAuth token needed).
     const dropboxUrl =
@@ -138,6 +144,7 @@ export async function POST(
             fileName: name,
             mimeType,
             label: label || null,
+            makeDefault,
           }),
         );
         await announce(version);
@@ -204,6 +211,7 @@ export async function POST(
           mimeType: metaRes.data.mimeType ?? 'application/octet-stream',
           label: label || null,
           driveFileId,
+          makeDefault,
         }),
       );
       await announce(version);
@@ -227,6 +235,8 @@ export async function POST(
     typeof form?.get('label') === 'string'
       ? String(form.get('label')).trim()
       : '';
+  // Multipart carries it as a string; only an explicit "true" opts in.
+  const makeDefault = form?.get('makeDefault') === 'true';
   if (!(file instanceof File) || file.size === 0) {
     return NextResponse.json(
       { error: 'no_file', message: 'An audio file is required.' },
@@ -256,6 +266,7 @@ export async function POST(
         fileName,
         mimeType,
         label: label || null,
+        makeDefault,
       }),
     );
     await announce(version);
