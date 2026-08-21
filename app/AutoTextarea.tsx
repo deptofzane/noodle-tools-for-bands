@@ -28,8 +28,39 @@ export function AutoTextarea(
   const resize = useCallback(() => {
     const el = ref.current;
     if (!el) return;
+
+    /**
+     * Measuring costs a moment of collapse: `height: auto` drops the textarea
+     * to a single row so `scrollHeight` reports the content's real height.
+     *
+     * On a long chart that shortens the document by thousands of pixels, and
+     * the browser responds by clamping the scroll position to what's left.
+     * Restoring the height restores the document, but not the scroll — so
+     * every keystroke threw the page back to the top while editing sheet
+     * music in Practice.
+     *
+     * The fix is to put the scroll back. Ancestors are checked too, not just
+     * the window: a textarea inside a scrolling pane or a modal is clamped the
+     * same way, and which one actually scrolls depends on the caller.
+     */
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const ancestors: { node: HTMLElement; top: number }[] = [];
+    for (let n = el.parentElement; n; n = n.parentElement) {
+      if (n.scrollHeight > n.clientHeight) {
+        ancestors.push({ node: n, top: n.scrollTop });
+      }
+    }
+
     el.style.height = 'auto';
     el.style.height = `${el.scrollHeight}px`;
+
+    // Innermost first, then the page. Assigning only when it actually moved
+    // keeps this a no-op in the common case where nothing was clamped.
+    for (const a of ancestors) {
+      if (a.node.scrollTop !== a.top) a.node.scrollTop = a.top;
+    }
+    if (window.scrollY !== scrollY) window.scrollTo(scrollX, scrollY);
   }, []);
 
   // Fit on mount and whenever the value changes programmatically.
