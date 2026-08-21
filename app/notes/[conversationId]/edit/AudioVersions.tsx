@@ -6,6 +6,7 @@ import { ConfirmModal } from '../../../ConfirmModal';
 import { Modal } from '../../../Modal';
 import { PickerButton, type PickedFile } from '../../../PickerButton';
 import { AUDIO_PICKER_FILTER } from '@/lib/picker-filters';
+import { MAX_AUDIO_BYTES, normalizeAudioMime } from '@/lib/audio-mime';
 import {
   DropboxChooserButton,
   type DropboxPickedFile,
@@ -78,6 +79,14 @@ export function AudioVersions({
     null,
   );
   const [deleting, setDeleting] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  /*
+   * `dragenter` and `dragleave` fire again for every child the pointer
+   * crosses, so a plain boolean flickers off the moment the cursor moves from
+   * the container onto a row inside it. Counting enter/leave pairs tracks
+   * whether the pointer is still somewhere within the container.
+   */
+  const dragDepth = useRef(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -98,28 +107,122 @@ export function AudioVersions({
     }
   };
 
-  const addLocal = async (file: File) => {
-    if (busy) return;
-    setBusy(true);
-    try {
-      await trackPending(async () => {
-        const form = new FormData();
-        form.append('file', file);
-        form.append('makeDefault', String(defaultOnUpload));
-        const res = await fetch(uploadEndpoint(), {
-          method: 'POST',
-          body: form,
+  /**
+   * Upload local files as versions — one from the file input, or several from
+   * a drop.
+   *
+   * Sequential rather than parallel: the route buffers each upload in memory
+   * under a concurrency limit, so firing a dropped folder's worth at once is
+   * the case that limit exists to prevent. It also makes `defaultOnUpload`
+   * deterministic — the versions land in the order given, so the last file
+   * ends up the default rather than whichever request happened to finish
+   * last.
+   */
+  const addLocalFiles = async (files: File[]) => {
+    if (busy || files.length === 0) return;
+
+    /*
+     * Screen with the same rule the route applies, so a wrong file costs a
+     * rejection rather than a full upload. Dropping is easy to do carelessly
+     * — a folder arrives as an extension-less entry and lands here too.
+     */
+    const problems: string[] = [];
+    const accepted = files.filter((f) => {
+      if (!normalizeAudioMime(f.type, f.name)) {
+        problems.push(`${f.name} isn’t an audio file.`);
+        return false;
+      }
+      if (f.size > MAX_AUDIO_BYTES) {
+        problems.push(`${f.name} is over the 50 MB limit.`);
+        return false;
+      }
+      return true;
+    });
+
+    let added = 0;
+    if (accepted.length > 0) {
+      setBusy(true);
+      try {
+        await trackPending(async () => {
+          for (const file of accepted) {
+            try {
+              const form = new FormData();
+              form.append('file', file);
+              form.append('makeDefault', String(defaultOnUpload));
+              const res = await fetch(uploadEndpoint(), {
+                method: 'POST',
+                body: form,
+              });
+              await ensureOk(res);
+              added += 1;
+            } catch (e) {
+              // Keep going: one bad file in a drop shouldn't strand the rest.
+              problems.push(e instanceof Error ? e.message : String(e));
+            }
+          }
+          // Outside the loop, and guarded, so files that did land still show
+          // even when a later one failed.
+          if (added > 0) await refresh();
         });
-        await ensureOk(res);
-        await refresh();
-      });
-      showToast('Version added.', 'success');
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-      if (inputRef.current) inputRef.current.value = '';
+      } finally {
+        setBusy(false);
+        if (inputRef.current) inputRef.current.value = '';
+      }
     }
+
+    if (added > 0) {
+      showToast(
+        added === 1 ? 'Version added.' : `${added} versions added.`,
+        'success',
+      );
+    }
+    if (problems.length === 1) showToast(problems[0]!);
+    else if (problems.length > 1)
+      showToast(`${problems.length} files couldn’t be added.`);
+  };
+
+  /**
+   * Only react to files. Dragging selected text or a link fires these events
+   * too, and without this the container would light up for a drop it has no
+   * use for.
+   */
+  const isFileDrag = (e: React.DragEvent) =>
+    e.dataTransfer.types.includes('Files');
+
+  const onDragEnter = (e: React.DragEvent) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    dragDepth.current += 1;
+    if (!busy) setDragging(true);
+  };
+
+  const onDragOver = (e: React.DragEvent) => {
+    if (!isFileDrag(e)) return;
+    // Claiming the drop means preventing the default on *dragover*, not just
+    // on drop — without it the browser refuses to deliver a drop at all, and
+    // opens the file over this page instead, discarding unsaved edits.
+    e.preventDefault();
+    // Turn drops away mid-upload, but keep claiming them, so a mistimed one
+    // is ignored rather than navigating.
+    e.dataTransfer.dropEffect = busy ? 'none' : 'copy';
+  };
+
+  const onDragLeave = (e: React.DragEvent) => {
+    if (!isFileDrag(e)) return;
+    dragDepth.current -= 1;
+    if (dragDepth.current <= 0) {
+      dragDepth.current = 0;
+      setDragging(false);
+    }
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    dragDepth.current = 0;
+    setDragging(false);
+    if (busy) return;
+    void addLocalFiles(Array.from(e.dataTransfer.files));
   };
 
   const addFromJson = async (payload: Record<string, unknown>) => {
@@ -233,109 +336,138 @@ export function AudioVersions({
         across all versions.
       </p>
 
-      {versions.length > 0 ? (
-        <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-          {versions.map((v) => (
-            <li
-              key={v.id}
-              className="flex items-center justify-between gap-3 px-3 py-2"
-            >
-              {editingId === v.id ? (
-                <form
-                  className="flex min-w-0 flex-1 items-center gap-2"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void saveLabel(v.id);
-                  }}
-                >
-                  <input
-                    autoFocus
-                    value={editValue}
-                    onChange={(e) => setEditValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') setEditingId(null);
+      {/*
+        The drop target is the list container rather than the whole section,
+        so it lines up with the box the versions are already drawn in. The
+        button below stays the keyboard-reachable way in — dragging is an
+        accelerator, never the only route.
+      */}
+      <div
+        className="relative"
+        onDragEnter={onDragEnter}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+      >
+        {versions.length > 0 ? (
+          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+            {versions.map((v) => (
+              <li
+                key={v.id}
+                className="flex items-center justify-between gap-3 px-3 py-2"
+              >
+                {editingId === v.id ? (
+                  <form
+                    className="flex min-w-0 flex-1 items-center gap-2"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void saveLabel(v.id);
                     }}
-                    maxLength={100}
-                    placeholder={v.fileName}
-                    aria-label="Version label"
-                    className="min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
-                  />
-                  <button
-                    type="submit"
-                    disabled={busy}
-                    className="shrink-0 rounded-md bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50"
                   >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditingId(null)}
-                    disabled={busy}
-                    className="shrink-0 rounded-md px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                  >
-                    Cancel
-                  </button>
-                </form>
-              ) : (
-                <>
-                  <div className="flex min-w-0 flex-col">
-                    <span className="flex items-center gap-2">
-                      <span className="truncate text-sm">
-                        {v.label || v.fileName}
-                      </span>
-                      {v.isDefault && (
-                        <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[0.625rem] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                          Default
-                        </span>
-                      )}
-                    </span>
-                    <span className="truncate text-[0.6875rem] minor-text-theme-colors">
-                      {v.label ? `${v.fileName} · ` : ''}
-                      {v.songLength != null
-                        ? formatDuration(v.songLength)
-                        : '—'}
-                    </span>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
+                    <input
+                      autoFocus
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') setEditingId(null);
+                      }}
+                      maxLength={100}
+                      placeholder={v.fileName}
+                      aria-label="Version label"
+                      className="min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+                    />
+                    <button
+                      type="submit"
+                      disabled={busy}
+                      className="shrink-0 rounded-md bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+                    >
+                      Save
+                    </button>
                     <button
                       type="button"
-                      onClick={() => startEdit(v)}
+                      onClick={() => setEditingId(null)}
                       disabled={busy}
-                      aria-label={`Edit label for ${v.label || v.fileName}`}
-                      className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                      className="shrink-0 rounded-md px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
                     >
-                      {v.label ? 'Rename' : 'Label'}
+                      Cancel
                     </button>
-                    {!v.isDefault && (
+                  </form>
+                ) : (
+                  <>
+                    <div className="flex min-w-0 flex-col">
+                      <span className="flex items-center gap-2">
+                        <span className="truncate text-sm">
+                          {v.label || v.fileName}
+                        </span>
+                        {v.isDefault && (
+                          <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[0.625rem] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                            Default
+                          </span>
+                        )}
+                      </span>
+                      <span className="truncate text-[0.6875rem] minor-text-theme-colors">
+                        {v.label ? `${v.fileName} · ` : ''}
+                        {v.songLength != null
+                          ? formatDuration(v.songLength)
+                          : '—'}
+                      </span>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => makeDefault(v.id)}
+                        onClick={() => startEdit(v)}
                         disabled={busy}
+                        aria-label={`Edit label for ${v.label || v.fileName}`}
                         className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
                       >
-                        Set default
+                        {v.label ? 'Rename' : 'Label'}
                       </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setDeleteTarget(v)}
-                      disabled={busy}
-                      aria-label={`Delete version ${v.label || v.fileName}`}
-                      className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-neutral-700 dark:text-red-400 dark:hover:bg-red-950"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="rounded-md border border-neutral-200 px-3 py-4 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
-          No audio yet. Add a version below.
-        </p>
-      )}
+                      {!v.isDefault && (
+                        <button
+                          type="button"
+                          onClick={() => makeDefault(v.id)}
+                          disabled={busy}
+                          className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                        >
+                          Set default
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(v)}
+                        disabled={busy}
+                        aria-label={`Delete version ${v.label || v.fileName}`}
+                        className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-neutral-700 dark:text-red-400 dark:hover:bg-red-950"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="rounded-md border border-neutral-200 px-3 py-4 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+            No audio yet. Add a version below, or drag files here.
+          </p>
+        )}
+
+        {/*
+          An overlay rather than a border swap on the container: it can't
+          shift the list's layout mid-drag, and `pointer-events-none` keeps it
+          from becoming a child that fires its own enter/leave underneath the
+          cursor.
+        */}
+        {dragging && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg border-2 border-dashed border-blue-500 bg-blue-50/90 text-sm font-medium text-blue-700 dark:bg-blue-950/90 dark:text-blue-300"
+          >
+            Drop to add {versions.length === 1 ? 'another version' : 'versions'}
+          </div>
+        )}
+      </div>
 
       <div>
         <button
@@ -375,8 +507,8 @@ export function AudioVersions({
         accept="audio/*,.mp3,.m4a,.wav,.ogg,.oga,.opus,.webm,.flac,.aac"
         className="hidden"
         onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) void addLocal(file);
+          const files = Array.from(e.target.files ?? []);
+          if (files.length > 0) void addLocalFiles(files);
         }}
       />
 
