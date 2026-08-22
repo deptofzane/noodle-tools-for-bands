@@ -22,6 +22,19 @@ interface NavLink {
    * destination has one.
    */
   badge?: { count: number; label: string; urgent?: boolean };
+  /**
+   * Dimmed in the ☰ menu — a secondary destination sitting among the primary
+   * ones, so it reads as belonging to the entry above it rather than as
+   * another top-level place to go.
+   */
+  muted?: boolean;
+  /**
+   * Side effect to run when the link is clicked, before it navigates. Used by
+   * the per-band chat rows to move the header's band selection along with the
+   * reader — landing in another band's chat while the rest of the nav still
+   * points at the old band is the sort of split state nobody asked for.
+   */
+  onSelect?: () => void;
 }
 
 /**
@@ -79,11 +92,16 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
    * connection only exists while chat is open, and the whole point of the
    * badge is to be visible from everywhere else. `mentioned` colors it red —
    * being named is worth interrupting for in a way a busy thread isn't.
+   *
+   * Counted across *every* band the user is in, not just the one selected in
+   * this header. A badge in the global nav that only watched the current band
+   * reads as "nothing to see" while another band is talking.
    */
-  const [chatUnread, setChatUnread] = useState({
-    count: 0,
-    mentioned: false,
-  });
+  const [chatUnread, setChatUnread] = useState<{
+    count: number;
+    mentioned: boolean;
+    byBand: { bandId: string; count: number; mentioned: boolean }[];
+  }>({ count: 0, mentioned: false, byBand: [] });
   const [helpOpen, setHelpOpen] = useState(false);
   const { bands, bandId: selectedBandId, band, setBandId } = useCurrentBand();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -120,9 +138,34 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
     ? `/bands/${selectedBandId}/audio`
     : '/bands';
   const chatHref = selectedBandId ? `/bands/${selectedBandId}/chat` : '/bands';
-  const chatUnreadLabel = `${chatUnread.count} unread chat message${
-    chatUnread.count === 1 ? '' : 's'
-  }${chatUnread.mentioned ? ', mentioned' : ''}`;
+  const chatMessageLabel = (n: number, mentioned: boolean) =>
+    `${n} unread chat message${n === 1 ? '' : 's'}${
+      mentioned ? ', mentioned' : ''
+    }`;
+  /** Everything unread anywhere — what the ☰ dot answers for. */
+  const chatUnreadLabel = chatMessageLabel(
+    chatUnread.count,
+    chatUnread.mentioned,
+  );
+  /*
+   * The Chat entry badges only the selected band, because the bands below it
+   * carry their own. Counting everything here too would show the same
+   * messages twice in one open menu.
+   */
+  const selectedBandUnread = chatUnread.byBand.find(
+    (b) => b.bandId === selectedBandId,
+  );
+  /*
+   * Bands other than the selected one with something waiting, each its own
+   * row under Chat. Named from the band list the header already has, so this
+   * costs no extra request; a band missing from it (still loading, or just
+   * left) is skipped rather than rendered nameless.
+   */
+  const otherBandChats = chatUnread.byBand
+    .filter((b) => b.bandId !== selectedBandId && b.count > 0)
+    .map((b) => ({ ...b, name: bands.find((x) => x.id === b.bandId)?.name }))
+    .filter((b): b is typeof b & { name: string } => Boolean(b.name))
+    .sort((a, b) => a.name.localeCompare(b.name));
   const navLinks: NavLink[] = [
     {
       href: '/home',
@@ -138,11 +181,30 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
       label: 'Chat',
       menuOnly: true,
       badge: {
-        count: chatUnread.count,
-        label: chatUnreadLabel,
-        urgent: chatUnread.mentioned,
+        count: selectedBandUnread?.count ?? 0,
+        label: chatMessageLabel(
+          selectedBandUnread?.count ?? 0,
+          selectedBandUnread?.mentioned ?? false,
+        ),
+        urgent: selectedBandUnread?.mentioned ?? false,
       },
     },
+    // Directly under Chat, one row per other band that's waiting.
+    ...otherBandChats.map(
+      (b): NavLink => ({
+        href: `/bands/${b.bandId}/chat`,
+        label: `New chat: ${b.name}`,
+        menuOnly: true,
+        muted: true,
+        // Follow the reader into that band; the row is about going there.
+        onSelect: () => setBandId(b.bandId),
+        badge: {
+          count: b.count,
+          label: `${b.name}: ${chatMessageLabel(b.count, b.mentioned)}`,
+          urgent: b.mentioned,
+        },
+      }),
+    ),
     {
       href: '/open-conversations',
       label: 'Open Conversations',
@@ -201,35 +263,24 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
   }, [pathname]);
 
   // Band-chat unread badge, on the same lifecycle as the notifications one
-  // above: refetch on navigation and focus, poll while visible.
+  // above: refetch on navigation and focus, poll while visible, and clear
+  // promptly when the chat page reports it marked a band read.
   useEffect(() => {
-    if (!selectedBandId) {
-      setChatUnread({ count: 0, mentioned: false });
-      return;
-    }
-    // On the chat page the messages are marked read as they arrive, so the
-    // badge is zero by definition — fetching here would only race that POST
-    // and flash a count at someone already reading it.
-    if (pathname === `/bands/${selectedBandId}/chat`) {
-      setChatUnread({ count: 0, mentioned: false });
-      return;
-    }
     let cancelled = false;
     const fetchChatUnread = async () => {
       try {
-        const res = await fetch(
-          `/api/bands/${selectedBandId}/messages/unread`,
-          { cache: 'no-store' },
-        );
+        const res = await fetch('/api/chat/unread', { cache: 'no-store' });
         if (!res.ok) return;
         const data = (await res.json()) as {
           count?: number;
           mentioned?: boolean;
+          byBand?: { bandId: string; count: number; mentioned: boolean }[];
         };
         if (!cancelled)
           setChatUnread({
             count: data.count ?? 0,
             mentioned: data.mentioned ?? false,
+            byBand: data.byBand ?? [],
           });
       } catch {
         // ignore — the badge is best-effort
@@ -238,7 +289,9 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
     void fetchChatUnread();
 
     const onFocus = () => void fetchChatUnread();
+    const onRead = () => void fetchChatUnread();
     window.addEventListener('focus', onFocus);
+    window.addEventListener('chat:read', onRead);
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') void fetchChatUnread();
     }, 60_000);
@@ -246,9 +299,10 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
     return () => {
       cancelled = true;
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('chat:read', onRead);
       clearInterval(interval);
     };
-  }, [pathname, selectedBandId]);
+  }, [pathname]);
 
   // Publish the bar's height so the page can reserve matching space and the
   // player bar can stack on top of it. Re-measures on resize, on font scaling,
@@ -379,6 +433,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
                   key={link.label}
                   href={link.href}
                   aria-current={isActive ? 'page' : undefined}
+                  onClick={link.onSelect}
                   className={navLinkClass(isActive)}
                 >
                   {link.label}
@@ -559,8 +614,12 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
                           href={link.href}
                           label={link.label}
                           isActive={pathname === link.href}
-                          onClick={closeMenu}
+                          onClick={() => {
+                            link.onSelect?.();
+                            closeMenu();
+                          }}
                           badge={link.badge}
+                          muted={link.muted}
                         />
                       ))}
                     </span>
@@ -574,8 +633,12 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
                           href={link.href}
                           label={link.label}
                           isActive={pathname === link.href}
-                          onClick={closeMenu}
+                          onClick={() => {
+                            link.onSelect?.();
+                            closeMenu();
+                          }}
                           badge={link.badge}
+                          muted={link.muted}
                         />
                       ))}
                     </span>
@@ -719,6 +782,7 @@ function MenuLink({
   isActive,
   onClick,
   badge,
+  muted = false,
 }: {
   href: string;
   label: string;
@@ -726,6 +790,8 @@ function MenuLink({
   onClick: () => void;
   /** Count pill for this destination, if it has one. */
   badge?: { count: number; label: string; urgent?: boolean };
+  /** Dimmed: a secondary entry beneath the one it belongs to. */
+  muted?: boolean;
 }) {
   return (
     <Link
@@ -733,7 +799,7 @@ function MenuLink({
       role="menuitem"
       aria-current={isActive ? 'page' : undefined}
       onClick={onClick}
-      className={menuItemClass(isActive)}
+      className={menuItemClass(isActive) + (muted ? ' opacity-70' : '')}
     >
       {label}
       {badge && <NavBadge {...badge} />}

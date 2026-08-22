@@ -219,9 +219,19 @@ export function useBandChatStream(bandId: string): number {
   // Anyone here is looking at the chat, so mark it read on arrival and after
   // each change, rather than counting toward a badge.
   useEffect(() => {
-    void fetch(`/api/bands/${bandId}/messages/read`, { method: 'POST' }).catch(
-      () => {},
-    );
+    let cancelled = false;
+    void fetch(`/api/bands/${bandId}/messages/read`, { method: 'POST' })
+      .then(() => {
+        // Tell the nav badge to re-count once the marker has actually moved.
+        // It covers every band, so it can't just assume zero while this page
+        // is open — and polling would leave a stale count on screen for up to
+        // a minute after the messages were read. Mirrors `notifications:read`.
+        if (!cancelled) window.dispatchEvent(new Event('chat:read'));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [bandId, chatChange]);
 
   return chatChange;

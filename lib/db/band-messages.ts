@@ -271,6 +271,88 @@ export async function getBandChatUnread(
   return { count, mentioned: Boolean(mention) };
 }
 
+/** Unread chat across every band the user belongs to. */
+export interface ChatUnreadTotals {
+  /** Messages from others, unread, summed over all their bands. */
+  count: number;
+  /** True when any unread message anywhere mentions them. */
+  mentioned: boolean;
+  /** The same, split per band — so a caller can point at where it is. */
+  byBand: { bandId: string; count: number; mentioned: boolean }[];
+}
+
+/**
+ * Every band's unread chat for one user, in a single grouped query.
+ *
+ * The per-band `getBandChatUnread` above answers "is there anything here?"
+ * for a band already on screen. This answers "is there anything anywhere?",
+ * which is what a badge in the global nav is actually claiming — asking the
+ * other one per band would be a query per membership on every poll.
+ *
+ * Bands with nothing unread simply don't come back; the caller treats a
+ * missing band as zero.
+ */
+export async function getChatUnreadForUser(
+  userId: string,
+): Promise<ChatUnreadTotals> {
+  const rows = await db
+    .select({
+      bandId: bandMessages.bandId,
+      /*
+       * DISTINCT is belt-and-braces. The mentions join is filtered to this
+       * user and (message_id, mentioned_user_id) is a primary key, so it can
+       * match at most once per message today — but a plain count(*) would
+       * silently start double-counting if that ever stopped being true.
+       */
+      count: sql<number>`count(distinct ${bandMessages.id})::int`,
+      mentioned: sql<boolean>`bool_or(${bandMessageMentions.mentionedUserId} is not null)`,
+    })
+    .from(bandMessages)
+    // Membership is the access check: a band the user isn't in can't
+    // contribute rows, so this needs no separate guard.
+    .innerJoin(
+      bandMembers,
+      and(
+        eq(bandMembers.bandId, bandMessages.bandId),
+        eq(bandMembers.userId, userId),
+      ),
+    )
+    .leftJoin(
+      bandChatReads,
+      and(
+        eq(bandChatReads.bandId, bandMessages.bandId),
+        eq(bandChatReads.userId, userId),
+      ),
+    )
+    .leftJoin(
+      bandMessageMentions,
+      and(
+        eq(bandMessageMentions.messageId, bandMessages.id),
+        eq(bandMessageMentions.mentionedUserId, userId),
+      ),
+    )
+    .where(
+      and(
+        isNull(bandMessages.deletedAt),
+        sql`${bandMessages.authorId} <> ${userId}`,
+        // No read row yet means never opened, so everything counts.
+        sql`${bandMessages.createdAt} > coalesce(${bandChatReads.lastSeenAt}, to_timestamp(0))`,
+      ),
+    )
+    .groupBy(bandMessages.bandId);
+
+  const byBand = rows.map((r) => ({
+    bandId: r.bandId,
+    count: r.count ?? 0,
+    mentioned: Boolean(r.mentioned),
+  }));
+  return {
+    count: byBand.reduce((n, b) => n + b.count, 0),
+    mentioned: byBand.some((b) => b.mentioned),
+    byBand,
+  };
+}
+
 /** Mark a band's chat read as of now (clears the unread badge). */
 export async function markBandChatRead(
   bandId: string,
