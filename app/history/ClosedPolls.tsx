@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import Link from 'next/link';
-import { formatRelativeTime } from '@/lib/format';
+import { formatTimeAgoOrDate } from '@/lib/format';
 import { LoadingBlock } from '../Spinner';
 import { PAGE_SIZE } from '@/lib/paging';
 import { LoadMore } from '../LoadMore';
@@ -71,7 +71,7 @@ export function ClosedPolls() {
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium">{poll.title}</div>
                 <div className="mt-0.5 text-xs minor-text-theme-colors">
-                  {poll.bandName} · closed {formatRelativeTime(poll.closedAt)}
+                  {poll.bandName} · closed {formatTimeAgoOrDate(poll.closedAt)}
                   {!poll.voted && (
                     <>
                       {' '}

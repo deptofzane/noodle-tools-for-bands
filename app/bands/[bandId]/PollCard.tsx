@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ensureOk } from '@/lib/api';
-import { formatRelativeTime } from '@/lib/format';
+import { formatTimeAgoOrDate } from '@/lib/format';
 import { LoadingBlock } from '../../Spinner';
 
 interface FullPoll {
@@ -128,7 +128,7 @@ export function PollCard({
           <span className="min-w-0 truncate font-medium">{title}</span>
         </span>
         <span className="shrink-0 text-xs minor-text-theme-colors">
-          {formatRelativeTime(createdAt)}
+          {formatTimeAgoOrDate(createdAt)}
         </span>
       </button>
 

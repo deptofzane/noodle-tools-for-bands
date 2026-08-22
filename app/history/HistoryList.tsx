@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import Link from 'next/link';
-import { actorLabel, formatRelativeTime } from '@/lib/format';
+import { actorLabel, formatTimeAgoOrDate } from '@/lib/format';
 import { LoadingBlock } from '../Spinner';
 import { PAGE_SIZE } from '@/lib/paging';
 import { LoadMore } from '../LoadMore';
@@ -85,7 +85,7 @@ export function HistoryList() {
                 </div>
                 <div className="mt-0.5 text-xs minor-text-theme-colors">
                   {item.bandName} · Closed · last activity{' '}
-                  {formatRelativeTime(item.lastActivityAt)}
+                  {formatTimeAgoOrDate(item.lastActivityAt)}
                   {item.lastActivityBy && (
                     <> by {actorLabel(item.lastActivityBy)}</>
                   )}

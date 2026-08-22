@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
-import { formatRelativeTime, formatSongMeta } from '@/lib/format';
+import { formatSongMeta, formatTimeAgoOrDate } from '@/lib/format';
 import { useToast } from '../../../ToastProvider';
 import {
   usePlaylistPlayer,
@@ -141,9 +141,11 @@ export function SongRow({
             Originally by {c.originalBand}
           </div>
         )}
-        {meta && <div className="mt-0.5 text-xs minor-text-theme-colors">{meta}</div>}
+        {meta && (
+          <div className="mt-0.5 text-xs minor-text-theme-colors">{meta}</div>
+        )}
         <div className="mt-0.5 text-xs minor-text-theme-colors">
-          Updated {formatRelativeTime(c.updatedAt)}
+          Updated {formatTimeAgoOrDate(c.updatedAt)}
         </div>
       </Link>
       <ActionMenu label="Song actions" disabled={disabled}>
