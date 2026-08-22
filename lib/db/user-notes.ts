@@ -111,25 +111,41 @@ function toNote(row: {
 }
 
 /**
- * What `userId` can see in this band: their own notes plus everyone's shared
- * ones, most recently updated first. The caller must already have confirmed
- * band membership.
+ * Which slice of a band's notes to list.
+ *
+ * `personal` and `shared` partition what a member can see: a note is in
+ * exactly one of them, and sharing one moves it across. Nothing is in both,
+ * which is what lets the two views be read as "mine" and "the band's" rather
+ * than as overlapping filters.
+ */
+export type NoteScope = 'all' | 'personal' | 'shared';
+
+/**
+ * What `userId` can see in this band, most recently updated first: their own
+ * notes plus everyone's shared ones, narrowed by `scope`. The caller must
+ * already have confirmed band membership.
+ *
+ * Every scope stays inside that visibility rule — `shared` is band-wide by
+ * definition and `personal` is the caller's own — so narrowing can't widen
+ * what a member is allowed to read.
  */
 export async function listBandNotesForUser(
   bandId: string,
   userId: string,
   window?: { limit: number; offset: number },
+  scope: NoteScope = 'all',
 ): Promise<UserNote[]> {
+  const visible =
+    scope === 'personal'
+      ? and(eq(userNotes.authorId, userId), eq(userNotes.shared, false))
+      : scope === 'shared'
+        ? eq(userNotes.shared, true)
+        : or(eq(userNotes.authorId, userId), eq(userNotes.shared, true));
   const rows = await db
     .select(NOTE_COLUMNS)
     .from(userNotes)
     .innerJoin(users, eq(users.id, userNotes.authorId))
-    .where(
-      and(
-        eq(userNotes.bandId, bandId),
-        or(eq(userNotes.authorId, userId), eq(userNotes.shared, true)),
-      ),
-    )
+    .where(and(eq(userNotes.bandId, bandId), visible))
     .orderBy(desc(userNotes.updatedAt))
     .limit(window ? window.limit : Number.MAX_SAFE_INTEGER)
     .offset(window ? window.offset : 0);

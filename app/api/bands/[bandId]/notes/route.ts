@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { requireBandMember } from '@/lib/api-guard';
-import { createNote, listBandNotesForUser } from '@/lib/db/user-notes';
+import {
+  createNote,
+  listBandNotesForUser,
+  type NoteScope,
+} from '@/lib/db/user-notes';
 import { parseLinks } from '@/lib/note-links';
 import { readWindow, splitPage } from '@/lib/paging';
 
@@ -8,9 +12,10 @@ const MAX_TITLE = 200;
 const MAX_BODY = 20_000;
 
 /**
- * GET  /api/bands/[bandId]/notes[?limit=&offset=]
+ * GET  /api/bands/[bandId]/notes[?limit=&offset=&scope=]
  *   → one page of the caller's notes in this band plus the band's shared
- *   ones, newest first, with `hasMore`.
+ *   ones, newest first, with `hasMore`. `scope=personal` narrows to the
+ *   caller's own, `scope=shared` to the band's shared ones.
  *
  * POST /api/bands/[bandId]/notes
  *   Body: { title, body?, shared?, links? } → create one, authored by the
@@ -26,12 +31,20 @@ export async function GET(
   const guard = await requireBandMember(bandId);
   if (guard instanceof NextResponse) return guard;
 
+  const url = new URL(req.url);
+  // Anything unrecognised means the unnarrowed list, so a stale or hand-typed
+  // scope shows everything rather than nothing.
+  const raw = url.searchParams.get('scope');
+  const scope: NoteScope = raw === 'personal' || raw === 'shared' ? raw : 'all';
+
   // One page at a time, with one row over the edge so `hasMore` is free.
-  const { limit, offset } = readWindow(new URL(req.url));
-  const rows = await listBandNotesForUser(bandId, guard.user.id, {
-    limit: limit + 1,
-    offset,
-  });
+  const { limit, offset } = readWindow(url);
+  const rows = await listBandNotesForUser(
+    bandId,
+    guard.user.id,
+    { limit: limit + 1, offset },
+    scope,
+  );
   const { items, hasMore } = splitPage(rows, limit);
   return NextResponse.json({ notes: items, hasMore });
 }

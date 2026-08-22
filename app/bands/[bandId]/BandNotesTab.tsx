@@ -4,12 +4,13 @@ import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
-import { formatRelativeTime } from '@/lib/format';
+import { formatTimeAgoOrDate } from '@/lib/format';
 import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
 import { ConfirmModal } from '../../ConfirmModal';
 import { LoadingBlock } from '../../Spinner';
 import { LoadMore } from '../../LoadMore';
 import { usePagedList } from '../../usePagedList';
+import { usePersistedBoolean } from '../../usePersistedBoolean';
 import { usePersistedStringSet } from '../../usePersistedStringSet';
 import { PAGE_SIZE } from '@/lib/paging';
 import { useTrackPending } from '../../PendingActionProvider';
@@ -39,8 +40,7 @@ function LinkChip({
   const href = noteLinkHref(link, bandId);
   // `other` links are free text; this is what decides whether one is openable
   // and supplies the scheme when the author didn't type one.
-  const externalUrl =
-    link.kind === 'other' ? externalNoteUrl(href) : null;
+  const externalUrl = link.kind === 'other' ? externalNoteUrl(href) : null;
   const external = externalUrl !== null;
   const inner = (
     <>
@@ -86,9 +86,13 @@ function LinkChip({
 }
 
 /**
- * The Notes tab: the member's own notes in this band, plus any a bandmate has
- * shared, newest first. Notes are private by default — the "Shared" marker is
- * what says otherwise — and only an author sees Edit or Delete on their own.
+ * The Notes tab: either the member's own private notes in this band or the
+ * ones the band has shared, newest first, chosen with the Personal/Shared
+ * switch. Only an author sees Edit or Delete on their own.
+ *
+ * The two are a partition, not overlapping filters: personal is yours *and*
+ * unshared, so sharing a note moves it from one view to the other (see
+ * `NoteScope`). The scope is applied server-side because the list is paged.
  *
  * Loads on mount rather than with the band payload: most visits to a band
  * aren't about notes, and this way the tab pays for itself, a page at a time.
@@ -113,18 +117,36 @@ export function BandNotesTab({
   // than one per chip — only one can be open at a time.
   const [externalUrl, setExternalUrl] = useState<string | null>(null);
 
+  /*
+   * Which slice is showing. Personal first: notes are private by default, so
+   * the list someone arrives expecting is their own.
+   *
+   * Boolean rather than a scope string because there are exactly two
+   * positions, matching the Songs/Albums control this mirrors.
+   */
+  const [sharedView, setSharedView] = usePersistedBoolean(
+    'bandNotesSharedView',
+    false,
+  );
+  const scope = sharedView ? 'shared' : 'personal';
+
   // Collapsed unless the id is in the set, so notes start minimized and a
   // brand-new one doesn't spring open on the next visit.
   const [expanded, toggleExpanded] = usePersistedStringSet(
     `bandNotesExpanded:${bandId}`,
   );
 
+  // `scope` in the dependencies is what reloads the list when the switch
+  // moves: usePagedList refetches from the first page whenever this identity
+  // changes. Filtering client-side wouldn't work here — it would only ever see
+  // the page already loaded, and leave "Load more" counting the wrong rows.
   const fetchPage = useCallback(
     (offset: number) =>
-      fetch(`/api/bands/${bandId}/notes?limit=${PAGE_SIZE}&offset=${offset}`, {
-        cache: 'no-store',
-      }),
-    [bandId],
+      fetch(
+        `/api/bands/${bandId}/notes?limit=${PAGE_SIZE}&offset=${offset}&scope=${scope}`,
+        { cache: 'no-store' },
+      ),
+    [bandId, scope],
   );
   const pick = useCallback(
     (d: unknown) => (d as { notes: UserNote[] }).notes,
@@ -164,13 +186,46 @@ export function BandNotesTab({
     <section className="flex flex-col gap-2">
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-medium">Personal notes</h2>
-          <Link href={`/bands/${bandId}/notes/new`} className="btn-outline">
-            New personal note
-          </Link>
+          <h2 className="text-sm font-medium">Notes</h2>
+          <span className="flex shrink-0 items-center gap-1">
+            {/* Personal or shared. A two-state segmented control rather than a
+                checkbox: both destinations are named, so neither reads as the
+                "off" position of the other. Same control as Songs/Albums. */}
+            <span
+              role="group"
+              aria-label="Notes"
+              className="flex items-center rounded-md border border-neutral-300 p-0.5 text-xs dark:border-neutral-700"
+            >
+              {([false, true] as const).map((wantShared) => (
+                <button
+                  key={String(wantShared)}
+                  type="button"
+                  onClick={() => setSharedView(wantShared)}
+                  aria-pressed={sharedView === wantShared}
+                  className={
+                    'rounded px-2 py-1 ' +
+                    (sharedView === wantShared
+                      ? 'bg-neutral-100 font-medium text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
+                      : 'minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
+                  }
+                >
+                  {wantShared ? 'Shared' : 'Personal'}
+                </button>
+              ))}
+            </span>
+            <ActionMenu label="Notes actions">
+              <ActionMenuItem
+                onClick={() => router.push(`/bands/${bandId}/notes/new`)}
+              >
+                New note
+              </ActionMenuItem>
+            </ActionMenu>
+          </span>
         </div>
         <span className="block truncate text-xs minor-text-theme-colors">
-          These are private unless you share them with the band
+          {sharedView
+            ? 'Notes you and your bandmates have shared with the band'
+            : 'Private to you — sharing one moves it to Shared'}
         </span>
       </div>
 
@@ -184,8 +239,9 @@ export function BandNotesTab({
         <LoadingBlock label="Loading notes" />
       ) : notes.length === 0 ? (
         <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
-          No notes yet. “New note” starts one — it’s private to you unless you
-          share it.
+          {sharedView
+            ? 'No shared notes yet. Notes you or a bandmate share with the band show up here.'
+            : '“New note” in the menu starts one — it stays here until you share it with the band.'}
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -221,22 +277,16 @@ export function BandNotesTab({
                         </span>
                       )}
                       <span className="truncate font-medium">{note.title}</span>
-                      {note.shared && (
-                        <span
-                          title={
-                            mine
-                              ? 'The band can read this'
-                              : `Shared by ${note.authorName ?? 'a bandmate'}`
-                          }
-                          className="shrink-0 rounded bg-blue-100 px-1.5 py-0.5 text-[0.625rem] font-medium text-blue-800 dark:bg-blue-950 dark:text-blue-300"
-                        >
-                          Shared
-                        </span>
-                      )}
                     </span>
                     <span className="text-xs minor-text-theme-colors">
-                      {mine ? 'You' : (note.authorName ?? 'A bandmate')} ·{' '}
-                      {formatRelativeTime(note.updatedAt)}
+                      {mine ? (
+                        <span className="minor-text-band-theme-colors">
+                          You
+                        </span>
+                      ) : (
+                        (note.authorName ?? 'A bandmate')
+                      )}{' '}
+                      · {formatTimeAgoOrDate(note.updatedAt)}
                     </span>
                   </button>
                   {mine && (

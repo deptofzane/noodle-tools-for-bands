@@ -18,6 +18,42 @@ export function formatRelativeTime(iso: string): string {
   return date.toLocaleDateString();
 }
 
+/** Local midnight for a date, so "same day" means the reader's calendar day. */
+function startOfLocalDay(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+/**
+ * Timestamp read by the calendar, not by elapsed time:
+ *
+ *   today      → "just now" / "12m ago" / "3h ago"
+ *   yesterday  → "Yesterday"
+ *   older      → the date it was created
+ *
+ * Calendar days rather than 24-hour blocks is the point. At 1am, something
+ * posted at 11pm last night is a day ago to a reader and two hours ago to a
+ * clock — "Yesterday" is the one that matches what they remember. The same
+ * cut is why "3h ago" can't survive into the next morning.
+ *
+ * Rounding the day difference absorbs the 23- and 25-hour days that daylight
+ * saving produces, which would otherwise shift the boundary twice a year.
+ *
+ * Separate from `formatRelativeTime` rather than an option on it: that one
+ * labels a stream, where "2d ago" is exactly the useful phrasing, and it has
+ * nine other callers that should keep it.
+ */
+export function formatTimeAgoOrDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  const days = Math.round(
+    (startOfLocalDay(new Date()) - startOfLocalDay(date)) / 86_400_000,
+  );
+  // `<= 0` also covers a clock-skewed future timestamp, which reads as today.
+  if (days <= 0) return formatRelativeTime(iso);
+  if (days === 1) return 'Yesterday';
+  return date.toLocaleDateString();
+}
+
 /**
  * Human label for a user: their name, else email, else "someone". Pass
  * `currentUserId` to render the viewer's own actions as "you".
