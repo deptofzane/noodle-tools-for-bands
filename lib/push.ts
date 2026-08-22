@@ -61,10 +61,15 @@ function pushBody(
         previousLabel,
         bandName: band,
       });
-      return said ? `${who} ${said}` : `${who} updated ${subjectLabel ?? 'a song'}`;
+      return said
+        ? `${who} ${said}`
+        : `${who} updated ${subjectLabel ?? 'a song'}`;
     }
     case 'event-updated': {
-      const said = describeEventChange(changedFields, subjectLabel ?? 'Untitled');
+      const said = describeEventChange(
+        changedFields,
+        subjectLabel ?? 'Untitled',
+      );
       return said
         ? `${who} ${said}`
         : `${who} updated the event: ${subjectLabel ?? 'Untitled'}`;
@@ -106,7 +111,7 @@ function pushUrl(
       return `/bands/${bandId}`;
     case 'band':
       return kind === 'chat-message'
-        ? `/bands/${bandId}?tab=chat`
+        ? `/bands/${bandId}/chat`
         : `/bands/${bandId}`;
     case 'poll':
       return subjectId
@@ -119,9 +124,9 @@ function pushUrl(
     case 'album':
       return subjectId
         ? `/bands/${bandId}/albums/${subjectId}`
-        // No album to point at: the Songs tab in album view is the nearest
-        // useful place, and it's where albums are browsed from.
-        : `/bands/${bandId}/audio?tab=songs`;
+        : // No album to point at: the Songs tab in album view is the nearest
+          // useful place, and it's where albums are browsed from.
+          `/bands/${bandId}/audio?tab=songs`;
   }
 }
 

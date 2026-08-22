@@ -30,13 +30,7 @@ export interface NotificationItem {
     | 'album-created'
     | 'audio-added'
     | 'song-created';
-  subjectType:
-    | 'conversation'
-    | 'event'
-    | 'band'
-    | 'poll'
-    | 'setlist'
-    | 'album';
+  subjectType: 'conversation' | 'event' | 'band' | 'poll' | 'setlist' | 'album';
   subjectId: string | null;
   subjectLabel: string | null;
   /** Fields an edit touched; null on rows written before this existed. */
@@ -70,7 +64,7 @@ function hrefFor(n: NotificationItem): string {
       return `/bands/${n.bandId}`;
     case 'band':
       return n.kind === 'chat-message'
-        ? `/bands/${n.bandId}?tab=chat`
+        ? `/bands/${n.bandId}/chat`
         : `/bands/${n.bandId}`;
     case 'poll':
       return n.subjectId
@@ -100,11 +94,17 @@ function messageFor(n: NotificationItem): string {
     case 'song-updated': {
       // Names what changed when the row records it; older rows have no field
       // list, so they keep the wording they were written with.
-      const said = describeSongChange(n.changedFields, n.subjectLabel ?? 'a song', {
-        previousLabel: n.previousLabel,
-        bandName: n.bandName,
-      });
-      return said ? `${who} ${said}` : `${who} updated ${n.subjectLabel ?? 'a song'}`;
+      const said = describeSongChange(
+        n.changedFields,
+        n.subjectLabel ?? 'a song',
+        {
+          previousLabel: n.previousLabel,
+          bandName: n.bandName,
+        },
+      );
+      return said
+        ? `${who} ${said}`
+        : `${who} updated ${n.subjectLabel ?? 'a song'}`;
     }
     case 'event-updated': {
       const said = describeEventChange(
@@ -301,7 +301,9 @@ export function NotificationList({
                     <span className="flex min-w-0 flex-col">
                       <span className="text-sm">{messageFor(n)}</span>
                       <span className="text-[0.6875rem] minor-text-theme-colors">
-                        <span className="minor-text-band-theme-colors">{n.bandName ? `${n.bandName} · ` : ''}</span>
+                        <span className="minor-text-band-theme-colors">
+                          {n.bandName ? `${n.bandName} · ` : ''}
+                        </span>
                         {formatRelativeTime(n.createdAt)}
                       </span>
                     </span>

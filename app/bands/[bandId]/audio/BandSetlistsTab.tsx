@@ -218,6 +218,20 @@ export function BandSetlistsTab({
               >
                 Edit setlist
               </ActionMenuItem>
+              {/*
+                The band goes along with the setlist: the new-event form only
+                loads setlists for the band it has selected, so without it the
+                setlist wouldn't be among the options to preselect.
+              */}
+              <ActionMenuItem
+                onClick={() =>
+                  router.push(
+                    `/calendar/events/new?bandId=${bandId}&setlistId=${sl.id}`,
+                  )
+                }
+              >
+                Create event using this setlist
+              </ActionMenuItem>
               <ActionMenuItem onClick={() => router.push(practiceHref(sl.id))}>
                 Practice
               </ActionMenuItem>
@@ -270,7 +284,10 @@ export function BandSetlistsTab({
                     <ol>
                       {i + 1} &nbsp; {s.name}
                       {meta && (
-                        <span className="minor-text-theme-colors"> · {meta}</span>
+                        <span className="minor-text-theme-colors">
+                          {' '}
+                          · {meta}
+                        </span>
                       )}
                     </ol>
                   </li>

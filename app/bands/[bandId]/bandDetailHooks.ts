@@ -202,43 +202,58 @@ export function useBandUploadsForDay(bandId: string, day: string) {
 }
 
 /**
- * Band-chat unread state, backed by a single SSE connection. Emits a
- * `chatChange` signal on activity (passed to BandChat) and keeps `unread`
- * current: marked read while the Chat tab is active, refetched otherwise.
+ * Live chat activity for a band, backed by a single SSE connection: a counter
+ * that ticks on every change, passed to BandChat as its refetch signal.
  */
-export function useBandChat(bandId: string, activeTab: string) {
+export function useBandChatStream(bandId: string): number {
   const [chatChange, setChatChange] = useState(0);
-  const [unread, setUnread] = useState<{ count: number; mentioned: boolean }>({
-    count: 0,
-    mentioned: false,
-  });
 
-  // One SSE stream for chat activity, shared by the unread badge and the Chat
-  // tab, so the page holds a single connection rather than one per consumer.
+  // One SSE stream for chat activity. It used to be shared with the unread
+  // badge on the old Chat tab; now that chat has a page of its own, the badge
+  // lives in the header and polls instead (see Header) — it has to work from
+  // anywhere in the app, where this connection isn't open.
   useEventSource(`/api/bands/${bandId}/messages/events`, {
     change: () => setChatChange((c) => c + 1),
   });
 
-  const fetchUnread = useCallback(async () => {
-    const res = await fetch(`/api/bands/${bandId}/messages/unread`, {
-      cache: 'no-store',
-    });
-    if (res.ok) setUnread(await res.json());
-  }, [bandId]);
-
-  const markChatRead = useCallback(async () => {
-    setUnread({ count: 0, mentioned: false });
-    await fetch(`/api/bands/${bandId}/messages/read`, { method: 'POST' }).catch(
+  // Anyone here is looking at the chat, so mark it read on arrival and after
+  // each change, rather than counting toward a badge.
+  useEffect(() => {
+    void fetch(`/api/bands/${bandId}/messages/read`, { method: 'POST' }).catch(
       () => {},
     );
+  }, [bandId, chatChange]);
+
+  return chatChange;
+}
+
+/**
+ * The Chat page's slice of the band: the members it needs for @-mentions and
+ * the role that decides who can moderate.
+ *
+ * Deliberately not `useBandData` — that also pulls setlists, events and
+ * venues, none of which chat renders, for the same reason `useBandUploads` is
+ * kept separate.
+ */
+export function useBandChatData(bandId: string) {
+  const [data, setData] = useState<BandDetail | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const trackPending = useTrackPending();
+
+  const reload = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/bands/${bandId}`, { cache: 'no-store' });
+      await ensureOk(res);
+      setData((await res.json()) as BandDetail);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
   }, [bandId]);
 
-  // Keep the badge current: mark read while viewing Chat, else refetch the
-  // count. Runs on mount, tab switches, and each chat-activity signal.
   useEffect(() => {
-    if (activeTab === 'chat') void markChatRead();
-    else void fetchUnread();
-  }, [activeTab, chatChange, fetchUnread, markChatRead]);
+    void trackPending(() => reload());
+  }, [reload, trackPending]);
 
-  return { chatChange, unread };
+  return { data, error, reload };
 }

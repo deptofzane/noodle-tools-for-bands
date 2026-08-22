@@ -45,16 +45,19 @@ export default async function NotesPage({
   if (!membership) notFound();
   const conversation = membership.conversation;
 
-  // Back to where the user came from: the band's Audio page (songs are linked
-  // from there), or the band page reopening the tab they came from.
-  const bandTabs = ['overview', 'chat', 'polls'];
+  // Back to where the user came from: the band's Audio or Chat page (songs
+  // are linked from both), or the band page reopening the tab they came from.
+  const bandTabs = ['overview', 'polls'];
   const backHref =
     from === 'audio'
       ? `/bands/${conversation.bandId}/audio`
-      : from && bandTabs.includes(from)
-        ? `/bands/${conversation.bandId}?tab=${from}`
-        : `/bands/${conversation.bandId}`;
-  const backName = from === 'audio' ? 'Audio' : 'Overview';
+      : from === 'chat'
+        ? `/bands/${conversation.bandId}/chat`
+        : from && bandTabs.includes(from)
+          ? `/bands/${conversation.bandId}?tab=${from}`
+          : `/bands/${conversation.bandId}`;
+  const backName =
+    from === 'audio' ? 'Audio' : from === 'chat' ? 'Chat' : 'Overview';
 
   // Player metadata from the stored audio file, falling back to the
   // conversation's name if the audio hasn't been imported yet. Sheet
@@ -126,33 +129,33 @@ export default async function NotesPage({
                 conversation.bpm != null ||
                 conversation.key) && (
                 <div className="flex flex-col items-center gap-1 text-sm text-neutral-600 dark:text-neutral-400">
-                    {conversation.originalBand && (
-                      <span>
-                        Originally by{' '}
-                        <span className="font-medium">
-                          {conversation.originalBand}
-                        </span>
+                  {conversation.originalBand && (
+                    <span>
+                      Originally by{' '}
+                      <span className="font-medium">
+                        {conversation.originalBand}
                       </span>
-                    )}
-                    {(conversation.bpm != null || conversation.key) && (
-                      <div className="flex justify-center flex-col md:flex-row md:gap-3 gap-1">
-                        {conversation.bpm != null && (
-                          <span>
-                            <span className="font-medium">
-                              {conversation.bpm}
-                            </span>{' '}
-                            BPM
+                    </span>
+                  )}
+                  {(conversation.bpm != null || conversation.key) && (
+                    <div className="flex justify-center flex-col md:flex-row md:gap-3 gap-1">
+                      {conversation.bpm != null && (
+                        <span>
+                          <span className="font-medium">
+                            {conversation.bpm}
+                          </span>{' '}
+                          BPM
+                        </span>
+                      )}
+                      {conversation.key && (
+                        <span>
+                          Key of{' '}
+                          <span className="font-medium">
+                            {conversation.key}
                           </span>
-                        )}
-                        {conversation.key && (
-                          <span>
-                            Key of{' '}
-                            <span className="font-medium">
-                              {conversation.key}
-                            </span>
-                          </span>
-                        )}
-                      </div>
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
               )}

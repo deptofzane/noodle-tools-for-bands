@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { BandChat } from './BandChat';
 import { BandMembersTab } from './BandMembersTab';
 import { BandOverviewTab } from './BandOverviewTab';
 import { BandVenuesTab } from './BandVenuesTab';
@@ -11,24 +10,26 @@ import { BandNotesTab } from './BandNotesTab';
 import {
   BAND_ACTIVE_TAB_KEY,
   BAND_TABS,
+  DEFAULT_BAND_TAB,
   isBandTab,
   type BandTab,
 } from './bandTabs';
 import { TabStrip } from '../../TabStrip';
 import { LeaveBandModal } from '../LeaveBandModal';
-import { useBandData, useBandChat } from './bandDetailHooks';
+import { useBandData } from './bandDetailHooks';
 import { LoadingBlock } from '../../Spinner';
 
 /**
  * Band detail coordinator: fetches the band's data, owns the tab state, and
- * renders the tab bar plus the active tab (Chat / Events / Venues / Polls).
+ * renders the tab bar plus the active tab (Events / Venues / Polls / Notes).
  * The tab bodies live in their own components. Audio and Setlists live on
- * their own page at `/bands/[bandId]/audio`.
+ * their own page at `/bands/[bandId]/audio`, and Chat at
+ * `/bands/[bandId]/chat`.
  */
 export function BandDetailClient({
   bandId,
   currentUserId,
-  initialTab = 'chat',
+  initialTab = DEFAULT_BAND_TAB,
   tabFromUrl = false,
 }: {
   bandId: string;
@@ -47,7 +48,6 @@ export function BandDetailClient({
   const router = useRouter();
 
   const { data, setlists, shows, venues, error, reload } = useBandData(bandId);
-  const { chatChange, unread } = useBandChat(bandId, activeTab);
 
   // Mirror the active tab into the URL (?tab=…) so browser-back and refresh
   // restore it. Uses history.replaceState — no navigation/refetch, and it
@@ -133,35 +133,9 @@ export function BandDetailClient({
             }
           >
             {tab}
-            {tab === 'chat' && activeTab !== 'chat' && unread.count > 0 && (
-              <span
-                aria-label={`${unread.count} unread${unread.mentioned ? ', mentioned' : ''}`}
-                className={
-                  'inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-[0.625rem] font-semibold text-white ' +
-                  (unread.mentioned ? 'bg-red-600' : 'bg-blue-600')
-                }
-              >
-                {unread.mentioned && <span aria-hidden="true">@</span>}
-                {unread.count}
-              </span>
-            )}
           </button>
         ))}
       </TabStrip>
-
-      {activeTab === 'chat' && (
-        <BandChat
-          bandId={bandId}
-          currentUserId={currentUserId}
-          canModerate={isOwner}
-          changeSignal={chatChange}
-          mentionables={data.members.map((m) => ({
-            id: m.userId,
-            name: m.name,
-            email: m.email,
-          }))}
-        />
-      )}
 
       {activeTab === 'polls' && (
         <BandMembersTab

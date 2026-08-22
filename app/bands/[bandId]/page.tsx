@@ -23,10 +23,12 @@ export default async function BandDetailPage({
   const { tab } = await searchParams;
   const currentUserId = session.user.sub ?? '';
 
-  // Audio and Setlists used to be tabs here; keep old links and bookmarks
-  // working. Both now live on the Audio page.
+  // Audio, Setlists and Chat used to be tabs here; keep old links and
+  // bookmarks working. The first two now live on the Audio page, Chat on its
+  // own.
   if (tab === 'audio') redirect(`/bands/${bandId}/audio`);
   if (tab === 'setlists') redirect(`/bands/${bandId}/audio?tab=setlists`);
+  if (tab === 'chat') redirect(`/bands/${bandId}/chat`);
 
   return (
     <main className="main-container">

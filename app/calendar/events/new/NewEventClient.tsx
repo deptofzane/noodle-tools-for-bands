@@ -2,7 +2,7 @@
 
 import { ensureOk } from '@/lib/api';
 import { addHoursToTime, DEFAULT_EVENT_DURATION_HOURS } from '@/lib/format';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Modal } from '../../../Modal';
 import { Select } from '../../../Select';
@@ -34,11 +34,18 @@ export function NewEventClient({
   bands,
   defaultDate,
   defaultBandId = '',
+  defaultSetlistId = '',
 }: {
   bands: BandOption[];
   defaultDate: string;
   /** Pre-selected owning band (e.g. when arriving from a band page). */
   defaultBandId?: string;
+  /**
+   * Pre-selected setlist (arriving from a setlist's "Create event using this
+   * setlist"). Only meaningful alongside `defaultBandId` — setlists are
+   * per-band, and one from another band is dropped once they load.
+   */
+  defaultSetlistId?: string;
 }) {
   const router = useRouter();
   const trackPending = useTrackPending();
@@ -79,7 +86,7 @@ export function NewEventClient({
   const [location, setLocation] = useState('');
   const [details, setDetails] = useState('');
   const [notes, setNotes] = useState('');
-  const [setlistId, setSetlistId] = useState('');
+  const [setlistId, setSetlistId] = useState(defaultSetlistId);
   const [setlists, setSetlists] = useState<BandOption[]>([]);
   const [venueId, setVenueId] = useState('');
   const [venues, setVenues] = useState<PickableVenue[]>([]);
@@ -93,20 +100,49 @@ export function NewEventClient({
 
   // Load the chosen band's setlists and venues for the association pickers;
   // reset both selections whenever the band changes (they're per-band).
+  const prevBandId = useRef<string | null>(null);
   useEffect(() => {
+    /*
+     * Clear the per-band pickers only when the band genuinely *changes* —
+     * never on the first run, which would throw away a selection that arrived
+     * as a query param (?setlistId=). Comparing against the previous band
+     * rather than tripping a one-shot flag is also what makes this survive
+     * StrictMode's double-mount in dev, where a flag would be spent on the
+     * first pass and the second would clear the selection anyway.
+     *
+     * Skipping the first run costs nothing otherwise: both pickers already
+     * start empty unless something was handed in.
+     */
+    const bandChanged =
+      prevBandId.current !== null && prevBandId.current !== bandId;
+    prevBandId.current = bandId;
+    if (bandChanged) {
+      setSetlistId('');
+      setVenueId('');
+    }
+
     if (!bandId) {
       setSetlists([]);
       setVenues([]);
       return;
     }
     let cancelled = false;
-    setSetlistId('');
-    setVenueId('');
     fetch(`/api/bands/${bandId}/setlists`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
       .then((d: { setlists: BandOption[] }) => {
-        if (!cancelled)
-          setSetlists(d.setlists.map((s) => ({ id: s.id, name: s.name })));
+        if (cancelled) return;
+        const list = d.setlists.map((s) => ({ id: s.id, name: s.name }));
+        setSetlists(list);
+        /*
+         * A setlist id from the URL is only trustworthy once the band's own
+         * list confirms it. Drop it otherwise, so the form state matches the
+         * empty placeholder the picker is already showing — the alternative
+         * is a filled-in form that fails on save with "That setlist isn't in
+         * this band."
+         */
+        setSetlistId((cur) =>
+          cur && !list.some((sl) => sl.id === cur) ? '' : cur,
+        );
       })
       .catch(() => {
         if (!cancelled) setSetlists([]);

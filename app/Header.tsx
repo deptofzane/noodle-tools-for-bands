@@ -16,6 +16,12 @@ interface NavLink {
   menuOnly?: boolean;
   /** Mobile: shown as an icon tab in the bar instead of in the ☰ menu. */
   icon?: ReactNode;
+  /**
+   * Count pill beside the label, with its own accessible wording. Carried on
+   * the link rather than matched by href downstream, now that more than one
+   * destination has one.
+   */
+  badge?: { count: number; label: string; urgent?: boolean };
 }
 
 /**
@@ -66,6 +72,18 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
   // which takes over the whole dropdown until "Back".
   const [bandsOpen, setBandsOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  /**
+   * Unread band-chat messages, for the badge on the Chat link.
+   *
+   * Polled here rather than carried over the chat page's SSE stream: that
+   * connection only exists while chat is open, and the whole point of the
+   * badge is to be visible from everywhere else. `mentioned` colors it red —
+   * being named is worth interrupting for in a way a busy thread isn't.
+   */
+  const [chatUnread, setChatUnread] = useState({
+    count: 0,
+    mentioned: false,
+  });
   const [helpOpen, setHelpOpen] = useState(false);
   const { bands, bandId: selectedBandId, band, setBandId } = useCurrentBand();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -101,12 +119,30 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
   const audioHref = selectedBandId
     ? `/bands/${selectedBandId}/audio`
     : '/bands';
+  const chatHref = selectedBandId ? `/bands/${selectedBandId}/chat` : '/bands';
+  const chatUnreadLabel = `${chatUnread.count} unread chat message${
+    chatUnread.count === 1 ? '' : 's'
+  }${chatUnread.mentioned ? ', mentioned' : ''}`;
   const navLinks: NavLink[] = [
-    { href: '/home', label: 'Home' },
+    {
+      href: '/home',
+      label: 'Home',
+      badge: { count: unread, label: `${unread} unread notifications` },
+    },
     { href: overviewHref, label: 'Overview', icon: <OverviewIcon /> },
     { href: audioHref, label: 'Audio', icon: <AudioIcon /> },
     { href: '/calendar', label: 'Calendar', icon: <CalendarIcon /> },
     // { href: '/bands', label: 'Bands' },
+    {
+      href: chatHref,
+      label: 'Chat',
+      menuOnly: true,
+      badge: {
+        count: chatUnread.count,
+        label: chatUnreadLabel,
+        urgent: chatUnread.mentioned,
+      },
+    },
     {
       href: '/open-conversations',
       label: 'Open Conversations',
@@ -163,6 +199,56 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
       clearInterval(interval);
     };
   }, [pathname]);
+
+  // Band-chat unread badge, on the same lifecycle as the notifications one
+  // above: refetch on navigation and focus, poll while visible.
+  useEffect(() => {
+    if (!selectedBandId) {
+      setChatUnread({ count: 0, mentioned: false });
+      return;
+    }
+    // On the chat page the messages are marked read as they arrive, so the
+    // badge is zero by definition — fetching here would only race that POST
+    // and flash a count at someone already reading it.
+    if (pathname === `/bands/${selectedBandId}/chat`) {
+      setChatUnread({ count: 0, mentioned: false });
+      return;
+    }
+    let cancelled = false;
+    const fetchChatUnread = async () => {
+      try {
+        const res = await fetch(
+          `/api/bands/${selectedBandId}/messages/unread`,
+          { cache: 'no-store' },
+        );
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          count?: number;
+          mentioned?: boolean;
+        };
+        if (!cancelled)
+          setChatUnread({
+            count: data.count ?? 0,
+            mentioned: data.mentioned ?? false,
+          });
+      } catch {
+        // ignore — the badge is best-effort
+      }
+    };
+    void fetchChatUnread();
+
+    const onFocus = () => void fetchChatUnread();
+    window.addEventListener('focus', onFocus);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') void fetchChatUnread();
+    }, 60_000);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', onFocus);
+      clearInterval(interval);
+    };
+  }, [pathname, selectedBandId]);
 
   // Publish the bar's height so the page can reserve matching space and the
   // player bar can stack on top of it. Re-measures on resize, on font scaling,
@@ -296,7 +382,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
                   className={navLinkClass(isActive)}
                 >
                   {link.label}
-                  {link.href === '/home' && <NavBadge count={unread} />}
+                  {link.badge && <NavBadge {...link.badge} />}
                 </Link>
               );
             })}
@@ -314,12 +400,35 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
               aria-haspopup="menu"
               aria-expanded={menuOpen}
               aria-controls="app-nav-menu"
-              aria-label="Menu"
-              className="rounded-md px-3 pt-2 pb-3 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 lg:py-2 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+              /*
+               * The dot is decorative, so what it means is folded into the
+               * button's own name instead — otherwise the only way to hear it
+               * would be to open the menu, which is the thing the dot exists
+               * to save you from doing.
+               */
+              aria-label={
+                chatUnread.count > 0 ? `Menu, ${chatUnreadLabel}` : 'Menu'
+              }
+              className="relative rounded-md px-3 pt-2 pb-3 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 lg:py-2 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
             >
               <span aria-hidden="true" className="block text-xl leading-none">
                 ☰
               </span>
+              {/*
+                A dot, not a count: the ☰ glyph is small and the exact number
+                is one tap away on the Chat entry. Ringed in the bar's own
+                background so it reads as sitting on top of the icon rather
+                than being part of it.
+              */}
+              {chatUnread.count > 0 && (
+                <span
+                  aria-hidden="true"
+                  className={
+                    'absolute right-1.5 top-1 h-2.5 w-2.5 rounded-full ring-2 ring-white lg:top-0.5 dark:ring-neutral-900 ' +
+                    (chatUnread.mentioned ? 'bg-red-600' : 'bg-blue-600')
+                  }
+                />
+              )}
             </button>
             {menuOpen && (
               <div
@@ -451,7 +560,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
                           label={link.label}
                           isActive={pathname === link.href}
                           onClick={closeMenu}
-                          unread={unread}
+                          badge={link.badge}
                         />
                       ))}
                     </span>
@@ -466,7 +575,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
                           label={link.label}
                           isActive={pathname === link.href}
                           onClick={closeMenu}
-                          unread={unread}
+                          badge={link.badge}
                         />
                       ))}
                     </span>
@@ -521,13 +630,25 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
   );
 }
 
-/** Unread-count pill shown next to the Home link. */
-function NavBadge({ count }: { count: number }) {
+/** Unread-count pill shown next to a nav destination. */
+function NavBadge({
+  count,
+  label,
+  urgent = false,
+}: {
+  count: number;
+  label: string;
+  /** Red rather than blue — used when the user was @-mentioned. */
+  urgent?: boolean;
+}) {
   if (count <= 0) return null;
   return (
     <span
-      aria-label={`${count} unread notifications`}
-      className="ml-1.5 inline-flex min-w-[1.125rem] items-center justify-center rounded-full bg-blue-600 px-1 py-0.5 text-[0.625rem] font-semibold leading-none text-white"
+      aria-label={label}
+      className={
+        'ml-1.5 inline-flex min-w-[1.125rem] items-center justify-center rounded-full px-1 py-0.5 text-[0.625rem] font-semibold leading-none text-white ' +
+        (urgent ? 'bg-red-600' : 'bg-blue-600')
+      }
     >
       {count > 99 ? '99+' : count}
     </span>
@@ -597,14 +718,14 @@ function MenuLink({
   label,
   isActive,
   onClick,
-  unread,
+  badge,
 }: {
   href: string;
   label: string;
   isActive: boolean;
   onClick: () => void;
-  /** Unread count, badged on the Home entry. */
-  unread: number;
+  /** Count pill for this destination, if it has one. */
+  badge?: { count: number; label: string; urgent?: boolean };
 }) {
   return (
     <Link
@@ -615,7 +736,7 @@ function MenuLink({
       className={menuItemClass(isActive)}
     >
       {label}
-      {href === '/home' && <NavBadge count={unread} />}
+      {badge && <NavBadge {...badge} />}
     </Link>
   );
 }
