@@ -395,10 +395,15 @@ export function SheetMusic({
           <div className="flex flex-col gap-2">
             {kind === 'image' &&
               (zoomEnabled ? (
-                // Zoom % lives on a wrapper (no max-width cap) inside a scroll
-                // container; the img fills it so zooming isn't fighting
-                // `img { max-width: 100% }`.
-                <div className="max-h-[85vh] overflow-auto rounded-md border border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900">
+                // Zoom % lives on a wrapper (no max-width cap) inside a
+                // horizontal scroll container; the img fills it so zooming
+                // isn't fighting `img { max-width: 100% }`.
+                //
+                // No height cap: the box runs as tall as the image so the
+                // page scrolls it, rather than a short box scrolling inside a
+                // page that also scrolls. Zooming in still overflows
+                // sideways, which is what `overflow-x-auto` is left for.
+                <div className="overflow-x-auto rounded-md border border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900">
                   <div style={{ width: `${zoom}%` }} className="mx-auto">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -420,12 +425,17 @@ export function SheetMusic({
               (zoomEnabled ? (
                 // PDF.js renders each page to a canvas that scales with `zoom`
                 // (an <iframe> can't be zoomed and won't scroll on iOS).
-                <div className="h-[85vh] w-full overflow-hidden rounded-md border border-neutral-200 dark:border-neutral-800">
+                //
+                // `fitHeight` lets every page stack out at full height, so
+                // the whole chart is one page-scroll instead of a 85vh
+                // window. `overflow-hidden` stays only to clip the corners.
+                <div className="w-full overflow-hidden rounded-md border border-neutral-200 dark:border-neutral-800">
                   <PdfView
                     url={viewUrl}
                     title={selected.label || selected.fileName}
                     zoom={zoom}
                     containerRef={pdfRef}
+                    fitHeight
                   />
                 </div>
               ) : (

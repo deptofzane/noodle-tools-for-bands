@@ -35,11 +35,19 @@ export function PdfView({
   title,
   zoom,
   containerRef,
+  fitHeight = false,
 }: {
   url: string;
   title: string;
   zoom: number;
   containerRef: RefObject<HTMLDivElement | null>;
+  /**
+   * Run as tall as the pages instead of filling the parent, so the document
+   * scrolls the page rather than a box inside it. Practice sets this; Live
+   * doesn't — it's a fullscreen mode that pins `body` overflow and needs the
+   * viewport-height scroller to page through a chart.
+   */
+  fitHeight?: boolean;
 }) {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
@@ -96,7 +104,19 @@ export function PdfView({
     <div
       ref={containerRef}
       style={{ touchAction: 'pan-x pan-y' }}
-      className="h-full w-full overflow-auto bg-neutral-100 dark:bg-neutral-900"
+      /*
+       * `overflow-x-auto` alone under `fitHeight` — deliberately no
+       * `overflow-y-visible` to pair with it. CSS forbids that combination:
+       * `visible` on one axis computes to `auto` when the other axis isn't
+       * visible, so asking for it changes nothing. The vertical scrollbar
+       * stays away because the height is the content's, leaving nothing to
+       * scroll, not because this says so.
+       */
+      className={
+        fitHeight
+          ? 'w-full overflow-x-auto bg-neutral-100 dark:bg-neutral-900'
+          : 'h-full w-full overflow-auto bg-neutral-100 dark:bg-neutral-900'
+      }
     >
       <div
         style={{ width: `${zoom}%` }}
