@@ -277,7 +277,7 @@ export function BandNotesTab({
         key={note.id}
         className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-4 py-3 dark:border-neutral-800"
       >
-        <div className="flex items-start justify-between gap-1">
+        <div className="flex items-start justify-between gap-1 items-center">
           {/* The whole heading toggles, so the target is the note, not
                 a 12px chevron. Notes with nothing to reveal don't. */}
           <button

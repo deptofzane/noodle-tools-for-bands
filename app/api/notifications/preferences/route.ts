@@ -4,8 +4,8 @@ import {
   NOTIFICATION_KINDS,
   getMutedKinds,
   getPushMutedKinds,
-  setKindMuted,
-  setKindPushMuted,
+  setKindsMuted,
+  setKindsPushMuted,
   type NotificationKind,
 } from '@/lib/db/notifications';
 
@@ -16,9 +16,13 @@ import {
  *              the feed, except a feed-mute already suppresses push too.
  *
  *   GET   → { muted: Kind[], pushMuted: Kind[] }
- *   PATCH { kind, enabled, channel?: 'feed' | 'push' }
+ *   PATCH { kind | kinds[], enabled, channel?: 'feed' | 'push' }
  *     → mute (enabled:false) / unmute (enabled:true) for that channel.
  *       Defaults to 'feed' when channel is omitted (back-compat).
+ *
+ *       `kinds` is what the Settings screen's master switches use: a category
+ *       or the whole list moves in one request, so a half-applied group can't
+ *       be left on screen. `kind` still works on its own for a single row.
  */
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -46,17 +50,34 @@ export async function PATCH(req: Request) {
 
   const body = await req.json().catch(() => null);
   const channel = body?.channel === 'push' ? 'push' : 'feed';
-  if (!isKind(body?.kind) || typeof body?.enabled !== 'boolean') {
+
+  // One kind or many; a lone `kind` is just a batch of one.
+  const raw: unknown[] = Array.isArray(body?.kinds)
+    ? body.kinds
+    : body?.kind !== undefined
+      ? [body.kind]
+      : [];
+  // Every entry has to be real. Silently dropping an unknown one would report
+  // success for a change the caller believes it made.
+  if (
+    raw.length === 0 ||
+    !raw.every(isKind) ||
+    typeof body?.enabled !== 'boolean'
+  ) {
     return NextResponse.json(
-      { error: 'bad_request', message: 'Provide { kind, enabled }.' },
+      {
+        error: 'bad_request',
+        message: 'Provide { kind | kinds[], enabled }.',
+      },
       { status: 400 },
     );
   }
+  const kinds = [...new Set(raw as NotificationKind[])];
 
   if (channel === 'push') {
-    await setKindPushMuted(user.id, body.kind, !body.enabled);
+    await setKindsPushMuted(user.id, kinds, !body.enabled);
   } else {
-    await setKindMuted(user.id, body.kind, !body.enabled);
+    await setKindsMuted(user.id, kinds, !body.enabled);
   }
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, count: kinds.length });
 }

@@ -10,6 +10,7 @@ import {
   sql,
 } from 'drizzle-orm';
 import { db } from './index';
+import { FEED_ONLY_KINDS } from '../notification-kinds';
 import {
   bandMembers,
   bands,
@@ -173,23 +174,6 @@ export async function createNotification(
  * module's static graph and there's no import cycle. Names are passed in from
  * the insert that just ran so the push path doesn't re-query them.
  */
-/**
- * Kinds that belong in the feed but never on a phone.
- *
- * Push is opt-out — absence of a mute means it sends — so a new kind pushes
- * by default and quiet has to be asked for. Kept as a set checked inside
- * `firePush` rather than a flag at each call site, so a future caller can't
- * make these buzz by forgetting to pass it.
- *
- * Pinning is housekeeping: worth seeing next time you look, not worth
- * interrupting a rehearsal for. Muting it in Settings still hides it from the
- * feed as well.
- */
-const FEED_ONLY_KINDS: ReadonlySet<NotificationKind> = new Set([
-  'note-pinned',
-  'note-unpinned',
-]);
-
 function firePush(
   input: CreateNotificationInput,
   names: { actorName: string | null; bandName: string | null },
@@ -377,6 +361,56 @@ export async function setKindMuted(
           eq(notificationMutes.kind, kind),
         ),
       );
+  }
+}
+
+/**
+ * Mute or unmute several kinds at once, for one channel.
+ *
+ * The Settings screen's master switches set a whole category — or everything
+ * — in one gesture, and doing that as one request per kind means a partial
+ * failure leaves the group visibly half-set with no honest way to roll back.
+ * Both branches are single statements, so the batch either lands or doesn't.
+ */
+export async function setKindsMuted(
+  userId: string,
+  kinds: NotificationKind[],
+  muted: boolean,
+): Promise<void> {
+  if (kinds.length === 0) return;
+  if (muted) {
+    await db
+      .insert(notificationMutes)
+      .values(kinds.map((kind) => ({ userId, kind })))
+      .onConflictDoNothing();
+  } else {
+    await db
+      .delete(notificationMutes)
+      .where(
+        and(
+          eq(notificationMutes.userId, userId),
+          inArray(notificationMutes.kind, kinds),
+        ),
+      );
+  }
+}
+
+/** The same, for the push channel. */
+export async function setKindsPushMuted(
+  userId: string,
+  kinds: NotificationKind[],
+  muted: boolean,
+): Promise<void> {
+  if (kinds.length === 0) return;
+  if (muted) {
+    await db
+      .insert(pushMutes)
+      .values(kinds.map((kind) => ({ userId, kind })))
+      .onConflictDoNothing();
+  } else {
+    await db
+      .delete(pushMutes)
+      .where(and(eq(pushMutes.userId, userId), inArray(pushMutes.kind, kinds)));
   }
 }
 
