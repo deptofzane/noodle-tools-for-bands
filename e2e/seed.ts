@@ -8,7 +8,8 @@ import { createCredentialUser, getUserByEmail } from '../lib/db/users';
 import { findOrCreateConversation } from '../lib/db/conversations';
 import { addAudioVersion, addSheetVersion } from '../lib/db/song-files';
 import { createSetlist } from '../lib/db/setlists';
-import { writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { E2E, SEED_FILE } from './fixtures';
 
 /**
@@ -64,6 +65,17 @@ export async function seed(): Promise<void> {
   // Ids on disk so specs can navigate straight to a page. Clicking through
   // menus to *reach* the thing under test makes a spec fail for reasons that
   // have nothing to do with what it's checking.
+  /*
+   * `e2e/.auth/` is gitignored — it holds a session cookie — so a fresh clone
+   * doesn't have it, and `writeFileSync` throws ENOENT rather than creating
+   * the parent. It survived locally only because earlier runs had left the
+   * directory behind; CI, cloning clean every time, never had it.
+   *
+   * This is the first thing to write there: `auth.setup.ts` also lands a
+   * `user.json` here and Playwright creates the directory for that, but the
+   * setup project runs after globalSetup.
+   */
+  mkdirSync(dirname(SEED_FILE), { recursive: true });
   writeFileSync(
     SEED_FILE,
     JSON.stringify(
