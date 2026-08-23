@@ -69,10 +69,12 @@ function TodoSection({
   const onCountsRef = useRef(onCounts);
   onCountsRef.current = onCounts;
   const pick = useCallback((d: unknown) => {
-    const data = d as { todos: Todo[]; counts: Counts };
-    // Every response carries all three counts, so a collapsed section can
-    // show a number without anyone having to open it.
-    onCountsRef.current(data.counts);
+    const data = d as { todos: Todo[]; counts: Counts | null };
+    // The first page carries all three counts, so a collapsed section can
+    // show a number without anyone having to open it. Later pages send null
+    // rather than recomputing something that hasn't changed — keep what we
+    // already have.
+    if (data.counts) onCountsRef.current(data.counts);
     return data.todos;
   }, []);
 

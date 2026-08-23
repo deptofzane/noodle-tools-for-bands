@@ -1249,17 +1249,6 @@ export async function deleteSheetVersion(
   return { newDefaultId: result.newDefaultId };
 }
 
-/** Stream one specific sheet-music version (scoped to its conversation). */
-export async function streamSheetVersion(
-  conversationId: string,
-  versionId: string,
-  rangeHeader?: string,
-): Promise<SongFileStream | null> {
-  const target = await getSheetVersionTarget(conversationId, versionId);
-  if (!target?.storageKey) return null;
-  return streamStoredFile(target.storageKey, rangeHeader);
-}
-
 // ── Per-user sheet-version preference ────────────────────────────────
 
 /** The user's chosen sheet version for a song, if any (raw, unvalidated). */

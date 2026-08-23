@@ -20,7 +20,3 @@ export const FEED_ONLY_KINDS: ReadonlySet<NotificationKind> = new Set([
   'todo-completed',
   'todo-cancelled',
 ]);
-
-export function isFeedOnly(kind: NotificationKind): boolean {
-  return FEED_ONLY_KINDS.has(kind);
-}

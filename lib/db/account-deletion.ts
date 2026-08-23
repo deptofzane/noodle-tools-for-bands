@@ -218,13 +218,3 @@ export async function confirmableEmails(userId: string): Promise<string[]> {
     .filter((e): e is string => typeof e === 'string' && e.trim().length > 0)
     .map((e) => e.trim().toLowerCase());
 }
-
-/** Whether these user ids are deleted accounts — for read paths that care. */
-export async function deletedUserIds(ids: string[]): Promise<Set<string>> {
-  if (ids.length === 0) return new Set();
-  const rows = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(and(inArray(users.id, ids), sql`${users.deletedAt} is not null`));
-  return new Set(rows.map((r) => r.id));
-}

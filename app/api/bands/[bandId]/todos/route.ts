@@ -17,7 +17,8 @@ const MAX_BODY = 20_000;
 /**
  * GET  /api/bands/[bandId]/todos?scope=&status=&limit=&offset=
  *   → one page of todos in that status, plus `counts` for all three so the
- *     collapsed sections can show a number without being opened.
+ *     collapsed sections can show a number without being opened. `counts` is
+ *     null past the first page — paging deeper doesn't change them.
  *
  * POST /api/bands/[bandId]/todos
  *   Body: { title, description?, shared?, ownerId?, deadline?, links? }
@@ -50,6 +51,14 @@ export async function GET(
   const status = isTodoStatus(raw) ? raw : 'active';
   const { limit, offset } = readWindow(url);
 
+  /*
+   * Counts only on the first page.
+   *
+   * They're for the three section headings, which don't change as you page
+   * deeper — so running the aggregate again for every "Load more" is work
+   * whose result is thrown away. The client keeps whatever the first page
+   * gave it.
+   */
   const [rows, counts] = await Promise.all([
     listTodos(bandId, guard.user.id, {
       scope,
@@ -57,7 +66,9 @@ export async function GET(
       limit: limit + 1,
       offset,
     }),
-    countTodosByStatus(bandId, guard.user.id, scope),
+    offset === 0
+      ? countTodosByStatus(bandId, guard.user.id, scope)
+      : Promise.resolve(null),
   ]);
   const { items, hasMore } = splitPage(rows, limit);
   return NextResponse.json({ todos: items, hasMore, counts });

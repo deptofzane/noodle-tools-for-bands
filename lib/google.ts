@@ -144,12 +144,3 @@ export async function refreshGoogleAccessToken(
 
   return { ok: true, tokens: (await res.json()) as RefreshedTokenResponse };
 }
-
-/**
- * Lightweight runtime check that a string looks like a Drive resource id.
- * Drive ids are URL-safe base64-ish: alphanumerics, dashes, and underscores.
- * We use this to keep user input out of `drive.files.list` queries cleanly.
- */
-export function isValidDriveId(id: string): boolean {
-  return /^[A-Za-z0-9_-]{5,200}$/.test(id);
-}

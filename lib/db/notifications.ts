@@ -449,21 +449,6 @@ export async function getPushMutedKinds(
   return rows.map((r) => r.kind);
 }
 
-/** Push-mute or push-unmute a kind for the user (independent of feed mute). */
-export async function setKindPushMuted(
-  userId: string,
-  kind: NotificationKind,
-  muted: boolean,
-): Promise<void> {
-  if (muted) {
-    await db.insert(pushMutes).values({ userId, kind }).onConflictDoNothing();
-  } else {
-    await db
-      .delete(pushMutes)
-      .where(and(eq(pushMutes.userId, userId), eq(pushMutes.kind, kind)));
-  }
-}
-
 async function getLastSeen(userId: string): Promise<Date> {
   const [row] = await db
     .select({ lastSeenAt: notificationReads.lastSeenAt })
