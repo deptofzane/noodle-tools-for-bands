@@ -9,15 +9,11 @@ import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
 import { NoteLinkModal } from './NoteLinkModal';
 import { Modal } from '@/app/Modal';
-import { NOTE_LINK_KINDS } from '@/lib/note-links';
+import { noteLinkBadge } from '@/lib/note-links';
 import type { NoteLinkInput } from '@/lib/db/user-notes';
 
 const field =
   'rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900';
-
-function kindLabel(kind: NoteLinkInput['kind']): string {
-  return NOTE_LINK_KINDS.find((k) => k.id === kind)?.label ?? kind;
-}
 
 /**
  * The New note / Edit note screen. One component for both: `noteId` decides
@@ -179,7 +175,7 @@ export function NoteForm({
               >
                 <span className="flex min-w-0 items-center gap-2">
                   <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide minor-text-theme-colors dark:bg-neutral-900">
-                    {kindLabel(l.kind)}
+                    {noteLinkBadge(l)}
                   </span>
                   <span className="truncate">{l.label}</span>
                 </span>

@@ -57,6 +57,10 @@ export function albumHref(bandId: string, albumId: string): string {
   return `/bands/${bandId}/albums/${albumId}`;
 }
 
+export function noteHref(bandId: string, noteId: string): string {
+  return `/bands/${bandId}/notes/${noteId}`;
+}
+
 /**
  * Where switching the current band should land you.
  *

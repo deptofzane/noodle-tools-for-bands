@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
 import { formatTimeAgoOrDate } from '@/lib/format';
@@ -16,67 +15,10 @@ import { usePersistedStringSet } from '../../usePersistedStringSet';
 import { PAGE_SIZE } from '@/lib/paging';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
-import { externalNoteUrl, noteLinkBadge, noteLinkHref } from '@/lib/note-links';
-import type { NoteLink, UserNote } from '@/lib/db/user-notes';
-
-/** A note's link as a chip — a link when it leads somewhere, text when it doesn't. */
-function LinkChip({
-  link,
-  bandId,
-  onExternal,
-}: {
-  link: NoteLink;
-  bandId: string;
-  /** Asked to confirm before leaving the app. */
-  onExternal: (url: string) => void;
-}) {
-  const href = noteLinkHref(link, bandId);
-  // `other` links are free text; this is what decides whether one is openable
-  // and supplies the scheme when the author didn't type one.
-  const externalUrl = link.kind === 'other' ? externalNoteUrl(href) : null;
-  const external = externalUrl !== null;
-  const inner = (
-    <>
-      <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide minor-text-theme-colors dark:bg-neutral-900">
-        {noteLinkBadge(link)}
-      </span>
-      <span className="truncate">{link.label}</span>
-    </>
-  );
-  const shell =
-    'flex min-w-0 max-w-full items-center gap-1.5 rounded-md border border-neutral-200 px-2 py-1 text-xs dark:border-neutral-800';
-
-  // `other` holds whatever was pasted, which may not be a URL at all.
-  if (!href || (link.kind === 'other' && !external))
-    return <span className={shell}>{inner}</span>;
-  if (external)
-    return (
-      // Still a real anchor, not a button: right-click "copy link address" and
-      // middle-click keep working, and those bypass the prompt deliberately —
-      // someone doing either has already said where they're going.
-      <a
-        href={externalUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={(e) => {
-          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-          e.preventDefault();
-          onExternal(externalUrl);
-        }}
-        className={`${shell} hover:bg-neutral-50 dark:hover:bg-neutral-900`}
-      >
-        {inner}
-      </a>
-    );
-  return (
-    <Link
-      href={href}
-      className={`${shell} hover:bg-neutral-50 dark:hover:bg-neutral-900`}
-    >
-      {inner}
-    </Link>
-  );
-}
+import { noteHref } from '@/lib/routes';
+import { useShareLink } from '../../useShareLink';
+import { NoteLinks } from './notes/NoteLinks';
+import type { UserNote } from '@/lib/db/user-notes';
 
 /**
  * The Notes tab: either the member's own private notes in this band or the
@@ -102,13 +44,11 @@ export function BandNotesTab({
   currentUserId: string;
 }) {
   const router = useRouter();
+  const share = useShareLink();
   const trackPending = useTrackPending();
   const showToast = useToast();
   const [deleteTarget, setDeleteTarget] = useState<UserNote | null>(null);
   const [deleting, setDeleting] = useState(false);
-  // External link awaiting confirmation. One modal for the whole tab rather
-  // than one per chip — only one can be open at a time.
-  const [externalUrl, setExternalUrl] = useState<string | null>(null);
 
   /*
    * Which slice is showing. Personal first: notes are private by default, so
@@ -282,16 +222,24 @@ export function BandNotesTab({
               (hasBody ? '' : 'cursor-default')
             }
           >
-            <span className="flex min-w-0 items-center gap-2">
+            {/* Titles wrap rather than truncate: a note is found by its
+                title, and "Van rental for the Nov…" is the half that stops
+                being useful. `items-start` keeps the chevron on the first
+                line instead of floating to the middle of a wrapped one, and
+                `break-words` handles a long unbroken string, which would
+                otherwise push the row wider than the card. */}
+            <span className="flex min-w-0 items-start gap-2">
               {hasBody && (
                 <span
                   aria-hidden="true"
-                  className="shrink-0 text-sm leading-none text-neutral-400"
+                  className="mt-0.5 shrink-0 text-sm leading-none text-neutral-400"
                 >
                   {open ? '▾' : '▸'}
                 </span>
               )}
-              <span className="truncate font-medium">{note.title}</span>
+              <span className="min-w-0 break-words font-medium">
+                {note.title}
+              </span>
             </span>
             <span className="text-xs minor-text-theme-colors">
               {mine ? (
@@ -325,20 +273,41 @@ export function BandNotesTab({
           >
             <span aria-hidden="true">{note.pinned ? '★' : '☆'}</span>
           </button>
-          {mine && (
-            <ActionMenu label={`Actions for ${note.title}`}>
-              <ActionMenuItem
-                onClick={() =>
-                  router.push(`/bands/${bandId}/notes/${note.id}/edit`)
-                }
-              >
-                Edit note
-              </ActionMenuItem>
-              <ActionMenuItem destructive onClick={() => setDeleteTarget(note)}>
-                Delete note
-              </ActionMenuItem>
-            </ActionMenu>
-          )}
+          {/*
+            Rendered for everyone now, not just the author. Viewing and
+            sharing are open to anyone who can already read the note — which,
+            for a shared one, is the whole band; only changing or removing it
+            stays with whoever wrote it.
+          */}
+          <ActionMenu label={`Actions for ${note.title}`}>
+            <ActionMenuItem
+              onClick={() => router.push(noteHref(bandId, note.id))}
+            >
+              View note
+            </ActionMenuItem>
+            <ActionMenuItem
+              onClick={() => void share(noteHref(bandId, note.id), 'Note')}
+            >
+              Share note
+            </ActionMenuItem>
+            {mine && (
+              <>
+                <ActionMenuItem
+                  onClick={() =>
+                    router.push(`/bands/${bandId}/notes/${note.id}/edit`)
+                  }
+                >
+                  Edit note
+                </ActionMenuItem>
+                <ActionMenuItem
+                  destructive
+                  onClick={() => setDeleteTarget(note)}
+                >
+                  Delete note
+                </ActionMenuItem>
+              </>
+            )}
+          </ActionMenu>
         </div>
 
         {open && note.body && (
@@ -348,16 +317,7 @@ export function BandNotesTab({
         )}
 
         {open && note.links.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {note.links.map((l) => (
-              <LinkChip
-                key={l.id}
-                link={l}
-                bandId={bandId}
-                onExternal={setExternalUrl}
-              />
-            ))}
-          </div>
+          <NoteLinks links={note.links} bandId={bandId} />
         )}
       </li>
     );
@@ -478,30 +438,6 @@ export function BandNotesTab({
           onLoadMore={() => void loadMore()}
         />
       )}
-
-      {/*
-        Leaving the app is worth a beat's confirmation: a note's links are
-        pasted by a bandmate, and in the installed app a tap otherwise hands
-        the screen to a site with no address bar explaining where you went.
-
-        `window.open` covers both cases the same way — a new tab in a browser,
-        and the system browser from the installed app, because the destination
-        is cross-origin and so isn't captured back into the app's scope. It's
-        called straight from the confirm click, so it counts as a user gesture
-        and isn't treated as a popup.
-      */}
-      <ConfirmModal
-        open={externalUrl !== null}
-        title="Open this link?"
-        description={`Are you sure you want to open this link to ${externalUrl ?? ''}?`}
-        confirmLabel="Open link"
-        onConfirm={() => {
-          if (externalUrl)
-            window.open(externalUrl, '_blank', 'noopener,noreferrer');
-          setExternalUrl(null);
-        }}
-        onCancel={() => setExternalUrl(null)}
-      />
 
       <ConfirmModal
         open={deleteTarget !== null}
