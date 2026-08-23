@@ -126,6 +126,29 @@ export const PREF_GROUPS: PrefGroup[] = [
     ],
   },
   {
+    id: 'todos',
+    label: 'Todos',
+    rows: [
+      {
+        kinds: ['todo-assigned'],
+        label: 'Assigned to you',
+        description: 'When someone puts a shared todo in your name.',
+      },
+      {
+        kinds: ['todo-completed', 'todo-cancelled'],
+        label: 'Todo status',
+        description:
+          'When a shared todo is completed or cancelled. Never sent to your phone.',
+      },
+      {
+        kinds: ['todo-taken-private'],
+        label: 'Todos taken private',
+        description:
+          'When someone takes a shared todo you raised out of the band.',
+      },
+    ],
+  },
+  {
     id: 'band',
     label: 'Band',
     rows: [

@@ -12,6 +12,13 @@ import type { NotificationKind } from './db/notifications';
 export const FEED_ONLY_KINDS: ReadonlySet<NotificationKind> = new Set([
   'note-pinned',
   'note-unpinned',
+  /*
+   * Todo status goes to the whole band, so pushing it would mean a buzz per
+   * member per tick — the loudest thing in the app by some way. Assignment
+   * and takeover are addressed to one person and do push.
+   */
+  'todo-completed',
+  'todo-cancelled',
 ]);
 
 export function isFeedOnly(kind: NotificationKind): boolean {

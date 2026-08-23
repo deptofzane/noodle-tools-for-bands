@@ -116,6 +116,24 @@ function actorVisible(userId: string) {
   );
 }
 
+/**
+ * SQL: addressed to this user, or to nobody in particular.
+ *
+ * A null `recipient_id` is a broadcast — every member of the band sees it,
+ * which is how every kind behaved before targeting existed and how most still
+ * do. A set one is private to that person.
+ *
+ * Its own function because the feed and the unread badge both have to apply
+ * it, and a count that disagrees with the list it counts is the kind of bug
+ * that shows up as "the badge says 3 but I can only see 2".
+ */
+function addressedTo(userId: string) {
+  return or(
+    sql`${notifications.recipientId} is null`,
+    eq(notifications.recipientId, userId),
+  );
+}
+
 export interface CreateNotificationInput {
   bandId: string;
   actorId: string;
@@ -129,6 +147,11 @@ export interface CreateNotificationInput {
   changedFields?: string[] | null;
   /** The subject's name before a rename; `subjectLabel` holds the new one. */
   previousLabel?: string | null;
+  /**
+   * Address this to one person instead of the whole band. Omit for a
+   * broadcast, which is what every kind did before this existed.
+   */
+  recipientId?: string | null;
 }
 
 /**
@@ -164,6 +187,7 @@ export async function createNotification(
     changedFields: input.changedFields ?? null,
     previousLabel: input.previousLabel ?? null,
     day: input.day ?? null,
+    recipientId: input.recipientId ?? null,
   });
   return { actorName, bandName };
 }
@@ -496,6 +520,7 @@ export async function listNotifications(
     .where(
       and(
         actorVisible(userId),
+        addressedTo(userId),
         muted.length ? notInArray(notifications.kind, muted) : undefined,
         cursor
           ? or(
@@ -551,6 +576,7 @@ export async function getUnreadNotificationCount(
     .where(
       and(
         actorVisible(userId),
+        addressedTo(userId),
         gt(notifications.createdAt, lastSeen),
         muted.length ? notInArray(notifications.kind, muted) : undefined,
       ),

@@ -3,7 +3,13 @@
  * can validate `?tab=` too — every export of a 'use client' module becomes a
  * client reference and can't be called during the server render.
  */
-export const BAND_TABS = ['events', 'venues', 'notes', 'polls'] as const;
+export const BAND_TABS = [
+  'todos',
+  'events',
+  'venues',
+  'notes',
+  'polls',
+] as const;
 
 export type BandTab = (typeof BAND_TABS)[number];
 

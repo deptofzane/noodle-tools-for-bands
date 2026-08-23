@@ -127,19 +127,27 @@ export function ActionMenuItem({
   onClick,
   destructive = false,
   disabled = false,
+  title,
 }: {
   children: ReactNode;
   onClick: () => void;
   destructive?: boolean;
   disabled?: boolean;
+  /**
+   * Hover text. Worth having on a *disabled* item especially: an action
+   * that's greyed out with no explanation reads as broken rather than as
+   * something you haven't earned yet.
+   */
+  title?: string;
 }) {
   return (
     <button
       type="button"
       role="menuitem"
       disabled={disabled}
+      title={title}
       onClick={onClick}
-      className={`block w-full text-nowrap px-4 py-2 sm:py-3 text-left text-base hover:bg-neutral-100 sm:px-3 sm:py-1.5 sm:text-sm dark:hover:bg-neutral-800 ${
+      className={`block w-full text-nowrap px-4 py-2 sm:py-3 text-left text-base hover:bg-neutral-100 sm:px-3 sm:py-1.5 sm:text-sm dark:hover:bg-neutral-800 ${disabled && 'opacity-60'} ${
         destructive
           ? 'text-red-600 dark:text-red-400 pt-2 border-t border-gray-700'
           : 'text-neutral-700 dark:text-neutral-200'

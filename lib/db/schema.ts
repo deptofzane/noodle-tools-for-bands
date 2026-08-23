@@ -226,6 +226,10 @@ export const notificationKind = pgEnum('notification_kind', [
   'album-created',
   'note-pinned',
   'note-unpinned',
+  'todo-assigned',
+  'todo-completed',
+  'todo-cancelled',
+  'todo-taken-private',
 ]);
 
 // What a notification points at, for building its link.
@@ -237,6 +241,7 @@ export const notificationSubject = pgEnum('notification_subject', [
   'setlist',
   'album',
   'note',
+  'todo',
 ]);
 
 export const notifications = pgTable(
@@ -250,6 +255,20 @@ export const notifications = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     actorName: text('actor_name'),
+    /**
+     * Who this is for, when it's for one person.
+     *
+     * Null is the original behaviour and still the common case: the row is a
+     * broadcast that every member of the band sees. Set, and only that user
+     * does — the feed, the unread count and the push fan-out all honour it.
+     *
+     * Added for todos, where "you've been assigned this" is addressed to one
+     * person and telling the whole band both misreads and multiplies the
+     * push by the size of the band.
+     */
+    recipientId: uuid('recipient_id').references(() => users.id, {
+      onDelete: 'cascade',
+    }),
     bandName: text('band_name'),
     kind: notificationKind('kind').notNull(),
     subjectType: notificationSubject('subject_type').notNull(),
@@ -307,6 +326,11 @@ export const notifications = pgTable(
       .notNull(),
   },
   (t) => [
+    // Partial: only targeted rows are looked up this way, and they are a
+    // small minority — broadcasts are found through band_id.
+    index('notifications_recipient_idx')
+      .on(t.recipientId)
+      .where(sql`recipient_id is not null`),
     index('notifications_band_created_idx').on(t.bandId, t.createdAt),
     // Finding the band's rollup for a given day, on every upload.
     index('notifications_band_day_idx').on(t.bandId, t.day),
@@ -1000,6 +1024,93 @@ export const userNoteLinkKind = pgEnum('user_note_link_kind', [
 // is unconstrained on purpose. `label` is the target's name as it read when
 // the link was made, which keeps a link legible after its target is renamed
 // or deleted; `url` carries the free-form `other` kind.
+// ── Todos ────────────────────────────────────────────────────────────
+export const todoStatus = pgEnum('todo_status', [
+  'active',
+  'complete',
+  'cancelled',
+]);
+
+/**
+ * A band's todo. Private to its creator until shared, then the band's.
+ *
+ * Unlike a note, a shared todo is genuinely handed over: anyone in the band
+ * can edit, restatus, reassign or delete it. Only the creator or the current
+ * owner may take it *back* out of the band, which is the one action that
+ * removes it from everyone else's view.
+ */
+export const todos = pgTable(
+  'todos',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    bandId: uuid('band_id')
+      .notNull()
+      .references(() => bands.id, { onDelete: 'cascade' }),
+    /**
+     * Who it belongs to when it isn't shared — and therefore who can see it.
+     *
+     * Mutable, unusually: an owner who takes a shared todo private becomes
+     * its creator, because the alternative is a private todo belonging to
+     * someone who can no longer see it.
+     */
+    creatorId: uuid('creator_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    description: text('description'),
+    status: todoStatus('status').notNull().default('active'),
+    /** False = only the creator. True = the whole band, and anyone may edit. */
+    shared: boolean('shared').notNull().default(false),
+    /**
+     * Who is doing it. Shared todos only: an unshared todo is its creator's by
+     * definition, so a second column saying so could only ever disagree.
+     * Null on a shared todo means nobody has claimed it.
+     */
+    ownerId: uuid('owner_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    /** Optional due date, YYYY-MM-DD. No time — todos are due on a day. */
+    deadline: date('deadline', { mode: 'string' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    // The tab reads one status at a time, in its own collapsible section.
+    index('todos_band_status_idx').on(t.bandId, t.status),
+    // "Mine": partial, because an owner only means anything once shared.
+    index('todos_band_owner_idx')
+      .on(t.bandId, t.ownerId)
+      .where(sql`shared`),
+    index('todos_band_creator_idx').on(t.bandId, t.creatorId),
+  ],
+);
+
+/**
+ * A todo's links. Same shape and the same kinds as a note's — the logic in
+ * `lib/note-links.ts` is shared — but its own table so the foreign key stays
+ * real rather than becoming a polymorphic pair nothing can enforce.
+ */
+export const todoLinks = pgTable(
+  'todo_links',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    todoId: uuid('todo_id')
+      .notNull()
+      .references(() => todos.id, { onDelete: 'cascade' }),
+    kind: userNoteLinkKind('kind').notNull(),
+    targetId: uuid('target_id'),
+    url: text('url'),
+    label: text('label').notNull(),
+    practice: boolean('practice').notNull().default(false),
+    position: integer('position').notNull().default(0),
+  },
+  (t) => [index('todo_links_todo_idx').on(t.todoId)],
+);
+
 export const userNoteLinks = pgTable(
   'user_note_links',
   {

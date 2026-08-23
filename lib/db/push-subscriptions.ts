@@ -99,6 +99,15 @@ export async function listPushTargets(input: {
   bandId: string;
   actorId: string;
   kind: NotificationKind;
+  /**
+   * When the notification is addressed to one person, only their devices get
+   * it. Omit for a broadcast.
+   *
+   * This is the reader that matters most: the feed merely showing a private
+   * row to the wrong person is a leak on a screen they have to open, whereas
+   * getting it wrong here puts it on four people's lock screens.
+   */
+  recipientId?: string | null;
 }): Promise<StoredPushSubscription[]> {
   return db
     .select({
@@ -118,6 +127,11 @@ export async function listPushTargets(input: {
     .where(
       and(
         ne(pushSubscriptions.userId, input.actorId),
+        // Still band-scoped as well: a recipient who has since left the band
+        // shouldn't be reachable through it.
+        input.recipientId
+          ? eq(pushSubscriptions.userId, input.recipientId)
+          : undefined,
         notExists(
           db
             .select({ u: notificationMutes.userId })

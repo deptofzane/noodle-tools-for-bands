@@ -97,7 +97,7 @@ test('a click turns everything on only when everything is already off', () => {
   );
 });
 
-test('the merged rows are the two intended pairs, and nothing else', () => {
+test('the merged rows are the intended pairs, and nothing else', () => {
   const merged = PREF_GROUPS.flatMap((g) => g.rows)
     .filter((r) => r.kinds.length > 1)
     .map((r) => r.kinds.slice().sort().join('+'))
@@ -105,5 +105,6 @@ test('the merged rows are the two intended pairs, and nothing else', () => {
   assert.deepEqual(merged, [
     'note-pinned+note-unpinned',
     'poll-auto-closed+poll-closed',
+    'todo-cancelled+todo-completed',
   ]);
 });

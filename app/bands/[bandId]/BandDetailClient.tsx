@@ -7,6 +7,7 @@ import { BandMembersTab } from './BandMembersTab';
 import { BandOverviewTab } from './BandOverviewTab';
 import { BandVenuesTab } from './BandVenuesTab';
 import { BandNotesTab } from './BandNotesTab';
+import { BandTodosTab } from './BandTodosTab';
 import {
   BAND_ACTIVE_TAB_KEY,
   BAND_TABS,
@@ -21,7 +22,8 @@ import { LoadingBlock } from '../../Spinner';
 
 /**
  * Band detail coordinator: fetches the band's data, owns the tab state, and
- * renders the tab bar plus the active tab (Events / Venues / Polls / Notes).
+ * renders the tab bar plus the active tab (Events / Venues / Todos /
+ * Notes / Polls).
  * The tab bodies live in their own components. Audio and Setlists live on
  * their own page at `/bands/[bandId]/audio`, and Chat at
  * `/bands/[bandId]/chat`.
@@ -158,6 +160,10 @@ export function BandDetailClient({
 
       {activeTab === 'venues' && (
         <BandVenuesTab bandId={bandId} venues={venues} onReload={reload} />
+      )}
+
+      {activeTab === 'todos' && (
+        <BandTodosTab bandId={bandId} currentUserId={currentUserId} />
       )}
 
       {activeTab === 'notes' && (

@@ -77,6 +77,16 @@ function pushBody(
     // Unreachable in practice (feed-only), but the switch is exhaustive with
     // no default, so leaving them out wouldn't compile — and shouldn't: the
     // day one of these becomes pushable, the wording is already right.
+    case 'todo-assigned':
+      return `${who} assigned you a todo: ${subjectLabel ?? 'Untitled'}`;
+    case 'todo-taken-private':
+      return `${who} took a todo out of the band: ${subjectLabel ?? 'Untitled'}`;
+    // Feed-only, so unreachable — but the switch is exhaustive, and the
+    // wording should already be right the day that changes.
+    case 'todo-completed':
+      return `${who} completed a todo: ${subjectLabel ?? 'Untitled'}`;
+    case 'todo-cancelled':
+      return `${who} cancelled a todo: ${subjectLabel ?? 'Untitled'}`;
     case 'note-pinned':
       return `${who} pinned a note: ${subjectLabel ?? 'Untitled'}`;
     case 'note-unpinned':
@@ -125,6 +135,10 @@ function pushUrl(
     // can't silently fall through to the band page.
     case 'note':
       return `/bands/${bandId}?tab=notes&notes=shared`;
+    case 'todo':
+      return subjectId
+        ? `/bands/${bandId}/todos/${subjectId}`
+        : `/bands/${bandId}?tab=todos`;
     case 'poll':
       return subjectId
         ? `/bands/${bandId}/polls/${subjectId}`
@@ -159,6 +173,7 @@ export async function sendEventPush(
     bandId: input.bandId,
     actorId: input.actorId,
     kind: input.kind,
+    recipientId: input.recipientId,
   });
   if (targets.length === 0) return;
 

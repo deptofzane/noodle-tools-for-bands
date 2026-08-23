@@ -68,6 +68,12 @@ function hrefFor(n: NotificationItem): string {
     // announced, hence the fixed value.
     case 'note':
       return `/bands/${n.bandId}?tab=notes&notes=shared`;
+    // Todos have a page of their own, so this lands on the thing itself
+    // rather than a tab the reader then has to search.
+    case 'todo':
+      return n.subjectId
+        ? `/bands/${n.bandId}/todos/${n.subjectId}`
+        : `/bands/${n.bandId}?tab=todos`;
     case 'poll':
       return n.subjectId
         ? `/bands/${n.bandId}/polls/${n.subjectId}`
@@ -117,6 +123,16 @@ function messageFor(n: NotificationItem): string {
         ? `${who} ${said}`
         : `${who} updated the event: ${n.subjectLabel ?? 'Untitled'}`;
     }
+    // Third person throughout, even for the targeted ones: the feed shows
+    // who did what, and "you" would be wrong the moment anyone else reads it.
+    case 'todo-assigned':
+      return `${who} assigned you a todo: ${n.subjectLabel ?? 'Untitled'}`;
+    case 'todo-completed':
+      return `${who} completed a todo: ${n.subjectLabel ?? 'Untitled'}`;
+    case 'todo-cancelled':
+      return `${who} cancelled a todo: ${n.subjectLabel ?? 'Untitled'}`;
+    case 'todo-taken-private':
+      return `${who} took a todo out of the band: ${n.subjectLabel ?? 'Untitled'}`;
     case 'note-pinned':
       return `${who} pinned a note: ${n.subjectLabel ?? 'Untitled'}`;
     case 'note-unpinned':
