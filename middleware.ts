@@ -11,8 +11,8 @@ import authConfig from './auth.config';
  * keeps webpack from throwing `UnhandledSchemeError: node:process`.
  *
  * Routing rules:
- *   - `/login`, `/signup`, `/forgot`, `/reset`, `/offline`, and `/api/health`
- *     are public
+ *   - `/` (the public landing page), `/login`, `/signup`, `/forgot`,
+ *     `/reset`, `/offline`, and `/api/health` are public
  *   - `/api/auth/*` (Auth.js handlers + register/forgot/reset) are always allowed
  *   - `/api/calendar/<token>` (the iCalendar feed) is public — calendar apps
  *     fetch it with no session; the unguessable token is its credential. Only
@@ -23,6 +23,11 @@ import authConfig from './auth.config';
 const { auth } = NextAuth(authConfig);
 
 const PUBLIC_PATHS = new Set<string>([
+  // The front door. Signed out it says what this is and links to sign-in;
+  // signed in it redirects to /home (see app/page.tsx). It has to be public or
+  // an anonymous visitor is bounced to /login before ever seeing it — and the
+  // installed app launches here, because the manifest's start_url is '/'.
+  '/',
   '/login',
   '/signup',
   '/forgot',
