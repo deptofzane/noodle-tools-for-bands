@@ -1013,6 +1013,16 @@ export const userNoteLinks = pgTable(
     /** Free-form destination for `other` — a pasted URL or reference. */
     url: text('url'),
     label: text('label').notNull(),
+    /**
+     * Song links only: point at the song's Practice screen instead of its
+     * page.
+     *
+     * Its own column rather than a second link kind, because it isn't a
+     * different sort of thing to link to — it's the same song, opened
+     * differently. A kind would have split "Song" in two everywhere the
+     * picker, the Type dropdown and the chip label mention it.
+     */
+    practice: boolean('practice').notNull().default(false),
     position: integer('position').notNull().default(0),
   },
   (t) => [index('user_note_links_note_idx').on(t.noteId)],

@@ -33,6 +33,8 @@ export interface NoteLink {
    * lands on the live thing, which is where the current name lives.
    */
   label: string;
+  /** Song links only: open Practice rather than the song's page. */
+  practice: boolean;
 }
 
 export interface UserNote {
@@ -58,6 +60,7 @@ export interface NoteLinkInput {
   targetId: string | null;
   url: string | null;
   label: string;
+  practice: boolean;
 }
 
 /** Attach each note's links, in one query for the whole page. */
@@ -83,6 +86,7 @@ async function withLinks(rows: Omit<UserNote, 'links'>[]): Promise<UserNote[]> {
       targetId: l.targetId,
       url: l.url,
       label: l.label,
+      practice: l.practice,
     });
     byNote.set(l.noteId, list);
   }
@@ -338,6 +342,7 @@ async function replaceLinks(
       targetId: l.targetId,
       url: l.url,
       label: l.label,
+      practice: l.practice,
       position: i,
     })),
   );

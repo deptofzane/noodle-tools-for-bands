@@ -12,6 +12,14 @@ interface Choice {
   id: string;
   label: string;
   hint?: string;
+  /**
+   * Songs only: nothing uploaded at all, neither audio nor sheet music.
+   *
+   * Worth surfacing here because the list is otherwise just names, and a song
+   * with nothing attached is the one you're least likely to have meant —
+   * particularly when linking to Practice, which would open empty.
+   */
+  noMedia?: boolean;
 }
 
 /**
@@ -49,7 +57,15 @@ function toChoices(kind: NoteLinkKind, data: unknown): Choice[] {
           : kind === 'venue'
             ? ((r.address as string | null) ?? undefined)
             : undefined;
-      return { id, label: label || 'Untitled', hint };
+      /*
+       * Both signals already ride along in /api/bands/[id]/conversations, so
+       * this costs no extra request: `audioVersionId` is the default audio
+       * version (null when there's none) and `hasSheetMusic` is a subquery
+       * over sheet versions.
+       */
+      const noMedia =
+        kind === 'song' ? !r.audioVersionId && !r.hasSheetMusic : undefined;
+      return { id, label: label || 'Untitled', hint, noMedia };
     })
     .filter((c) => c.id);
 }
@@ -79,6 +95,12 @@ export function NoteLinkModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
+  /*
+   * Song links only. Kept out of the kind switch below so it survives
+   * filtering the list, and reset when the kind changes so a stale tick can't
+   * ride along onto a venue.
+   */
+  const [practice, setPractice] = useState(false);
   const [otherUrl, setOtherUrl] = useState('');
   const [otherLabel, setOtherLabel] = useState('');
 
@@ -118,6 +140,7 @@ export function NoteLinkModal({
       targetId: null,
       url,
       label: otherLabel.trim() || url,
+      practice: false,
     });
   };
 
@@ -137,6 +160,8 @@ export function NoteLinkModal({
           onChange={(v) => {
             setKind(v as NoteLinkKind);
             setFilter('');
+            // Only songs have a Practice screen; don't carry a tick across.
+            if (v !== 'song') setPractice(false);
           }}
           options={NOTE_LINK_KINDS.map((k) => ({
             value: k.id,
@@ -175,6 +200,28 @@ export function NoteLinkModal({
         </div>
       ) : (
         <div className="mt-4 flex flex-col gap-2">
+          {/*
+            Above the list, not below it: choosing a song adds the link and
+            closes the picker, so a control underneath would never be reached
+            in time.
+          */}
+          {kind === 'song' && (
+            <label className="flex items-start gap-2 rounded-md border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800">
+              <input
+                type="checkbox"
+                checked={practice}
+                onChange={(e) => setPractice(e.target.checked)}
+                className="mt-0.5 h-4 w-4"
+              />
+              <span>
+                <span className="font-medium">Link to practice</span>
+                <span className="block text-[0.6875rem] minor-text-theme-colors">
+                  Opens the song’s Practice screen — player and sheet music —
+                  instead of its page.
+                </span>
+              </span>
+            </label>
+          )}
           {choices.length > 8 && (
             <input
               value={filter}
@@ -208,11 +255,20 @@ export function NoteLinkModal({
                         targetId: c.id,
                         url: null,
                         label: c.label,
+                        // Only songs have a Practice screen to open.
+                        practice: kind === 'song' && practice,
                       })
                     }
                     className="flex w-full flex-col gap-0.5 rounded-md px-2 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"
                   >
-                    <span className="truncate font-medium">{c.label}</span>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="truncate font-medium">{c.label}</span>
+                      {c.noMedia && (
+                        <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium minor-text-theme-colors dark:bg-neutral-800">
+                          No media attached
+                        </span>
+                      )}
+                    </span>
                     {c.hint && (
                       <span className="truncate text-xs minor-text-theme-colors">
                         {c.hint}

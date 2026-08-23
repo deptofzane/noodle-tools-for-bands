@@ -16,16 +16,8 @@ import { usePersistedStringSet } from '../../usePersistedStringSet';
 import { PAGE_SIZE } from '@/lib/paging';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
-import {
-  NOTE_LINK_KINDS,
-  externalNoteUrl,
-  noteLinkHref,
-} from '@/lib/note-links';
+import { externalNoteUrl, noteLinkBadge, noteLinkHref } from '@/lib/note-links';
 import type { NoteLink, UserNote } from '@/lib/db/user-notes';
-
-function kindLabel(kind: NoteLink['kind']): string {
-  return NOTE_LINK_KINDS.find((k) => k.id === kind)?.label ?? kind;
-}
 
 /** A note's link as a chip — a link when it leads somewhere, text when it doesn't. */
 function LinkChip({
@@ -46,7 +38,7 @@ function LinkChip({
   const inner = (
     <>
       <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide minor-text-theme-colors dark:bg-neutral-900">
-        {kindLabel(link.kind)}
+        {noteLinkBadge(link)}
       </span>
       <span className="truncate">{link.label}</span>
     </>

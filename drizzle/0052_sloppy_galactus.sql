@@ -1,0 +1,1 @@
+ALTER TABLE "user_note_links" ADD COLUMN "practice" boolean DEFAULT false NOT NULL;

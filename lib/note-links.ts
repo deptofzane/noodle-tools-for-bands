@@ -8,11 +8,26 @@ import type {
 export const NOTE_LINK_KINDS: { id: NoteLinkKind; label: string }[] = [
   { id: 'song', label: 'Song' },
   { id: 'event', label: 'Event' },
-  { id: 'venue', label: 'Venue' },
   { id: 'setlist', label: 'Setlist' },
+  { id: 'venue', label: 'Venue' },
   { id: 'poll', label: 'Poll' },
   { id: 'other', label: 'Other' },
 ];
+
+/**
+ * What a saved link's badge reads.
+ *
+ * A song link and a practice link point at the same song and would otherwise
+ * render identically, so the badge is what tells them apart once the modal is
+ * closed and the choice is no longer visible.
+ */
+export function noteLinkBadge(link: {
+  kind: NoteLinkKind;
+  practice?: boolean;
+}): string {
+  if (link.kind === 'song' && link.practice) return 'Practice';
+  return NOTE_LINK_KINDS.find((k) => k.id === link.kind)?.label ?? link.kind;
+}
 
 export function isNoteLinkKind(v: unknown): v is NoteLinkKind {
   return NOTE_LINK_KINDS.some((k) => k.id === v);
@@ -46,7 +61,10 @@ export function noteLinkHref(link: NoteLink, bandId: string): string | null {
   if (!link.targetId) return null;
   switch (link.kind) {
     case 'song':
-      return `/notes/${link.targetId}`;
+      // `practice` is only ever set on song links — see the column comment.
+      return link.practice
+        ? `/notes/${link.targetId}/practice`
+        : `/notes/${link.targetId}`;
     case 'event':
       return `/calendar/events/${link.targetId}`;
     case 'venue':
@@ -131,13 +149,21 @@ export function parseLinks(raw: unknown): NoteLinkInput[] {
     if (l.kind === 'other') {
       const url = typeof l.url === 'string' ? l.url.trim() : '';
       if (!url) continue;
-      out.push({ kind: 'other', targetId: null, url, label });
+      out.push({ kind: 'other', targetId: null, url, label, practice: false });
       continue;
     }
     // Everything else names a row; without an id there's nothing to point at.
     const targetId = typeof l.targetId === 'string' ? l.targetId : '';
     if (!targetId) continue;
-    out.push({ kind: l.kind, targetId, url: null, label });
+    out.push({
+      kind: l.kind,
+      targetId,
+      url: null,
+      label,
+      // Ignored for every other kind, so a client asking for a "practice
+      // venue" gets a plain venue link rather than a broken one.
+      practice: l.kind === 'song' && l.practice === true,
+    });
   }
   return out;
 }

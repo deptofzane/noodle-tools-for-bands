@@ -42,6 +42,7 @@ export default async function EditNotePage({
             targetId: l.targetId,
             url: l.url,
             label: l.label,
+            practice: l.practice,
           })),
         }}
       />
