@@ -51,6 +51,15 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/noodle_test
+      # Six of the suites write real bytes through `addAudioVersion` /
+      # `addSheetVersion`, so this job needs object storage exactly as the e2e
+      # one does. Without it they fail with "Object storage is not configured".
+      S3_ENDPOINT: http://localhost:9000
+      S3_BUCKET: noodle-db-tests
+      S3_ACCESS_KEY_ID: minioadmin
+      S3_SECRET_ACCESS_KEY: minioadmin
+      S3_REGION: us-east-1
+      S3_FORCE_PATH_STYLE: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -59,11 +68,35 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # MinIO as a step rather than a `services:` container.
+      #
+      # Service containers can't override a command, and the official image
+      # needs `server /data`. The Bitnami image that did start unattended was
+      # removed from Docker Hub — `bitnami/minio:latest` now 404s, which is
+      # what silently broke this job. Its replacement lives under
+      # `bitnamilegacy/`, an explicit deprecation holding pen, so this uses the
+      # official image that local development already runs and starts it
+      # by hand.
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin \
+            -e MINIO_ROOT_PASSWORD=minioadmin \
+            quay.io/minio/minio:latest server /data
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:9000/minio/health/live >/dev/null; then
+              echo "MinIO ready after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "MinIO never became healthy"; docker logs minio; exit 1
       # The committed migrations, not `db:push`. This is deliberately the same
       # path production takes, so a migration that doesn't apply cleanly fails
       # here rather than on deploy.
       - name: Apply migrations
         run: node scripts/migrate.mjs
+      - name: Create bucket
+        run: node scripts/s3-init.mjs
       - run: pnpm test:db
 
   # Playwright, against a production build with a service worker — see the
@@ -84,20 +117,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      # Bitnami's image starts a server on its own. The upstream minio/minio
-      # image needs a `server /data` argument, and GitHub service containers
-      # can't override a container's command.
-      minio:
-        image: bitnami/minio:latest
-        env:
-          MINIO_ROOT_USER: minioadmin
-          MINIO_ROOT_PASSWORD: minioadmin
-        ports: ['9000:9000']
-        options: >-
-          --health-cmd "curl -f http://localhost:9000/minio/health/live"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/noodle_e2e
       # Not a secret: the suite mints its own session cookie with this and
@@ -123,6 +142,28 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # MinIO as a step rather than a `services:` container.
+      #
+      # Service containers can't override a command, and the official image
+      # needs `server /data`. The Bitnami image that did start unattended was
+      # removed from Docker Hub — `bitnami/minio:latest` now 404s, which is
+      # what silently broke this job. Its replacement lives under
+      # `bitnamilegacy/`, an explicit deprecation holding pen, so this uses the
+      # official image that local development already runs and starts it
+      # by hand.
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin \
+            -e MINIO_ROOT_PASSWORD=minioadmin \
+            quay.io/minio/minio:latest server /data
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:9000/minio/health/live >/dev/null; then
+              echo "MinIO ready after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "MinIO never became healthy"; docker logs minio; exit 1
       - name: Apply migrations
         run: node scripts/migrate.mjs
       # The seed writes real audio and sheet bytes to object storage, so the
