@@ -10,6 +10,7 @@ import {
   formatTimeRange,
 } from '@/lib/format';
 import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
+import { useShareLink } from '../../useShareLink';
 import { ConfirmModal } from '../../ConfirmModal';
 import { useTrackPending } from '../../PendingActionProvider';
 import { useToast } from '../../ToastProvider';
@@ -25,7 +26,7 @@ import {
   type Show,
 } from './bandDetailShared';
 import { MapLink } from '../../MapLink';
-import { liveHref, practiceHref } from '@/lib/routes';
+import { eventHref, liveHref, practiceHref, setlistHref } from '@/lib/routes';
 import { CollapsibleSection } from '@/app/CollapsibleSection';
 import { eventColorKey } from '../../calendar/eventColors';
 
@@ -50,6 +51,7 @@ export function BandOverviewTab({
   onReload: () => Promise<void> | void;
 }) {
   const router = useRouter();
+  const share = useShareLink();
   const trackPending = useTrackPending();
   const showToast = useToast();
   const offline = useOfflineDownload();
@@ -177,6 +179,11 @@ export function BandOverviewTab({
               View event
             </ActionMenuItem>
             <ActionMenuItem
+              onClick={() => void share(eventHref(show.id), 'Event')}
+            >
+              Share event
+            </ActionMenuItem>
+            <ActionMenuItem
               onClick={() => router.push(`/calendar/events/${show.id}/edit`)}
             >
               Edit event
@@ -189,6 +196,13 @@ export function BandOverviewTab({
                   }
                 >
                   View setlist
+                </ActionMenuItem>
+                <ActionMenuItem
+                  onClick={() =>
+                    void share(setlistHref(bandId, show.setlistId!), 'Setlist')
+                  }
+                >
+                  Share setlist
                 </ActionMenuItem>
                 <ActionMenuItem
                   onClick={() =>

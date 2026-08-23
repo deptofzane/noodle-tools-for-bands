@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatDuration } from '@/lib/format';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { useShareLink } from '../../../useShareLink';
+import { albumHref } from '@/lib/routes';
 import { LoadingBlock } from '../../../Spinner';
 import { usePersistedStringSet } from '../../../usePersistedStringSet';
 import { usePlaylistPlayer } from '../../../player/PlaylistPlayer';
@@ -58,16 +60,19 @@ export function BandAlbumList({
   // on top at render and deliberately never written here — see `effectiveOpen`.
   const [openIds, toggleOpen] = usePersistedStringSet('albumViewOpen');
   const router = useRouter();
+  const share = useShareLink();
   const player = usePlaylistPlayer();
 
-  if (!albums || !conversations)
-    return <LoadingBlock label="Loading albums" />;
+  if (!albums || !conversations) return <LoadingBlock label="Loading albums" />;
 
   const groups = filterAlbums(albums, search);
   const open = effectiveOpen(groups, openIds, search);
   const active = conversations.filter((c) => !c.archived);
   const loose = unassociated(
-    active.map((c) => ({ id: c.id, name: c.audioFileName ?? 'Untitled audio' })),
+    active.map((c) => ({
+      id: c.id,
+      name: c.audioFileName ?? 'Untitled audio',
+    })),
     albums,
     search,
   );
@@ -133,6 +138,13 @@ export function BandAlbumList({
                     }
                   >
                     View album
+                  </ActionMenuItem>
+                  <ActionMenuItem
+                    onClick={() =>
+                      void share(albumHref(bandId, album.id), 'Album')
+                    }
+                  >
+                    Share album
                   </ActionMenuItem>
                   <ActionMenuItem
                     onClick={() =>

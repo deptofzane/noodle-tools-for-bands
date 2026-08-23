@@ -9,6 +9,7 @@ import { PageHeader } from '../../../PageHeader';
 import { setlistQueue } from '../../../bands/[bandId]/bandDetailShared';
 import { MapLink } from '../../../MapLink';
 import { CollapsibleSection } from '../../../CollapsibleSection';
+import { EventActions } from './EventActions';
 import { EventMembersClient } from './EventMembersClient';
 import { EventSetlistActions } from './EventSetlistActions';
 import { EventSetlistSongs } from './EventSetlistSongs';
@@ -54,69 +55,64 @@ export default async function EventPage({
         </p>
       </div>
 
-      {/* Edit sits opposite the event's facts rather than in the back-nav
-          header, where it read as part of the navigation. */}
+      {/* The event's actions sit opposite its facts rather than in the
+          back-nav header, where they read as part of the navigation. */}
       <div className="mb-4 flex items-start justify-between gap-3">
-      <section className="flex flex-col gap-2 rounded-lg text-sm">
-        {event.eventType && (
-          <div>
-            <span className="font-medium">Type:</span>{' '}
-            {/* Same colour the calendar gives it, so the two read as one
+        <section className="flex flex-col gap-2 rounded-lg text-sm">
+          {event.eventType && (
+            <div>
+              <span className="font-medium">Type:</span>{' '}
+              {/* Same colour the calendar gives it, so the two read as one
                 thing. A custom type still shows its own words — only the
                 colour falls back. */}
-            <span
-              data-event-type={eventColorKey(event.eventType)}
-              className="inline-flex items-center rounded border-l-2 border-[color:var(--event-accent)] bg-[color:var(--event-fill)] px-1.5 py-0.5 text-[color:var(--event-accent)]"
-            >
-              {event.eventType}
-            </span>
-          </div>
-        )}
-        <div>
-          <span className="font-medium">Date:</span>{' '}
-          {formatDateRange(event.date, event.endDate)}
-        </div>
-        {event.time && (
+              <span
+                data-event-type={eventColorKey(event.eventType)}
+                className="inline-flex items-center rounded border-l-2 border-[color:var(--event-accent)] bg-[color:var(--event-fill)] px-1.5 py-0.5 text-[color:var(--event-accent)]"
+              >
+                {event.eventType}
+              </span>
+            </div>
+          )}
           <div>
-            <span className="font-medium">Time:</span>{' '}
-            {formatTimeRange(event.time, event.endTime)}
+            <span className="font-medium">Date:</span>{' '}
+            {formatDateRange(event.date, event.endDate)}
           </div>
-        )}
-        {event.location && (
-          <div>
-            <span className="font-medium">Location:</span>{' '}
-            <MapLink address={event.location} />
-          </div>
-        )}
-        {event.venueName && (
-          <div>
-            <span className="font-medium">Venue:</span>{' '}
-            {/* Where the name takes you depends on what's most useful: to the
+          {event.time && (
+            <div>
+              <span className="font-medium">Time:</span>{' '}
+              {formatTimeRange(event.time, event.endTime)}
+            </div>
+          )}
+          {event.location && (
+            <div>
+              <span className="font-medium">Location:</span>{' '}
+              <MapLink address={event.location} />
+            </div>
+          )}
+          {event.venueName && (
+            <div>
+              <span className="font-medium">Venue:</span>{' '}
+              {/* Where the name takes you depends on what's most useful: to the
                 venue in maps when we know where it is, otherwise to the venue
                 itself, where someone can fill the address in. */}
-            {event.venueAddress ? (
-              <MapLink address={event.venueAddress} label={event.venueName} />
-            ) : canManage && event.venueId ? (
-              <Link
-                href={`/bands/${event.bandId}/venues/${event.venueId}/edit`}
-                className="text-blue-600 hover:underline dark:text-blue-400"
-              >
-                {event.venueName}
-              </Link>
-            ) : (
-              event.venueName
-            )}
-          </div>
-        )}
-      </section>
-        {canManage && (
-          <Link
-            href={`/calendar/events/${eventId}/edit`}
-            className="btn-outline shrink-0"
-          >
-            Edit event
-          </Link>
-        )}
+              {event.venueAddress ? (
+                <MapLink address={event.venueAddress} label={event.venueName} />
+              ) : canManage && event.venueId ? (
+                <Link
+                  href={`/bands/${event.bandId}/venues/${event.venueId}/edit`}
+                  className="text-blue-600 hover:underline dark:text-blue-400"
+                >
+                  {event.venueName}
+                </Link>
+              ) : (
+                event.venueName
+              )}
+            </div>
+          )}
+        </section>
+        <div className="shrink-0">
+          <EventActions eventId={eventId} canManage={canManage} />
+        </div>
       </div>
 
       {event.details && (

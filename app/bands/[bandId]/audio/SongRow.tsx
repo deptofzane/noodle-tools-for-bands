@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { useShareLink } from '../../../useShareLink';
+import { songHref } from '@/lib/routes';
 import { formatSongMeta, formatTimeAgoOrDate } from '@/lib/format';
 import { useToast } from '../../../ToastProvider';
 import {
@@ -42,6 +44,7 @@ export function SongRow({
   onDelete: (c: Conversation) => void;
 }) {
   const router = useRouter();
+  const share = useShareLink();
   const player = usePlaylistPlayer();
   const showToast = useToast();
 
@@ -175,6 +178,9 @@ export function SongRow({
           </ActionMenuItem>
         )}
         <ActionMenuItem onClick={() => onView(c)}>View song</ActionMenuItem>
+        <ActionMenuItem onClick={() => void share(songHref(c.id), 'Song')}>
+          Share song
+        </ActionMenuItem>
         <ActionMenuItem onClick={() => onEdit(c)}>Edit song</ActionMenuItem>
         <ActionMenuItem onClick={() => onAddToSetlist(c)}>
           Add to setlist

@@ -32,6 +32,32 @@ export function practiceSongsApi(setlistId: string): string {
 }
 
 /**
+ * Canonical pages for the things people share.
+ *
+ * Collected here because a shared link has to be the *clean* address of a
+ * thing, and these are built in half a dozen menus. Reading `window.location`
+ * instead would copy whatever query params the reader happened to arrive
+ * with — a `?from=calendar` back-link, a `?tab=` — and paste them to someone
+ * for whom they mean nothing.
+ */
+export function eventHref(eventId: string): string {
+  return `/calendar/events/${eventId}`;
+}
+
+export function setlistHref(bandId: string, setlistId: string): string {
+  return `/bands/${bandId}/setlists/${setlistId}`;
+}
+
+/** A song's page. Songs are conversations; the id is the conversation's. */
+export function songHref(conversationId: string): string {
+  return `/notes/${conversationId}`;
+}
+
+export function albumHref(bandId: string, albumId: string): string {
+  return `/bands/${bandId}/albums/${albumId}`;
+}
+
+/**
  * Where switching the current band should land you.
  *
  * Switching bands used to always push Overview, which threw away wherever you

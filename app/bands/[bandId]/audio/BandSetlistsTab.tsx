@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
 import { formatSongMeta } from '@/lib/format';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { useShareLink } from '../../../useShareLink';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { usePersistedBoolean } from '../../../usePersistedBoolean';
 import { usePersistedStringSet } from '../../../usePersistedStringSet';
@@ -15,7 +16,7 @@ import { useOfflineDownload } from '../../../offline/useOfflineDownload';
 import { OfflineBadge } from '../../../offline/OfflineBadge';
 import { usePlaylistPlayer } from '../../../player/PlaylistPlayer';
 import { shuffledCopy } from '../../../player/queueOrder';
-import { liveHref, practiceHref } from '@/lib/routes';
+import { liveHref, practiceHref, setlistHref } from '@/lib/routes';
 import {
   MinimizeToggle,
   setlistQueue,
@@ -39,6 +40,7 @@ export function BandSetlistsTab({
   onReload: () => Promise<void> | void;
 }) {
   const router = useRouter();
+  const share = useShareLink();
   const trackPending = useTrackPending();
   const showToast = useToast();
   const offline = useOfflineDownload();
@@ -210,6 +212,13 @@ export function BandSetlistsTab({
                 }
               >
                 View setlist
+              </ActionMenuItem>
+              <ActionMenuItem
+                onClick={() =>
+                  void share(setlistHref(bandId, sl.id), 'Setlist')
+                }
+              >
+                Share setlist
               </ActionMenuItem>
               <ActionMenuItem
                 onClick={() =>
