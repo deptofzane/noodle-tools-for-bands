@@ -8,6 +8,7 @@ import { PageHeader } from '../../../PageHeader';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
 import { NoteLinkModal } from './NoteLinkModal';
+import { Modal } from '@/app/Modal';
 import { NOTE_LINK_KINDS } from '@/lib/note-links';
 import type { NoteLinkInput } from '@/lib/db/user-notes';
 
@@ -39,6 +40,7 @@ export function NoteForm({
     title: string;
     body: string;
     shared: boolean;
+    pinned: boolean;
     links: NoteLinkInput[];
   };
 }) {
@@ -52,12 +54,31 @@ export function NoteForm({
   const [links, setLinks] = useState<NoteLinkInput[]>(initial?.links ?? []);
   const [linkOpen, setLinkOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  /*
+   * Asked when a note that's pinned privately is about to become shared.
+   *
+   * A private pin is nobody's business but the author's, and it was never
+   * announced. Sharing would silently put it at the top of the band's list
+   * and tell everyone — so the decision to carry it across is taken here,
+   * deliberately, rather than inherited.
+   */
+  const [confirmPin, setConfirmPin] = useState(false);
+  const pinned = initial?.pinned ?? false;
+  const becomingShared =
+    Boolean(noteId) && pinned && !initial?.shared && shared;
 
   const backHref = `/bands/${bandId}?tab=notes`;
   const canSave = Boolean(title.trim() && !busy);
 
-  const save = async () => {
+  const save = async (keepPinned?: boolean) => {
     if (!canSave) return;
+    // Ask before a private pin becomes a public one; the answer comes back
+    // through this same function as `keepPinned`.
+    if (becomingShared && keepPinned === undefined) {
+      setConfirmPin(true);
+      return;
+    }
+    setConfirmPin(false);
     setBusy(true);
     try {
       await trackPending(async () => {
@@ -68,7 +89,15 @@ export function NoteForm({
           {
             method: noteId ? 'PATCH' : 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: title.trim(), body, shared, links }),
+            body: JSON.stringify({
+              title: title.trim(),
+              body,
+              shared,
+              links,
+              // Only sent when the question was actually asked, so an
+              // ordinary save never disturbs an existing pin.
+              ...(keepPinned === undefined ? {} : { pinned: keepPinned }),
+            }),
           },
         );
         await ensureOk(res, [200, 201]);
@@ -185,6 +214,54 @@ export function NoteForm({
           </span>
         </span>
       </label>
+
+      {/*
+        Three outcomes, not two, so this can't be a ConfirmModal: keeping the
+        pin, dropping it, and changing your mind are all distinct. Mapping
+        "share without the pin" onto cancel would mean Escape or a backdrop
+        click quietly saved the note — dismissing has to mean *abort*.
+      */}
+      {confirmPin && (
+        <Modal
+          onClose={() => setConfirmPin(false)}
+          labelledBy="keep-pin-title"
+          size="sm"
+        >
+          <h2 id="keep-pin-title" className="text-base font-semibold">
+            Keep this note pinned?
+          </h2>
+          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+            “{title.trim()}” is pinned to the top of your own notes. Sharing it
+            pins it to the top of the band’s shared notes too, and everyone will
+            be told you pinned it.
+          </p>
+          <div className="mt-4 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => void save(true)}
+              className="btn-primary"
+            >
+              Keep it pinned
+            </button>
+            <button
+              type="button"
+              onClick={() => void save(false)}
+              className="btn-outline"
+            >
+              Share without pinning
+            </button>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setConfirmPin(false)}
+              className="btn-ghost"
+            >
+              Cancel
+            </button>
+          </div>
+        </Modal>
+      )}
 
       {linkOpen && (
         <NoteLinkModal

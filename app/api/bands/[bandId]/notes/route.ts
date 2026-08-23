@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { requireBandMember } from '@/lib/api-guard';
 import {
+  countPinnedNotes,
   createNote,
   listBandNotesForUser,
+  listPinnedNotes,
+  PINNED_PREVIEW,
   type NoteScope,
 } from '@/lib/db/user-notes';
 import { parseLinks } from '@/lib/note-links';
@@ -12,10 +15,16 @@ const MAX_TITLE = 200;
 const MAX_BODY = 20_000;
 
 /**
- * GET  /api/bands/[bandId]/notes[?limit=&offset=&scope=]
+ * GET  /api/bands/[bandId]/notes[?limit=&offset=&scope=&pinned=&all=]
  *   → one page of the caller's notes in this band plus the band's shared
  *   ones, newest first, with `hasMore`. `scope=personal` narrows to the
- *   caller's own, `scope=shared` to the band's shared ones.
+ *   caller's own, `scope=shared` to the band's shared ones. Pinned notes are
+ *   excluded — they render in their own section.
+ *
+ *   `pinned=1` returns that section instead: the ten most recent pins, plus
+ *   `total` so the "Load all" button can name the real number. `all=1`
+ *   returns every one of them in a single response — the section is short by
+ *   nature, so it isn't worth paging.
  *
  * POST /api/bands/[bandId]/notes
  *   Body: { title, body?, shared?, links? } → create one, authored by the
@@ -36,6 +45,20 @@ export async function GET(
   // scope shows everything rather than nothing.
   const raw = url.searchParams.get('scope');
   const scope: NoteScope = raw === 'personal' || raw === 'shared' ? raw : 'all';
+
+  if (url.searchParams.get('pinned') === '1') {
+    const all = url.searchParams.get('all') === '1';
+    const [notes, total] = await Promise.all([
+      listPinnedNotes(
+        bandId,
+        guard.user.id,
+        scope,
+        all ? undefined : PINNED_PREVIEW,
+      ),
+      countPinnedNotes(bandId, guard.user.id, scope),
+    ]);
+    return NextResponse.json({ notes, total });
+  }
 
   // One page at a time, with one row over the edge so `hasMore` is free.
   const { limit, offset } = readWindow(url);

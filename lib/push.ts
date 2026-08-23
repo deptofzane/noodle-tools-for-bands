@@ -74,6 +74,13 @@ function pushBody(
         ? `${who} ${said}`
         : `${who} updated the event: ${subjectLabel ?? 'Untitled'}`;
     }
+    // Unreachable in practice (feed-only), but the switch is exhaustive with
+    // no default, so leaving them out wouldn't compile — and shouldn't: the
+    // day one of these becomes pushable, the wording is already right.
+    case 'note-pinned':
+      return `${who} pinned a note: ${subjectLabel ?? 'Untitled'}`;
+    case 'note-unpinned':
+      return `${who} unpinned a note: ${subjectLabel ?? 'Untitled'}`;
     case 'band-updated':
       return `${who} updated ${band}${subjectLabel ? ` (${subjectLabel})` : ''}`;
     case 'poll-created':
@@ -113,6 +120,11 @@ function pushUrl(
       return kind === 'chat-message'
         ? `/bands/${bandId}/chat`
         : `/bands/${bandId}`;
+    // Never actually reached — pin kinds are feed-only (see FEED_ONLY_KINDS)
+    // — but the map stays exhaustive so adding a pushable note kind later
+    // can't silently fall through to the band page.
+    case 'note':
+      return `/bands/${bandId}?tab=notes&notes=shared`;
     case 'poll':
       return subjectId
         ? `/bands/${bandId}/polls/${subjectId}`

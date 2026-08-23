@@ -173,10 +173,28 @@ export async function createNotification(
  * module's static graph and there's no import cycle. Names are passed in from
  * the insert that just ran so the push path doesn't re-query them.
  */
+/**
+ * Kinds that belong in the feed but never on a phone.
+ *
+ * Push is opt-out — absence of a mute means it sends — so a new kind pushes
+ * by default and quiet has to be asked for. Kept as a set checked inside
+ * `firePush` rather than a flag at each call site, so a future caller can't
+ * make these buzz by forgetting to pass it.
+ *
+ * Pinning is housekeeping: worth seeing next time you look, not worth
+ * interrupting a rehearsal for. Muting it in Settings still hides it from the
+ * feed as well.
+ */
+const FEED_ONLY_KINDS: ReadonlySet<NotificationKind> = new Set([
+  'note-pinned',
+  'note-unpinned',
+]);
+
 function firePush(
   input: CreateNotificationInput,
   names: { actorName: string | null; bandName: string | null },
 ): void {
+  if (FEED_ONLY_KINDS.has(input.kind)) return;
   void import('../push')
     .then((m) => m.sendEventPush(input, names))
     .catch((err) => console.error('[push] fan-out failed', err));

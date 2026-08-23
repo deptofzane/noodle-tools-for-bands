@@ -224,6 +224,8 @@ export const notificationKind = pgEnum('notification_kind', [
   'audio-added',
   'song-created',
   'album-created',
+  'note-pinned',
+  'note-unpinned',
 ]);
 
 // What a notification points at, for building its link.
@@ -234,6 +236,7 @@ export const notificationSubject = pgEnum('notification_subject', [
   'poll',
   'setlist',
   'album',
+  'note',
 ]);
 
 export const notifications = pgTable(
@@ -951,6 +954,18 @@ export const userNotes = pgTable(
     // False = only the author. True = everyone in the band can read it;
     // editing and deleting stay with the author either way.
     shared: boolean('shared').notNull().default(false),
+    /**
+     * Held at the top of whichever view the note is in.
+     *
+     * One flag serves both views because visibility already scopes it: an
+     * unshared note is only visible to its author, so its pin is private to
+     * them; a shared one is visible to the band, so its pin is the band's.
+     * Anyone in the band may pin or unpin a shared note — there is no cap,
+     * and the notification feed is what keeps that accountable.
+     */
+    pinned: boolean('pinned').notNull().default(false),
+    /** When it was pinned — the pinned section's sort order. Null if not. */
+    pinnedAt: timestamp('pinned_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -962,6 +977,12 @@ export const userNotes = pgTable(
     // The tab's query: this band's notes, mine plus the band's shared ones.
     index('user_notes_band_author_idx').on(t.bandId, t.authorId),
     index('user_notes_band_shared_idx').on(t.bandId, t.shared),
+    // Partial: the pinned section and its count both read only pinned rows,
+    // which are a small fraction of a band's notes, and both want them
+    // newest-pinned first.
+    index('user_notes_band_pinned_idx')
+      .on(t.bandId, t.pinnedAt.desc())
+      .where(sql`pinned`),
   ],
 );
 

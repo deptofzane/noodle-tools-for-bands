@@ -1,6 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import type {
+  NotificationKind,
+  NotificationSubject,
+} from '@/lib/db/notifications';
 import Link from 'next/link';
 import { formatRelativeTime } from '@/lib/format';
 import { usePersistedBoolean } from '../usePersistedBoolean';
@@ -14,23 +18,15 @@ import { isPlayableNotification } from './notificationTracks';
 
 export interface NotificationItem {
   id: string;
-  kind:
-    | 'song-comment'
-    | 'chat-message'
-    | 'event-added'
-    | 'song-updated'
-    | 'event-updated'
-    | 'band-updated'
-    | 'poll-created'
-    | 'poll-closed'
-    | 'poll-updated'
-    | 'poll-cancelled'
-    | 'poll-auto-closed'
-    | 'setlist-created'
-    | 'album-created'
-    | 'audio-added'
-    | 'song-created';
-  subjectType: 'conversation' | 'event' | 'band' | 'poll' | 'setlist' | 'album';
+  /*
+   * Taken from the schema rather than re-listed here. This used to be a
+   * hand-written union and it drifted the moment a kind was added — the
+   * compiler caught it, but only because every new kind has to touch this
+   * file anyway. Type-only, so nothing from the server module reaches the
+   * bundle.
+   */
+  kind: NotificationKind;
+  subjectType: NotificationSubject;
   subjectId: string | null;
   subjectLabel: string | null;
   /** Fields an edit touched; null on rows written before this existed. */
@@ -66,6 +62,12 @@ function hrefFor(n: NotificationItem): string {
       return n.kind === 'chat-message'
         ? `/bands/${n.bandId}/chat`
         : `/bands/${n.bandId}`;
+    // Notes have no page of their own, and Personal/Shared is a remembered
+    // client-side choice — so the link has to name the view, or it can land
+    // on the tab with the note nowhere in sight. Only shared notes are ever
+    // announced, hence the fixed value.
+    case 'note':
+      return `/bands/${n.bandId}?tab=notes&notes=shared`;
     case 'poll':
       return n.subjectId
         ? `/bands/${n.bandId}/polls/${n.subjectId}`
@@ -115,6 +117,10 @@ function messageFor(n: NotificationItem): string {
         ? `${who} ${said}`
         : `${who} updated the event: ${n.subjectLabel ?? 'Untitled'}`;
     }
+    case 'note-pinned':
+      return `${who} pinned a note: ${n.subjectLabel ?? 'Untitled'}`;
+    case 'note-unpinned':
+      return `${who} unpinned a note: ${n.subjectLabel ?? 'Untitled'}`;
     case 'band-updated':
       return `${who} updated ${band}${n.subjectLabel ? ` (${n.subjectLabel})` : ''}`;
     case 'poll-created':

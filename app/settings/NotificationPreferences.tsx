@@ -1,23 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import type { NotificationKind } from '@/lib/db/notifications';
 
-type Kind =
-  | 'song-comment'
-  | 'chat-message'
-  | 'event-added'
-  | 'song-updated'
-  | 'event-updated'
-  | 'band-updated'
-  | 'poll-created'
-  | 'poll-closed'
-  | 'poll-updated'
-  | 'poll-cancelled'
-  | 'poll-auto-closed'
-  | 'setlist-created'
-  | 'album-created'
-  | 'audio-added'
-  | 'song-created';
+/*
+ * From the schema, not re-listed here — the same hand-written union in
+ * NotificationList had already drifted once. Type-only, so the server module
+ * doesn't reach the bundle.
+ */
+type Kind = NotificationKind;
 
 type Channel = 'feed' | 'push';
 
@@ -91,6 +82,18 @@ const KINDS: { kind: Kind; label: string; description: string }[] = [
     kind: 'audio-added',
     label: 'New audio',
     description: 'When audio is added to one of your bands.',
+  },
+  {
+    kind: 'note-pinned',
+    label: 'Pinned notes',
+    description:
+      'When someone pins a note to the top of your band’s shared notes. Never sent to your phone.',
+  },
+  {
+    kind: 'note-unpinned',
+    label: 'Unpinned notes',
+    description:
+      'When someone takes a pinned note back down. Never sent to your phone.',
   },
   {
     kind: 'song-created',

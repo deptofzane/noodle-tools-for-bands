@@ -36,6 +36,7 @@ export default async function EditNotePage({
           title: note.title,
           body: note.body ?? '',
           shared: note.shared,
+          pinned: note.pinned,
           links: note.links.map((l) => ({
             kind: l.kind,
             targetId: l.targetId,

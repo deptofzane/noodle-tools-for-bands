@@ -7,6 +7,7 @@ import {
   updateNote,
 } from '@/lib/db/user-notes';
 import { parseLinks } from '@/lib/note-links';
+import { notify } from '@/lib/db/notifications';
 
 const MAX_TITLE = 200;
 const MAX_BODY = 20_000;
@@ -23,14 +24,22 @@ const MAX_BODY = 20_000;
 async function authorize(
   bandId: string,
   noteId: string,
-): Promise<NextResponse | { userId: string; authorId: string }> {
+): Promise<
+  | NextResponse
+  | { userId: string; authorId: string; shared: boolean; pinned: boolean }
+> {
   const guard = await requireBandMember(bandId);
   if (guard instanceof NextResponse) return guard;
   const owner = await getNoteOwnership(noteId);
   // A note that isn't in this band is a 404 here, not somebody else's note.
   if (!owner || owner.bandId !== bandId)
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
-  return { userId: guard.user.id, authorId: owner.authorId };
+  return {
+    userId: guard.user.id,
+    authorId: owner.authorId,
+    shared: owner.shared,
+    pinned: owner.pinned,
+  };
 }
 
 export async function GET(
@@ -76,12 +85,41 @@ export async function PATCH(
       { status: 413 },
     );
 
+  const shared = body?.shared === true;
+  const pinned = typeof body?.pinned === 'boolean' ? body.pinned : undefined;
+
   await updateNote(noteId, {
     title,
     body: text.trim() ? text : null,
-    shared: body?.shared === true,
+    shared,
     links: parseLinks(body?.links),
+    pinned,
   });
+
+  /*
+   * A pinned private note becoming shared is the one edit that can put a pin
+   * in front of the whole band, so it's announced here — the pin endpoint
+   * never sees this path.
+   *
+   * Only on the private → shared crossing, and only if it's still pinned
+   * after the write: an author who answered "unpin" on the way out gets
+   * nothing, and re-saving an already-shared note doesn't re-announce.
+   *
+   * Going the other way stays silent. Unsharing withdraws the whole note, not
+   * just its pin, and withdrawing a note has never been announced.
+   */
+  const stillPinned = pinned ?? auth.pinned;
+  if (!auth.shared && shared && stillPinned) {
+    await notify({
+      bandId,
+      actorId: auth.userId,
+      kind: 'note-pinned',
+      subjectType: 'note',
+      subjectId: noteId,
+      subjectLabel: title,
+    });
+  }
+
   return NextResponse.json({ ok: true });
 }
 
