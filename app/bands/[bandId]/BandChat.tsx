@@ -285,7 +285,9 @@ export function BandChat({
               <div className="flex items-baseline gap-2">
                 <span className="text-xs font-medium">
                   {m.author.name ?? m.author.email ?? 'Unknown'}
-                  {mine && <span className="minor-text-theme-colors"> (you)</span>}
+                  {mine && (
+                    <span className="minor-text-theme-colors"> (you)</span>
+                  )}
                 </span>
                 <span className="text-[0.6875rem] minor-text-theme-colors">
                   {formatRelativeTime(m.createdAt)}

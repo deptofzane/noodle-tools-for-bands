@@ -310,7 +310,8 @@ export function PlaylistPlayerProvider({
 
   const cycleRepeat = useCallback(() => {
     const order: RepeatMode[] = ['off', 'all', 'one'];
-    const nextMode = order[(order.indexOf(repeatRef.current) + 1) % order.length]!;
+    const nextMode =
+      order[(order.indexOf(repeatRef.current) + 1) % order.length]!;
     repeatRef.current = nextMode;
     setRepeat(nextMode);
   }, []);
@@ -538,32 +539,35 @@ export function PlaylistPlayerProvider({
     };
   }, [advanceFrom, stepTo]);
 
-  const play = useCallback((tracks: PlaylistTrack[], startIndex = 0) => {
-    const target = tracks[startIndex];
-    if (!target) return;
-    claimAudioFocus(FOCUS_OWNER);
-    // Audio the user can't see the controls for is worse than no bar.
-    setDismissed(false);
-    queueRef.current = tracks;
-    setQueue(tracks);
-    indexRef.current = startIndex;
-    setIndex(startIndex);
-    // A new list is a new shuffle pass; the old one's history describes tracks
-    // that may not even be here any more.
-    setHistory([]);
-    wantPlayRef.current = true;
-    // Same audio as the live engine — the song we land on is the one already
-    // loaded (playing this track again, or picking a set whose first song is
-    // the one playing). The src effect won't re-run, so start it here, from
-    // the top: `play` means "start this list", not "adopt whatever this song
-    // was already doing 2:30 in".
-    if (engineRef.current && currentSrcRef.current === target.src) {
-      engineRef.current.seek(0);
-      setCurrentTime(0);
-      engineRef.current.play();
-      setIsPlaying(true);
-    }
-  }, [setHistory]);
+  const play = useCallback(
+    (tracks: PlaylistTrack[], startIndex = 0) => {
+      const target = tracks[startIndex];
+      if (!target) return;
+      claimAudioFocus(FOCUS_OWNER);
+      // Audio the user can't see the controls for is worse than no bar.
+      setDismissed(false);
+      queueRef.current = tracks;
+      setQueue(tracks);
+      indexRef.current = startIndex;
+      setIndex(startIndex);
+      // A new list is a new shuffle pass; the old one's history describes tracks
+      // that may not even be here any more.
+      setHistory([]);
+      wantPlayRef.current = true;
+      // Same audio as the live engine — the song we land on is the one already
+      // loaded (playing this track again, or picking a set whose first song is
+      // the one playing). The src effect won't re-run, so start it here, from
+      // the top: `play` means "start this list", not "adopt whatever this song
+      // was already doing 2:30 in".
+      if (engineRef.current && currentSrcRef.current === target.src) {
+        engineRef.current.seek(0);
+        setCurrentTime(0);
+        engineRef.current.play();
+        setIsPlaying(true);
+      }
+    },
+    [setHistory],
+  );
 
   const playShuffled = useCallback(
     (tracks: PlaylistTrack[]) => {

@@ -313,7 +313,9 @@ export function CalendarClient() {
                       className="block rounded-md border border-neutral-200 border-l-[3px] border-l-[var(--event-accent)] px-3 py-2 hover:bg-neutral-50 dark:border-neutral-800 dark:border-l-[var(--event-accent)] dark:hover:bg-neutral-900"
                     >
                       <div className="flex items-baseline justify-between gap-2">
-                        <span className="truncate font-medium">{eventLabel(ev)}</span>
+                        <span className="truncate font-medium">
+                          {eventLabel(ev)}
+                        </span>
                         {ev.time && (
                           <span className="shrink-0 text-xs minor-text-theme-colors">
                             {formatTimeRange(ev.time, ev.endTime)}

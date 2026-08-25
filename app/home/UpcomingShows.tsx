@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { formatDateRange, formatDateShort, formatTimeRange } from '@/lib/format';
+import {
+  formatDateRange,
+  formatDateShort,
+  formatTimeRange,
+} from '@/lib/format';
 import { completionInstant } from './eventTiming';
 import { liveHref, practiceHref } from '@/lib/routes';
 import { usePersistedBoolean } from '../usePersistedBoolean';

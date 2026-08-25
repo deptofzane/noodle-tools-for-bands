@@ -156,6 +156,7 @@ export function RouteProgress() {
       className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-0.5"
     >
       <div
+        data-route-progress={active ? 'active' : 'idle'}
         className="h-full bg-cyan-600 shadow-[0_0_8px_rgba(8,145,178,0.6)] transition-[width,opacity] duration-200 ease-out dark:bg-cyan-400"
         style={{ width: `${value}%`, opacity: active ? 1 : 0 }}
       />

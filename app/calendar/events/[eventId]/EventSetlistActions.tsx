@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../useNavigate';
 import { ensureOk } from '@/lib/api';
 import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
@@ -62,6 +63,7 @@ export function EventSetlistActions({
   fields: EventSetlistPatchFields;
 }) {
   const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
   const player = usePlaylistPlayer();
   const enqueue = useEnqueueTracks();
@@ -144,15 +146,14 @@ export function EventSetlistActions({
               icon: <EyeIcon size={18} />,
               label: `View ${setlistName}`,
               title: 'View setlist',
-              onClick: () => router.push(setlistHref(bandId, setlistId)),
+              onClick: () => go(setlistHref(bandId, setlistId)),
             },
             {
               key: 'edit',
               icon: <PencilIcon size={18} />,
               label: `Edit ${setlistName}`,
               title: 'Edit setlist',
-              onClick: () =>
-                router.push(`/bands/${bandId}/setlists/${setlistId}/edit`),
+              onClick: () => go(`/bands/${bandId}/setlists/${setlistId}/edit`),
             },
             {
               key: 'share',
@@ -164,10 +165,10 @@ export function EventSetlistActions({
             },
           ]}
         />
-        <ActionMenuItem onClick={() => router.push(practiceHref(setlistId))}>
+        <ActionMenuItem onClick={() => go(practiceHref(setlistId))}>
           Practice
         </ActionMenuItem>
-        <ActionMenuItem onClick={() => router.push(liveHref(setlistId))}>
+        <ActionMenuItem onClick={() => go(liveHref(setlistId))}>
           Live
         </ActionMenuItem>
         {offlineRec ? (

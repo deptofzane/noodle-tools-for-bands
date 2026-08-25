@@ -43,7 +43,8 @@ export default async function EditAlbumPage({
     audioVersionId: t.state === 'pinned' ? t.audioVersionId : null,
     pinnedLabel: t.pinnedLabel,
     pinnedFileName: t.pinnedFileName,
-    lost: t.state === 'lost' || (t.state === 'unplayable' && !!t.pinnedFileName),
+    lost:
+      t.state === 'lost' || (t.state === 'unplayable' && !!t.pinnedFileName),
   }));
 
   return (

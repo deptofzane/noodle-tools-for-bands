@@ -186,7 +186,9 @@ export function NoteForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-      {header && <div className="text-xs minor-text-theme-colors">{header}</div>}
+      {header && (
+        <div className="text-xs minor-text-theme-colors">{header}</div>
+      )}
       <div className="relative">
         <textarea
           ref={textareaRef}

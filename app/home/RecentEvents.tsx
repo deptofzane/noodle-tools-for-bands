@@ -3,7 +3,11 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ensureOk } from '@/lib/api';
-import { formatDateRange, formatDateShort, formatTimeRange } from '@/lib/format';
+import {
+  formatDateRange,
+  formatDateShort,
+  formatTimeRange,
+} from '@/lib/format';
 import { Modal } from '../Modal';
 import { useToast } from '../ToastProvider';
 import { completionInstant } from './eventTiming';

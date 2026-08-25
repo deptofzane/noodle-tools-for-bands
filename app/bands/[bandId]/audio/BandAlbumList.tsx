@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../useNavigate';
 import { formatDuration } from '@/lib/format';
 import { ActionMenu, MenuIconRow } from '../../../ActionMenu';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
@@ -62,7 +62,7 @@ export function BandAlbumList({
   // The user's own expand/collapse choices. Search-driven expansion is layered
   // on top at render and deliberately never written here — see `effectiveOpen`.
   const [openIds, toggleOpen] = usePersistedStringSet('albumViewOpen');
-  const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
   const player = usePlaylistPlayer();
   const enqueue = useEnqueueTracks();
@@ -153,7 +153,7 @@ export function BandAlbumList({
                         icon: <EyeIcon size={18} />,
                         label: `View ${album.name}`,
                         title: 'View album',
-                        onClick: () => router.push(albumHref(bandId, album.id)),
+                        onClick: () => go(albumHref(bandId, album.id)),
                       },
                       {
                         key: 'edit',
@@ -161,9 +161,7 @@ export function BandAlbumList({
                         label: `Edit ${album.name}`,
                         title: 'Edit album',
                         onClick: () =>
-                          router.push(
-                            `/bands/${bandId}/albums/${album.id}/edit`,
-                          ),
+                          go(`/bands/${bandId}/albums/${album.id}/edit`),
                       },
                       {
                         key: 'share',

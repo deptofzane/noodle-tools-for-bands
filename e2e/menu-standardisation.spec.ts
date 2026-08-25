@@ -452,3 +452,59 @@ test.describe('remaining action menus', () => {
     expect(names).not.toContain('Edit event');
   });
 });
+
+/**
+ * The progress bar for menu navigations.
+ *
+ * `RouteProgress` starts itself from a capture-phase click listener that looks
+ * for an enclosing `<a>`. Menu items are buttons, so they had no bar until
+ * they went through `useNavigate`. The navigation is stalled deliberately —
+ * locally these commit fast enough that a live bar would be a coin flip.
+ */
+test.describe('route progress from menus', () => {
+  const bar = (page: Page) => page.locator('[data-route-progress]');
+
+  test('a kebab navigation raises the bar', async ({ page }) => {
+    await page.goto(`/bands/${seed.bandId}?tab=venues`);
+    await expect(bar(page)).toHaveAttribute('data-route-progress', 'idle');
+
+    // Hold the venue page's payload so the bar is observable.
+    await page.route(`**/venues/${venueId}**`, async (route) => {
+      await new Promise((r) => setTimeout(r, 2000));
+      await route.continue();
+    });
+
+    await page.getByRole('button', { name: `Actions for ${VENUE}` }).click();
+    await page.getByRole('menuitem', { name: `View ${VENUE}` }).click();
+
+    await expect(bar(page)).toHaveAttribute('data-route-progress', 'active');
+    await expect(page).toHaveURL(`/bands/${seed.bandId}/venues/${venueId}`);
+    // And it clears once the route commits, rather than sitting there.
+    await expect(bar(page)).toHaveAttribute('data-route-progress', 'idle');
+  });
+
+  test("the audio list's View reaches the bar through its callback", async ({
+    page,
+  }) => {
+    // SongRow doesn't navigate itself — it calls props that BandAudioClient
+    // supplies, which is how this one escaped the first sweep.
+    await page.goto(`/bands/${seed.bandId}/audio?tab=songs`);
+    await page.route(`**/notes/${seed.songId}**`, async (route) => {
+      await new Promise((r) => setTimeout(r, 2000));
+      await route.continue();
+    });
+    await page.getByRole('button', { name: 'Song actions' }).first().click();
+    await page.getByRole('menuitem', { name: `View ${E2E.songName}` }).click();
+    await expect(bar(page)).toHaveAttribute('data-route-progress', 'active');
+  });
+
+  test('the bar still tracks ordinary links', async ({ page }) => {
+    await page.goto(`/bands/${seed.bandId}?tab=venues`);
+    await page.route('**/venues/new**', async (route) => {
+      await new Promise((r) => setTimeout(r, 2000));
+      await route.continue();
+    });
+    await page.getByRole('link', { name: 'Create venue' }).click();
+    await expect(bar(page)).toHaveAttribute('data-route-progress', 'active');
+  });
+});

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../../useNavigate';
 import { ActionMenu, MenuIconRow } from '../../../../ActionMenu';
 import { useShareLink } from '../../../../useShareLink';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../../../icons';
@@ -20,7 +20,7 @@ export function SetlistSongActions({
   conversationId: string;
   name: string;
 }) {
-  const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
   return (
     <ActionMenu label="Song actions">
@@ -31,14 +31,14 @@ export function SetlistSongActions({
             icon: <EyeIcon size={18} />,
             label: `View ${name}`,
             title: 'View song',
-            onClick: () => router.push(songHref(conversationId)),
+            onClick: () => go(songHref(conversationId)),
           },
           {
             key: 'edit',
             icon: <PencilIcon size={18} />,
             label: `Edit ${name}`,
             title: 'Edit song',
-            onClick: () => router.push(`/notes/${conversationId}/edit`),
+            onClick: () => go(`/notes/${conversationId}/edit`),
           },
           {
             key: 'share',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../useNavigate';
 import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
 import { LinkIcon, PencilIcon } from '../../../icons';
 import { useShareLink } from '../../../useShareLink';
@@ -21,7 +21,7 @@ export function EventActions({
   /** Band member: may edit the event. Attendees may only share it. */
   canManage: boolean;
 }) {
-  const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
 
   return (
@@ -37,7 +37,7 @@ export function EventActions({
               icon: <PencilIcon size={18} />,
               label: 'Edit this event',
               title: 'Edit event',
-              onClick: () => router.push(`/calendar/events/${eventId}/edit`),
+              onClick: () => go(`/calendar/events/${eventId}/edit`),
             },
             {
               key: 'share',

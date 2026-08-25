@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../useNavigate';
 import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../ActionMenu';
 import { useShareLink } from '../../useShareLink';
 import { LinkIcon, PencilIcon } from '../../icons';
@@ -26,7 +26,7 @@ export function SongActions({
       for them to show, so they're left out rather than opening blank. */
   hasSheetMusic: boolean;
 }) {
-  const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
 
   return (
@@ -39,7 +39,7 @@ export function SongActions({
             icon: <PencilIcon size={18} />,
             label: 'Edit this song',
             title: 'Edit song',
-            onClick: () => router.push(`/notes/${conversationId}/edit`),
+            onClick: () => go(`/notes/${conversationId}/edit`),
           },
           {
             key: 'share',
@@ -53,13 +53,11 @@ export function SongActions({
       {hasSheetMusic && (
         <>
           <ActionMenuItem
-            onClick={() => router.push(`/notes/${conversationId}/practice`)}
+            onClick={() => go(`/notes/${conversationId}/practice`)}
           >
             Practice
           </ActionMenuItem>
-          <ActionMenuItem
-            onClick={() => router.push(`/notes/${conversationId}/live`)}
-          >
+          <ActionMenuItem onClick={() => go(`/notes/${conversationId}/live`)}>
             Live
           </ActionMenuItem>
         </>

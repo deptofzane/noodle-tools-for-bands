@@ -2,7 +2,8 @@
 
 import { ensureOk, errorMessage } from '@/lib/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../useNavigate';
+import { songHref } from '@/lib/routes';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { Modal } from '../../../Modal';
 import { useCanUseDrive } from '../../../DriveCapabilityProvider';
@@ -86,7 +87,7 @@ export function BandAudioClient({
 
   const audioInputRef = useRef<HTMLInputElement>(null);
   const trackPending = useTrackPending();
-  const router = useRouter();
+  const go = useNavigate();
   const showToast = useToast();
   const canUseDrive = useCanUseDrive();
 
@@ -360,8 +361,8 @@ export function BandAudioClient({
           onOpenChooser={() => setChooseOpen(true)}
           onCreateSong={() => setCreateOpen(true)}
           onAddToSetlist={openAddToSetlist}
-          onEditSong={(c) => router.push(`/notes/${c.id}/edit`)}
-          onViewSong={(c) => router.push(`/notes/${c.id}`)}
+          onEditSong={(c) => go(`/notes/${c.id}/edit`)}
+          onViewSong={(c) => go(songHref(c.id))}
           onToggleArchive={handleToggleArchive}
           onDelete={(c) => setDeleteTarget(c)}
         />

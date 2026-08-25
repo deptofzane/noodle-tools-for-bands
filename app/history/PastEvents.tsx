@@ -89,7 +89,9 @@ export function PastEvents() {
                 className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-neutral-50 md:px-3 md:py-1.5 dark:hover:bg-neutral-900"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium">{eventLabel(event)}</div>
+                  <div className="truncate font-medium">
+                    {eventLabel(event)}
+                  </div>
                   <div className="mt-0.5 text-xs minor-text-theme-colors">
                     {event.bandName} ·{' '}
                     {formatDateRange(event.date, event.endDate)}

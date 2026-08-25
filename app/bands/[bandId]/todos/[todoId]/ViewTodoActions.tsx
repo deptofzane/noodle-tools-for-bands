@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../../useNavigate';
 import { ensureOk } from '@/lib/api';
 import {
   ActionMenu,
@@ -45,6 +46,7 @@ export function ViewTodoActions({
   canUnshare: boolean;
 }) {
   const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
   const trackPending = useTrackPending();
   const showToast = useToast();
@@ -121,8 +123,7 @@ export function ViewTodoActions({
               icon: <PencilIcon size={18} />,
               label: `Edit ${title}`,
               title: 'Edit todo',
-              onClick: () =>
-                router.push(`/bands/${bandId}/todos/${todoId}/edit`),
+              onClick: () => go(`/bands/${bandId}/todos/${todoId}/edit`),
             },
             {
               key: 'share',

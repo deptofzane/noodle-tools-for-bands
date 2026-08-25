@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../../useNavigate';
 import { ensureOk } from '@/lib/api';
 import {
   ActionMenu,
@@ -30,6 +31,7 @@ import type { AlbumWithTracks } from '@/lib/db/albums';
  */
 export function AlbumActions({ album }: { album: AlbumWithTracks }) {
   const router = useRouter();
+  const go = useNavigate();
   const player = usePlaylistPlayer();
   const enqueue = useEnqueueTracks();
   const share = useShareLink();
@@ -89,7 +91,7 @@ export function AlbumActions({ album }: { album: AlbumWithTracks }) {
               label: `Edit ${album.name}`,
               title: 'Edit album',
               onClick: () =>
-                router.push(`/bands/${album.bandId}/albums/${album.id}/edit`),
+                go(`/bands/${album.bandId}/albums/${album.id}/edit`),
             },
             {
               key: 'share',

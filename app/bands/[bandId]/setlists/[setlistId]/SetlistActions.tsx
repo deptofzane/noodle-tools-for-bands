@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../../useNavigate';
 import {
   ActionMenu,
   ActionMenuItem,
@@ -37,7 +37,7 @@ export function SetlistActions({
       the offline download needs. */
   songs: Setlist['songs'];
 }) {
-  const router = useRouter();
+  const go = useNavigate();
   const offline = useOfflineDownload();
   const player = usePlaylistPlayer();
   const enqueue = useEnqueueTracks();
@@ -160,7 +160,7 @@ export function SetlistActions({
               icon: <PencilIcon size={18} />,
               label: `Edit ${name}`,
               title: 'Edit setlist',
-              onClick: () => router.push(edit),
+              onClick: () => go(edit),
             },
             {
               key: 'share',
@@ -174,12 +174,10 @@ export function SetlistActions({
         />
         {hasSongs && (
           <span role="none" className="flex flex-col md:hidden">
-            <ActionMenuItem onClick={() => router.push(practice)}>
+            <ActionMenuItem onClick={() => go(practice)}>
               Practice
             </ActionMenuItem>
-            <ActionMenuItem onClick={() => router.push(live)}>
-              Live
-            </ActionMenuItem>
+            <ActionMenuItem onClick={() => go(live)}>Live</ActionMenuItem>
             {rec ? (
               <>
                 <ActionMenuItem onClick={() => offline.openDownload(target)}>

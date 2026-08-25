@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../useNavigate';
 import { ensureOk } from '@/lib/api';
 import { formatTimeAgoOrDate } from '@/lib/format';
 import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../ActionMenu';
@@ -44,7 +44,7 @@ export function BandNotesTab({
   bandId: string;
   currentUserId: string;
 }) {
-  const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
   const trackPending = useTrackPending();
   const showToast = useToast();
@@ -290,7 +290,7 @@ export function BandNotesTab({
                   icon: <EyeIcon size={18} />,
                   label: `View ${note.title}`,
                   title: 'View note',
-                  onClick: () => router.push(noteHref(bandId, note.id)),
+                  onClick: () => go(noteHref(bandId, note.id)),
                 },
                 ...(mine
                   ? [
@@ -300,7 +300,7 @@ export function BandNotesTab({
                         label: `Edit ${note.title}`,
                         title: 'Edit note',
                         onClick: () =>
-                          router.push(`/bands/${bandId}/notes/${note.id}/edit`),
+                          go(`/bands/${bandId}/notes/${note.id}/edit`),
                       },
                     ]
                   : []),
@@ -366,9 +366,7 @@ export function BandNotesTab({
               ))}
             </span>
             <ActionMenu label="Notes actions">
-              <ActionMenuItem
-                onClick={() => router.push(`/bands/${bandId}/notes/new`)}
-              >
+              <ActionMenuItem onClick={() => go(`/bands/${bandId}/notes/new`)}>
                 New note
               </ActionMenuItem>
             </ActionMenu>

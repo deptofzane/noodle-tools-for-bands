@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../useNavigate';
 import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
 import { useShareLink } from '../../../useShareLink';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
@@ -44,7 +44,7 @@ export function SongRow({
   onToggleArchive: (c: Conversation) => void;
   onDelete: (c: Conversation) => void;
 }) {
-  const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
   const player = usePlaylistPlayer();
   const showToast = useToast();
@@ -195,14 +195,12 @@ export function SongRow({
             Practice pairs the player with the sheet, and is worth opening with
             either one. */}
         {(c.hasSheetMusic || track) && (
-          <ActionMenuItem
-            onClick={() => router.push(`/notes/${c.id}/practice`)}
-          >
+          <ActionMenuItem onClick={() => go(`/notes/${c.id}/practice`)}>
             Practice
           </ActionMenuItem>
         )}
         {c.hasSheetMusic && (
-          <ActionMenuItem onClick={() => router.push(`/notes/${c.id}/live`)}>
+          <ActionMenuItem onClick={() => go(`/notes/${c.id}/live`)}>
             Live
           </ActionMenuItem>
         )}

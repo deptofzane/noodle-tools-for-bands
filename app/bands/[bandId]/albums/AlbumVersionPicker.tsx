@@ -91,9 +91,7 @@ export function AlbumVersionPicker({
               className={rowClass(selectedId === null)}
             >
               <span className="min-w-0 flex-1">
-                <span className="block font-medium">
-                  Whatever is current
-                </span>
+                <span className="block font-medium">Whatever is current</span>
                 <span className="block text-xs minor-text-theme-colors">
                   Follows the song’s default version if it changes
                 </span>
@@ -105,7 +103,9 @@ export function AlbumVersionPicker({
             <li key={v.id}>
               <button
                 type="button"
-                onClick={() => choose({ id: v.id, label: v.label, fileName: v.fileName })}
+                onClick={() =>
+                  choose({ id: v.id, label: v.label, fileName: v.fileName })
+                }
                 className={rowClass(selectedId === v.id)}
               >
                 <span className="min-w-0 flex-1">
@@ -114,7 +114,11 @@ export function AlbumVersionPicker({
                   </span>
                   <span className="block truncate text-xs minor-text-theme-colors">
                     {v.label ? v.fileName : ''}
-                    {v.isDefault ? (v.label ? ' · current default' : 'current default') : ''}
+                    {v.isDefault
+                      ? v.label
+                        ? ' · current default'
+                        : 'current default'
+                      : ''}
                   </span>
                 </span>
                 {selectedId === v.id && <Tick />}
@@ -144,7 +148,10 @@ function rowClass(selected: boolean): string {
 
 function Tick() {
   return (
-    <span aria-hidden="true" className="shrink-0 text-blue-600 dark:text-blue-400">
+    <span
+      aria-hidden="true"
+      className="shrink-0 text-blue-600 dark:text-blue-400"
+    >
       ✓
     </span>
   );

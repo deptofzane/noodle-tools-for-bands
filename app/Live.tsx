@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from './useNavigate';
 import { previewKind } from '@/lib/sheet-preview';
 import { ActionMenu, ActionMenuItem } from './ActionMenu';
 import { SetlistNav } from './SetlistNav';
@@ -56,7 +56,7 @@ export function Live({
    */
   shareHref?: (index: number) => string;
 }) {
-  const router = useRouter();
+  const go = useNavigate();
   const [index, setIndex] = usePersistedIndex(
     persistKey ?? null,
     songs.length,
@@ -78,7 +78,7 @@ export function Live({
     () => setIndex((i) => Math.min(total - 1, i + 1)),
     [total, setIndex],
   );
-  const exit = useCallback(() => router.push(exitHref), [router, exitHref]);
+  const exit = useCallback(() => go(exitHref), [go, exitHref]);
 
   // Mirror the position into the address (no navigation, no history entry) so
   // a link copied or shared from here opens on the same song.

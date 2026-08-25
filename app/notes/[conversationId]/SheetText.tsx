@@ -79,7 +79,10 @@ function ChordChart({ text }: { text: string }) {
     }
     if (line.type === 'comment') {
       out.push(
-        <div key={i} className="italic minor-text-theme-colors dark:text-neutral-400">
+        <div
+          key={i}
+          className="italic minor-text-theme-colors dark:text-neutral-400"
+        >
           {line.text}
         </div>,
       );

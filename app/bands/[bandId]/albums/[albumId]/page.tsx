@@ -29,7 +29,10 @@ export default async function AlbumPage({
   // Length counts what can actually play: a track whose audio is gone
   // contributes nothing, and saying otherwise would overstate the album.
   const playable = album.tracks.filter((t) => t.state !== 'unplayable');
-  const totalSeconds = playable.reduce((sum, t) => sum + (t.songLength ?? 0), 0);
+  const totalSeconds = playable.reduce(
+    (sum, t) => sum + (t.songLength ?? 0),
+    0,
+  );
   const allKnown = playable.every((t) => t.songLength != null);
   const lostCount = album.tracks.filter((t) => t.state === 'lost').length;
 

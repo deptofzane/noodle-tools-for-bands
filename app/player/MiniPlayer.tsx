@@ -141,7 +141,9 @@ function TrackColumn({
         </p>
       )}
       {subtitle && !error && (
-        <p className="truncate text-[0.6875rem] minor-text-theme-colors">{subtitle}</p>
+        <p className="truncate text-[0.6875rem] minor-text-theme-colors">
+          {subtitle}
+        </p>
       )}
     </div>
   );

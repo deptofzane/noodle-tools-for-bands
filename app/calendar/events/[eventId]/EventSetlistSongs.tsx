@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../useNavigate';
 import { ensureOk } from '@/lib/api';
 import { formatDuration } from '@/lib/format';
 import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
@@ -50,6 +51,7 @@ export function EventSetlistSongs({
   songs: SongItem[];
 }) {
   const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
   const trackPending = useTrackPending();
   const showToast = useToast();
@@ -226,15 +228,14 @@ export function EventSetlistSongs({
                         icon: <EyeIcon size={18} />,
                         label: `View ${s.name}`,
                         title: 'View song',
-                        onClick: () => router.push(songHref(s.conversationId!)),
+                        onClick: () => go(songHref(s.conversationId!)),
                       },
                       {
                         key: 'edit',
                         icon: <PencilIcon size={18} />,
                         label: `Edit ${s.name}`,
                         title: 'Edit song',
-                        onClick: () =>
-                          router.push(`/notes/${s.conversationId}/edit`),
+                        onClick: () => go(`/notes/${s.conversationId}/edit`),
                       },
                       {
                         key: 'share',

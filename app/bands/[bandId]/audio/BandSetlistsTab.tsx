@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../useNavigate';
 import { ensureOk } from '@/lib/api';
 import { formatSongMeta } from '@/lib/format';
 import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
@@ -42,7 +42,7 @@ export function BandSetlistsTab({
   setlists: Setlist[];
   onReload: () => Promise<void> | void;
 }) {
-  const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
   const trackPending = useTrackPending();
   const showToast = useToast();
@@ -207,8 +207,7 @@ export function BandSetlistsTab({
                     icon: <EyeIcon size={18} />,
                     label: `View ${sl.name}`,
                     title: 'View setlist',
-                    onClick: () =>
-                      router.push(`/bands/${bandId}/setlists/${sl.id}`),
+                    onClick: () => go(`/bands/${bandId}/setlists/${sl.id}`),
                   },
                   {
                     key: 'edit',
@@ -216,7 +215,7 @@ export function BandSetlistsTab({
                     label: `Edit ${sl.name}`,
                     title: 'Edit setlist',
                     onClick: () =>
-                      router.push(`/bands/${bandId}/setlists/${sl.id}/edit`),
+                      go(`/bands/${bandId}/setlists/${sl.id}/edit`),
                   },
                   {
                     key: 'share',
@@ -235,17 +234,15 @@ export function BandSetlistsTab({
               */}
               <ActionMenuItem
                 onClick={() =>
-                  router.push(
-                    `/calendar/events/new?bandId=${bandId}&setlistId=${sl.id}`,
-                  )
+                  go(`/calendar/events/new?bandId=${bandId}&setlistId=${sl.id}`)
                 }
               >
                 Create event using this setlist
               </ActionMenuItem>
-              <ActionMenuItem onClick={() => router.push(practiceHref(sl.id))}>
+              <ActionMenuItem onClick={() => go(practiceHref(sl.id))}>
                 Practice
               </ActionMenuItem>
-              <ActionMenuItem onClick={() => router.push(liveHref(sl.id))}>
+              <ActionMenuItem onClick={() => go(liveHref(sl.id))}>
                 Live
               </ActionMenuItem>
               {offlineRec ? (

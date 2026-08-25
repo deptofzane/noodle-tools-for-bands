@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../useNavigate';
 import { ensureOk } from '@/lib/api';
 import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../ActionMenu';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../icons';
@@ -31,7 +31,7 @@ export function BandVenuesTab({
   venues: Venue[];
   onReload: () => Promise<void> | void;
 }) {
-  const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
   const trackPending = useTrackPending();
   const showToast = useToast();
@@ -106,15 +106,14 @@ export function BandVenuesTab({
                   icon: <EyeIcon size={18} />,
                   label: `View ${venue.name}`,
                   title: 'View venue',
-                  onClick: () => router.push(venueHref(bandId, venue.id)),
+                  onClick: () => go(venueHref(bandId, venue.id)),
                 },
                 {
                   key: 'edit',
                   icon: <PencilIcon size={18} />,
                   label: `Edit ${venue.name}`,
                   title: 'Edit venue',
-                  onClick: () =>
-                    router.push(`/bands/${bandId}/venues/${venue.id}/edit`),
+                  onClick: () => go(`/bands/${bandId}/venues/${venue.id}/edit`),
                 },
                 {
                   key: 'share',

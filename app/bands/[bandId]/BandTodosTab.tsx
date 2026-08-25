@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../useNavigate';
 import { ensureOk } from '@/lib/api';
 import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
 import { ConfirmModal } from '../../ConfirmModal';
@@ -143,7 +143,7 @@ export function BandTodosTab({
   bandId: string;
   currentUserId: string;
 }) {
-  const router = useRouter();
+  const go = useNavigate();
   const trackPending = useTrackPending();
   const showToast = useToast();
 
@@ -304,9 +304,7 @@ export function BandTodosTab({
               ))}
             </span>
             <ActionMenu label="Todo actions">
-              <ActionMenuItem
-                onClick={() => router.push(`/bands/${bandId}/todos/new`)}
-              >
+              <ActionMenuItem onClick={() => go(`/bands/${bandId}/todos/new`)}>
                 New todo
               </ActionMenuItem>
             </ActionMenu>

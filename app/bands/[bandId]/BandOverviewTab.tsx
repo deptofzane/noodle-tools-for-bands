@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../useNavigate';
 import { ensureOk } from '@/lib/api';
 import {
   formatDateRange,
@@ -56,7 +56,7 @@ export function BandOverviewTab({
   onLeave: () => void;
   onReload: () => Promise<void> | void;
 }) {
-  const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
   const trackPending = useTrackPending();
   const showToast = useToast();
@@ -190,15 +190,14 @@ export function BandOverviewTab({
                   icon: <EyeIcon size={18} />,
                   label: `View ${show.title}`,
                   title: 'View event',
-                  onClick: () => router.push(eventHref(show.id)),
+                  onClick: () => go(eventHref(show.id)),
                 },
                 {
                   key: 'edit',
                   icon: <PencilIcon size={18} />,
                   label: `Edit ${show.title}`,
                   title: 'Edit event',
-                  onClick: () =>
-                    router.push(`/calendar/events/${show.id}/edit`),
+                  onClick: () => go(`/calendar/events/${show.id}/edit`),
                 },
                 {
                   key: 'share',
@@ -221,8 +220,7 @@ export function BandOverviewTab({
                       icon: <EyeIcon size={18} />,
                       label: `View the setlist for ${show.title}`,
                       title: 'View setlist',
-                      onClick: () =>
-                        router.push(setlistHref(bandId, show.setlistId!)),
+                      onClick: () => go(setlistHref(bandId, show.setlistId!)),
                     },
                     {
                       key: 'edit',
@@ -230,9 +228,7 @@ export function BandOverviewTab({
                       label: `Edit the setlist for ${show.title}`,
                       title: 'Edit setlist',
                       onClick: () =>
-                        router.push(
-                          `/bands/${bandId}/setlists/${show.setlistId}/edit`,
-                        ),
+                        go(`/bands/${bandId}/setlists/${show.setlistId}/edit`),
                     },
                     {
                       key: 'share',
@@ -251,13 +247,11 @@ export function BandOverviewTab({
                   Add setlist songs to queue
                 </ActionMenuItem>
                 <ActionMenuItem
-                  onClick={() => router.push(practiceHref(show.setlistId!))}
+                  onClick={() => go(practiceHref(show.setlistId!))}
                 >
                   Practice
                 </ActionMenuItem>
-                <ActionMenuItem
-                  onClick={() => router.push(liveHref(show.setlistId!))}
-                >
+                <ActionMenuItem onClick={() => go(liveHref(show.setlistId!))}>
                   Live
                 </ActionMenuItem>
               </>

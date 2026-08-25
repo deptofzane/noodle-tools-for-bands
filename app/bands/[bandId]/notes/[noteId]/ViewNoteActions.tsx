@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../../useNavigate';
 import { ensureOk } from '@/lib/api';
 import {
   ActionMenu,
@@ -36,6 +37,7 @@ export function ViewNoteActions({
   backHref: string;
 }) {
   const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
   const trackPending = useTrackPending();
   const showToast = useToast();
@@ -78,8 +80,7 @@ export function ViewNoteActions({
                 icon: <PencilIcon size={18} />,
                 label: `Edit ${title}`,
                 title: 'Edit note',
-                onClick: () =>
-                  router.push(`/bands/${bandId}/notes/${noteId}/edit`),
+                onClick: () => go(`/bands/${bandId}/notes/${noteId}/edit`),
               },
               {
                 key: 'share',

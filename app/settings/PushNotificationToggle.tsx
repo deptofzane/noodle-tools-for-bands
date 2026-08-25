@@ -51,7 +51,9 @@ export function PushNotificationToggle() {
           Enable
         </button>
       ) : status === 'working' ? (
-        <span className="shrink-0 text-xs minor-text-theme-colors">Working…</span>
+        <span className="shrink-0 text-xs minor-text-theme-colors">
+          Working…
+        </span>
       ) : status === 'checking' ? (
         <span className="shrink-0 text-xs text-neutral-400">…</span>
       ) : null}

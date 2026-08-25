@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../../useNavigate';
 import { ActionMenu, MenuIconRow } from '../../../../ActionMenu';
 import { useShareLink } from '../../../../useShareLink';
 import { LinkIcon, PencilIcon } from '../../../../icons';
@@ -22,7 +22,7 @@ export function ViewVenueActions({
   venueId: string;
   name: string;
 }) {
-  const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
 
   return (
@@ -34,8 +34,7 @@ export function ViewVenueActions({
             icon: <PencilIcon size={18} />,
             label: `Edit ${name}`,
             title: 'Edit venue',
-            onClick: () =>
-              router.push(`/bands/${bandId}/venues/${venueId}/edit`),
+            onClick: () => go(`/bands/${bandId}/venues/${venueId}/edit`),
           },
           {
             key: 'share',

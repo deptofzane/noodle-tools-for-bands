@@ -501,7 +501,9 @@ function AudioPlayerRail({
             Originally by {originalBand}
           </p>
         )}
-        {songMeta && <p className="text-xs minor-text-theme-colors">{songMeta}</p>}
+        {songMeta && (
+          <p className="text-xs minor-text-theme-colors">{songMeta}</p>
+        )}
       </div>
 
       {error ? (

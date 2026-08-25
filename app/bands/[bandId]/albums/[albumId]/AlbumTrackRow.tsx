@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../../useNavigate';
 import { ensureOk } from '@/lib/api';
 import { formatDuration } from '@/lib/format';
 import {
@@ -43,6 +44,7 @@ export function AlbumTrackRow({
   index: number;
 }) {
   const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
   const player = usePlaylistPlayer();
   const trackPending = useTrackPending();
@@ -143,14 +145,14 @@ export function AlbumTrackRow({
               icon: <EyeIcon size={18} />,
               label: `View ${track.name}`,
               title: 'View song',
-              onClick: () => router.push(songHref(track.conversationId)),
+              onClick: () => go(songHref(track.conversationId)),
             },
             {
               key: 'edit',
               icon: <PencilIcon size={18} />,
               label: `Edit ${track.name}`,
               title: 'Edit song',
-              onClick: () => router.push(`/notes/${track.conversationId}/edit`),
+              onClick: () => go(`/notes/${track.conversationId}/edit`),
             },
             {
               key: 'share',

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../useNavigate';
 import { formatDuration } from '@/lib/format';
 import { ActionMenu, ActionMenuItem, MenuIconRow } from '../ActionMenu';
 import { useShareLink } from '../useShareLink';
@@ -69,7 +69,7 @@ export function FullPlayer({
   // Queue entry whose "Add to setlist" modal is open.
   const [addTarget, setAddTarget] = useState<PlaylistTrack | null>(null);
   const [showComments, setShowComments] = useState(false);
-  const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
 
   // The notes UI seeks the player and stamps notes with the playing position.
@@ -92,7 +92,7 @@ export function FullPlayer({
   // page that was just navigated to. Same reason the links in here do it.
   const goTo = (href: string) => {
     onCollapse();
-    router.push(href);
+    go(href);
   };
 
   // Escape collapses, and the page behind shouldn't scroll under the overlay.

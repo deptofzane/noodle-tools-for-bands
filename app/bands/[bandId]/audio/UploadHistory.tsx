@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../useNavigate';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
 import { PlayShuffleRow } from '../../../player/PlayShuffleRow';
 import { useEnqueueTracks } from '../../../player/useEnqueueTracks';
@@ -36,7 +36,7 @@ export function UploadHistory({ bandId }: { bandId: string }) {
     error,
     loadMore,
   } = useBandUploads(bandId);
-  const router = useRouter();
+  const go = useNavigate();
   const player = usePlaylistPlayer();
   const enqueue = useEnqueueTracks();
   /**
@@ -119,7 +119,7 @@ export function UploadHistory({ bandId }: { bandId: string }) {
                     />
                     <ActionMenuItem
                       onClick={() =>
-                        router.push(`/bands/${bandId}/audio/uploads/${key}`)
+                        go(`/bands/${bandId}/audio/uploads/${key}`)
                       }
                     >
                       View tracks

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../useNavigate';
 import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../ActionMenu';
 import { useShareLink } from '../../useShareLink';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../icons';
@@ -52,7 +52,7 @@ export function TodoRow({
   onShare: (todo: Todo, shared: boolean) => void;
   onDelete: (todo: Todo) => void;
 }) {
-  const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
   const overdue = isOverdue(todo.deadline, todo.status);
   const canUnshare =
@@ -63,7 +63,7 @@ export function TodoRow({
       <div className="flex items-start justify-between gap-1">
         <button
           type="button"
-          onClick={() => router.push(`/bands/${bandId}/todos/${todo.id}`)}
+          onClick={() => go(todoHref(bandId, todo.id))}
           className="flex min-w-0 flex-1 flex-col gap-0.5 text-left"
         >
           <span className="flex min-w-0 items-start gap-2">
@@ -111,23 +111,21 @@ export function TodoRow({
                 icon: <EyeIcon size={18} />,
                 label: `View ${todo.title}`,
                 title: 'View todo',
-                onClick: () => router.push(todoHref(bandId, todo.id)),
+                onClick: () => go(todoHref(bandId, todo.id)),
               },
               {
                 key: 'edit',
                 icon: <PencilIcon size={18} />,
                 label: `Edit ${todo.title}`,
                 title: 'Edit todo',
-                onClick: () =>
-                  router.push(`/bands/${bandId}/todos/${todo.id}/edit`),
+                onClick: () => go(`/bands/${bandId}/todos/${todo.id}/edit`),
               },
               {
                 key: 'share',
                 icon: <LinkIcon size={18} />,
                 label: `Copy a link to ${todo.title}`,
                 title: 'Share todo',
-                onClick: () =>
-                  void share(todoHref(bandId, todo.id), 'Todo'),
+                onClick: () => void share(todoHref(bandId, todo.id), 'Todo'),
               },
             ]}
           />

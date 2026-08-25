@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../useNavigate';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
 import { Spinner } from '../../../Spinner';
 import { usePersistedBoolean } from '../../../usePersistedBoolean';
@@ -51,7 +51,7 @@ export function BandAudioList({
   const [search, setSearch] = useState('');
   const [audioMinimized, setAudioMinimized] = useState(false);
   const [archivedMinimized, setArchivedMinimized] = useState(true);
-  const router = useRouter();
+  const go = useNavigate();
 
   /**
    * Songs or albums. Persisted, so someone who organises by album stays there.
@@ -138,10 +138,7 @@ export function BandAudioList({
                 this is the only place the work is visible. `role="status"` is
                 on the wrapper so the count itself is what gets announced. */}
             {importProgress || audioBusy ? (
-              <span
-                role="status"
-                className="flex min-w-0 items-center gap-1.5"
-              >
+              <span role="status" className="flex min-w-0 items-center gap-1.5">
                 {/* Decorative — the text beside it already says what's
                     happening, so the spinner stays out of the accessibility
                     tree rather than announcing a second time. */}
@@ -188,7 +185,7 @@ export function BandAudioList({
             >
               {albumView ? (
                 <ActionMenuItem
-                  onClick={() => router.push(`/bands/${bandId}/albums/new`)}
+                  onClick={() => go(`/bands/${bandId}/albums/new`)}
                 >
                   Create album
                 </ActionMenuItem>
@@ -221,13 +218,16 @@ export function BandAudioList({
             onDelete={onDelete}
           />
         )}
-        {!audioMinimized && !albumView && activeSongs && activeSongs.length === 0 && (
-          <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
-            No songs yet. Use the ⋯ menu above to “Create song without audio” from a name, or
-            “Upload audio file(s)”{' '}
-            {canUseDrive ? 'from Drive or your device' : 'from your device'}.
-          </p>
-        )}
+        {!audioMinimized &&
+          !albumView &&
+          activeSongs &&
+          activeSongs.length === 0 && (
+            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+              No songs yet. Use the ⋯ menu above to “Create song without audio”
+              from a name, or “Upload audio file(s)”{' '}
+              {canUseDrive ? 'from Drive or your device' : 'from your device'}.
+            </p>
+          )}
         {!audioMinimized &&
           !albumView &&
           activeSongs &&
@@ -238,11 +238,14 @@ export function BandAudioList({
               No audio matches “{search.trim()}”.
             </p>
           )}
-        {!audioMinimized && !albumView && visibleActive && visibleActive.length > 0 && (
-          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-            {visibleActive.map(row)}
-          </ul>
-        )}
+        {!audioMinimized &&
+          !albumView &&
+          visibleActive &&
+          visibleActive.length > 0 && (
+            <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+              {visibleActive.map(row)}
+            </ul>
+          )}
       </section>
 
       {!albumView && archivedSongs.length > 0 && (

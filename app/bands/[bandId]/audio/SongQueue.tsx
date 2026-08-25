@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../../../useNavigate';
 import {
   DndContext,
   KeyboardSensor,
@@ -45,7 +45,7 @@ export function SongQueue() {
   const [arranging, setArranging] = useState(false);
   // Queue entry whose "Add to setlist" modal is open.
   const [addTarget, setAddTarget] = useState<PlaylistTrack | null>(null);
-  const router = useRouter();
+  const go = useNavigate();
   const share = useShareLink();
 
   const sensors = useSensors(
@@ -241,14 +241,14 @@ export function SongQueue() {
                         icon: <EyeIcon size={18} />,
                         label: `View ${t.title}`,
                         title: 'View song',
-                        onClick: () => router.push(songHref(t.id)),
+                        onClick: () => go(songHref(t.id)),
                       },
                       {
                         key: 'edit',
                         icon: <PencilIcon size={18} />,
                         label: `Edit ${t.title}`,
                         title: 'Edit song',
-                        onClick: () => router.push(`/notes/${t.id}/edit`),
+                        onClick: () => go(`/notes/${t.id}/edit`),
                       },
                       {
                         key: 'share',
@@ -262,9 +262,7 @@ export function SongQueue() {
                   {/* Unconditional, unlike the Audio list's rows: a queue
                       entry carries no sheet-music flag to gate Live on, and
                       Live says so plainly when a song has none. */}
-                  <ActionMenuItem
-                    onClick={() => router.push(`/notes/${t.id}/practice`)}
-                  >
+                  <ActionMenuItem onClick={() => go(`/notes/${t.id}/practice`)}>
                     Practice
                   </ActionMenuItem>
                   {/* By row, not by track id: the same song can sit in the

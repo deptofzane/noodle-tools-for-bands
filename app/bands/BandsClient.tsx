@@ -3,7 +3,7 @@
 import { ensureOk } from '@/lib/api';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from '../useNavigate';
 import { useTrackPending } from '../PendingActionProvider';
 import { useToast } from '../ToastProvider';
 import { ActionMenu, ActionMenuItem } from '../ActionMenu';
@@ -31,7 +31,7 @@ export function BandsClient({ currentUserId }: { currentUserId: string }) {
   const [leaveTarget, setLeaveTarget] = useState<BandSummary | null>(null);
   const trackPending = useTrackPending();
   const showToast = useToast();
-  const router = useRouter();
+  const go = useNavigate();
 
   const load = useCallback(async () => {
     try {
@@ -72,7 +72,7 @@ export function BandsClient({ currentUserId }: { currentUserId: string }) {
       // nothing to do with a band from here, and everything to do inside it.
       // The tab is explicit so it opens on Overview rather than wherever the
       // user last was in some other band.
-      router.push(`/bands/${band.id}?tab=${DEFAULT_BAND_TAB}`);
+      go(`/bands/${band.id}?tab=${DEFAULT_BAND_TAB}`);
       // `creating` stays true: the button should remain disabled through the
       // navigation instead of inviting a second band.
     } catch (e) {
@@ -131,15 +131,11 @@ export function BandsClient({ currentUserId }: { currentUserId: string }) {
                 </span>
               </Link>
               <ActionMenu label="Band actions">
-                <ActionMenuItem
-                  onClick={() => router.push(`/bands/${band.id}`)}
-                >
+                <ActionMenuItem onClick={() => go(`/bands/${band.id}`)}>
                   View band
                 </ActionMenuItem>
                 {band.role === 'owner' && (
-                  <ActionMenuItem
-                    onClick={() => router.push(`/bands/${band.id}/edit`)}
-                  >
+                  <ActionMenuItem onClick={() => go(`/bands/${band.id}/edit`)}>
                     Edit band
                   </ActionMenuItem>
                 )}

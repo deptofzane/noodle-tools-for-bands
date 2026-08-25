@@ -89,7 +89,9 @@ export default async function SettingsPage({
           <p className="font-medium">
             {session.user.name ?? session.user.email}
           </p>
-          <p className="text-xs minor-text-theme-colors">{session.user.email}</p>
+          <p className="text-xs minor-text-theme-colors">
+            {session.user.email}
+          </p>
         </div>
         <form
           action={async () => {
