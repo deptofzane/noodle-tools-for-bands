@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
 import { useShareLink } from '../../../useShareLink';
+import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
 import { songHref } from '@/lib/routes';
 import { formatSongMeta, formatTimeAgoOrDate } from '@/lib/format';
 import { useToast } from '../../../ToastProvider';
@@ -48,6 +49,9 @@ export function SongRow({
   const player = usePlaylistPlayer();
   const showToast = useToast();
 
+  // Songs are named by their audio file here; the icon row's labels are
+  // all a screen reader gets, so they need the same name the row shows.
+  const songName = c.audioFileName ?? 'Untitled audio';
   const meta = formatSongMeta(c.bpm, c.key);
   const src = audioSrc(c);
   const isCurrent = player.track?.id === c.id;
@@ -152,6 +156,31 @@ export function SongRow({
         </div>
       </Link>
       <ActionMenu label="Song actions" disabled={disabled}>
+        <MenuIconRow
+          items={[
+            {
+              key: 'view',
+              icon: <EyeIcon size={18} />,
+              label: `View ${songName}`,
+              title: 'View song',
+              onClick: () => onView(c),
+            },
+            {
+              key: 'edit',
+              icon: <PencilIcon size={18} />,
+              label: `Edit ${songName}`,
+              title: 'Edit song',
+              onClick: () => onEdit(c),
+            },
+            {
+              key: 'share',
+              icon: <LinkIcon size={18} />,
+              label: `Copy a link to ${songName}`,
+              title: 'Share song',
+              onClick: () => void share(songHref(c.id), 'Song'),
+            },
+          ]}
+        />
         {track && (
           <ActionMenuItem
             onClick={() => {
@@ -177,11 +206,6 @@ export function SongRow({
             Live
           </ActionMenuItem>
         )}
-        <ActionMenuItem onClick={() => onView(c)}>View song</ActionMenuItem>
-        <ActionMenuItem onClick={() => void share(songHref(c.id), 'Song')}>
-          Share song
-        </ActionMenuItem>
-        <ActionMenuItem onClick={() => onEdit(c)}>Edit song</ActionMenuItem>
         <ActionMenuItem onClick={() => onAddToSetlist(c)}>
           Add to setlist
         </ActionMenuItem>

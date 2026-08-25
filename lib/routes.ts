@@ -61,6 +61,10 @@ export function noteHref(bandId: string, noteId: string): string {
   return `/bands/${bandId}/notes/${noteId}`;
 }
 
+export function todoHref(bandId: string, todoId: string): string {
+  return `/bands/${bandId}/todos/${todoId}`;
+}
+
 /**
  * Where switching the current band should land you.
  *

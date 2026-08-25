@@ -4,7 +4,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
 import { formatDuration } from '@/lib/format';
-import { ActionMenu, ActionMenuItem } from '../../../../ActionMenu';
+import {
+  ActionMenu,
+  ActionMenuItem,
+  MenuIconRow,
+} from '../../../../ActionMenu';
+import { useShareLink } from '../../../../useShareLink';
+import { EyeIcon, LinkIcon, PencilIcon } from '../../../../icons';
+import { songHref } from '@/lib/routes';
 import { useTrackPending } from '../../../../PendingActionProvider';
 import { useToast } from '../../../../ToastProvider';
 import { usePlaylistPlayer } from '../../../../player/PlaylistPlayer';
@@ -36,6 +43,7 @@ export function AlbumTrackRow({
   index: number;
 }) {
   const router = useRouter();
+  const share = useShareLink();
   const player = usePlaylistPlayer();
   const trackPending = useTrackPending();
   const showToast = useToast();
@@ -126,16 +134,33 @@ export function AlbumTrackRow({
             Use the current version
           </ActionMenuItem>
         )}
-        <ActionMenuItem
-          onClick={() => router.push(`/notes/${track.conversationId}`)}
-        >
-          View song
-        </ActionMenuItem>
-        <ActionMenuItem
-          onClick={() => router.push(`/notes/${track.conversationId}/edit`)}
-        >
-          Edit song
-        </ActionMenuItem>
+        {/* Second, not first: "Use the current version" above repairs a
+            broken row, and that has to stay the thing you reach for. */}
+        <MenuIconRow
+          items={[
+            {
+              key: 'view',
+              icon: <EyeIcon size={18} />,
+              label: `View ${track.name}`,
+              title: 'View song',
+              onClick: () => router.push(songHref(track.conversationId)),
+            },
+            {
+              key: 'edit',
+              icon: <PencilIcon size={18} />,
+              label: `Edit ${track.name}`,
+              title: 'Edit song',
+              onClick: () => router.push(`/notes/${track.conversationId}/edit`),
+            },
+            {
+              key: 'share',
+              icon: <LinkIcon size={18} />,
+              label: `Copy a link to ${track.name}`,
+              title: 'Share song',
+              onClick: () => void share(songHref(track.conversationId), 'Song'),
+            },
+          ]}
+        />
       </ActionMenu>
     </li>
   );

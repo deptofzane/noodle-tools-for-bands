@@ -3,9 +3,16 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
-import { ActionMenu, ActionMenuItem } from '../../../../ActionMenu';
+import {
+  ActionMenu,
+  ActionMenuItem,
+  MenuIconRow,
+} from '../../../../ActionMenu';
 import { PlayShuffleRow } from '../../../../player/PlayShuffleRow';
 import { useEnqueueTracks } from '../../../../player/useEnqueueTracks';
+import { useShareLink } from '../../../../useShareLink';
+import { LinkIcon, PencilIcon } from '../../../../icons';
+import { albumHref } from '@/lib/routes';
 import { ConfirmModal } from '../../../../ConfirmModal';
 import { useTrackPending } from '../../../../PendingActionProvider';
 import { useToast } from '../../../../ToastProvider';
@@ -25,6 +32,7 @@ export function AlbumActions({ album }: { album: AlbumWithTracks }) {
   const router = useRouter();
   const player = usePlaylistPlayer();
   const enqueue = useEnqueueTracks();
+  const share = useShareLink();
   const trackPending = useTrackPending();
   const showToast = useToast();
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -71,13 +79,28 @@ export function AlbumActions({ album }: { album: AlbumWithTracks }) {
             onQueue={() => enqueue(queue, 'this album')}
           />
         )}
-        <ActionMenuItem
-          onClick={() =>
-            router.push(`/bands/${album.bandId}/albums/${album.id}/edit`)
-          }
-        >
-          Edit album
-        </ActionMenuItem>
+        {/* No View: this *is* the album's page. Edit and share are the two
+            things left that act on it as a whole. */}
+        <MenuIconRow
+          items={[
+            {
+              key: 'edit',
+              icon: <PencilIcon size={18} />,
+              label: `Edit ${album.name}`,
+              title: 'Edit album',
+              onClick: () =>
+                router.push(`/bands/${album.bandId}/albums/${album.id}/edit`),
+            },
+            {
+              key: 'share',
+              icon: <LinkIcon size={18} />,
+              label: `Copy a link to ${album.name}`,
+              title: 'Share album',
+              onClick: () =>
+                void share(albumHref(album.bandId, album.id), 'Album'),
+            },
+          ]}
+        />
         <ActionMenuItem destructive onClick={() => setDeleteOpen(true)}>
           Delete album
         </ActionMenuItem>

@@ -1,9 +1,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
+import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../ActionMenu';
+import { useShareLink } from '../../useShareLink';
+import { EyeIcon, LinkIcon, PencilIcon } from '../../icons';
 import { NoteLinks } from './notes/NoteLinks';
 import { formatTimeAgoOrDate } from '@/lib/format';
+import { todoHref } from '@/lib/routes';
 import type { Todo, TodoStatus } from '@/lib/db/todos';
 
 /** Local midnight, for deciding whether a deadline has passed. */
@@ -50,6 +53,7 @@ export function TodoRow({
   onDelete: (todo: Todo) => void;
 }) {
   const router = useRouter();
+  const share = useShareLink();
   const overdue = isOverdue(todo.deadline, todo.status);
   const canUnshare =
     todo.creatorId === currentUserId || todo.ownerId === currentUserId;
@@ -97,23 +101,41 @@ export function TodoRow({
         </button>
 
         <ActionMenu label={`Actions for ${todo.title}`} disabled={busy}>
+          {/* "Share" here copies a link. The band-visibility toggle below
+              is a different thing entirely, which is why that one keeps its
+              words and this one says "Copy a link to…" to a screen reader. */}
+          <MenuIconRow
+            items={[
+              {
+                key: 'view',
+                icon: <EyeIcon size={18} />,
+                label: `View ${todo.title}`,
+                title: 'View todo',
+                onClick: () => router.push(todoHref(bandId, todo.id)),
+              },
+              {
+                key: 'edit',
+                icon: <PencilIcon size={18} />,
+                label: `Edit ${todo.title}`,
+                title: 'Edit todo',
+                onClick: () =>
+                  router.push(`/bands/${bandId}/todos/${todo.id}/edit`),
+              },
+              {
+                key: 'share',
+                icon: <LinkIcon size={18} />,
+                label: `Copy a link to ${todo.title}`,
+                title: 'Share todo',
+                onClick: () =>
+                  void share(todoHref(bandId, todo.id), 'Todo'),
+              },
+            ]}
+          />
           {STATUS_MOVES.filter((m) => m.to !== todo.status).map((m) => (
             <ActionMenuItem key={m.to} onClick={() => onStatus(todo, m.to)}>
               {m.label}
             </ActionMenuItem>
           ))}
-          <ActionMenuItem
-            onClick={() => router.push(`/bands/${bandId}/todos/${todo.id}`)}
-          >
-            View todo
-          </ActionMenuItem>
-          <ActionMenuItem
-            onClick={() =>
-              router.push(`/bands/${bandId}/todos/${todo.id}/edit`)
-            }
-          >
-            Edit todo
-          </ActionMenuItem>
           {todo.shared ? (
             <ActionMenuItem
               disabled={!canUnshare}

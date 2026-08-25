@@ -4,7 +4,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatDuration } from '@/lib/format';
-import { ActionMenu, ActionMenuItem } from '../ActionMenu';
+import { ActionMenu, ActionMenuItem, MenuIconRow } from '../ActionMenu';
+import { useShareLink } from '../useShareLink';
+import { EyeIcon, LinkIcon, PencilIcon } from '../icons';
+import { songHref } from '@/lib/routes';
 import { ShuffleIcon } from './icons';
 import { AddTrackToSetlistModal } from './AddTrackToSetlistModal';
 import { usePlaylistPlayer, type PlaylistTrack } from './PlaylistPlayer';
@@ -67,6 +70,7 @@ export function FullPlayer({
   const [addTarget, setAddTarget] = useState<PlaylistTrack | null>(null);
   const [showComments, setShowComments] = useState(false);
   const router = useRouter();
+  const share = useShareLink();
 
   // The notes UI seeks the player and stamps notes with the playing position.
   // On the song page those come from that page's own engine; here they have to
@@ -411,6 +415,37 @@ export function FullPlayer({
                         </button>
 
                         <ActionMenu label={`Actions for ${t.title}`}>
+                          {/* View uses the track's own href where it has one:
+                              that carries the `?from=` which sends Back to the
+                              right place. Share deliberately doesn't — a
+                              back-link is meaningless to whoever you send it
+                              to, so it copies the plain song URL. */}
+                          <MenuIconRow
+                            items={[
+                              {
+                                key: 'view',
+                                icon: <EyeIcon size={18} />,
+                                label: `View ${t.title}`,
+                                title: 'View song',
+                                onClick: () => goTo(t.href ?? songHref(t.id)),
+                              },
+                              {
+                                key: 'edit',
+                                icon: <PencilIcon size={18} />,
+                                label: `Edit ${t.title}`,
+                                title: 'Edit song',
+                                onClick: () => goTo(`/notes/${t.id}/edit`),
+                              },
+                              {
+                                key: 'share',
+                                icon: <LinkIcon size={18} />,
+                                label: `Copy a link to ${t.title}`,
+                                title: 'Share song',
+                                onClick: () =>
+                                  void share(songHref(t.id), 'Song'),
+                              },
+                            ]}
+                          />
                           <ActionMenuItem
                             onClick={() => goTo(`/notes/${t.id}/practice`)}
                           >
@@ -421,18 +456,6 @@ export function FullPlayer({
                           </ActionMenuItem>
                           <ActionMenuItem onClick={() => setAddTarget(t)}>
                             Add to setlist
-                          </ActionMenuItem>
-                          {/* The track's own href where it has one — it carries
-                          the `?from=` that sends Back to the right place. */}
-                          <ActionMenuItem
-                            onClick={() => goTo(t.href ?? `/notes/${t.id}`)}
-                          >
-                            View song
-                          </ActionMenuItem>
-                          <ActionMenuItem
-                            onClick={() => goTo(`/notes/${t.id}/edit`)}
-                          >
-                            Edit song
                           </ActionMenuItem>
                         </ActionMenu>
                       </li>

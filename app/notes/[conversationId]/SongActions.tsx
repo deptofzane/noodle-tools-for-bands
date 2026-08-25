@@ -1,7 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
+import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../ActionMenu';
+import { useShareLink } from '../../useShareLink';
+import { LinkIcon, PencilIcon } from '../../icons';
+import { songHref } from '@/lib/routes';
 
 /**
  * The song page's kebab, sitting on the "Song details" header row.
@@ -24,14 +27,29 @@ export function SongActions({
   hasSheetMusic: boolean;
 }) {
   const router = useRouter();
+  const share = useShareLink();
 
   return (
     <ActionMenu label="Song actions">
-      <ActionMenuItem
-        onClick={() => router.push(`/notes/${conversationId}/edit`)}
-      >
-        Edit song
-      </ActionMenuItem>
+      {/* No View: this is the song's own page. */}
+      <MenuIconRow
+        items={[
+          {
+            key: 'edit',
+            icon: <PencilIcon size={18} />,
+            label: 'Edit this song',
+            title: 'Edit song',
+            onClick: () => router.push(`/notes/${conversationId}/edit`),
+          },
+          {
+            key: 'share',
+            icon: <LinkIcon size={18} />,
+            label: 'Copy a link to this song',
+            title: 'Share song',
+            onClick: () => void share(songHref(conversationId), 'Song'),
+          },
+        ]}
+      />
       {hasSheetMusic && (
         <>
           <ActionMenuItem

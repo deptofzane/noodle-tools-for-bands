@@ -4,7 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
 import { formatDuration } from '@/lib/format';
-import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
+import { useShareLink } from '../../../useShareLink';
+import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
+import { songHref } from '@/lib/routes';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
@@ -47,6 +50,7 @@ export function EventSetlistSongs({
   songs: SongItem[];
 }) {
   const router = useRouter();
+  const share = useShareLink();
   const trackPending = useTrackPending();
   const showToast = useToast();
   const player = usePlaylistPlayer();
@@ -114,7 +118,9 @@ export function EventSetlistSongs({
 
   if (songs.length === 0) {
     return (
-      <p className="text-sm minor-text-theme-colors">This setlist has no songs.</p>
+      <p className="text-sm minor-text-theme-colors">
+        This setlist has no songs.
+      </p>
     );
   }
 
@@ -213,18 +219,33 @@ export function EventSetlistSongs({
 
               {canManage && (
                 <ActionMenu label="Song actions">
-                  <ActionMenuItem
-                    onClick={() => router.push(`/notes/${s.conversationId}`)}
-                  >
-                    View song
-                  </ActionMenuItem>
-                  <ActionMenuItem
-                    onClick={() =>
-                      router.push(`/notes/${s.conversationId}/edit`)
-                    }
-                  >
-                    Edit song
-                  </ActionMenuItem>
+                  <MenuIconRow
+                    items={[
+                      {
+                        key: 'view',
+                        icon: <EyeIcon size={18} />,
+                        label: `View ${s.name}`,
+                        title: 'View song',
+                        onClick: () => router.push(songHref(s.conversationId!)),
+                      },
+                      {
+                        key: 'edit',
+                        icon: <PencilIcon size={18} />,
+                        label: `Edit ${s.name}`,
+                        title: 'Edit song',
+                        onClick: () =>
+                          router.push(`/notes/${s.conversationId}/edit`),
+                      },
+                      {
+                        key: 'share',
+                        icon: <LinkIcon size={18} />,
+                        label: `Copy a link to ${s.name}`,
+                        title: 'Share song',
+                        onClick: () =>
+                          void share(songHref(s.conversationId!), 'Song'),
+                      },
+                    ]}
+                  />
                   <ActionMenuItem
                     destructive
                     onClick={() => setRemoveTarget(s)}

@@ -20,7 +20,10 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { formatDuration } from '@/lib/format';
-import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
+import { useShareLink } from '../../../useShareLink';
+import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
+import { songHref } from '@/lib/routes';
 import { AddTrackToSetlistModal } from '../../../player/AddTrackToSetlistModal';
 import {
   usePlaylistPlayer,
@@ -43,6 +46,7 @@ export function SongQueue() {
   // Queue entry whose "Add to setlist" modal is open.
   const [addTarget, setAddTarget] = useState<PlaylistTrack | null>(null);
   const router = useRouter();
+  const share = useShareLink();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -230,6 +234,31 @@ export function SongQueue() {
                 )}
 
                 <ActionMenu label={`Actions for ${t.title}`}>
+                  <MenuIconRow
+                    items={[
+                      {
+                        key: 'view',
+                        icon: <EyeIcon size={18} />,
+                        label: `View ${t.title}`,
+                        title: 'View song',
+                        onClick: () => router.push(songHref(t.id)),
+                      },
+                      {
+                        key: 'edit',
+                        icon: <PencilIcon size={18} />,
+                        label: `Edit ${t.title}`,
+                        title: 'Edit song',
+                        onClick: () => router.push(`/notes/${t.id}/edit`),
+                      },
+                      {
+                        key: 'share',
+                        icon: <LinkIcon size={18} />,
+                        label: `Copy a link to ${t.title}`,
+                        title: 'Share song',
+                        onClick: () => void share(songHref(t.id), 'Song'),
+                      },
+                    ]}
+                  />
                   {/* Unconditional, unlike the Audio list's rows: a queue
                       entry carries no sheet-music flag to gate Live on, and
                       Live says so plainly when a song has none. */}
@@ -246,14 +275,6 @@ export function SongQueue() {
                   </ActionMenuItem>
                   <ActionMenuItem onClick={() => setAddTarget(t)}>
                     Add to setlist
-                  </ActionMenuItem>
-                  <ActionMenuItem onClick={() => router.push(`/notes/${t.id}`)}>
-                    View song
-                  </ActionMenuItem>
-                  <ActionMenuItem
-                    onClick={() => router.push(`/notes/${t.id}/edit`)}
-                  >
-                    Edit song
                   </ActionMenuItem>
                 </ActionMenu>
               </li>

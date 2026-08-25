@@ -64,7 +64,10 @@ export default async function SetlistPage({
             )}
           </span>
           <span className="ml-auto shrink-0 self-center">
-            <SetlistSongActions conversationId={s.conversationId} />
+            <SetlistSongActions
+              conversationId={s.conversationId}
+              name={s.name}
+            />
           </span>
         </li>
       );

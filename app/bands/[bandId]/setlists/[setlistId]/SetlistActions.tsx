@@ -2,15 +2,21 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ActionMenu, ActionMenuItem } from '../../../../ActionMenu';
+import {
+  ActionMenu,
+  ActionMenuItem,
+  MenuIconRow,
+} from '../../../../ActionMenu';
 import { PlayShuffleRow } from '../../../../player/PlayShuffleRow';
 import { useEnqueueTracks } from '../../../../player/useEnqueueTracks';
+import { useShareLink } from '../../../../useShareLink';
+import { LinkIcon, PencilIcon } from '../../../../icons';
 import { useOfflineDownload } from '../../../../offline/useOfflineDownload';
 import { setlistQueue, type Setlist } from '../../bandDetailShared';
 import { OfflineBadge } from '../../../../offline/OfflineBadge';
 import { usePlaylistPlayer } from '../../../../player/PlaylistPlayer';
 import { shuffledCopy } from '../../../../player/queueOrder';
-import { liveHref, practiceHref } from '@/lib/routes';
+import { liveHref, practiceHref, setlistHref } from '@/lib/routes';
 
 /**
  * The setlist's top actions — Play all, Practice, Live, and offline download.
@@ -35,6 +41,7 @@ export function SetlistActions({
   const offline = useOfflineDownload();
   const player = usePlaylistPlayer();
   const enqueue = useEnqueueTracks();
+  const share = useShareLink();
 
   const rec = offline.records?.get(setlistId);
   const downloading = offline.busyId === setlistId;
@@ -145,9 +152,26 @@ export function SetlistActions({
             />
           </span>
         )}
-        <ActionMenuItem onClick={() => router.push(edit)}>
-          Edit setlist
-        </ActionMenuItem>
+        {/* No View: this is the setlist's own page. */}
+        <MenuIconRow
+          items={[
+            {
+              key: 'edit',
+              icon: <PencilIcon size={18} />,
+              label: `Edit ${name}`,
+              title: 'Edit setlist',
+              onClick: () => router.push(edit),
+            },
+            {
+              key: 'share',
+              icon: <LinkIcon size={18} />,
+              label: `Copy a link to ${name}`,
+              title: 'Share setlist',
+              onClick: () =>
+                void share(setlistHref(bandId, setlistId), 'Setlist'),
+            },
+          ]}
+        />
         {hasSongs && (
           <span role="none" className="flex flex-col md:hidden">
             <ActionMenuItem onClick={() => router.push(practice)}>
