@@ -203,7 +203,7 @@ export function NoteForm({
           className="mt-0.5 h-4 w-4"
         />
         <span>
-          <span className="font-medium">Share with the band</span>
+          <span className="font-medium">Make visible to band</span>
           <span className="block text-[0.6875rem] minor-text-theme-colors">
             Off by default — only you can see this note. Sharing lets the band
             read it; editing and deleting stay with you.

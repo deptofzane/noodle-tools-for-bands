@@ -144,7 +144,7 @@ export function TodoRow({
             </ActionMenuItem>
           ) : (
             <ActionMenuItem onClick={() => onShare(todo, true)}>
-              Make public
+              Make visible to band
             </ActionMenuItem>
           )}
           <ActionMenuItem destructive onClick={() => onDelete(todo)}>

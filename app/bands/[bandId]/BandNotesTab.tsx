@@ -23,7 +23,7 @@ import type { UserNote } from '@/lib/db/user-notes';
 
 /**
  * The Notes tab: either the member's own private notes in this band or the
- * ones the band has shared, newest first, chosen with the Personal/Shared
+ * ones the band has shared, newest first, chosen with the Mine/All
  * switch. Only an author sees Edit or Delete on their own.
  *
  * The two are a partition, not overlapping filters: personal is yours *and*
@@ -52,8 +52,9 @@ export function BandNotesTab({
   const [deleting, setDeleting] = useState(false);
 
   /*
-   * Which slice is showing. Personal first: notes are private by default, so
-   * the list someone arrives expecting is their own.
+   * Which slice is showing. All is drawn first, matching the Todos tab's
+   * control, but Mine is what's *selected* by default: notes are private
+   * unless shared, so the list someone arrives expecting is their own.
    *
    * Boolean rather than a scope string because there are exactly two
    * positions, matching the Songs/Albums control this mirrors.
@@ -133,14 +134,14 @@ export function BandNotesTab({
   );
 
   // Refetches when the scope changes, which also drops back to the first ten —
-  // Personal and Shared are different selections, not two views of one.
+  // Mine and All are different selections, not two views of one.
   useEffect(() => {
     void loadPinned(false);
   }, [loadPinned]);
 
   /*
    * A note arriving from a notification link names the view it lives in
-   * (`?notes=shared`), because Personal/Shared is otherwise a remembered
+   * (`?notes=shared`), because Mine/All is otherwise a remembered
    * choice and the note may not be in the one you left behind.
    *
    * A plain effect, so it runs after `usePersistedBoolean` has applied the
@@ -340,7 +341,7 @@ export function BandNotesTab({
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-sm font-medium">Notes</h2>
           <span className="flex shrink-0 items-center gap-1">
-            {/* Personal or shared. A two-state segmented control rather than a
+            {/* Mine or shared. A two-state segmented control rather than a
                 checkbox: both destinations are named, so neither reads as the
                 "off" position of the other. Same control as Songs/Albums. */}
             <span
@@ -348,7 +349,7 @@ export function BandNotesTab({
               aria-label="Notes"
               className="flex items-center rounded-md border border-neutral-300 p-0.5 text-xs dark:border-neutral-700"
             >
-              {([false, true] as const).map((wantShared) => (
+              {([true, false] as const).map((wantShared) => (
                 <button
                   key={String(wantShared)}
                   type="button"
@@ -361,7 +362,7 @@ export function BandNotesTab({
                       : 'minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
                   }
                 >
-                  {wantShared ? 'Shared' : 'Personal'}
+                  {wantShared ? 'All' : 'Mine'}
                 </button>
               ))}
             </span>
@@ -375,7 +376,7 @@ export function BandNotesTab({
         <span className="block truncate text-xs minor-text-theme-colors">
           {sharedView
             ? 'Notes you and your bandmates have shared with the band'
-            : 'Private to you — sharing one moves it to Shared'}
+            : 'Private to you — sharing one moves it to All'}
         </span>
       </div>
 

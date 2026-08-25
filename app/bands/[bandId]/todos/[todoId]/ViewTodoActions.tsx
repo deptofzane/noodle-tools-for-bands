@@ -149,7 +149,7 @@ export function ViewTodoActions({
           </ActionMenuItem>
         ) : (
           <ActionMenuItem onClick={() => setShared(true)}>
-            Make public
+            Make visible to band
           </ActionMenuItem>
         )}
         <ActionMenuItem destructive onClick={() => setConfirmOpen(true)}>

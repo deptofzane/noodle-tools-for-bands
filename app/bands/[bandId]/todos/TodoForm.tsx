@@ -264,7 +264,7 @@ export function TodoForm({
             className="mt-0.5 h-4 w-4"
           />
           <span>
-            <span className="font-medium">Share with the band</span>
+            <span className="font-medium">Make visible to band</span>
             <span className="block text-[0.6875rem] minor-text-theme-colors">
               Off by default — only you can see this. Sharing lets anyone in the
               band edit it, pick it up, or mark it done.
