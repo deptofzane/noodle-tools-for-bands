@@ -72,6 +72,28 @@ export function actorLabel(
   return 'someone';
 }
 
+/**
+ * A file size, for showing next to a name.
+ *
+ * 1024-based with KB/MB labels — the convention people read on their own
+ * machines, rather than the strictly-correct KiB. One decimal below 10 so a
+ * 1.4 MB take doesn't round to "1 MB" and look identical to a 1.4x smaller
+ * one; none above, where the extra digit is noise on a number nobody is
+ * adding up.
+ */
+export function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes < 0) return '—';
+  if (bytes < 1024) return `${Math.round(bytes)} B`;
+  const units = ['KB', 'MB', 'GB', 'TB'];
+  let value = bytes / 1024;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`;
+}
+
 /** Format `seconds` as `m:ss` or `h:mm:ss`. */
 export function formatDuration(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';

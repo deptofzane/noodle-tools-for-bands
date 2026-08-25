@@ -3,6 +3,7 @@
 import { ensureOk } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { formatBytes } from '@/lib/format';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { Modal } from '../../../Modal';
 import { PickerButton, type PickedFile } from '../../../PickerButton';
@@ -401,6 +402,13 @@ export function SheetMusicVersions({
                         <span className="flex items-center gap-2">
                           <span className="truncate text-sm">
                             {v.label || v.fileName}
+                          </span>
+                          {/* On the name's own line, not the one below it:
+                              that line only exists when a version has a label,
+                              so the size would vanish for everything else.
+                              `shrink-0` so the name truncates before it does. */}
+                          <span className="shrink-0 text-[0.6875rem] minor-text-theme-colors">
+                            {formatBytes(v.sizeBytes)}
                           </span>
                           {v.isDefault && (
                             <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[0.625rem] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">

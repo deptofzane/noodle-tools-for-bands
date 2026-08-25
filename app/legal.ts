@@ -6,7 +6,7 @@
  * reads. Google's OAuth verification and Play's listing review both send mail
  * to it, and Play policy expects deletion requests to reach a human.
  */
-export const CONTACT_EMAIL = 'noodlehelp@yahoo.com';
+export const CONTACT_EMAIL = 'help@noodle.band';
 
 /** Bump when either page's substance changes, not for wording tweaks. */
 export const POLICY_UPDATED = '5 August 2026';

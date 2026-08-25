@@ -30,7 +30,7 @@ import { useCanUseDrive } from '../../../DriveCapabilityProvider';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
 import { todayKey } from '../../../bands/[bandId]/audio/uploadDays';
-import { formatDuration } from '@/lib/format';
+import { formatBytes, formatDuration } from '@/lib/format';
 
 export interface AudioVersionMeta {
   id: string;
@@ -405,11 +405,17 @@ export function AudioVersions({
                           </span>
                         )}
                       </span>
+                      {/* Length and size together: the two things that
+                          distinguish one take from another once they share a
+                          name. A version with no probed duration still shows
+                          its size rather than a lone dash. */}
                       <span className="truncate text-[0.6875rem] minor-text-theme-colors">
                         {v.label ? `${v.fileName} · ` : ''}
                         {v.songLength != null
                           ? formatDuration(v.songLength)
                           : '—'}
+                        {' · '}
+                        {formatBytes(v.sizeBytes)}
                       </span>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
