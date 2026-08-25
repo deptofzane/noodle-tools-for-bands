@@ -7,7 +7,7 @@
  * them in CSS rather than a JS map is what lets the dark set apply through
  * `.dark` without every component knowing which theme it's in.
  */
-const EVENT_COLOR_KEYS = [
+export const EVENT_COLOR_KEYS = [
   'show',
   'practice',
   'writing',

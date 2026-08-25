@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { HelpContent } from './HelpContent';
 
 /**
@@ -18,6 +18,23 @@ import { HelpContent } from './HelpContent';
  * page of prose.
  */
 export function HelpDialog({ onClose }: { onClose: () => void }) {
+  /**
+   * The latest `onClose`, read through a ref.
+   *
+   * The parent renders `onClose={() => setHelpOpen(false)}`, a fresh function
+   * every time it re-renders. An effect that depends on it therefore tears
+   * down and re-runs on any parent render — which for the history effect
+   * below means popping and re-pushing the entry, with the `popstate` from
+   * that pop landing on the freshly-added listener and closing the dialog.
+   */
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  /** Set while the cleanup below pops its own entry — see the effect. */
+  const poppingOwnEntry = useRef(false);
+
   // Escape closes, and the page underneath shouldn't scroll while it's open.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -47,14 +64,29 @@ export function HelpDialog({ onClose }: { onClose: () => void }) {
    */
   useEffect(() => {
     window.history.pushState({ helpDialog: true }, '');
-    const onPop = () => onClose();
+    const onPop = () => {
+      // `back()` is asynchronous, so a pop this component asked for can
+      // arrive *after* a re-run has re-subscribed — React Strict Mode's
+      // mount/cleanup/mount does exactly that in development. Without this
+      // guard the dialog reads its own pop as the user's and closes on open.
+      if (poppingOwnEntry.current) {
+        poppingOwnEntry.current = false;
+        return;
+      }
+      onCloseRef.current();
+    };
     window.addEventListener('popstate', onPop);
     return () => {
       window.removeEventListener('popstate', onPop);
-      if ((window.history.state as { helpDialog?: boolean } | null)?.helpDialog)
+      if (
+        (window.history.state as { helpDialog?: boolean } | null)?.helpDialog
+      ) {
+        poppingOwnEntry.current = true;
         window.history.back();
+      }
     };
-  }, [onClose]);
+    // Runs once per open. It must not key off `onClose` — see `onCloseRef`.
+  }, []);
 
   return (
     <div

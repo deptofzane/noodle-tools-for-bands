@@ -110,7 +110,7 @@ export function ActionMenu({
           role="menu"
           onClick={() => setOpen(false)}
           className={
-            'absolute z-10 min-w-52 overflow-hidden rounded-md border border-neutral-200 bg-white py-1.5 shadow-lg sm:py-1 dark:border-neutral-800 dark:bg-neutral-900 ' +
+            'absolute z-50 min-w-52 overflow-hidden rounded-md border border-neutral-200 bg-white py-1.5 shadow-lg sm:py-1 dark:border-neutral-800 dark:bg-neutral-900 ' +
             (align === 'left' ? 'left-0 ' : 'right-0 ') +
             (openUp ? 'bottom-full mb-1' : 'top-full mt-1')
           }
