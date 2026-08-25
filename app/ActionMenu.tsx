@@ -176,6 +176,28 @@ export function MenuIconRow({
   );
 }
 
+/**
+ * A heading naming the thing the items under it act on.
+ *
+ * Exists for menus that act on more than one subject — an event and the
+ * setlist attached to it, say. Two `MenuIconRow`s stacked are the same three
+ * glyphs twice with nothing to tell them apart, and the words the icons
+ * replaced were carrying that distinction.
+ *
+ * `role="none"` because it isn't an item: arrow keys and the menu's click
+ * handler should both pass straight over it.
+ */
+export function MenuSectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <div
+      role="none"
+      className="px-4 pb-0.5 pt-2 text-xs font-semibold uppercase tracking-wide text-neutral-500 sm:px-3 dark:text-neutral-400"
+    >
+      {children}
+    </div>
+  );
+}
+
 /** A single entry inside an `ActionMenu`. */
 export function ActionMenuItem({
   children,

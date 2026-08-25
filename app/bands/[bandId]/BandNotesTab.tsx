@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
 import { formatTimeAgoOrDate } from '@/lib/format';
-import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
+import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../ActionMenu';
+import { EyeIcon, LinkIcon, PencilIcon } from '../../icons';
 import { ConfirmModal } from '../../ConfirmModal';
 import { LoadingBlock } from '../../Spinner';
 import { LoadMore } from '../../LoadMore';
@@ -280,32 +281,42 @@ export function BandNotesTab({
             stays with whoever wrote it.
           */}
           <ActionMenu label={`Actions for ${note.title}`}>
-            <ActionMenuItem
-              onClick={() => router.push(noteHref(bandId, note.id))}
-            >
-              View note
-            </ActionMenuItem>
-            <ActionMenuItem
-              onClick={() => void share(noteHref(bandId, note.id), 'Note')}
-            >
-              Share note
-            </ActionMenuItem>
+            {/* Edit is the note owner's alone, so someone else's note gets a
+                two-icon row rather than a third glyph that refuses. */}
+            <MenuIconRow
+              items={[
+                {
+                  key: 'view',
+                  icon: <EyeIcon size={18} />,
+                  label: `View ${note.title}`,
+                  title: 'View note',
+                  onClick: () => router.push(noteHref(bandId, note.id)),
+                },
+                ...(mine
+                  ? [
+                      {
+                        key: 'edit',
+                        icon: <PencilIcon size={18} />,
+                        label: `Edit ${note.title}`,
+                        title: 'Edit note',
+                        onClick: () =>
+                          router.push(`/bands/${bandId}/notes/${note.id}/edit`),
+                      },
+                    ]
+                  : []),
+                {
+                  key: 'share',
+                  icon: <LinkIcon size={18} />,
+                  label: `Copy a link to ${note.title}`,
+                  title: 'Share note',
+                  onClick: () => void share(noteHref(bandId, note.id), 'Note'),
+                },
+              ]}
+            />
             {mine && (
-              <>
-                <ActionMenuItem
-                  onClick={() =>
-                    router.push(`/bands/${bandId}/notes/${note.id}/edit`)
-                  }
-                >
-                  Edit note
-                </ActionMenuItem>
-                <ActionMenuItem
-                  destructive
-                  onClick={() => setDeleteTarget(note)}
-                >
-                  Delete note
-                </ActionMenuItem>
-              </>
+              <ActionMenuItem destructive onClick={() => setDeleteTarget(note)}>
+                Delete note
+              </ActionMenuItem>
             )}
           </ActionMenu>
         </div>

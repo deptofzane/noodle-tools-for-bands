@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
+import { LinkIcon, PencilIcon } from '../../../icons';
 import { useShareLink } from '../../../useShareLink';
 import { eventHref } from '@/lib/routes';
 
@@ -25,16 +26,33 @@ export function EventActions({
 
   return (
     <ActionMenu label="Event actions">
-      {canManage && (
-        <ActionMenuItem
-          onClick={() => router.push(`/calendar/events/${eventId}/edit`)}
-        >
-          Edit event
+      {/* No View: this is the event's own page. Without Edit there'd be a
+          single glyph sitting alone across the menu, which reads as a button
+          nobody labelled — so a lone Share keeps its word. */}
+      {canManage ? (
+        <MenuIconRow
+          items={[
+            {
+              key: 'edit',
+              icon: <PencilIcon size={18} />,
+              label: 'Edit this event',
+              title: 'Edit event',
+              onClick: () => router.push(`/calendar/events/${eventId}/edit`),
+            },
+            {
+              key: 'share',
+              icon: <LinkIcon size={18} />,
+              label: 'Copy a link to this event',
+              title: 'Share event',
+              onClick: () => void share(eventHref(eventId), 'Event'),
+            },
+          ]}
+        />
+      ) : (
+        <ActionMenuItem onClick={() => void share(eventHref(eventId), 'Event')}>
+          Share event
         </ActionMenuItem>
       )}
-      <ActionMenuItem onClick={() => void share(eventHref(eventId), 'Event')}>
-        Share event
-      </ActionMenuItem>
     </ActionMenu>
   );
 }

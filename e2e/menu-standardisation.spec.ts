@@ -4,6 +4,9 @@ import { readSeed, E2E } from './fixtures';
 import { createAlbum } from '../lib/db/albums';
 import { createTodo } from '../lib/db/todos';
 import { createEvent } from '../lib/db/events';
+import { createVenue } from '../lib/db/venues';
+import { createBand } from '../lib/db/bands';
+import { createNote } from '../lib/db/user-notes';
 
 /**
  * The four detail-page menus now lead with an icon row instead of worded
@@ -16,7 +19,11 @@ const seed = readSeed();
 let albumId = '';
 let todoId = '';
 let eventId = '';
+let venueId = '';
+let noteId = '';
 const TODO_TITLE = 'E2E Todo For Menus';
+const VENUE = 'E2E Menu Venue';
+const NOTE = 'E2E Menu Note';
 
 test.beforeAll(async () => {
   albumId = await createAlbum(seed.bandId, seed.userId, 'E2E Album', [
@@ -50,6 +57,30 @@ test.beforeAll(async () => {
     createdBy: seed.userId,
   });
   eventId = event.id;
+
+  const venue = await createVenue({
+    bandId: seed.bandId,
+    createdBy: seed.userId,
+    fields: {
+      name: VENUE,
+      address: '12 Test Street',
+      phone: '555-0100',
+      email: 'book@e2e.test',
+      contactName: 'E2E Booker',
+      notes: 'Load in through the back.',
+    },
+  });
+  venueId = venue.id;
+
+  const note = await createNote({
+    bandId: seed.bandId,
+    authorId: seed.userId,
+    title: NOTE,
+    body: 'E2E note body',
+    shared: true,
+    links: [],
+  });
+  noteId = note.id;
 });
 
 /** Accessible names of the menu's children, in DOM order. */
@@ -286,5 +317,138 @@ test.describe('per-song action menus', () => {
     await openMenu(page, `Actions for ${SONG}`);
     await page.getByRole('menuitem', { name: `View ${SONG}` }).click();
     await expect(page).toHaveURL(/\/notes\/[^?]+\?from=audio/);
+  });
+});
+
+/**
+ * The remaining menus: two list trios, the overview menu that acts on an event
+ * *and* its setlist, and the venue pair — including the View page that had to
+ * be built before "View venue" had anywhere to go.
+ */
+test.describe('remaining action menus', () => {
+  test.use({ permissions: ['clipboard-read', 'clipboard-write'] });
+
+  test('venue row: View reaches the new page', async ({ page }) => {
+    await page.goto(`/bands/${seed.bandId}?tab=venues`);
+    const names = await openMenu(page, `Actions for ${VENUE}`);
+    expect(names[0]).toBe(`View ${VENUE}`);
+    expect(names[1]).toBe(`Edit ${VENUE}`);
+    expect(names[2]).toBe(`Copy a link to ${VENUE}`);
+    expect(names).not.toContain('Edit venue');
+    expect(names[3]).toBe('Delete venue');
+
+    await page.getByRole('menuitem', { name: `View ${VENUE}` }).click();
+    await expect(page).toHaveURL(`/bands/${seed.bandId}/venues/${venueId}`);
+  });
+
+  test('venue page: renders its details and offers Edit + Share', async ({
+    page,
+  }) => {
+    await page.goto(`/bands/${seed.bandId}/venues/${venueId}`);
+    await expect(page.getByRole('heading', { name: VENUE })).toBeVisible();
+    await expect(page.getByText('12 Test Street')).toBeVisible();
+    await expect(page.getByText('Load in through the back.')).toBeVisible();
+    await expect(page.getByRole('link', { name: '555-0100' })).toHaveAttribute(
+      'href',
+      'tel:555-0100',
+    );
+
+    const names = await openMenu(page, `Actions for ${VENUE}`);
+    expect(names).toEqual([`Edit ${VENUE}`, `Copy a link to ${VENUE}`]);
+
+    await page
+      .getByRole('menuitem', { name: `Copy a link to ${VENUE}` })
+      .click();
+    await expect(page.getByText('Venue link copied.')).toBeVisible();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      `${new URL(page.url()).origin}/bands/${seed.bandId}/venues/${venueId}`,
+    );
+  });
+
+  test("venue page 404s for another band's venue id", async ({ page }) => {
+    // The guard that matters: a real venue id under the wrong band URL.
+    const other = await createBand(seed.userId, 'E2E Other Band');
+    const res = await page.goto(`/bands/${other.id}/venues/${venueId}`);
+    expect(res?.status()).toBe(404);
+  });
+
+  test('note row: owner gets three icons, Delete stays worded', async ({
+    page,
+  }) => {
+    await page.goto(`/bands/${seed.bandId}?tab=notes&notes=shared`);
+    const names = await openMenu(page, `Actions for ${NOTE}`);
+    expect(names[0]).toBe(`View ${NOTE}`);
+    expect(names[1]).toBe(`Edit ${NOTE}`);
+    expect(names[2]).toBe(`Copy a link to ${NOTE}`);
+    expect(names[3]).toBe('Delete note');
+    expect(names).not.toContain('View note');
+    expect(names).not.toContain('Share note');
+  });
+
+  test('album row: the row follows the play row', async ({ page }) => {
+    await page.goto(`/bands/${seed.bandId}/audio?tab=songs`);
+    await page.getByRole('button', { name: 'Albums' }).click();
+    const names = await openMenu(page, 'Actions for E2E Album');
+    expect(names.slice(0, 3)).toEqual([
+      'Play all songs in E2E Album',
+      'Shuffle all songs in E2E Album',
+      'Add songs in E2E Album to the queue',
+    ]);
+    expect(names.slice(3)).toEqual([
+      'View E2E Album',
+      'Edit E2E Album',
+      'Copy a link to E2E Album',
+    ]);
+  });
+
+  test('overview event menu: both rows are named', async ({ page }) => {
+    await page.goto(`/bands/${seed.bandId}?tab=events`);
+    const names = await openMenu(page, 'Event actions');
+
+    // Event trio, then the setlist trio — the labels between them are not
+    // menuitems, so they don't appear here; their presence is checked below.
+    expect(names.slice(0, 3)).toEqual([
+      'View E2E Menu Gig',
+      'Edit E2E Menu Gig',
+      'Copy a link to E2E Menu Gig',
+    ]);
+    expect(names.slice(3, 6)).toEqual([
+      'View the setlist for E2E Menu Gig',
+      'Edit the setlist for E2E Menu Gig',
+      'Copy a link to the setlist for E2E Menu Gig',
+    ]);
+
+    const menu = page.getByRole('menu');
+    await expect(menu.getByText('Event', { exact: true })).toBeVisible();
+    await expect(
+      menu.getByText(E2E.setlistName, { exact: true }),
+    ).toBeVisible();
+  });
+
+  test('event page: setlist menu gained Share', async ({ page }) => {
+    await page.goto(`/calendar/events/${eventId}`);
+    const names = await openMenu(page, 'Setlist actions');
+    const set = E2E.setlistName;
+    expect(names.slice(0, 3)).toEqual([
+      `Play all songs in ${set}`,
+      `Shuffle all songs in ${set}`,
+      `Add songs in ${set} to the queue`,
+    ]);
+    expect(names.slice(3, 6)).toEqual([
+      `View ${set}`,
+      `Edit ${set}`,
+      `Copy a link to ${set}`,
+    ]);
+    expect(names).not.toContain('View setlist');
+
+    await page.getByRole('menuitem', { name: `Copy a link to ${set}` }).click();
+    await expect(page.getByText('Setlist link copied.')).toBeVisible();
+  });
+
+  test('event page: its own menu is Edit + Share', async ({ page }) => {
+    await page.goto(`/calendar/events/${eventId}`);
+    const names = await openMenu(page, 'Event actions');
+    expect(names).toEqual(['Edit this event', 'Copy a link to this event']);
+    expect(names).not.toContain('Edit event');
   });
 });

@@ -9,7 +9,13 @@ import {
   formatDateShort,
   formatTimeRange,
 } from '@/lib/format';
-import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
+import {
+  ActionMenu,
+  ActionMenuItem,
+  MenuIconRow,
+  MenuSectionLabel,
+} from '../../ActionMenu';
+import { EyeIcon, LinkIcon, PencilIcon } from '../../icons';
 import { useShareLink } from '../../useShareLink';
 import { ConfirmModal } from '../../ConfirmModal';
 import { useTrackPending } from '../../PendingActionProvider';
@@ -173,46 +179,74 @@ export function BandOverviewTab({
             </span>
           </button>
           <ActionMenu label="Event actions">
-            <ActionMenuItem
-              onClick={() => router.push(`/calendar/events/${show.id}`)}
-            >
-              View event
-            </ActionMenuItem>
-            <ActionMenuItem
-              onClick={() => void share(eventHref(show.id), 'Event')}
-            >
-              Share event
-            </ActionMenuItem>
-            <ActionMenuItem
-              onClick={() => router.push(`/calendar/events/${show.id}/edit`)}
-            >
-              Edit event
-            </ActionMenuItem>
+            {/* This menu acts on two things — the event and the setlist
+                booked for it — so each row is named. Unlabelled, they'd be
+                the same three glyphs twice. */}
+            {show.setlistId && <MenuSectionLabel>Event</MenuSectionLabel>}
+            <MenuIconRow
+              items={[
+                {
+                  key: 'view',
+                  icon: <EyeIcon size={18} />,
+                  label: `View ${show.title}`,
+                  title: 'View event',
+                  onClick: () => router.push(eventHref(show.id)),
+                },
+                {
+                  key: 'edit',
+                  icon: <PencilIcon size={18} />,
+                  label: `Edit ${show.title}`,
+                  title: 'Edit event',
+                  onClick: () =>
+                    router.push(`/calendar/events/${show.id}/edit`),
+                },
+                {
+                  key: 'share',
+                  icon: <LinkIcon size={18} />,
+                  label: `Copy a link to ${show.title}`,
+                  title: 'Share event',
+                  onClick: () => void share(eventHref(show.id), 'Event'),
+                },
+              ]}
+            />
             {show.setlistId && (
               <>
-                <ActionMenuItem
-                  onClick={() =>
-                    router.push(`/bands/${bandId}/setlists/${show.setlistId}`)
-                  }
-                >
-                  View setlist
-                </ActionMenuItem>
-                <ActionMenuItem
-                  onClick={() =>
-                    void share(setlistHref(bandId, show.setlistId!), 'Setlist')
-                  }
-                >
-                  Share setlist
-                </ActionMenuItem>
-                <ActionMenuItem
-                  onClick={() =>
-                    router.push(
-                      `/bands/${bandId}/setlists/${show.setlistId}/edit`,
-                    )
-                  }
-                >
-                  Edit setlist
-                </ActionMenuItem>
+                <MenuSectionLabel>
+                  {setlist ? setlist.name : 'Setlist'}
+                </MenuSectionLabel>
+                <MenuIconRow
+                  items={[
+                    {
+                      key: 'view',
+                      icon: <EyeIcon size={18} />,
+                      label: `View the setlist for ${show.title}`,
+                      title: 'View setlist',
+                      onClick: () =>
+                        router.push(setlistHref(bandId, show.setlistId!)),
+                    },
+                    {
+                      key: 'edit',
+                      icon: <PencilIcon size={18} />,
+                      label: `Edit the setlist for ${show.title}`,
+                      title: 'Edit setlist',
+                      onClick: () =>
+                        router.push(
+                          `/bands/${bandId}/setlists/${show.setlistId}/edit`,
+                        ),
+                    },
+                    {
+                      key: 'share',
+                      icon: <LinkIcon size={18} />,
+                      label: `Copy a link to the setlist for ${show.title}`,
+                      title: 'Share setlist',
+                      onClick: () =>
+                        void share(
+                          setlistHref(bandId, show.setlistId!),
+                          'Setlist',
+                        ),
+                    },
+                  ]}
+                />
                 <ActionMenuItem onClick={() => queueSetlist(setlist)}>
                   Add setlist songs to queue
                 </ActionMenuItem>

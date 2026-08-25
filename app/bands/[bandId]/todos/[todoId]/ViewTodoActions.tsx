@@ -3,7 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
-import { ActionMenu, ActionMenuItem } from '../../../../ActionMenu';
+import {
+  ActionMenu,
+  ActionMenuItem,
+  MenuIconRow,
+} from '../../../../ActionMenu';
+import { LinkIcon, PencilIcon } from '../../../../icons';
+import { todoHref } from '@/lib/routes';
 import { ConfirmModal } from '../../../../ConfirmModal';
 import { useTrackPending } from '../../../../PendingActionProvider';
 import { useToast } from '../../../../ToastProvider';
@@ -106,32 +112,43 @@ export function ViewTodoActions({
   return (
     <>
       <ActionMenu label={`Actions for ${title}`} disabled={busy}>
+        {/* No View: this is the todo's own page. "Share" here copies a link;
+            the public/private pair below changes who can see it. */}
+        <MenuIconRow
+          items={[
+            {
+              key: 'edit',
+              icon: <PencilIcon size={18} />,
+              label: `Edit ${title}`,
+              title: 'Edit todo',
+              onClick: () =>
+                router.push(`/bands/${bandId}/todos/${todoId}/edit`),
+            },
+            {
+              key: 'share',
+              icon: <LinkIcon size={18} />,
+              label: `Copy a link to ${title}`,
+              title: 'Share todo',
+              onClick: () => void share(todoHref(bandId, todoId), 'Todo'),
+            },
+          ]}
+        />
         {MOVES.filter((m) => m.to !== status).map((m) => (
           <ActionMenuItem key={m.to} onClick={() => setStatus(m.to)}>
             {m.label}
           </ActionMenuItem>
         ))}
-        <ActionMenuItem
-          onClick={() => router.push(`/bands/${bandId}/todos/${todoId}/edit`)}
-        >
-          Edit todo
-        </ActionMenuItem>
-        <ActionMenuItem
-          onClick={() => void share(`/bands/${bandId}/todos/${todoId}`, 'Todo')}
-        >
-          Share todo
-        </ActionMenuItem>
         {shared ? (
           <ActionMenuItem
             disabled={!canUnshare}
             title={canUnshare ? undefined : 'Make yourself owner to unshare'}
             onClick={() => setShared(false)}
           >
-            Unshare
+            Make private
           </ActionMenuItem>
         ) : (
           <ActionMenuItem onClick={() => setShared(true)}>
-            Share with the band
+            Make public
           </ActionMenuItem>
         )}
         <ActionMenuItem destructive onClick={() => setConfirmOpen(true)}>

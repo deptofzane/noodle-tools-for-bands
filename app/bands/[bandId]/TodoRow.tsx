@@ -142,11 +142,11 @@ export function TodoRow({
               title={canUnshare ? undefined : 'Make yourself owner to unshare'}
               onClick={() => onShare(todo, false)}
             >
-              Unshare
+              Make private
             </ActionMenuItem>
           ) : (
             <ActionMenuItem onClick={() => onShare(todo, true)}>
-              Share with the band
+              Make public
             </ActionMenuItem>
           )}
           <ActionMenuItem destructive onClick={() => onDelete(todo)}>

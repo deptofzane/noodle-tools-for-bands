@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
-import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
+import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
+import { useShareLink } from '../../../useShareLink';
 import { PlayShuffleRow } from '../../../player/PlayShuffleRow';
 import { useEnqueueTracks } from '../../../player/useEnqueueTracks';
 import { Modal } from '../../../Modal';
@@ -17,7 +19,7 @@ import {
   type PlaylistTrack,
 } from '../../../player/PlaylistPlayer';
 import { shuffledCopy } from '../../../player/queueOrder';
-import { liveHref, practiceHref } from '@/lib/routes';
+import { liveHref, practiceHref, setlistHref } from '@/lib/routes';
 
 /** The event's current fields, resent on PATCH (which replaces all of them). */
 export interface EventSetlistPatchFields {
@@ -60,6 +62,7 @@ export function EventSetlistActions({
   fields: EventSetlistPatchFields;
 }) {
   const router = useRouter();
+  const share = useShareLink();
   const player = usePlaylistPlayer();
   const enqueue = useEnqueueTracks();
   const trackPending = useTrackPending();
@@ -134,23 +137,38 @@ export function EventSetlistActions({
             onQueue={() => enqueue(queue, 'this setlist')}
           />
         )}
+        <MenuIconRow
+          items={[
+            {
+              key: 'view',
+              icon: <EyeIcon size={18} />,
+              label: `View ${setlistName}`,
+              title: 'View setlist',
+              onClick: () => router.push(setlistHref(bandId, setlistId)),
+            },
+            {
+              key: 'edit',
+              icon: <PencilIcon size={18} />,
+              label: `Edit ${setlistName}`,
+              title: 'Edit setlist',
+              onClick: () =>
+                router.push(`/bands/${bandId}/setlists/${setlistId}/edit`),
+            },
+            {
+              key: 'share',
+              icon: <LinkIcon size={18} />,
+              label: `Copy a link to ${setlistName}`,
+              title: 'Share setlist',
+              onClick: () =>
+                void share(setlistHref(bandId, setlistId), 'Setlist'),
+            },
+          ]}
+        />
         <ActionMenuItem onClick={() => router.push(practiceHref(setlistId))}>
           Practice
         </ActionMenuItem>
         <ActionMenuItem onClick={() => router.push(liveHref(setlistId))}>
           Live
-        </ActionMenuItem>
-        <ActionMenuItem
-          onClick={() => router.push(`/bands/${bandId}/setlists/${setlistId}`)}
-        >
-          View setlist
-        </ActionMenuItem>
-        <ActionMenuItem
-          onClick={() =>
-            router.push(`/bands/${bandId}/setlists/${setlistId}/edit`)
-          }
-        >
-          Edit setlist
         </ActionMenuItem>
         {offlineRec ? (
           <>

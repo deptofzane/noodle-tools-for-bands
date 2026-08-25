@@ -4,7 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
-import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
+import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../ActionMenu';
+import { EyeIcon, LinkIcon, PencilIcon } from '../../icons';
+import { useShareLink } from '../../useShareLink';
+import { venueHref } from '@/lib/routes';
 import { ConfirmModal } from '../../ConfirmModal';
 import { usePersistedBoolean } from '../../usePersistedBoolean';
 import { usePersistedStringSet } from '../../usePersistedStringSet';
@@ -29,6 +32,7 @@ export function BandVenuesTab({
   onReload: () => Promise<void> | void;
 }) {
   const router = useRouter();
+  const share = useShareLink();
   const trackPending = useTrackPending();
   const showToast = useToast();
   const [expanded, toggleExpanded] = usePersistedStringSet(
@@ -94,14 +98,34 @@ export function BandVenuesTab({
               <span className="truncate text-sm font-medium">{venue.name}</span>
             </span>
           </button>
-          <ActionMenu label="Venue actions">
-            <ActionMenuItem
-              onClick={() =>
-                router.push(`/bands/${bandId}/venues/${venue.id}/edit`)
-              }
-            >
-              Edit venue
-            </ActionMenuItem>
+          <ActionMenu label={`Actions for ${venue.name}`}>
+            <MenuIconRow
+              items={[
+                {
+                  key: 'view',
+                  icon: <EyeIcon size={18} />,
+                  label: `View ${venue.name}`,
+                  title: 'View venue',
+                  onClick: () => router.push(venueHref(bandId, venue.id)),
+                },
+                {
+                  key: 'edit',
+                  icon: <PencilIcon size={18} />,
+                  label: `Edit ${venue.name}`,
+                  title: 'Edit venue',
+                  onClick: () =>
+                    router.push(`/bands/${bandId}/venues/${venue.id}/edit`),
+                },
+                {
+                  key: 'share',
+                  icon: <LinkIcon size={18} />,
+                  label: `Copy a link to ${venue.name}`,
+                  title: 'Share venue',
+                  onClick: () =>
+                    void share(venueHref(bandId, venue.id), 'Venue'),
+                },
+              ]}
+            />
             <ActionMenuItem destructive onClick={() => setDeleteTarget(venue)}>
               Delete venue
             </ActionMenuItem>

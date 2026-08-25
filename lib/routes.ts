@@ -65,6 +65,10 @@ export function todoHref(bandId: string, todoId: string): string {
   return `/bands/${bandId}/todos/${todoId}`;
 }
 
+export function venueHref(bandId: string, venueId: string): string {
+  return `/bands/${bandId}/venues/${venueId}`;
+}
+
 /**
  * Where switching the current band should land you.
  *

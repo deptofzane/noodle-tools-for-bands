@@ -3,7 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
-import { ActionMenu, ActionMenuItem } from '../../../../ActionMenu';
+import {
+  ActionMenu,
+  ActionMenuItem,
+  MenuIconRow,
+} from '../../../../ActionMenu';
+import { LinkIcon, PencilIcon } from '../../../../icons';
 import { ConfirmModal } from '../../../../ConfirmModal';
 import { useTrackPending } from '../../../../PendingActionProvider';
 import { useToast } from '../../../../ToastProvider';
@@ -63,18 +68,35 @@ export function ViewNoteActions({
   return (
     <>
       <ActionMenu label={`Actions for ${title}`} disabled={deleting}>
-        {canManage && (
+        {/* No View: this is the note's own page. A lone Share keeps its word
+            rather than becoming an unaccompanied glyph. */}
+        {canManage ? (
+          <MenuIconRow
+            items={[
+              {
+                key: 'edit',
+                icon: <PencilIcon size={18} />,
+                label: `Edit ${title}`,
+                title: 'Edit note',
+                onClick: () =>
+                  router.push(`/bands/${bandId}/notes/${noteId}/edit`),
+              },
+              {
+                key: 'share',
+                icon: <LinkIcon size={18} />,
+                label: `Copy a link to ${title}`,
+                title: 'Share note',
+                onClick: () => void share(noteHref(bandId, noteId), 'Note'),
+              },
+            ]}
+          />
+        ) : (
           <ActionMenuItem
-            onClick={() => router.push(`/bands/${bandId}/notes/${noteId}/edit`)}
+            onClick={() => void share(noteHref(bandId, noteId), 'Note')}
           >
-            Edit note
+            Share note
           </ActionMenuItem>
         )}
-        <ActionMenuItem
-          onClick={() => void share(noteHref(bandId, noteId), 'Note')}
-        >
-          Share note
-        </ActionMenuItem>
         {canManage && (
           <ActionMenuItem destructive onClick={() => setConfirmOpen(true)}>
             Delete note

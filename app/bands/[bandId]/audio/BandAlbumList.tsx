@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatDuration } from '@/lib/format';
-import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { ActionMenu, MenuIconRow } from '../../../ActionMenu';
+import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
 import { PlayShuffleRow } from '../../../player/PlayShuffleRow';
 import { useEnqueueTracks } from '../../../player/useEnqueueTracks';
 import { useShareLink } from '../../../useShareLink';
@@ -145,27 +146,35 @@ export function BandAlbumList({
                       onQueue={() => enqueue(albumQueue(album), 'this album')}
                     />
                   )}
-                  <ActionMenuItem
-                    onClick={() =>
-                      router.push(`/bands/${bandId}/albums/${album.id}`)
-                    }
-                  >
-                    View album
-                  </ActionMenuItem>
-                  <ActionMenuItem
-                    onClick={() =>
-                      void share(albumHref(bandId, album.id), 'Album')
-                    }
-                  >
-                    Share album
-                  </ActionMenuItem>
-                  <ActionMenuItem
-                    onClick={() =>
-                      router.push(`/bands/${bandId}/albums/${album.id}/edit`)
-                    }
-                  >
-                    Edit album
-                  </ActionMenuItem>
+                  <MenuIconRow
+                    items={[
+                      {
+                        key: 'view',
+                        icon: <EyeIcon size={18} />,
+                        label: `View ${album.name}`,
+                        title: 'View album',
+                        onClick: () => router.push(albumHref(bandId, album.id)),
+                      },
+                      {
+                        key: 'edit',
+                        icon: <PencilIcon size={18} />,
+                        label: `Edit ${album.name}`,
+                        title: 'Edit album',
+                        onClick: () =>
+                          router.push(
+                            `/bands/${bandId}/albums/${album.id}/edit`,
+                          ),
+                      },
+                      {
+                        key: 'share',
+                        icon: <LinkIcon size={18} />,
+                        label: `Copy a link to ${album.name}`,
+                        title: 'Share album',
+                        onClick: () =>
+                          void share(albumHref(bandId, album.id), 'Album'),
+                      },
+                    ]}
+                  />
                 </ActionMenu>
               </span>
             </div>
