@@ -6,6 +6,7 @@ import { formatTimeAgoOrDate } from '@/lib/format';
 import { PageHeader } from '../../../../PageHeader';
 import { NoteLinks } from '../../notes/NoteLinks';
 import { ViewTodoActions } from './ViewTodoActions';
+import { todoTone } from '../todoTone';
 
 const STATUS_LABEL = {
   active: 'Active',
@@ -43,8 +44,15 @@ export default async function ViewTodoPage({
         defaultHrefName="Todos"
       />
 
-      <div className="flex items-start justify-between gap-3">
-        <h1 className="title-text break-words">{todo.title}</h1>
+      {/* Same colour the row in the Todos tab carried, so a link opens on
+          something that matches what was clicked. See `todoTone`. */}
+      <div
+        data-event-type={todoTone(todo.status, todo.shared)}
+        className="flex items-start justify-between gap-3 border-l-[3px] border-l-[color:var(--event-accent)] pl-3"
+      >
+        <h1 className="title-text break-words text-[color:var(--event-accent)]">
+          {todo.title}
+        </h1>
         <div className="shrink-0">
           <ViewTodoActions
             bandId={bandId}

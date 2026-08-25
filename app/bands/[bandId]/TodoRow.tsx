@@ -7,6 +7,7 @@ import { EyeIcon, LinkIcon, PencilIcon } from '../../icons';
 import { NoteLinks } from './notes/NoteLinks';
 import { formatTimeAgoOrDate } from '@/lib/format';
 import { todoHref } from '@/lib/routes';
+import { todoTone } from './todos/todoTone';
 import type { Todo, TodoStatus } from '@/lib/db/todos';
 
 /** Local midnight, for deciding whether a deadline has passed. */
@@ -59,7 +60,11 @@ export function TodoRow({
     todo.creatorId === currentUserId || todo.ownerId === currentUserId;
 
   return (
-    <li className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-4 py-3 dark:border-neutral-800">
+    /* The left rule and the title carry the todo's colour; see `todoTone`. */
+    <li
+      data-event-type={todoTone(todo.status, todo.shared)}
+      className="flex flex-col gap-2 rounded-lg border border-neutral-200 border-l-[3px] border-l-[color:var(--event-accent)] px-4 py-3 dark:border-neutral-800 dark:border-l-[color:var(--event-accent)]"
+    >
       <div className="flex items-start justify-between gap-1">
         <button
           type="button"
@@ -67,11 +72,11 @@ export function TodoRow({
           className="flex min-w-0 flex-1 flex-col gap-0.5 text-left"
         >
           <span className="flex min-w-0 items-start gap-2">
-            <span className="min-w-0 break-words font-medium">
+            <span className="min-w-0 break-words font-medium text-[color:var(--event-accent)]">
               {todo.title}
             </span>
             {todo.shared && (
-              <span className="mt-0.5 shrink-0 rounded bg-blue-100 px-1.5 py-0.5 text-[0.625rem] font-medium text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+              <span className="mt-0.5 shrink-0 rounded bg-[color:var(--event-fill)] px-1.5 py-0.5 text-[0.625rem] font-medium text-[color:var(--event-accent)]">
                 Shared
               </span>
             )}
