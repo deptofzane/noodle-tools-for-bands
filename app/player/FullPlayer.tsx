@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatDuration } from '@/lib/format';
 import { ActionMenu, ActionMenuItem } from '../ActionMenu';
+import { ShuffleIcon } from './icons';
 import { AddTrackToSetlistModal } from './AddTrackToSetlistModal';
 import { usePlaylistPlayer, type PlaylistTrack } from './PlaylistPlayer';
 import {
@@ -220,23 +221,7 @@ export function FullPlayer({
                   : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800')
               }
             >
-              <svg
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M16 3h5v5" />
-                <path d="M4 20 21 3" />
-                <path d="M21 16v5h-5" />
-                <path d="m15 15 6 6" />
-                <path d="m4 4 5 5" />
-              </svg>
+              <ShuffleIcon size={20} />
             </button>
             <button
               type="button"
@@ -353,7 +338,7 @@ export function FullPlayer({
             {currentUserId && (
               <button
                 type="button"
-              onClick={() => setShowComments((v) => !v)}
+                onClick={() => setShowComments((v) => !v)}
                 aria-expanded={showComments}
                 className="btn-outline"
               >

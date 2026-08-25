@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../../../ActionMenu';
+import { PlayShuffleRow } from '../../../../player/PlayShuffleRow';
 import { useOfflineDownload } from '../../../../offline/useOfflineDownload';
 import { setlistQueue, type Setlist } from '../../bandDetailShared';
 import { OfflineBadge } from '../../../../offline/OfflineBadge';
@@ -129,21 +130,23 @@ export function SetlistActions({
         menu to open and one place for the item order.
       */}
       <ActionMenu label="Setlist actions">
+        {/* First, and mobile-only: on desktop the same two actions are already
+            buttons beside this menu, so repeating them inside it would be two
+            ways to do one thing in the same corner of the screen. */}
+        {hasSongs && queue.length > 0 && (
+          <span role="none" className="block md:hidden">
+            <PlayShuffleRow
+              label={name}
+              onPlay={playAll}
+              onShuffle={shuffleAll}
+            />
+          </span>
+        )}
         <ActionMenuItem onClick={() => router.push(edit)}>
           Edit setlist
         </ActionMenuItem>
         {hasSongs && (
           <span role="none" className="flex flex-col md:hidden">
-            {queue.length > 0 && (
-              <>
-                <ActionMenuItem onClick={playAll}>
-                  Play all songs
-                </ActionMenuItem>
-                <ActionMenuItem onClick={shuffleAll}>
-                  Shuffle all songs
-                </ActionMenuItem>
-              </>
-            )}
             <ActionMenuItem onClick={() => router.push(practice)}>
               Practice
             </ActionMenuItem>

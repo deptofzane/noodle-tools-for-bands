@@ -60,8 +60,15 @@ export function HelpContent({ level = 2 }: { level?: 2 | 3 }) {
               skip. <B>Live</B> is the stripped-back version for a stage.
             </>,
             <>
-              <B>Play all</B> queues the set in order; <B>Shuffle all</B> plays
-              it in a random order once, without changing the set.
+              The <B>⋯</B> menu on a setlist opens with two rows of icons. The
+              first plays: <B>▶</B> queues the set in order, and the crossed
+              arrows beside it play the same songs in a random order once,
+              without changing the set itself.
+            </>,
+            <>
+              The second row is the setlist: an <B>eye</B> to open it, a{' '}
+              <B>pencil</B> to change it, and <B>chain links</B> to copy a link
+              you can send to the band.
             </>,
             <>
               <B>Download</B> keeps a setlist&rsquo;s charts and audio on the

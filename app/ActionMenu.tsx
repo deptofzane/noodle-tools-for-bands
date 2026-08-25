@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Fragment,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -117,6 +118,60 @@ export function ActionMenu({
           {children}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Several actions as one row of a menu, split into equal columns.
+ *
+ * For actions that are variations on one another — play/shuffle, or
+ * view/edit/share — where a full-width line each reads as more difference
+ * than there is, and the row they'd occupy is worth more than the words.
+ *
+ * Not `ActionMenuItem`s: those are full-width by definition. Each column keeps
+ * `role="menuitem"` so the menu is still structurally a menu, and carries its
+ * name in `aria-label`, because a glyph has none. Closing is handled by
+ * `ActionMenu` itself, which listens on the container.
+ */
+export function MenuIconRow({
+  items,
+}: {
+  items: {
+    key: string;
+    icon: ReactNode;
+    /** The accessible name. Say what it acts on, not just the verb. */
+    label: string;
+    /** Hover text. Short — the label carries the detail. */
+    title: string;
+    onClick: () => void;
+  }[];
+}) {
+  return (
+    <div role="none" className="flex items-stretch">
+      {items.map((item, i) => (
+        <Fragment key={item.key}>
+          {/* A divider between columns, so adjacent glyphs don't read as one
+              control. Between, not around — an edge rule would look like the
+              menu had been cut. */}
+          {i > 0 && (
+            <span
+              aria-hidden="true"
+              className="my-1 w-px shrink-0 bg-neutral-200 dark:bg-neutral-800"
+            />
+          )}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={item.onClick}
+            aria-label={item.label}
+            title={item.title}
+            className="flex flex-1 items-center justify-center px-4 py-3 text-neutral-700 hover:bg-neutral-100 sm:py-1.5 dark:text-neutral-200 dark:hover:bg-neutral-800"
+          >
+            {item.icon}
+          </button>
+        </Fragment>
+      ))}
     </div>
   );
 }

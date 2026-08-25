@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { PlayShuffleRow } from '../../../player/PlayShuffleRow';
 import { Modal } from '../../../Modal';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
@@ -121,19 +122,14 @@ export function EventSetlistActions({
   return (
     <div className="self-end">
       <ActionMenu label="Setlist actions" disabled={busy}>
+        {/* One-off scramble, not the player's shuffle mode — a setlist's
+            order is deliberate. Same call the other setlist surfaces make. */}
         {queue.length > 0 && (
-          <>
-            <ActionMenuItem onClick={() => player.play(queue, 0)}>
-              Play all
-            </ActionMenuItem>
-            {/* One-off scramble, not the player's shuffle mode — a setlist's
-                order is deliberate. Same call the other setlist surfaces make. */}
-            <ActionMenuItem
-              onClick={() => player.play(shuffledCopy(queue), 0)}
-            >
-              Shuffle all
-            </ActionMenuItem>
-          </>
+          <PlayShuffleRow
+            label={setlistName}
+            onPlay={() => player.play(queue, 0)}
+            onShuffle={() => player.play(shuffledCopy(queue), 0)}
+          />
         )}
         <ActionMenuItem onClick={() => router.push(practiceHref(setlistId))}>
           Practice

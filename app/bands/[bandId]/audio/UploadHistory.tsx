@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { PlayShuffleRow } from '../../../player/PlayShuffleRow';
 import { MinimizeToggle } from '../bandDetailShared';
 import { useBandUploads } from '../bandDetailHooks';
 import { dayLabel, groupByDay, timeLabel, uploadTrack } from './uploadDays';
@@ -104,20 +105,13 @@ export function UploadHistory({ bandId }: { bandId: string }) {
                   <ActionMenu label={`Actions for ${dayLabel(key)}`}>
                     {/* Every row here is an audio file, so the whole day is
                     playable — no need to filter the way a setlist does. */}
-                    <ActionMenuItem
-                      onClick={() =>
-                        player.play(dayUploads.map(uploadTrack), 0)
-                      }
-                    >
-                      Play all
-                    </ActionMenuItem>
-                    <ActionMenuItem
-                      onClick={() =>
+                    <PlayShuffleRow
+                      label={dayLabel(key)}
+                      onPlay={() => player.play(dayUploads.map(uploadTrack), 0)}
+                      onShuffle={() =>
                         player.playShuffled(dayUploads.map(uploadTrack))
                       }
-                    >
-                      Shuffle all
-                    </ActionMenuItem>
+                    />
                     <ActionMenuItem
                       onClick={() =>
                         router.push(`/bands/${bandId}/audio/uploads/${key}`)

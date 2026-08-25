@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatDuration } from '@/lib/format';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { PlayShuffleRow } from '../../../player/PlayShuffleRow';
 import { useShareLink } from '../../../useShareLink';
 import { albumHref } from '@/lib/routes';
 import { LoadingBlock } from '../../../Spinner';
@@ -132,6 +133,15 @@ export function BandAlbumList({
                     that happens to be narrowing the view shouldn't quietly
                     change what playing the record means. */}
                 <ActionMenu label={`Actions for ${album.name}`}>
+                  {albumQueue(album).length > 0 && (
+                    <PlayShuffleRow
+                      label={album.name}
+                      onPlay={() => player.play(albumQueue(album), 0)}
+                      onShuffle={() =>
+                        player.play(shuffledCopy(albumQueue(album)), 0)
+                      }
+                    />
+                  )}
                   <ActionMenuItem
                     onClick={() =>
                       router.push(`/bands/${bandId}/albums/${album.id}`)
@@ -153,22 +163,6 @@ export function BandAlbumList({
                   >
                     Edit album
                   </ActionMenuItem>
-                  {albumQueue(album).length > 0 && (
-                    <>
-                      <ActionMenuItem
-                        onClick={() => player.play(albumQueue(album), 0)}
-                      >
-                        Play all
-                      </ActionMenuItem>
-                      <ActionMenuItem
-                        onClick={() =>
-                          player.play(shuffledCopy(albumQueue(album)), 0)
-                        }
-                      >
-                        Shuffle all
-                      </ActionMenuItem>
-                    </>
-                  )}
                 </ActionMenu>
               </span>
             </div>

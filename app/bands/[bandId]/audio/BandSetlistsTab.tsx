@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
 import { formatSongMeta } from '@/lib/format';
-import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
+import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
+import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
+import { PlayShuffleRow } from '../../../player/PlayShuffleRow';
 import { useShareLink } from '../../../useShareLink';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { usePersistedBoolean } from '../../../usePersistedBoolean';
@@ -197,35 +199,45 @@ export function BandSetlistsTab({
               {songCountLabel(sl.songs)}
             </span>
             <ActionMenu label="Setlist actions" disabled={busy}>
-              <ActionMenuItem onClick={() => playAll(sl)}>
-                Play all songs
-              </ActionMenuItem>
-              <ActionMenuItem onClick={() => shuffleAll(sl)}>
-                Shuffle all songs
-              </ActionMenuItem>
+              <PlayShuffleRow
+                label={sl.name}
+                onPlay={() => playAll(sl)}
+                onShuffle={() => shuffleAll(sl)}
+              />
+              {/* View, edit and share are all "this setlist, elsewhere" —
+                  one row of glyphs rather than three lines of near-identical
+                  text. Named per setlist so a screen reader moving down the
+                  list hears which one it's on. */}
+              <MenuIconRow
+                items={[
+                  {
+                    key: 'view',
+                    icon: <EyeIcon size={18} />,
+                    label: `View ${sl.name}`,
+                    title: 'View setlist',
+                    onClick: () =>
+                      router.push(`/bands/${bandId}/setlists/${sl.id}`),
+                  },
+                  {
+                    key: 'edit',
+                    icon: <PencilIcon size={18} />,
+                    label: `Edit ${sl.name}`,
+                    title: 'Edit setlist',
+                    onClick: () =>
+                      router.push(`/bands/${bandId}/setlists/${sl.id}/edit`),
+                  },
+                  {
+                    key: 'share',
+                    icon: <LinkIcon size={18} />,
+                    label: `Copy a link to ${sl.name}`,
+                    title: 'Share setlist',
+                    onClick: () =>
+                      void share(setlistHref(bandId, sl.id), 'Setlist'),
+                  },
+                ]}
+              />
               <ActionMenuItem onClick={() => queueAll(sl)}>
                 Add songs to queue
-              </ActionMenuItem>
-              <ActionMenuItem
-                onClick={() =>
-                  router.push(`/bands/${bandId}/setlists/${sl.id}`)
-                }
-              >
-                View setlist
-              </ActionMenuItem>
-              <ActionMenuItem
-                onClick={() =>
-                  void share(setlistHref(bandId, sl.id), 'Setlist')
-                }
-              >
-                Share setlist
-              </ActionMenuItem>
-              <ActionMenuItem
-                onClick={() =>
-                  router.push(`/bands/${bandId}/setlists/${sl.id}/edit`)
-                }
-              >
-                Edit setlist
               </ActionMenuItem>
               {/*
                 The band goes along with the setlist: the new-event form only

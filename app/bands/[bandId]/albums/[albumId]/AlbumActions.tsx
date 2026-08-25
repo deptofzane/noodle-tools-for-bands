@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
 import { ActionMenu, ActionMenuItem } from '../../../../ActionMenu';
+import { PlayShuffleRow } from '../../../../player/PlayShuffleRow';
 import { ConfirmModal } from '../../../../ConfirmModal';
 import { useTrackPending } from '../../../../PendingActionProvider';
 import { useToast } from '../../../../ToastProvider';
@@ -61,12 +62,11 @@ export function AlbumActions({ album }: { album: AlbumWithTracks }) {
     <>
       <ActionMenu label="Album actions" disabled={deleting}>
         {queue.length > 0 && (
-          <>
-            <ActionMenuItem onClick={() => player.play(queue, 0)}>
-              Play all
-            </ActionMenuItem>
-            <ActionMenuItem onClick={shuffleAll}>Shuffle all</ActionMenuItem>
-          </>
+          <PlayShuffleRow
+            label={album.name}
+            onPlay={() => player.play(queue, 0)}
+            onShuffle={shuffleAll}
+          />
         )}
         <ActionMenuItem
           onClick={() =>
