@@ -110,6 +110,69 @@ export function BandAudioClient({
     }
   }, [activeTab]);
 
+  /*
+   * Put the Songs tab back where the user left it.
+   *
+   * `useBandAudioData` refetches on every mount, so returning from a song
+   * renders an empty list first: at the moment the browser would restore the
+   * scroll position the document has no height, and the restore clamps to the
+   * top. So the position is remembered here and reapplied once the songs are
+   * actually on the page.
+   *
+   * Only when the page *opened* on Songs. Switching tabs by hand is a fresh
+   * intent, and scrolling someone down a list they just chose to look at
+   * would read as the page jumping under them.
+   */
+  const openedOnSongs = useRef(activeTab === 'songs');
+  const scrollRestored = useRef(false);
+  const scrollKey = `audioSongsScroll:${bandId}`;
+
+  useEffect(() => {
+    if (activeTab !== 'songs') return;
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        try {
+          sessionStorage.setItem(scrollKey, String(window.scrollY));
+        } catch {
+          // ignore unavailable storage
+        }
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [activeTab, scrollKey]);
+
+  useEffect(() => {
+    if (scrollRestored.current) return;
+    if (!openedOnSongs.current || activeTab !== 'songs') return;
+    if (conversations === null) return; // still loading — nothing to scroll
+    scrollRestored.current = true;
+
+    let saved = 0;
+    try {
+      saved = Number(sessionStorage.getItem(scrollKey) ?? 0);
+    } catch {
+      return;
+    }
+    if (!Number.isFinite(saved) || saved <= 0) return;
+
+    // Two frames: the first paints the rows, the second lands the scroll. A
+    // single frame can still meet a document shorter than `saved`, and
+    // `scrollTo` clamps silently rather than failing.
+    requestAnimationFrame(() => {
+      window.scrollTo(0, saved);
+      requestAnimationFrame(() => {
+        if (Math.abs(window.scrollY - saved) > 1) window.scrollTo(0, saved);
+      });
+    });
+  }, [activeTab, conversations, scrollKey]);
+
   const registerAudio = useCallback(
     async (bodies: Record<string, unknown>[]) => {
       if (bodies.length === 0) return;

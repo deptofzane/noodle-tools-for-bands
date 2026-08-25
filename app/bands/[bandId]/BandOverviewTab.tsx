@@ -210,7 +210,7 @@ export function BandOverviewTab({
             />
             {show.setlistId && (
               <>
-                <MenuSectionLabel>
+                {/* <MenuSectionLabel>
                   {setlist ? setlist.name : 'Setlist'}
                 </MenuSectionLabel>
                 <MenuIconRow
@@ -242,7 +242,7 @@ export function BandOverviewTab({
                         ),
                     },
                   ]}
-                />
+                /> */}
                 <ActionMenuItem onClick={() => queueSetlist(setlist)}>
                   Add setlist songs to queue
                 </ActionMenuItem>
