@@ -6,6 +6,7 @@ import {
   ActionMenu,
   ActionMenuItem,
   MenuIconRow,
+  MenuSectionLabel,
 } from '../../../../ActionMenu';
 import { PlayShuffleRow } from '../../../../player/PlayShuffleRow';
 import { useEnqueueTracks } from '../../../../player/useEnqueueTracks';
@@ -140,6 +141,7 @@ export function SetlistActions({
       */}
       <ActionMenu label="Setlist actions">
         {/* No View: this is the setlist's own page. */}
+        <MenuSectionLabel>Setlist</MenuSectionLabel>
         <MenuIconRow
           items={[
             {

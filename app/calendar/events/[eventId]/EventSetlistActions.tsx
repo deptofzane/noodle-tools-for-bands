@@ -4,7 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useNavigate } from '../../../useNavigate';
 import { ensureOk } from '@/lib/api';
-import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
+import {
+  ActionMenu,
+  ActionMenuItem,
+  MenuIconRow,
+  MenuSectionLabel,
+} from '../../../ActionMenu';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
 import { useShareLink } from '../../../useShareLink';
 import { PlayShuffleRow } from '../../../player/PlayShuffleRow';
@@ -129,6 +134,7 @@ export function EventSetlistActions({
   return (
     <div className="self-end">
       <ActionMenu label="Setlist actions" disabled={busy}>
+        <MenuSectionLabel>Setlist</MenuSectionLabel>
         <MenuIconRow
           items={[
             {

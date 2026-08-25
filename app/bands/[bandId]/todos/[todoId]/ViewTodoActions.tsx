@@ -8,6 +8,7 @@ import {
   ActionMenu,
   ActionMenuItem,
   MenuIconRow,
+  MenuSectionLabel,
 } from '../../../../ActionMenu';
 import { LinkIcon, PencilIcon } from '../../../../icons';
 import { todoHref } from '@/lib/routes';
@@ -116,6 +117,7 @@ export function ViewTodoActions({
       <ActionMenu label={`Actions for ${title}`} disabled={busy}>
         {/* No View: this is the todo's own page. "Share" here copies a link;
             the public/private pair below changes who can see it. */}
+        <MenuSectionLabel>Todo</MenuSectionLabel>
         <MenuIconRow
           items={[
             {

@@ -4,7 +4,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useNavigate } from '../useNavigate';
 import { formatDuration } from '@/lib/format';
-import { ActionMenu, ActionMenuItem, MenuIconRow } from '../ActionMenu';
+import {
+  ActionMenu,
+  ActionMenuItem,
+  MenuIconRow,
+  MenuSectionLabel,
+} from '../ActionMenu';
 import { useShareLink } from '../useShareLink';
 import { EyeIcon, LinkIcon, PencilIcon } from '../icons';
 import { songHref } from '@/lib/routes';
@@ -420,6 +425,7 @@ export function FullPlayer({
                               right place. Share deliberately doesn't — a
                               back-link is meaningless to whoever you send it
                               to, so it copies the plain song URL. */}
+                          <MenuSectionLabel>Song</MenuSectionLabel>
                           <MenuIconRow
                             items={[
                               {

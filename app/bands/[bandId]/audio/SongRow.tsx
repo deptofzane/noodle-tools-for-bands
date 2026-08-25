@@ -2,7 +2,12 @@
 
 import Link from 'next/link';
 import { useNavigate } from '../../../useNavigate';
-import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
+import {
+  ActionMenu,
+  ActionMenuItem,
+  MenuIconRow,
+  MenuSectionLabel,
+} from '../../../ActionMenu';
 import { useShareLink } from '../../../useShareLink';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
 import { songHref } from '@/lib/routes';
@@ -156,6 +161,7 @@ export function SongRow({
         </div>
       </Link>
       <ActionMenu label="Song actions" disabled={disabled}>
+        <MenuSectionLabel>Song</MenuSectionLabel>
         <MenuIconRow
           items={[
             {

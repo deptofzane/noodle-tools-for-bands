@@ -179,10 +179,11 @@ export function BandOverviewTab({
             </span>
           </button>
           <ActionMenu label="Event actions">
-            {/* This menu acts on two things — the event and the setlist
-                booked for it — so each row is named. Unlabelled, they'd be
-                the same three glyphs twice. */}
-            {show.setlistId && <MenuSectionLabel>Event</MenuSectionLabel>}
+            {/* Named like every other icon row in the app — and doubly so
+                here, where this menu can act on the event and on the setlist
+                booked for it, which would otherwise be the same three glyphs
+                twice with nothing to tell them apart. */}
+            <MenuSectionLabel>Event</MenuSectionLabel>
             <MenuIconRow
               items={[
                 {

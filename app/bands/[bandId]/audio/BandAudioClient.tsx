@@ -37,6 +37,13 @@ import {
  * page's Audio tab; now its own page, and the home of Setlists too (they're
  * built out of this page's songs).
  */
+/**
+ * How long a scroll must settle before it's remembered. Long enough to outlive
+ * the scroll-to-top that a navigation fires on its way out, short enough that
+ * an ordinary pause records the position.
+ */
+const SCROLL_SAVE_DELAY_MS = 250;
+
 export function BandAudioClient({
   bandId,
   apiKey,
@@ -129,22 +136,25 @@ export function BandAudioClient({
 
   useEffect(() => {
     if (activeTab !== 'songs') return;
-    let frame = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const onScroll = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(() => {
-        frame = 0;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
         try {
           sessionStorage.setItem(scrollKey, String(window.scrollY));
         } catch {
           // ignore unavailable storage
         }
-      });
+      }, SCROLL_SAVE_DELAY_MS);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', onScroll);
-      if (frame) cancelAnimationFrame(frame);
+      // Leaving cancels the pending write. Navigating away scrolls the window
+      // to the top *before* this unmounts, and that jump raises a scroll event
+      // like any other — writing it immediately would overwrite the position
+      // being saved with a zero, every time.
+      clearTimeout(timer);
     };
   }, [activeTab, scrollKey]);
 

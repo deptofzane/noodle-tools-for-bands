@@ -4,7 +4,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useNavigate } from '../../useNavigate';
 import { ensureOk } from '@/lib/api';
-import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../ActionMenu';
+import {
+  ActionMenu,
+  ActionMenuItem,
+  MenuIconRow,
+  MenuSectionLabel,
+} from '../../ActionMenu';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../icons';
 import { useShareLink } from '../../useShareLink';
 import { venueHref } from '@/lib/routes';
@@ -99,6 +104,7 @@ export function BandVenuesTab({
             </span>
           </button>
           <ActionMenu label={`Actions for ${venue.name}`}>
+            <MenuSectionLabel>Venue</MenuSectionLabel>
             <MenuIconRow
               items={[
                 {

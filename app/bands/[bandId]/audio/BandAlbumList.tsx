@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useNavigate } from '../../../useNavigate';
 import { formatDuration } from '@/lib/format';
-import { ActionMenu, MenuIconRow } from '../../../ActionMenu';
+import { ActionMenu, MenuIconRow, MenuSectionLabel } from '../../../ActionMenu';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
 import { PlayShuffleRow } from '../../../player/PlayShuffleRow';
 import { useEnqueueTracks } from '../../../player/useEnqueueTracks';
@@ -136,6 +136,7 @@ export function BandAlbumList({
                     that happens to be narrowing the view shouldn't quietly
                     change what playing the record means. */}
                 <ActionMenu label={`Actions for ${album.name}`}>
+                  <MenuSectionLabel>Album</MenuSectionLabel>
                   <MenuIconRow
                     items={[
                       {

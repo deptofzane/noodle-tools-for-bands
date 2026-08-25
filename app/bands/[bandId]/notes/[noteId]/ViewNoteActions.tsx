@@ -8,6 +8,7 @@ import {
   ActionMenu,
   ActionMenuItem,
   MenuIconRow,
+  MenuSectionLabel,
 } from '../../../../ActionMenu';
 import { LinkIcon, PencilIcon } from '../../../../icons';
 import { ConfirmModal } from '../../../../ConfirmModal';
@@ -72,6 +73,7 @@ export function ViewNoteActions({
       <ActionMenu label={`Actions for ${title}`} disabled={deleting}>
         {/* No View: this is the note's own page. A lone Share keeps its word
             rather than becoming an unaccompanied glyph. */}
+        <MenuSectionLabel>Note</MenuSectionLabel>
         {canManage ? (
           <MenuIconRow
             items={[

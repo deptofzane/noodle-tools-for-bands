@@ -9,6 +9,7 @@ import {
   ActionMenu,
   ActionMenuItem,
   MenuIconRow,
+  MenuSectionLabel,
 } from '../../../../ActionMenu';
 import { useShareLink } from '../../../../useShareLink';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../../../icons';
@@ -138,6 +139,7 @@ export function AlbumTrackRow({
         )}
         {/* Second, not first: "Use the current version" above repairs a
             broken row, and that has to stay the thing you reach for. */}
+        <MenuSectionLabel>Song</MenuSectionLabel>
         <MenuIconRow
           items={[
             {

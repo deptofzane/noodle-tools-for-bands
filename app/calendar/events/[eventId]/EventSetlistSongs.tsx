@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useNavigate } from '../../../useNavigate';
 import { ensureOk } from '@/lib/api';
 import { formatDuration } from '@/lib/format';
-import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
+import {
+  ActionMenu,
+  ActionMenuItem,
+  MenuIconRow,
+  MenuSectionLabel,
+} from '../../../ActionMenu';
 import { useShareLink } from '../../../useShareLink';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
 import { songHref } from '@/lib/routes';
@@ -221,6 +226,7 @@ export function EventSetlistSongs({
 
               {canManage && (
                 <ActionMenu label="Song actions">
+                  <MenuSectionLabel>Song</MenuSectionLabel>
                   <MenuIconRow
                     items={[
                       {

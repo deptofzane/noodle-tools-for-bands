@@ -1,7 +1,11 @@
 'use client';
 
 import { useNavigate } from '../../../../useNavigate';
-import { ActionMenu, MenuIconRow } from '../../../../ActionMenu';
+import {
+  ActionMenu,
+  MenuIconRow,
+  MenuSectionLabel,
+} from '../../../../ActionMenu';
 import { useShareLink } from '../../../../useShareLink';
 import { LinkIcon, PencilIcon } from '../../../../icons';
 import { venueHref } from '@/lib/routes';
@@ -27,6 +31,7 @@ export function ViewVenueActions({
 
   return (
     <ActionMenu label={`Actions for ${name}`}>
+      <MenuSectionLabel>Venue</MenuSectionLabel>
       <MenuIconRow
         items={[
           {

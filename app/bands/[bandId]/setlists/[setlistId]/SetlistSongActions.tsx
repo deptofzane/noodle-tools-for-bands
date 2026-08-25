@@ -1,7 +1,11 @@
 'use client';
 
 import { useNavigate } from '../../../../useNavigate';
-import { ActionMenu, MenuIconRow } from '../../../../ActionMenu';
+import {
+  ActionMenu,
+  MenuIconRow,
+  MenuSectionLabel,
+} from '../../../../ActionMenu';
 import { useShareLink } from '../../../../useShareLink';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../../../icons';
 import { songHref } from '@/lib/routes';
@@ -24,6 +28,7 @@ export function SetlistSongActions({
   const share = useShareLink();
   return (
     <ActionMenu label="Song actions">
+      <MenuSectionLabel>Song</MenuSectionLabel>
       <MenuIconRow
         items={[
           {

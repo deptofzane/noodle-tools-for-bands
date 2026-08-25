@@ -4,7 +4,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from '../../useNavigate';
 import { ensureOk } from '@/lib/api';
 import { formatTimeAgoOrDate } from '@/lib/format';
-import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../ActionMenu';
+import {
+  ActionMenu,
+  ActionMenuItem,
+  MenuIconRow,
+  MenuSectionLabel,
+} from '../../ActionMenu';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../icons';
 import { ConfirmModal } from '../../ConfirmModal';
 import { LoadingBlock } from '../../Spinner';
@@ -284,6 +289,7 @@ export function BandNotesTab({
           <ActionMenu label={`Actions for ${note.title}`}>
             {/* Edit is the note owner's alone, so someone else's note gets a
                 two-icon row rather than a third glyph that refuses. */}
+            <MenuSectionLabel>Note</MenuSectionLabel>
             <MenuIconRow
               items={[
                 {

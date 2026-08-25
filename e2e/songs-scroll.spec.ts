@@ -25,6 +25,9 @@ test('the Songs tab returns to where it was after editing a song', async ({
   await expect
     .poll(() => page.evaluate(() => window.scrollY))
     .toBeGreaterThan(500);
+  // A settled scroll is what gets remembered, so pause as a reader would
+  // before reaching for the menu.
+  await page.waitForTimeout(400);
   const before = await page.evaluate(() => window.scrollY);
 
   // Into a song's edit page through the app's own route, then back out the
@@ -39,7 +42,6 @@ test('the Songs tab returns to where it was after editing a song', async ({
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page).toHaveURL(/\/audio/);
   await page.getByText('E2E Scroll Song 20').first().waitFor();
-
   await expect
     .poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 })
     .toBeGreaterThan(before - 50);

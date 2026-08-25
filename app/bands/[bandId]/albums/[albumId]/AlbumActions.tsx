@@ -8,6 +8,7 @@ import {
   ActionMenu,
   ActionMenuItem,
   MenuIconRow,
+  MenuSectionLabel,
 } from '../../../../ActionMenu';
 import { PlayShuffleRow } from '../../../../player/PlayShuffleRow';
 import { useEnqueueTracks } from '../../../../player/useEnqueueTracks';
@@ -75,6 +76,7 @@ export function AlbumActions({ album }: { album: AlbumWithTracks }) {
       <ActionMenu label="Album actions" disabled={deleting}>
         {/* No View: this *is* the album's page. Edit and share are the two
             things left that act on it as a whole. */}
+        <MenuSectionLabel>Album</MenuSectionLabel>
         <MenuIconRow
           items={[
             {

@@ -20,7 +20,12 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { formatDuration } from '@/lib/format';
-import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
+import {
+  ActionMenu,
+  ActionMenuItem,
+  MenuIconRow,
+  MenuSectionLabel,
+} from '../../../ActionMenu';
 import { useShareLink } from '../../../useShareLink';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
 import { songHref } from '@/lib/routes';
@@ -234,6 +239,7 @@ export function SongQueue() {
                 )}
 
                 <ActionMenu label={`Actions for ${t.title}`}>
+                  <MenuSectionLabel>Song</MenuSectionLabel>
                   <MenuIconRow
                     items={[
                       {

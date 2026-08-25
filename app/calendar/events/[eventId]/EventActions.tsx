@@ -1,7 +1,12 @@
 'use client';
 
 import { useNavigate } from '../../../useNavigate';
-import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
+import {
+  ActionMenu,
+  ActionMenuItem,
+  MenuIconRow,
+  MenuSectionLabel,
+} from '../../../ActionMenu';
 import { LinkIcon, PencilIcon } from '../../../icons';
 import { useShareLink } from '../../../useShareLink';
 import { eventHref } from '@/lib/routes';
@@ -29,6 +34,7 @@ export function EventActions({
       {/* No View: this is the event's own page. Without Edit there'd be a
           single glyph sitting alone across the menu, which reads as a button
           nobody labelled — so a lone Share keeps its word. */}
+      <MenuSectionLabel>Event</MenuSectionLabel>
       {canManage ? (
         <MenuIconRow
           items={[

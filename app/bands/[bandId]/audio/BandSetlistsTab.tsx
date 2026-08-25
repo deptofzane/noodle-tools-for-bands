@@ -5,7 +5,12 @@ import Link from 'next/link';
 import { useNavigate } from '../../../useNavigate';
 import { ensureOk } from '@/lib/api';
 import { formatSongMeta } from '@/lib/format';
-import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
+import {
+  ActionMenu,
+  ActionMenuItem,
+  MenuIconRow,
+  MenuSectionLabel,
+} from '../../../ActionMenu';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
 import { PlayShuffleRow } from '../../../player/PlayShuffleRow';
 import { useEnqueueTracks } from '../../../player/useEnqueueTracks';
@@ -194,6 +199,7 @@ export function BandSetlistsTab({
                   one row of glyphs rather than three lines of near-identical
                   text. Named per setlist so a screen reader moving down the
                   list hears which one it's on. */}
+              <MenuSectionLabel>Setlist</MenuSectionLabel>
               <MenuIconRow
                 items={[
                   {

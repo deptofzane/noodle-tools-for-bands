@@ -1,7 +1,12 @@
 'use client';
 
 import { useNavigate } from '../../useNavigate';
-import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../ActionMenu';
+import {
+  ActionMenu,
+  ActionMenuItem,
+  MenuIconRow,
+  MenuSectionLabel,
+} from '../../ActionMenu';
 import { useShareLink } from '../../useShareLink';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../icons';
 import { NoteLinks } from './notes/NoteLinks';
@@ -109,6 +114,7 @@ export function TodoRow({
           {/* "Share" here copies a link. The band-visibility toggle below
               is a different thing entirely, which is why that one keeps its
               words and this one says "Copy a link to…" to a screen reader. */}
+          <MenuSectionLabel>Todo</MenuSectionLabel>
           <MenuIconRow
             items={[
               {
