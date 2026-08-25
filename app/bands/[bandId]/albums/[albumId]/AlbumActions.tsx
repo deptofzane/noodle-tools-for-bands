@@ -73,14 +73,6 @@ export function AlbumActions({ album }: { album: AlbumWithTracks }) {
   return (
     <>
       <ActionMenu label="Album actions" disabled={deleting}>
-        {queue.length > 0 && (
-          <PlayShuffleRow
-            label={album.name}
-            onPlay={() => player.play(queue, 0)}
-            onShuffle={shuffleAll}
-            onQueue={() => enqueue(queue, 'this album')}
-          />
-        )}
         {/* No View: this *is* the album's page. Edit and share are the two
             things left that act on it as a whole. */}
         <MenuIconRow
@@ -103,6 +95,14 @@ export function AlbumActions({ album }: { album: AlbumWithTracks }) {
             },
           ]}
         />
+        {queue.length > 0 && (
+          <PlayShuffleRow
+            label={album.name}
+            onPlay={() => player.play(queue, 0)}
+            onShuffle={shuffleAll}
+            onQueue={() => enqueue(queue, 'this album')}
+          />
+        )}
         <ActionMenuItem destructive onClick={() => setDeleteOpen(true)}>
           Delete album
         </ActionMenuItem>

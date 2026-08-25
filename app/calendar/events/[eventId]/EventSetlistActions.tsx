@@ -129,16 +129,6 @@ export function EventSetlistActions({
   return (
     <div className="self-end">
       <ActionMenu label="Setlist actions" disabled={busy}>
-        {/* One-off scramble, not the player's shuffle mode — a setlist's
-            order is deliberate. Same call the other setlist surfaces make. */}
-        {queue.length > 0 && (
-          <PlayShuffleRow
-            label={setlistName}
-            onPlay={() => player.play(queue, 0)}
-            onShuffle={() => player.play(shuffledCopy(queue), 0)}
-            onQueue={() => enqueue(queue, 'this setlist')}
-          />
-        )}
         <MenuIconRow
           items={[
             {
@@ -165,6 +155,16 @@ export function EventSetlistActions({
             },
           ]}
         />
+        {/* One-off scramble, not the player's shuffle mode — a setlist's
+            order is deliberate. Same call the other setlist surfaces make. */}
+        {queue.length > 0 && (
+          <PlayShuffleRow
+            label={setlistName}
+            onPlay={() => player.play(queue, 0)}
+            onShuffle={() => player.play(shuffledCopy(queue), 0)}
+            onQueue={() => enqueue(queue, 'this setlist')}
+          />
+        )}
         <ActionMenuItem onClick={() => go(practiceHref(setlistId))}>
           Practice
         </ActionMenuItem>

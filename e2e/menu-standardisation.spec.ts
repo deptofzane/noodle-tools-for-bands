@@ -104,20 +104,18 @@ async function openMenu(page: Page, name: string): Promise<string[]> {
 test.describe('detail-page action menus', () => {
   test.use({ permissions: ['clipboard-read', 'clipboard-write'] });
 
-  test('album: icon row sits after the play row, worded items gone', async ({
-    page,
-  }) => {
+  test('album: icon row leads, worded items gone', async ({ page }) => {
     await page.goto(`/bands/${seed.bandId}/albums/${albumId}`);
     const names = await openMenu(page, 'Album actions');
 
-    // Play/Shuffle/Queue first, then the icon row, then Delete.
-    expect(names.slice(0, 3)).toEqual([
+    // The icon row leads, then Play/Shuffle/Queue, then Delete.
+    expect(names[0]).toBe('Edit E2E Album');
+    expect(names[1]).toBe('Copy a link to E2E Album');
+    expect(names.slice(2, 5)).toEqual([
       'Play all songs in E2E Album',
       'Shuffle all songs in E2E Album',
       'Add songs in E2E Album to the queue',
     ]);
-    expect(names[3]).toBe('Edit E2E Album');
-    expect(names[4]).toBe('Copy a link to E2E Album');
     expect(names).not.toContain('Edit album');
 
     await page
@@ -156,20 +154,18 @@ test.describe('detail-page action menus', () => {
     await expect(page).toHaveURL(`/notes/${seed.songId}/edit`);
   });
 
-  test('setlist: icon row sits after the play row, worded item gone', async ({
-    page,
-  }) => {
+  test('setlist: icon row leads, worded item gone', async ({ page }) => {
     await page.goto(`/bands/${seed.bandId}/setlists/${seed.setlistId}`);
     const names = await openMenu(page, 'Setlist actions');
 
     const set = E2E.setlistName;
-    expect(names.slice(0, 3)).toEqual([
+    expect(names[0]).toBe(`Edit ${set}`);
+    expect(names[1]).toBe(`Copy a link to ${set}`);
+    expect(names.slice(2, 5)).toEqual([
       `Play all songs in ${set}`,
       `Shuffle all songs in ${set}`,
       `Add songs in ${set} to the queue`,
     ]);
-    expect(names[3]).toBe(`Edit ${set}`);
-    expect(names[4]).toBe(`Copy a link to ${set}`);
     expect(names).not.toContain('Edit setlist');
 
     await page.getByRole('menuitem', { name: `Copy a link to ${set}` }).click();
@@ -385,19 +381,19 @@ test.describe('remaining action menus', () => {
     expect(names).not.toContain('Share note');
   });
 
-  test('album row: the row follows the play row', async ({ page }) => {
+  test('album row: the icon row leads the play row', async ({ page }) => {
     await page.goto(`/bands/${seed.bandId}/audio?tab=songs`);
     await page.getByRole('button', { name: 'Albums' }).click();
     const names = await openMenu(page, 'Actions for E2E Album');
     expect(names.slice(0, 3)).toEqual([
-      'Play all songs in E2E Album',
-      'Shuffle all songs in E2E Album',
-      'Add songs in E2E Album to the queue',
-    ]);
-    expect(names.slice(3)).toEqual([
       'View E2E Album',
       'Edit E2E Album',
       'Copy a link to E2E Album',
+    ]);
+    expect(names.slice(3)).toEqual([
+      'Play all songs in E2E Album',
+      'Shuffle all songs in E2E Album',
+      'Add songs in E2E Album to the queue',
     ]);
   });
 
@@ -430,14 +426,14 @@ test.describe('remaining action menus', () => {
     const names = await openMenu(page, 'Setlist actions');
     const set = E2E.setlistName;
     expect(names.slice(0, 3)).toEqual([
-      `Play all songs in ${set}`,
-      `Shuffle all songs in ${set}`,
-      `Add songs in ${set} to the queue`,
-    ]);
-    expect(names.slice(3, 6)).toEqual([
       `View ${set}`,
       `Edit ${set}`,
       `Copy a link to ${set}`,
+    ]);
+    expect(names.slice(3, 6)).toEqual([
+      `Play all songs in ${set}`,
+      `Shuffle all songs in ${set}`,
+      `Add songs in ${set} to the queue`,
     ]);
     expect(names).not.toContain('View setlist');
 

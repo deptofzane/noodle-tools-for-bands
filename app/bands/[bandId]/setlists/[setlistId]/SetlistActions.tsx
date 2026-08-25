@@ -139,19 +139,6 @@ export function SetlistActions({
         menu to open and one place for the item order.
       */}
       <ActionMenu label="Setlist actions">
-        {/* First, and mobile-only: on desktop the same two actions are already
-            buttons beside this menu, so repeating them inside it would be two
-            ways to do one thing in the same corner of the screen. */}
-        {hasSongs && queue.length > 0 && (
-          <span role="none" className="block md:hidden">
-            <PlayShuffleRow
-              label={name}
-              onPlay={playAll}
-              onShuffle={shuffleAll}
-              onQueue={() => enqueue(queue, 'this setlist')}
-            />
-          </span>
-        )}
         {/* No View: this is the setlist's own page. */}
         <MenuIconRow
           items={[
@@ -172,6 +159,19 @@ export function SetlistActions({
             },
           ]}
         />
+        {/* Mobile-only: on desktop the same two actions are already buttons
+            beside this menu, so repeating them inside it would be two ways to
+            do one thing in the same corner of the screen. */}
+        {hasSongs && queue.length > 0 && (
+          <span role="none" className="block md:hidden">
+            <PlayShuffleRow
+              label={name}
+              onPlay={playAll}
+              onShuffle={shuffleAll}
+              onQueue={() => enqueue(queue, 'this setlist')}
+            />
+          </span>
+        )}
         {hasSongs && (
           <span role="none" className="flex flex-col md:hidden">
             <ActionMenuItem onClick={() => go(practice)}>

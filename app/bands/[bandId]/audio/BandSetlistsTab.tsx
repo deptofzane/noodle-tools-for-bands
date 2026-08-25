@@ -190,12 +190,6 @@ export function BandSetlistsTab({
               {songCountLabel(sl.songs)}
             </span>
             <ActionMenu label="Setlist actions" disabled={busy}>
-              <PlayShuffleRow
-                label={sl.name}
-                onPlay={() => playAll(sl)}
-                onShuffle={() => shuffleAll(sl)}
-                onQueue={() => queueAll(sl)}
-              />
               {/* View, edit and share are all "this setlist, elsewhere" —
                   one row of glyphs rather than three lines of near-identical
                   text. Named per setlist so a screen reader moving down the
@@ -226,6 +220,12 @@ export function BandSetlistsTab({
                       void share(setlistHref(bandId, sl.id), 'Setlist'),
                   },
                 ]}
+              />
+              <PlayShuffleRow
+                label={sl.name}
+                onPlay={() => playAll(sl)}
+                onShuffle={() => shuffleAll(sl)}
+                onQueue={() => queueAll(sl)}
               />
               {/*
                 The band goes along with the setlist: the new-event form only

@@ -136,16 +136,6 @@ export function BandAlbumList({
                     that happens to be narrowing the view shouldn't quietly
                     change what playing the record means. */}
                 <ActionMenu label={`Actions for ${album.name}`}>
-                  {albumQueue(album).length > 0 && (
-                    <PlayShuffleRow
-                      label={album.name}
-                      onPlay={() => player.play(albumQueue(album), 0)}
-                      onShuffle={() =>
-                        player.play(shuffledCopy(albumQueue(album)), 0)
-                      }
-                      onQueue={() => enqueue(albumQueue(album), 'this album')}
-                    />
-                  )}
                   <MenuIconRow
                     items={[
                       {
@@ -173,6 +163,16 @@ export function BandAlbumList({
                       },
                     ]}
                   />
+                  {albumQueue(album).length > 0 && (
+                    <PlayShuffleRow
+                      label={album.name}
+                      onPlay={() => player.play(albumQueue(album), 0)}
+                      onShuffle={() =>
+                        player.play(shuffledCopy(albumQueue(album)), 0)
+                      }
+                      onQueue={() => enqueue(albumQueue(album), 'this album')}
+                    />
+                  )}
                 </ActionMenu>
               </span>
             </div>
