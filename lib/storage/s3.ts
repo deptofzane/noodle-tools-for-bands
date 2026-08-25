@@ -18,7 +18,7 @@ import { S3Client } from '@aws-sdk/client-s3';
 
 let cached: S3Client | null | undefined;
 
-export function isObjectStoreConfigured(): boolean {
+function isObjectStoreConfigured(): boolean {
   return Boolean(
     process.env.S3_ENDPOINT &&
     process.env.S3_BUCKET &&
@@ -50,14 +50,6 @@ export function getS3Client(): S3Client {
     forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
   });
   return cached;
-}
-
-/**
- * Object key for a single-instance song file (currently sheet music):
- * one object per (conversation, kind), overwritten in place on replace.
- */
-export function songFileKey(conversationId: string, kind: string): string {
-  return `conversations/${conversationId}/${kind}`;
 }
 
 /**

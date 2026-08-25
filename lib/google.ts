@@ -16,7 +16,7 @@
  * creates, and read access to files the user explicitly picks via the
  * Google Picker. Used to write per-user notes JSON files in Phase 4.
  */
-export const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
 /**
  * Scopes the app needs to function end-to-end.

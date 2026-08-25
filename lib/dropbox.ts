@@ -10,7 +10,7 @@ import type { ReadableStream as NodeWebReadableStream } from 'node:stream/web';
  */
 
 /** True only for an HTTPS Dropbox content URL (a Chooser `direct` link). */
-export function isAllowedDropboxUrl(raw: string): boolean {
+function isAllowedDropboxUrl(raw: string): boolean {
   let url: URL;
   try {
     url = new URL(raw);

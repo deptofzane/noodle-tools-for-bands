@@ -33,7 +33,7 @@ export type RepeatMode = 'off' | 'all' | 'one';
  * `random` is injectable so a test can pin the choice; production passes
  * nothing and gets `Math.random`.
  */
-export function nextIndex(
+function nextIndex(
   queue: readonly OrderedTrack[],
   from: number,
   playedIds: readonly string[],

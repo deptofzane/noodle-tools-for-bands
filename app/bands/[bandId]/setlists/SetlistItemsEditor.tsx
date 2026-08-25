@@ -41,7 +41,7 @@ export interface SetlistPoolSong {
 }
 
 /** Client-side row id (real ids are assigned by the server on save). */
-export const makeSetlistRowId = () =>
+const makeSetlistRowId = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `tmp-${Math.random().toString(36).slice(2)}`;

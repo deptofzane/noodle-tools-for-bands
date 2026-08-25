@@ -14,7 +14,7 @@
 
 const UID_DOMAIN = 'noodle.band';
 const DEFAULT_PRODID = '-//Noodle//Calendar//EN';
-export const DEFAULT_EVENT_DURATION_MINUTES = 120;
+const DEFAULT_EVENT_DURATION_MINUTES = 120;
 
 export interface IcsEvent {
   id: string;
@@ -114,7 +114,7 @@ function dateTimeCompact(dt: Date): string {
 }
 
 /** `YYYYMMDDTHHMMSSZ` — a UTC timestamp, for DTSTAMP / LAST-MODIFIED. */
-export function formatUtcStamp(dt: Date): string {
+function formatUtcStamp(dt: Date): string {
   return `${dateTimeCompact(dt)}Z`;
 }
 

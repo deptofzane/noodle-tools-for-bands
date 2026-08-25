@@ -16,7 +16,7 @@ import { deleteObjects, storageKeysForConversation } from './song-files';
 export type Conversation = typeof conversations.$inferSelect;
 export type BandRole = (typeof bandMembers.role.enumValues)[number];
 
-export class ConversationAccessError extends Error {
+class ConversationAccessError extends Error {
   constructor(message = 'Not a member of this conversation’s band') {
     super(message);
     this.name = 'ConversationAccessError';

@@ -29,7 +29,7 @@ export function noteLinkBadge(link: {
   return NOTE_LINK_KINDS.find((k) => k.id === link.kind)?.label ?? link.kind;
 }
 
-export function isNoteLinkKind(v: unknown): v is NoteLinkKind {
+function isNoteLinkKind(v: unknown): v is NoteLinkKind {
   return NOTE_LINK_KINDS.some((k) => k.id === v);
 }
 

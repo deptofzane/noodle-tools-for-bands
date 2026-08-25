@@ -11,12 +11,12 @@ import type { PreviewKind } from '@/lib/sheet-preview';
 import { useIsDesktop } from './useIsDesktop';
 
 const STORAGE_KEY = 'sheetZoomByKey';
-export const ZOOM_DEFAULT = 100;
+const ZOOM_DEFAULT = 100;
 export const ZOOM_MIN = 50;
 export const ZOOM_MAX = 400;
 
 /** Starting zoom for page-shaped sheets (PDF, image) on a desktop viewport. */
-export const DESKTOP_PAGE_ZOOM = 70;
+const DESKTOP_PAGE_ZOOM = 70;
 
 /**
  * The zoom a sheet of this kind starts at before the song has one of its own —

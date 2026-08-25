@@ -41,7 +41,7 @@ import {
  */
 
 /** How a deleted author reads everywhere `actorLabel` renders a name. */
-export const DELETED_ACCOUNT_NAME = 'Deleted account';
+const DELETED_ACCOUNT_NAME = 'Deleted account';
 
 export interface AccountDeletionPlan {
   /** Bands deleted outright — the user was their only owner. */

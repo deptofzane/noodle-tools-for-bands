@@ -369,7 +369,7 @@ export function AudioPlayer({
  * behavior (and space still activates a focused button natively — that path
  * is debounced too via `togglePlay`).
  */
-export function useTransportKeys({
+function useTransportKeys({
   togglePlay,
   forward10,
   back10,

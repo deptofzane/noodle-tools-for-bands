@@ -18,7 +18,7 @@ import type { NoteLink, NoteLinkInput } from './user-notes';
  */
 
 export type TodoStatus = 'active' | 'complete' | 'cancelled';
-export const TODO_STATUSES: TodoStatus[] = ['active', 'complete', 'cancelled'];
+const TODO_STATUSES: TodoStatus[] = ['active', 'complete', 'cancelled'];
 
 export function isTodoStatus(v: unknown): v is TodoStatus {
   return typeof v === 'string' && TODO_STATUSES.includes(v as TodoStatus);

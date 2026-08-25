@@ -49,7 +49,7 @@ const sheetPrint = (
  * Returns null when the record predates `urls` being tracked at all: those are
  * genuinely unknowable, and guessing would either nag or lie.
  */
-export function downloadedFingerprints(
+function downloadedFingerprints(
   record: StaleRecord,
 ): Fingerprint[] | null {
   if (!record.urls) return null;
@@ -78,7 +78,7 @@ export function downloadedFingerprints(
  * choices. Ordered, so a pure reorder — same files, different running order —
  * still counts as a change worth re-downloading.
  */
-export function currentFingerprints(
+function currentFingerprints(
   setlist: StaleSetlist,
   choices: StaleRecord['choices'],
 ): Fingerprint[] {
