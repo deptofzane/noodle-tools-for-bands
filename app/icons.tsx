@@ -65,3 +65,28 @@ export function LinkIcon({ size = 16 }: { size?: number }) {
     </svg>
   );
 }
+
+/**
+ * A list with a plus: append to the queue.
+ *
+ * Deliberately not a play glyph of any kind — this one *adds* to whatever is
+ * playing rather than replacing it, and that's the whole difference between it
+ * and the two beside it.
+ */
+export function AddToQueueIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      {...strokeProps}
+      aria-hidden="true"
+    >
+      <path d="M11 12H3" />
+      <path d="M16 6H3" />
+      <path d="M11 18H3" />
+      <path d="M18 9v6" />
+      <path d="M21 12h-6" />
+    </svg>
+  );
+}

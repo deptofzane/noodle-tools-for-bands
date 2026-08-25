@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../../../ActionMenu';
 import { PlayShuffleRow } from '../../../../player/PlayShuffleRow';
+import { useEnqueueTracks } from '../../../../player/useEnqueueTracks';
 import { useOfflineDownload } from '../../../../offline/useOfflineDownload';
 import { setlistQueue, type Setlist } from '../../bandDetailShared';
 import { OfflineBadge } from '../../../../offline/OfflineBadge';
@@ -33,6 +34,7 @@ export function SetlistActions({
   const router = useRouter();
   const offline = useOfflineDownload();
   const player = usePlaylistPlayer();
+  const enqueue = useEnqueueTracks();
 
   const rec = offline.records?.get(setlistId);
   const downloading = offline.busyId === setlistId;
@@ -139,6 +141,7 @@ export function SetlistActions({
               label={name}
               onPlay={playAll}
               onShuffle={shuffleAll}
+              onQueue={() => enqueue(queue, 'this setlist')}
             />
           </span>
         )}

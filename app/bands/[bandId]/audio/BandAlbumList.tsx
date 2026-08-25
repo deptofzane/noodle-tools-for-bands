@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { formatDuration } from '@/lib/format';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
 import { PlayShuffleRow } from '../../../player/PlayShuffleRow';
+import { useEnqueueTracks } from '../../../player/useEnqueueTracks';
 import { useShareLink } from '../../../useShareLink';
 import { albumHref } from '@/lib/routes';
 import { LoadingBlock } from '../../../Spinner';
@@ -63,6 +64,7 @@ export function BandAlbumList({
   const router = useRouter();
   const share = useShareLink();
   const player = usePlaylistPlayer();
+  const enqueue = useEnqueueTracks();
 
   if (!albums || !conversations) return <LoadingBlock label="Loading albums" />;
 
@@ -140,6 +142,7 @@ export function BandAlbumList({
                       onShuffle={() =>
                         player.play(shuffledCopy(albumQueue(album)), 0)
                       }
+                      onQueue={() => enqueue(albumQueue(album), 'this album')}
                     />
                   )}
                   <ActionMenuItem

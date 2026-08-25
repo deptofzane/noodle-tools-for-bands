@@ -61,9 +61,10 @@ export function HelpContent({ level = 2 }: { level?: 2 | 3 }) {
             </>,
             <>
               The <B>⋯</B> menu on a setlist opens with two rows of icons. The
-              first plays: <B>▶</B> queues the set in order, and the crossed
-              arrows beside it play the same songs in a random order once,
-              without changing the set itself.
+              first is playback: <B>▶</B> plays the set in order, the crossed
+              arrows play the same songs in a random order once without changing
+              the set itself, and the list with a <B>+</B> adds them to the end
+              of whatever is already playing instead of replacing it.
             </>,
             <>
               The second row is the setlist: an <B>eye</B> to open it, a{' '}

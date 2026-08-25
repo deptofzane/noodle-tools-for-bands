@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
 import { PlayShuffleRow } from '../../../player/PlayShuffleRow';
+import { useEnqueueTracks } from '../../../player/useEnqueueTracks';
 import { Modal } from '../../../Modal';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
@@ -60,6 +61,7 @@ export function EventSetlistActions({
 }) {
   const router = useRouter();
   const player = usePlaylistPlayer();
+  const enqueue = useEnqueueTracks();
   const trackPending = useTrackPending();
   const showToast = useToast();
   const offline = useOfflineDownload();
@@ -129,6 +131,7 @@ export function EventSetlistActions({
             label={setlistName}
             onPlay={() => player.play(queue, 0)}
             onShuffle={() => player.play(shuffledCopy(queue), 0)}
+            onQueue={() => enqueue(queue, 'this setlist')}
           />
         )}
         <ActionMenuItem onClick={() => router.push(practiceHref(setlistId))}>

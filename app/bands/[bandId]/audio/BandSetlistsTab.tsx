@@ -8,6 +8,7 @@ import { formatSongMeta } from '@/lib/format';
 import { ActionMenu, ActionMenuItem, MenuIconRow } from '../../../ActionMenu';
 import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
 import { PlayShuffleRow } from '../../../player/PlayShuffleRow';
+import { useEnqueueTracks } from '../../../player/useEnqueueTracks';
 import { useShareLink } from '../../../useShareLink';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { usePersistedBoolean } from '../../../usePersistedBoolean';
@@ -47,6 +48,7 @@ export function BandSetlistsTab({
   const showToast = useToast();
   const offline = useOfflineDownload();
   const player = usePlaylistPlayer();
+  const enqueue = useEnqueueTracks();
   const [expandedSetlists, toggleSetlistExpanded] = usePersistedStringSet(
     `bandSetlistsExpanded:${bandId}`,
   );
@@ -147,18 +149,7 @@ export function BandSetlistsTab({
   };
 
   // Same songs, but appended — whatever is playing keeps playing.
-  const queueAll = (sl: Setlist) => {
-    const tracks = setlistQueue(sl);
-    if (tracks.length === 0) {
-      showToast('No songs with audio in this setlist.');
-      return;
-    }
-    player.enqueue(tracks);
-    showToast(
-      `Added ${tracks.length} song${tracks.length === 1 ? '' : 's'} to the queue.`,
-      'success',
-    );
-  };
+  const queueAll = (sl: Setlist) => enqueue(setlistQueue(sl), 'this setlist');
 
   const renderSetlist = (sl: Setlist) => {
     const collapsed = !expandedSetlists.has(sl.id);
@@ -203,6 +194,7 @@ export function BandSetlistsTab({
                 label={sl.name}
                 onPlay={() => playAll(sl)}
                 onShuffle={() => shuffleAll(sl)}
+                onQueue={() => queueAll(sl)}
               />
               {/* View, edit and share are all "this setlist, elsewhere" —
                   one row of glyphs rather than three lines of near-identical
@@ -236,9 +228,6 @@ export function BandSetlistsTab({
                   },
                 ]}
               />
-              <ActionMenuItem onClick={() => queueAll(sl)}>
-                Add songs to queue
-              </ActionMenuItem>
               {/*
                 The band goes along with the setlist: the new-event form only
                 loads setlists for the band it has selected, so without it the

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ensureOk } from '@/lib/api';
 import { ActionMenu, ActionMenuItem } from '../../../../ActionMenu';
 import { PlayShuffleRow } from '../../../../player/PlayShuffleRow';
+import { useEnqueueTracks } from '../../../../player/useEnqueueTracks';
 import { ConfirmModal } from '../../../../ConfirmModal';
 import { useTrackPending } from '../../../../PendingActionProvider';
 import { useToast } from '../../../../ToastProvider';
@@ -23,6 +24,7 @@ import type { AlbumWithTracks } from '@/lib/db/albums';
 export function AlbumActions({ album }: { album: AlbumWithTracks }) {
   const router = useRouter();
   const player = usePlaylistPlayer();
+  const enqueue = useEnqueueTracks();
   const trackPending = useTrackPending();
   const showToast = useToast();
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -66,6 +68,7 @@ export function AlbumActions({ album }: { album: AlbumWithTracks }) {
             label={album.name}
             onPlay={() => player.play(queue, 0)}
             onShuffle={shuffleAll}
+            onQueue={() => enqueue(queue, 'this album')}
           />
         )}
         <ActionMenuItem

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
 import { PlayShuffleRow } from '../../../player/PlayShuffleRow';
+import { useEnqueueTracks } from '../../../player/useEnqueueTracks';
 import { MinimizeToggle } from '../bandDetailShared';
 import { useBandUploads } from '../bandDetailHooks';
 import { dayLabel, groupByDay, timeLabel, uploadTrack } from './uploadDays';
@@ -37,6 +38,7 @@ export function UploadHistory({ bandId }: { bandId: string }) {
   } = useBandUploads(bandId);
   const router = useRouter();
   const player = usePlaylistPlayer();
+  const enqueue = useEnqueueTracks();
   /**
    * Days the user has toggled away from their default, rather than the open
    * ones. The default is "the newest day is open, older ones aren't", and the
@@ -110,6 +112,9 @@ export function UploadHistory({ bandId }: { bandId: string }) {
                       onPlay={() => player.play(dayUploads.map(uploadTrack), 0)}
                       onShuffle={() =>
                         player.playShuffled(dayUploads.map(uploadTrack))
+                      }
+                      onQueue={() =>
+                        enqueue(dayUploads.map(uploadTrack), 'this day')
                       }
                     />
                     <ActionMenuItem
