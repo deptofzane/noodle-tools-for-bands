@@ -58,14 +58,12 @@ export function ConfirmModal({
         {title}
       </h2>
       {description && (
-        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-          {description}
-        </p>
+        <p className="mt-2 text-sm text-fg-muted">{description}</p>
       )}
 
       {phraseRequired && (
         <>
-          <label className="mt-3 block text-xs text-neutral-600 dark:text-neutral-400">
+          <label className="mt-3 block text-xs text-fg-muted">
             {confirmPhrasePrompt ?? (
               <>
                 Type <span className="font-semibold">{confirmPhrase}</span> to
@@ -79,7 +77,7 @@ export function ConfirmModal({
             onChange={(e) => setText(e.target.value)}
             placeholder={confirmPhrase}
             autoFocus
-            className="mt-1 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 dark:border-neutral-700 dark:bg-neutral-900"
+            className="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 border-line-strong bg-surface"
           />
         </>
       )}

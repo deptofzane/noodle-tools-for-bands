@@ -99,7 +99,7 @@ export function ActionMenu({
         aria-label={label}
         className={
           triggerClassName ??
-          'rounded-md px-4 py-3 md:px-2 md:py-1 my-1 minor-text-theme-colors hover:bg-neutral-100 hover:text-neutral-800 disabled:opacity-50 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
+          'rounded-md px-4 py-3 md:px-2 md:py-1 my-1 minor-text-theme-colors hover:text-neutral-800 disabled:opacity-50 dark:hover:text-neutral-200 hover:bg-surface-hover'
         }
       >
         {icon ?? <span aria-hidden="true">⋯</span>}
@@ -110,7 +110,7 @@ export function ActionMenu({
           role="menu"
           onClick={() => setOpen(false)}
           className={
-            'absolute z-50 min-w-52 overflow-hidden rounded-md border border-neutral-200 bg-white py-1.5 shadow-lg sm:py-1 dark:border-neutral-800 dark:bg-neutral-900 ' +
+            'absolute z-50 min-w-52 overflow-hidden rounded-md border py-1.5 shadow-lg sm:py-1 border-line bg-surface ' +
             (align === 'left' ? 'left-0 ' : 'right-0 ') +
             (openUp ? 'bottom-full mb-1' : 'top-full mt-1')
           }
@@ -166,7 +166,7 @@ export function MenuIconRow({
             onClick={item.onClick}
             aria-label={item.label}
             title={item.title}
-            className="flex flex-1 items-center justify-center px-4 py-3 text-neutral-700 hover:bg-neutral-100 sm:py-1.5 dark:text-neutral-200 dark:hover:bg-neutral-800"
+            className="flex flex-1 items-center justify-center px-4 py-3 text-neutral-700 sm:py-1.5 dark:text-neutral-200 hover:bg-surface-hover"
           >
             {item.icon}
           </button>
@@ -224,7 +224,7 @@ export function ActionMenuItem({
       disabled={disabled}
       title={title}
       onClick={onClick}
-      className={`block w-full text-nowrap px-4 py-2 sm:py-3 text-left text-base hover:bg-neutral-100 sm:px-3 sm:py-1.5 sm:text-sm dark:hover:bg-neutral-800 ${disabled && 'opacity-60'} ${
+      className={`block w-full text-nowrap px-4 py-2 sm:py-3 text-left text-base hover:bg-surface-hover sm:px-3 sm:py-1.5 sm:text-sm ${disabled && 'opacity-60'} ${
         destructive
           ? 'text-red-600 dark:text-red-400 pt-2 border-t border-gray-700'
           : 'text-neutral-700 dark:text-neutral-200'

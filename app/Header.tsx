@@ -357,7 +357,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
     <div
       id="app-nav"
       ref={barRef}
-      className="fixed inset-x-0 bottom-0 z-[45] border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] lg:bottom-auto lg:top-0 lg:border-b lg:border-t-0 lg:pb-0 dark:border-neutral-800 dark:bg-neutral-900"
+      className="fixed inset-x-0 bottom-0 z-[45] border-t pb-[env(safe-area-inset-bottom)] lg:bottom-auto lg:top-0 lg:border-b lg:border-t-0 lg:pb-0 border-line bg-surface"
     >
       {/* Swallows the tap that dismisses the menu, so closing it can't also
           hit a link or a play button underneath. Sits below the menu (z-50)
@@ -379,7 +379,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
         />
       )}
 
-      <nav className="mx-auto flex max-w-5xl flex-row items-center justify-between gap-1 px-3 py-3 lg:px-6 bg-white dark:bg-neutral-900">
+      <nav className="mx-auto flex max-w-5xl flex-row items-center justify-between gap-1 px-3 py-3 lg:px-6 bg-surface">
         <span className="flex flex-row items-center gap-2">
           <Link key="/home" href="/home">
             {/* The wordmark splits so the second half can carry the accent;
@@ -464,7 +464,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
               aria-label={
                 chatUnread.count > 0 ? `Menu, ${chatUnreadLabel}` : 'Menu'
               }
-              className="relative rounded-md px-3 pt-2 pb-3 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 lg:py-2 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+              className="relative rounded-md px-3 pt-2 pb-3 hover:text-neutral-900 lg:py-2 dark:hover:text-neutral-100 hover:bg-surface-hover text-fg-muted"
             >
               <span aria-hidden="true" className="block text-xl leading-none">
                 ☰
@@ -491,7 +491,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
                 role="menu"
                 // Opens upward from the mobile bar at the bottom, downward from
                 // the desktop bar at the top.
-                className="absolute bottom-full right-0 z-50 mb-2 flex min-w-56 max-w-[min(20rem,calc(100vw-1.5rem))] flex-col gap-0.5 rounded-md border border-neutral-200 bg-white p-1.5 shadow-lg lg:bottom-auto lg:top-full lg:mb-0 lg:mt-2 dark:border-neutral-800 dark:bg-neutral-900"
+                className="absolute bottom-full right-0 z-50 mb-2 flex min-w-56 max-w-[min(20rem,calc(100vw-1.5rem))] flex-col gap-0.5 rounded-md border p-1.5 shadow-lg lg:bottom-auto lg:top-full lg:mb-0 lg:mt-2 border-line bg-surface"
               >
                 {bandsOpen ? (
                   // Band panel: it replaces the top level rather than nesting
@@ -511,7 +511,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
 
                     <span
                       aria-hidden="true"
-                      className="my-1 border-t border-neutral-200 dark:border-neutral-800"
+                      className="my-1 border-t border-line"
                     />
 
                     <Link
@@ -568,7 +568,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
 
                         <span
                           aria-hidden="true"
-                          className="my-1 border-t border-neutral-200 dark:border-neutral-800"
+                          className="my-1 border-t border-line"
                         />
                       </>
                     )}
@@ -597,7 +597,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
 
                         <span
                           aria-hidden="true"
-                          className="my-1 border-t border-neutral-200 dark:border-neutral-800"
+                          className="my-1 border-t border-line"
                         />
                       </>
                     )}
@@ -663,7 +663,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
                         link groups above, which are the parts that swap. */}
                     <span
                       aria-hidden="true"
-                      className="my-1 border-t border-neutral-200 dark:border-neutral-800"
+                      className="my-1 border-t border-line"
                     />
 
                     <button
@@ -812,8 +812,8 @@ function menuItemClass(isActive: boolean): string {
   return (
     'flex w-full items-center rounded px-4 py-3 text-left text-base lg:px-3 lg:py-2 lg:text-sm ' +
     (isActive
-      ? 'bg-neutral-100 font-medium text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100'
-      : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800')
+      ? 'bg-neutral-100 font-medium dark:bg-neutral-900 text-fg'
+      : 'text-neutral-700 dark:text-neutral-300 hover:bg-surface-hover')
   );
 }
 
@@ -822,7 +822,7 @@ function navLinkClass(isActive: boolean): string {
   return (
     'text-nowrap rounded-md px-3 py-1.5 text-sm transition ' +
     (isActive
-      ? 'bg-neutral-100 font-medium text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100'
-      : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-neutral-100')
+      ? 'bg-neutral-100 font-medium dark:bg-neutral-900 text-fg'
+      : 'hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-surface-soft text-fg-muted')
   );
 }

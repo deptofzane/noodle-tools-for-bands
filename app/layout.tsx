@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import type { Metadata, Viewport } from 'next';
+import type { Metadata } from 'next';
 import { auth } from '@/auth';
 import { appIcons } from '@/lib/app-icons';
 import { googlePickerAppId, hasAllDriveScopes } from '@/lib/google';
@@ -15,6 +15,7 @@ import { RouteProgress } from './RouteProgress';
 import { ThemeKeeper } from './ThemeKeeper';
 import { ToastProvider } from './ToastProvider';
 import './globals.css';
+import { THEME_COLORS } from './theme';
 
 export const metadata: Metadata = {
   title: 'Noodle',
@@ -40,9 +41,11 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport: Viewport = {
-  themeColor: '#2563eb',
-};
+/*
+ * No `themeColor` here on purpose. It would render one fixed value into the
+ * HTML, and the bar has to follow the theme the user picked — so the pre-paint
+ * script below owns that tag instead. One tag, one writer; see `app/theme.ts`.
+ */
 
 /**
  * Pre-paint theme script.
@@ -57,11 +60,16 @@ export const viewport: Viewport = {
  */
 const themeInitScript = `
 (function(){try{
+  var colors = ${JSON.stringify(THEME_COLORS)};
   var stored = localStorage.getItem('theme');
   var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   var isDark = stored === 'dark' || (!stored && systemDark);
   var root = document.documentElement;
   if (isDark) { root.classList.add('dark'); } else { root.classList.remove('dark'); }
+  // Before paint, so the bar is never briefly the wrong colour.
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) { meta = document.createElement('meta'); meta.name = 'theme-color'; document.head.appendChild(meta); }
+  meta.setAttribute('content', colors[isDark ? 'dark' : 'light']);
   // Pin the resolved theme on first run (class already applied above, so a
   // storage failure can't leave the page unstyled).
   if (!stored) { try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch(e){} }
@@ -109,7 +117,7 @@ export default async function RootLayout({
       </head>
       <body
         className={
-          'min-h-screen bg-white text-neutral-900 antialiased dark:bg-neutral-900 dark:text-neutral-100' +
+          'min-h-screen antialiased bg-surface text-fg' +
           // Reserves room for the fixed nav bar on the side it's pinned to.
           (isSignedIn ? ' has-app-nav' : '')
         }

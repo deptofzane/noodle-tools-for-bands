@@ -60,7 +60,7 @@ export function TabStrip({
       ref={ref}
       role="tablist"
       aria-label={label}
-      className="relative flex gap-1 overflow-x-auto border-b border-neutral-200 dark:border-neutral-800"
+      className="relative flex gap-1 overflow-x-auto border-b border-line"
     >
       {children}
       {/* Rendered only once measured, so it mounts already in place — there's

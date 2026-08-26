@@ -24,9 +24,99 @@
    * with no nav (the login page) never set it, and opt out via `.has-app-nav`.
    */
   --app-nav-h: 4.5rem;
+
+  /*
+   * ---------------------------------------------------------------------
+   * Theme tokens
+   * ---------------------------------------------------------------------
+   *
+   * Every surface colour in the app resolves through one of these. They exist
+   * so a theme is a block of values rather than an edit to 133 files: adding
+   * one means redeclaring these under a new selector, and nothing else.
+   *
+   * The names are roles, not colours — `--surface`, not `--white` — because a
+   * theme is free to make the "raised" surface darker than the page behind it.
+   * They were derived from what the app actually uses: eight Tailwind pairs
+   * account for roughly three quarters of every `dark:` variant in the tree.
+   *
+   * The light values below are exactly what those classes resolve to today
+   * (`bg-white`, `border-neutral-200`, …), so introducing this layer changes
+   * nothing on screen. That is the point: the migration is provable.
+   */
+
+  /* Structure */
+  --page: #ffffff; /* page — body bg-white */
+  --surface: #ffffff; /* raised: cards, menus, rows */
+  --surface-2: #fafafa; /* secondary fill — neutral-50 */
+  /*
+   * Two hover fills, deliberately kept apart: the app uses a lighter one for
+   * outlined controls and a heavier one for ghost/menu rows, and they differ
+   * in *both* themes. One token for both would silently restyle every hover.
+   */
+  --surface-soft: #fafafa; /* neutral-50  → neutral-900 in dark */
+  --surface-hover: #f5f5f5; /* neutral-100 → neutral-800 in dark */
+  --line: #e5e5e5; /* default rule — neutral-200 */
+  --line-strong: #d4d4d4; /* inputs, buttons — neutral-300 */
+
+  /* Text */
+  --fg: #171717; /* neutral-900 */
+  --fg-strong: #262626; /* neutral-800 */
+  --fg-muted: #525252; /* neutral-600 — the app's second-most-used colour */
+  --fg-faint: #a3a3a3; /* neutral-400 */
+
+  /* Accent (the app's blue) */
+  --accent: #2563eb; /* blue-600 */
+  --accent-fill: #eff6ff; /* blue-50 */
+  --accent-line: #3b82f6; /* blue-500 */
+  --on-accent: #ffffff; /* text on a filled accent */
+
+  /* Destructive */
+  --danger: #b91c1c; /* red-700 */
+  --danger-fill: #fef2f2; /* red-50 */
+  --danger-line: #fca5a5; /* red-300 */
+
+  /* Warning */
+  --warn: #b45309; /* amber-700 */
+  --warn-fill: #fffbeb; /* amber-50 */
+  --warn-line: #fcd34d; /* amber-300 */
 }
+
+/*
+ * Dark, as a set of token overrides.
+ *
+ * Values are exactly what today's `dark:` variants resolve to, so this is a
+ * restatement rather than a redesign. `.dark` stays the selector during the
+ * migration — `data-theme` joins it when there is more than one dark-ish
+ * theme to tell apart.
+ */
 :root.dark {
   color-scheme: dark;
+
+  --page: #171717; /* neutral-900 — body dark:bg-neutral-900 */
+  --surface: #171717;
+  --surface-2: #262626; /* neutral-800 */
+  --surface-soft: #171717; /* neutral-900 */
+  --surface-hover: #262626; /* neutral-800 */
+  --line: #262626; /* neutral-800 */
+  --line-strong: #404040; /* neutral-700 */
+
+  --fg: #f5f5f5; /* neutral-100 */
+  --fg-strong: #e5e5e5; /* neutral-200 */
+  --fg-muted: #a3a3a3; /* neutral-400 */
+  --fg-faint: #737373; /* neutral-500 */
+
+  --accent: #60a5fa; /* blue-400 */
+  --accent-fill: #172554; /* blue-950 */
+  --accent-line: #3b82f6; /* blue-500 */
+  --on-accent: #ffffff;
+
+  --danger: #f87171; /* red-400 */
+  --danger-fill: #450a0a; /* red-950 */
+  --danger-line: #b91c1c; /* red-700 */
+
+  --warn: #fbbf24; /* amber-400 */
+  --warn-fill: #451a03; /* amber-950 */
+  --warn-line: #b45309; /* amber-700 */
 }
 
 /* Sheet-music text containers opt out of global font scaling via this base. */
@@ -198,11 +288,13 @@ body {
 }
 
 .minor-text-theme-colors {
-  @apply text-neutral-600 dark:text-neutral-400;
+  @apply text-fg-muted;
 }
 
+/* Kept as its own token pair: the band accent is deliberately not the app's
+   accent blue (indigo in dark), so a theme can move them apart. */
 .minor-text-band-theme-colors {
-  @apply text-blue-600 dark:text-indigo-300;
+  @apply text-accent;
 }
 
 /* 
@@ -221,10 +313,10 @@ body {
 /* this makes text on the set list screen unselectable when rearrangine on iOs */
 .unselectable {
   -webkit-touch-callout: none; /* iOS Safari */
-  -webkit-user-select: none;   /* Safari */
-  -moz-user-select: none;      /* Old Firefox versions */
-  -ms-user-select: none;       /* Internet Explorer/Edge */
-  user-select: none;           /* Non-prefixed version (Chrome, Edge, Opera, Firefox) */
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none; /* Old Firefox versions */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version (Chrome, Edge, Opera, Firefox) */
 }
 
 /*
@@ -232,7 +324,7 @@ body {
  * desktop (md:px-3 md:py-1.5). `disabled:opacity-50` is a no-op on links.
  */
 .btn-outline {
-  @apply rounded-md border border-neutral-300 px-4 py-3 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 md:px-3 md:py-1.5 dark:border-neutral-700 dark:hover:bg-neutral-900;
+  @apply rounded-md border border-line-strong px-4 py-3 text-sm font-medium hover:bg-surface-soft disabled:opacity-50 md:px-3 md:py-1.5;
 }
 
 .btn-primary {
@@ -240,7 +332,7 @@ body {
 }
 
 .btn-ghost {
-  @apply rounded-md px-4 py-3 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 md:px-3 md:py-1.5 dark:text-neutral-400 dark:hover:bg-neutral-800;
+  @apply rounded-md px-4 py-3 text-sm text-fg-muted hover:bg-surface-hover disabled:opacity-50 md:px-3 md:py-1.5;
 }
 /*
  * Rendered sheet-music text (Markdown / ChordPro). Sizes use `em` so the

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { applyThemeColor } from './theme';
 
 /**
  * Keeps the `dark` class on `<html>` from being lost.
@@ -43,6 +44,9 @@ export function ThemeKeeper() {
       // toggle below re-triggers the observer, which then finds nothing to do.
       if (want !== root.classList.contains('dark')) {
         root.classList.toggle('dark', want);
+        // A re-render that drops the class drops nothing else, but the bar
+        // has to come back with it.
+        applyThemeColor(want ? 'dark' : 'light');
       }
     };
 

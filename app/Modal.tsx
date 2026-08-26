@@ -50,7 +50,7 @@ export function Modal({
       }}
     >
       <div
-        className={`w-full ${SIZE[size]} rounded-lg border border-neutral-200 bg-white p-5 shadow-xl dark:border-neutral-800 dark:bg-neutral-900`}
+        className={`w-full ${SIZE[size]} rounded-lg border p-5 shadow-xl border-line bg-surface`}
         onClick={(e) => e.stopPropagation()}
       >
         {children}

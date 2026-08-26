@@ -138,7 +138,7 @@ export function Select({
         }
         onClick={() => (open ? setOpen(false) : openList())}
         onKeyDown={onKeyDown}
-        className="flex w-full items-center justify-between gap-2 rounded-md border border-neutral-300 bg-white px-3 py-2 text-left text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+        className="flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-line-strong bg-surface"
       >
         <span className={'truncate ' + (selected ? '' : 'text-neutral-400')}>
           {selected ? selected.label : placeholder}
@@ -154,7 +154,7 @@ export function Select({
           id={listId}
           role="listbox"
           className={
-            'absolute left-0 right-0 z-20 max-h-60 overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-sm shadow-lg dark:border-neutral-700 dark:bg-neutral-900 ' +
+            'absolute left-0 right-0 z-20 max-h-60 overflow-auto rounded-md border border-neutral-200 py-1 text-sm shadow-lg dark:border-neutral-700 bg-surface ' +
             (openUp ? 'bottom-full mb-1' : 'top-full mt-1')
           }
         >

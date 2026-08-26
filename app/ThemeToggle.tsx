@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-type Theme = 'light' | 'dark';
+import { applyThemeColor, type Theme } from './theme';
 
 /**
  * Reads the *currently applied* theme by inspecting the `.dark` class
@@ -40,6 +39,8 @@ export function ThemeToggle() {
       // change below still applies for the current page session.
     }
     document.documentElement.classList.toggle('dark', next === 'dark');
+    // The system bar tracks the page, not the OS — see `app/theme.ts`.
+    applyThemeColor(next);
   }
 
   // Skeleton — same dimensions as the real button to avoid layout shift.
