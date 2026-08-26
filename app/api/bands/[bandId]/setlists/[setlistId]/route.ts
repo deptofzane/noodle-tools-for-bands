@@ -5,6 +5,7 @@ import { listBandConversations } from '@/lib/db/conversations';
 import {
   deleteSetlist,
   getSetlist,
+  renameSetlist,
   setSetlistSongs,
   type SetlistItemInput,
 } from '@/lib/db/setlists';
@@ -42,11 +43,12 @@ export async function GET(
 
 /**
  * PATCH /api/bands/[bandId]/setlists/[setlistId]
- *   Body: { items: Array<{ conversationId?: string|null, label?: string|null }> }
- *   — the setlist's items in their new order (add / remove / reorder). An
- *   item is a song (conversationId, must be a band song, no dups) or a
- *   marker (label, e.g. a set break). Legacy `{ conversationIds }` is also
- *   accepted.
+ *   Body: { name?: string, items?: Array<{ conversationId?, label? }> }
+ *   — `items` is the setlist's contents in their new order (add / remove /
+ *   reorder); an item is a song (conversationId, must be a band song, no
+ *   dups) or a marker (label, e.g. a set break). Legacy `{ conversationIds }`
+ *   is also accepted. `name` renames the setlist; either may be sent alone,
+ *   so a rename doesn't have to restate the whole list.
  *
  * Requires band membership; the setlist must belong to the band.
  */
@@ -65,6 +67,22 @@ export async function PATCH(
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   const body = await req.json().catch(() => null);
+
+  // A rename can arrive on its own or alongside new items. Same 1–255 rule
+  // the create route applies, so a name can't be valid in one and not the
+  // other.
+  if (body?.name !== undefined) {
+    const name = typeof body.name === 'string' ? body.name.trim() : '';
+    if (!name || name.length > 255)
+      return NextResponse.json(
+        { error: 'bad_name', message: 'Name must be 1–255 characters.' },
+        { status: 400 },
+      );
+    await renameSetlist(setlistId, name);
+    if (body?.items === undefined && body?.conversationIds === undefined) {
+      return NextResponse.json({ ok: true });
+    }
+  }
   // Normalize to a raw item list, accepting the legacy conversationIds form.
   const raw: unknown[] = Array.isArray(body?.items)
     ? body.items

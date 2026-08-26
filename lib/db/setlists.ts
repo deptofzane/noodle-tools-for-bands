@@ -381,6 +381,17 @@ export async function deleteSetlist(setlistId: string): Promise<void> {
 }
 
 /** Archive or unarchive a setlist (reversible). Bumps updatedAt. */
+/** Rename a setlist. The caller has already checked band membership. */
+export async function renameSetlist(
+  setlistId: string,
+  name: string,
+): Promise<void> {
+  await db
+    .update(setlists)
+    .set({ name, updatedAt: new Date() })
+    .where(eq(setlists.id, setlistId));
+}
+
 export async function setSetlistArchived(
   setlistId: string,
   archived: boolean,

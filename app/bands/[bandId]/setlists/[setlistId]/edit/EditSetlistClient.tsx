@@ -39,6 +39,7 @@ export function EditSetlistClient({
   const canGoBack = useCanGoBack();
 
   const [items, setItems] = useState<SetlistItem[]>(initialSongs);
+  const [title, setTitle] = useState(name);
   const [saving, setSaving] = useState(false);
 
   const viewHref = `/bands/${bandId}/setlists/${setlistId}`;
@@ -46,7 +47,12 @@ export function EditSetlistClient({
   // all count — but the row id (which changes on save) doesn't.
   const serialize = (list: SetlistItem[]) =>
     list.map((s) => s.conversationId ?? `marker:${s.name}`).join('|');
-  const dirty = serialize(initialSongs) !== serialize(items);
+  const trimmed = title.trim();
+  const renamed = trimmed !== name;
+  const dirty = renamed || serialize(initialSongs) !== serialize(items);
+  // An empty name isn't a rename, it's an unfinished one — the same 1–255
+  // rule the API and the create form apply.
+  const nameValid = trimmed.length > 0 && trimmed.length <= 255;
 
   // Return to the page the user came from (in-app history), falling back to
   // the song itself on a fresh load / deep link.
@@ -59,7 +65,7 @@ export function EditSetlistClient({
   };
 
   const handleSave = async () => {
-    if (!dirty || saving) return;
+    if (!dirty || saving || !nameValid) return;
     setSaving(true);
     try {
       await trackPending(async () => {
@@ -67,6 +73,9 @@ export function EditSetlistClient({
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            // Only when it actually changed, so an ordinary reorder doesn't
+            // rewrite the name and bump `updatedAt` for nothing.
+            ...(renamed ? { name: trimmed } : {}),
             items: items.map((s) => ({
               conversationId: s.conversationId,
               label: s.conversationId ? null : s.name,
@@ -94,14 +103,31 @@ export function EditSetlistClient({
         <button
           type="button"
           onClick={handleSave}
-          disabled={!dirty || saving}
+          disabled={!dirty || saving || !nameValid}
           className="btn-primary"
         >
           {saving ? 'Saving…' : 'Save'}
         </button>
       </header>
 
-      <h1 className="title-text">{name}</h1>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="setlist-name" className="text-sm font-medium">
+          Name
+        </label>
+        <input
+          id="setlist-name"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          maxLength={255}
+          aria-invalid={!nameValid}
+          className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-lg font-semibold focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+        />
+        {!nameValid && (
+          <p className="text-xs text-red-600 dark:text-red-400">
+            A setlist needs a name.
+          </p>
+        )}
+      </div>
 
       <SetlistItemsEditor
         items={items}
@@ -118,7 +144,7 @@ export function EditSetlistClient({
         <button
           type="button"
           onClick={handleSave}
-          disabled={!dirty || saving}
+          disabled={!dirty || saving || !nameValid}
           className="btn-primary"
         >
           {saving ? 'Saving…' : 'Save'}
