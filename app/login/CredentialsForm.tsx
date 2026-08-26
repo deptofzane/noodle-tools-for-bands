@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { PasswordField } from '../PasswordField';
 
 const field =
   'rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
@@ -45,13 +46,11 @@ export function CredentialsForm({ callbackUrl }: { callbackUrl: string }) {
         placeholder="Email"
         className={field}
       />
-      <input
-        type="password"
-        autoComplete="current-password"
+      <PasswordField
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={setPassword}
         placeholder="Password"
-        className={field}
+        autoComplete="current-password"
       />
       {error && <p className="text-xs text-danger">{error}</p>}
       <button

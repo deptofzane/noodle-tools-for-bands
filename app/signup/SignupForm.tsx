@@ -4,6 +4,7 @@ import { ensureOk } from '@/lib/api';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { PasswordField } from '../PasswordField';
 
 const field =
   'rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
@@ -72,14 +73,12 @@ export function SignupForm({
         autoComplete="email"
         className={field}
       />
-      <input
-        type="password"
+      <PasswordField
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={setPassword}
         placeholder="Password (min 8 characters)"
         autoComplete="new-password"
         minLength={8}
-        className={field}
       />
       {error && <p className="text-xs text-danger">{error}</p>}
       <button
