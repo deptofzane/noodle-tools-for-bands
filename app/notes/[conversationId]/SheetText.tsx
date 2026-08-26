@@ -14,6 +14,7 @@ import {
   type SheetTextFormat,
 } from '@/lib/sheet-preview';
 import { AutoTextarea } from '../../AutoTextarea';
+import { useTabIndent } from '../../useTabIndent';
 
 type Mode = 'chords' | 'formatted' | 'source';
 
@@ -177,6 +178,7 @@ export function SheetText({
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(text);
+  const tabIndent = useTabIndent();
   const [format, setFormat] = useState<SheetTextFormat>(() =>
     formatFromFileName(fileName),
   );
@@ -273,11 +275,18 @@ export function SheetText({
         <AutoTextarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={tabIndent.onKeyDown}
           disabled={saving}
           aria-label="Sheet music content"
+          aria-describedby="sheet-text-tab-hint"
           spellCheck={false}
           className="min-h-64 w-full rounded-md border border-line-strong bg-surface px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
         />
+        {/* Said out loud: a Tab that indents instead of leaving the field is
+            otherwise an invisible keyboard trap. */}
+        <p id="sheet-text-tab-hint" className="text-xs minor-text-theme-colors">
+          Tab indents by four spaces. Press Escape, then Tab, to move on.
+        </p>
       </div>
     );
   }

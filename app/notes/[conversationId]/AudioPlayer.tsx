@@ -368,10 +368,18 @@ export function AudioPlayer({
 }
 
 /**
- * Space = play/pause, ← / → = 10s back/forward. Ignored while a form control
- * is focused, so typing / the seek slider / selects keep their native
- * behavior (and space still activates a focused button natively — that path
- * is debounced too via `togglePlay`).
+ * Space = play/pause, ← / → = 10s back/forward.
+ *
+ * Ignored while a *text or value* control is focused, so typing, the seek
+ * slider (where arrows natively scrub) and selects keep their own behaviour.
+ *
+ * Buttons and links are deliberately not excluded. Almost everything on the
+ * Practice screen is a button — play, the song steppers, the options toggle,
+ * the kebab — and focus stays on whatever you last clicked, so excluding them
+ * meant the arrows went dead after the first click and never came back.
+ * Arrows do nothing on a focused button or link natively, so there's nothing
+ * to displace. Space is still excluded for buttons below, since that *does*
+ * activate them.
  */
 function useTransportKeys({
   togglePlay,
@@ -386,16 +394,16 @@ function useTransportKeys({
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       const tag = t?.tagName;
-      if (
+      const typing =
         tag === 'INPUT' ||
         tag === 'TEXTAREA' ||
         tag === 'SELECT' ||
-        tag === 'BUTTON' ||
-        tag === 'A' ||
-        t?.isContentEditable
-      )
-        return;
+        t?.isContentEditable;
+      if (typing) return;
       if (e.key === ' ' || e.code === 'Space') {
+        // A focused button or link handles space itself; hijacking it would
+        // both toggle playback and press the control.
+        if (tag === 'BUTTON' || tag === 'A') return;
         if (e.repeat) return; // don't retrigger while the key is held
         e.preventDefault();
         togglePlay();

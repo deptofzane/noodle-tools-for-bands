@@ -47,6 +47,7 @@ import {
   ZOOM_MAX,
 } from '../../usePersistedZoom';
 import { LoadingBlock } from '../../Spinner';
+import { useTabIndent } from '../../useTabIndent';
 
 /** Kept for callers that still pass a default-version meta as `initial`. */
 export interface SheetMusicMeta {
@@ -103,6 +104,7 @@ export function SheetMusic({
   const [chooseOpen, setChooseOpen] = useState(false);
   const [pasteMode, setPasteMode] = useState(false);
   const [pasteText, setPasteText] = useState('');
+  const tabIndent = useTabIndent();
   // Optional title for a pasted chart, so "Bass chart" or "Capo 2" can be set
   // in the same step instead of adding the version and then renaming it.
   const [pasteLabel, setPasteLabel] = useState('');
@@ -571,11 +573,19 @@ export function SheetMusic({
               <textarea
                 value={pasteText}
                 onChange={(e) => setPasteText(e.target.value)}
+                onKeyDown={tabIndent.onKeyDown}
                 rows={12}
                 autoFocus
                 placeholder="Lyrics, chords, or Markdown…"
+                aria-describedby="paste-text-tab-hint"
                 className="mt-3 w-full resize-y rounded-md border border-line-strong bg-surface px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
+              <p
+                id="paste-text-tab-hint"
+                className="mt-1 text-xs minor-text-theme-colors"
+              >
+                Tab indents by four spaces. Press Escape, then Tab, to move on.
+              </p>
               <div className="mt-4 flex items-center justify-between gap-2">
                 <button
                   type="button"
