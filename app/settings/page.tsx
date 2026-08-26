@@ -223,7 +223,7 @@ export default async function SettingsPage({
   );
 
   const tabs: SettingsTab[] = [
-    { id: 'account', label: 'Account', content: account },
+    { id: 'appearance', label: 'Appearance', content: appearance },
     {
       id: 'notifications',
       label: 'Notifications',
@@ -237,6 +237,7 @@ export default async function SettingsPage({
         </div>
       ),
     },
+    { id: 'account', label: 'Account', content: account },
     ...(feedToken
       ? [
           {
@@ -246,7 +247,6 @@ export default async function SettingsPage({
           } satisfies SettingsTab,
         ]
       : []),
-    { id: 'appearance', label: 'Appearance', content: appearance },
   ];
 
   return (

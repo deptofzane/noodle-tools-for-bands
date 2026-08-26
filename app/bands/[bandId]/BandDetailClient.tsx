@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { BandMembersTab } from './BandMembersTab';
 import { BandOverviewTab } from './BandOverviewTab';
 import { BandVenuesTab } from './BandVenuesTab';
@@ -16,7 +15,6 @@ import {
   type BandTab,
 } from './bandTabs';
 import { TabStrip } from '../../TabStrip';
-import { LeaveBandModal } from '../LeaveBandModal';
 import { useBandData } from './bandDetailHooks';
 import { LoadingBlock } from '../../Spinner';
 
@@ -44,10 +42,7 @@ export function BandDetailClient({
    */
   tabFromUrl?: boolean;
 }) {
-  const [leaveOpen, setLeaveOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<BandTab>(initialTab);
-
-  const router = useRouter();
 
   const { data, setlists, shows, venues, error, reload } = useBandData(bandId);
 
@@ -153,7 +148,6 @@ export function BandDetailClient({
           bandId={bandId}
           shows={shows}
           setlists={setlists}
-          onLeave={() => setLeaveOpen(true)}
           onReload={reload}
         />
       )}
@@ -168,15 +162,6 @@ export function BandDetailClient({
 
       {activeTab === 'notes' && (
         <BandNotesTab bandId={bandId} currentUserId={currentUserId} />
-      )}
-
-      {leaveOpen && (
-        <LeaveBandModal
-          band={{ id: bandId, name: data.band.name, role: data.myRole }}
-          currentUserId={currentUserId}
-          onCancel={() => setLeaveOpen(false)}
-          onLeft={() => router.push('/bands')}
-        />
       )}
     </div>
   );

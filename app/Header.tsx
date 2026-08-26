@@ -602,6 +602,25 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
                       </>
                     )}
 
+                    {/* Nothing to switch between yet. The Band row above is
+                        this menu's only route to bands, so without one there
+                        is no way in from here at all — which is exactly the
+                        state a new account starts in. */}
+                    {bands.length === 0 && (
+                      <>
+                        <MenuLink
+                          href="/bands"
+                          label="Create a band"
+                          isActive={pathname === '/bands'}
+                          onClick={closeMenu}
+                        />
+                        <span
+                          aria-hidden="true"
+                          className="my-1 border-t border-line"
+                        />
+                      </>
+                    )}
+
                     {/* Whatever the bar doesn't already show: on mobile the
                         non-tab links, on desktop the `menuOnly` ones. */}
                     <span
