@@ -191,6 +191,331 @@
   --warn-line: #7a5f2a;
 }
 
+/*
+ * Stage — for playing live.
+ *
+ * Near-black with warm, dimmed amber text. Two reasons it isn't just "darker
+ * dark": a bright screen on a dark stage wrecks your night vision and throws
+ * light back at the room, and blue is the worst offender for both. Everything
+ * here is low-luminance and warm, with contrast kept just high enough to read
+ * a setlist at arm's length under stage lighting.
+ *
+ * Charts are unaffected — sheet music keeps its own high-contrast treatment,
+ * which is exactly what you want on the music stand.
+ */
+:root[data-theme='stage'] {
+  color-scheme: dark;
+
+  --page: #080808;
+  --surface: #0e0d0c;
+  --surface-2: #17150f;
+  --surface-soft: #0e0d0c;
+  --surface-hover: #17150f;
+  --fill-muted: #0e0d0c;
+  --fill-2: #17150f;
+  --fill-strong: #080808;
+  --line: #1f1c16;
+  --line-strong: #2e2a20;
+
+  --fg: #d8c7a1;
+  --fg-strong: #e6d7b5;
+  --fg-body: #c9b891;
+  --fg-soft: #b5a480;
+  --fg-dim: #a39272;
+  --fg-muted: #8f7f62;
+  --fg-faint: #6b5e48;
+
+  --accent: #d9a441;
+  --accent-strong: #e8bd6b;
+  --accent-fill: #1c1509;
+  --accent-fill-strong: #241b0c;
+  --accent-line: #8a6a2a;
+  --on-accent: #080808;
+
+  --danger: #cf7a5c;
+  --danger-strong: #e3a184;
+  --danger-fill: #241310;
+  --danger-line: #6b3a2a;
+
+  --warn: #c9a227;
+  --warn-strong: #ddbf5e;
+  --warn-fill: #1e1808;
+  --warn-line: #6b581a;
+}
+
+/*
+ * Calendar and todo colours, for Stage.
+ *
+ * The dark set is cool — blues, greens, a violet — which fights a warm
+ * near-black page and, more to the point, throws exactly the light this theme
+ * exists to avoid. These are the same six categories rotated into warm,
+ * desaturated hues at low luminance: bright enough to tell apart at arm's
+ * length, dim enough not to wash out the room or your night vision.
+ *
+ * Six categories need six hues, so `studio` keeps a violet — but pulled warm
+ * and desaturated enough that no channel reads as blue-dominant.
+ */
+:root[data-theme='stage'] [data-event-type] {
+  --event-accent: #8b7d63;
+  --event-fill: #17150f;
+}
+:root[data-theme='stage'] [data-event-type='show'] {
+  --event-accent: #e08a3c;
+  --event-fill: #241a0e;
+}
+:root[data-theme='stage'] [data-event-type='practice'] {
+  --event-accent: #c7a13a;
+  --event-fill: #221d0d;
+}
+:root[data-theme='stage'] [data-event-type='writing'] {
+  --event-accent: #94a05a;
+  --event-fill: #1b1f11;
+}
+:root[data-theme='stage'] [data-event-type='studio'] {
+  --event-accent: #a882a0;
+  --event-fill: #1f1823;
+}
+:root[data-theme='stage'] [data-event-type='time-off'] {
+  --event-accent: #c98080;
+  --event-fill: #241616;
+}
+
+/*
+ * Rosé Pine — the published palette, mapped onto this app's roles.
+ *
+ * base/surface/overlay become page/surface/raised; muted and subtle become the
+ * two quiet foregrounds; iris is the accent, love the danger, gold the
+ * warning. Unlike the other themes this one also re-tints the calendar and
+ * todo colours below, so the category coding is in-palette rather than the
+ * default blues and greens sitting on a violet page.
+ */
+:root[data-theme='rose-pine'] {
+  color-scheme: dark;
+
+  --page: #191724; /* base */
+  --surface: #1f1d2e; /* surface */
+  --surface-2: #26233a; /* overlay */
+  --surface-soft: #21202e; /* highlight low */
+  --surface-hover: #26233a;
+  --fill-muted: #1f1d2e;
+  --fill-2: #26233a;
+  --fill-strong: #21202e;
+  --line: #26233a;
+  --line-strong: #403d52; /* highlight med */
+
+  --fg: #e0def4; /* text */
+  --fg-strong: #e0def4;
+  --fg-body: #d5d2ec;
+  --fg-soft: #908caa; /* subtle */
+  --fg-dim: #908caa;
+  --fg-muted: #908caa;
+  --fg-faint: #6e6a86; /* muted */
+
+  --accent: #c4a7e7; /* iris */
+  --accent-strong: #d7c1f0;
+  --accent-fill: #2a2440;
+  --accent-fill-strong: #332b4d;
+  --accent-line: #907aa9;
+  --on-accent: #191724;
+
+  --danger: #eb6f92; /* love */
+  --danger-strong: #f2a0b6;
+  --danger-fill: #2e1e28;
+  --danger-line: #82394f;
+
+  --warn: #f6c177; /* gold */
+  --warn-strong: #f9d7a5;
+  --warn-fill: #2e2618;
+  --warn-line: #8a6a35;
+}
+
+/*
+ * Calendar and todo colours, in Rosé Pine.
+ *
+ * The other themes leave these alone on purpose: the hues are a categorical
+ * code, and warming them toward a theme risks pulling the categories together.
+ * Rosé Pine has six distinct accents, so each type keeps its own — and the
+ * defaults (cool blues and greens) would clash badly against a violet base.
+ *
+ * More specific than the `.dark` rules further up, so these win while that
+ * class is still doing its job for the unmigrated variants.
+ */
+:root[data-theme='rose-pine'] [data-event-type] {
+  --event-accent: #908caa; /* subtle */
+  --event-fill: #26233a;
+}
+:root[data-theme='rose-pine'] [data-event-type='show'] {
+  --event-accent: #eb6f92; /* love */
+  --event-fill: #33212b;
+}
+:root[data-theme='rose-pine'] [data-event-type='practice'] {
+  --event-accent: #9ccfd8; /* foam */
+  --event-fill: #1d2b2f;
+}
+:root[data-theme='rose-pine'] [data-event-type='writing'] {
+  --event-accent: #3e8fb0; /* pine, Moon's brighter value for legibility */
+  --event-fill: #1b2733;
+}
+:root[data-theme='rose-pine'] [data-event-type='studio'] {
+  --event-accent: #c4a7e7; /* iris */
+  --event-fill: #2a2440;
+}
+:root[data-theme='rose-pine'] [data-event-type='time-off'] {
+  --event-accent: #ebbcba; /* rose */
+  --event-fill: #33262a;
+}
+
+/*
+ * SynthWave '84 — the editor theme, as an app.
+ *
+ * A deep indigo base under neon pink and cyan. The neons are saturated on
+ * purpose, but only as accents: using them for body copy would be unreadable
+ * for anything longer than a label, so text stays near-white and the glow is
+ * reserved for what it points at.
+ */
+:root[data-theme='synthwave-84'] {
+  color-scheme: dark;
+
+  --page: #262335;
+  --surface: #2a2139;
+  --surface-2: #34294f;
+  --surface-soft: #241b2f;
+  --surface-hover: #34294f;
+  --fill-muted: #2a2139;
+  --fill-2: #34294f;
+  --fill-strong: #241b2f;
+  --line: #34294f;
+  --line-strong: #495495;
+
+  --fg: #f0eff1;
+  --fg-strong: #ffffff;
+  --fg-body: #dfdce3;
+  --fg-soft: #b6b1c9;
+  --fg-dim: #a599c9;
+  --fg-muted: #848bbd;
+  --fg-faint: #6d6a86;
+
+  --accent: #ff7edb;
+  --accent-strong: #ffa6e8;
+  --accent-fill: #3a2145;
+  --accent-fill-strong: #4a2a57;
+  --accent-line: #ff7edb;
+  --on-accent: #262335;
+
+  --danger: #fe4450;
+  --danger-strong: #ff7d85;
+  --danger-fill: #3d1f28;
+  --danger-line: #8a2f39;
+
+  --warn: #fede5d;
+  --warn-strong: #ffeb95;
+  --warn-fill: #3a3220;
+  --warn-line: #8a7a2a;
+}
+
+:root[data-theme='synthwave-84'] [data-event-type] {
+  --event-accent: #848bbd;
+  --event-fill: #34294f;
+}
+:root[data-theme='synthwave-84'] [data-event-type='show'] {
+  --event-accent: #ff8b39;
+  --event-fill: #3d2a1c;
+}
+:root[data-theme='synthwave-84'] [data-event-type='practice'] {
+  --event-accent: #36f9f6;
+  --event-fill: #16333a;
+}
+:root[data-theme='synthwave-84'] [data-event-type='writing'] {
+  --event-accent: #72f1b8;
+  --event-fill: #17362c;
+}
+:root[data-theme='synthwave-84'] [data-event-type='studio'] {
+  --event-accent: #b381c5;
+  --event-fill: #34254a;
+}
+:root[data-theme='synthwave-84'] [data-event-type='time-off'] {
+  --event-accent: #ff7edb;
+  --event-fill: #3d2140;
+}
+
+/*
+ * Catppuccin Latte — the light member of that family.
+ *
+ * `base` is the page and white is the raised surface, so cards lift off the
+ * background rather than sinking into it; the greys run down through surface0
+ * and surface1 for rules. The one deviation from a literal port: `mantle` is
+ * the page rather than `base`, which keeps a visible step between the page
+ * and anything raised on it.
+ *
+ * Being light, this is the theme that exercises the `dark` class coming *off*
+ * — the variants still on `dark:` fall back to their light values, which is
+ * what they should be here.
+ */
+:root[data-theme='catppuccin-latte'] {
+  color-scheme: light;
+
+  --page: #e6e9ef; /* mantle */
+  --surface: #ffffff;
+  --surface-2: #eff1f5; /* base */
+  --surface-soft: #eff1f5;
+  --surface-hover: #dce0e8; /* crust */
+  --fill-muted: #eff1f5;
+  --fill-2: #e6e9ef;
+  --fill-strong: #dce0e8;
+  --line: #ccd0da; /* surface0 */
+  --line-strong: #bcc0cc; /* surface1 */
+
+  --fg: #4c4f69; /* text */
+  --fg-strong: #4c4f69;
+  --fg-body: #5c5f77; /* subtext1 */
+  --fg-soft: #5c5f77;
+  --fg-dim: #6c6f85; /* subtext0 */
+  --fg-muted: #6c6f85;
+  --fg-faint: #8c8fa1; /* overlay1 */
+
+  --accent: #1e66f5; /* blue */
+  --accent-strong: #8839ef; /* mauve — deeper, since Latte has no darker blue */
+  --accent-fill: #dfe7fd;
+  --accent-fill-strong: #c9d8fc;
+  --accent-line: #1e66f5;
+  --on-accent: #ffffff;
+
+  --danger: #d20f39; /* red */
+  --danger-strong: #a80d2e;
+  --danger-fill: #fbe4e8;
+  --danger-line: #f0aebc;
+
+  --warn: #df8e1d; /* yellow */
+  --warn-strong: #b0700f;
+  --warn-fill: #fbf1de;
+  --warn-line: #eccf9a;
+}
+
+:root[data-theme='catppuccin-latte'] [data-event-type] {
+  --event-accent: #8c8fa1; /* overlay1 */
+  --event-fill: #e6e9ef;
+}
+:root[data-theme='catppuccin-latte'] [data-event-type='show'] {
+  --event-accent: #fe640b; /* peach */
+  --event-fill: #fdeade;
+}
+:root[data-theme='catppuccin-latte'] [data-event-type='practice'] {
+  --event-accent: #1e66f5; /* blue */
+  --event-fill: #dfe7fd;
+}
+:root[data-theme='catppuccin-latte'] [data-event-type='writing'] {
+  --event-accent: #40a02b; /* green */
+  --event-fill: #e2f2de;
+}
+:root[data-theme='catppuccin-latte'] [data-event-type='studio'] {
+  --event-accent: #8839ef; /* mauve */
+  --event-fill: #eee2fd;
+}
+:root[data-theme='catppuccin-latte'] [data-event-type='time-off'] {
+  --event-accent: #ea76cb; /* pink */
+  --event-fill: #fce6f5;
+}
+
 /* Sheet-music text containers opt out of global font scaling via this base. */
 .sheet-base {
   font-size: var(--sheet-base);

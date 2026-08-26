@@ -211,9 +211,7 @@ export function EventSetlistSongs({
               <span
                 className={
                   'min-w-0 flex-1 truncate py-3 ml-2' +
-                  (isCurrent
-                    ? 'font-medium text-blue-700 dark:text-blue-400'
-                    : '')
+                  (isCurrent ? 'font-medium text-accent-strong' : '')
                 }
               >
                 {s.name}

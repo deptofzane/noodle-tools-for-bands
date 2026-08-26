@@ -310,7 +310,7 @@ export function SheetText({
                 smallBtn +
                 ' ' +
                 (mode === m.id
-                  ? 'bg-neutral-200 text-fg dark:bg-neutral-700'
+                  ? 'bg-fill-strong text-fg'
                   : 'minor-text-theme-colors hover:bg-surface-hover')
               }
             >

@@ -136,8 +136,7 @@ export function SongRow({
         <div className="flex items-center gap-2">
           <span
             className={
-              'truncate font-medium ' +
-              (isCurrent ? 'text-blue-700 dark:text-blue-400' : '')
+              'truncate font-medium ' + (isCurrent ? 'text-accent-strong' : '')
             }
           >
             {c.audioFileName ?? 'Untitled audio'}

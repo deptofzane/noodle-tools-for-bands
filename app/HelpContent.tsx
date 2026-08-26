@@ -203,9 +203,7 @@ function MenuExample() {
         <div key={r} className="flex items-stretch">
           {row.map((icon, i) => (
             <Fragment key={i}>
-              {i > 0 && (
-                <span className="my-1 w-px shrink-0 bg-neutral-200 dark:bg-neutral-800" />
-              )}
+              {i > 0 && <span className="my-1 w-px shrink-0 bg-fill-strong" />}
               <span className="flex flex-1 items-center justify-center px-4 py-1.5 text-fg-body">
                 {icon}
               </span>

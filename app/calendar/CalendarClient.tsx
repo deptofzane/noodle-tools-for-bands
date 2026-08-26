@@ -184,7 +184,7 @@ export function CalendarClient() {
       </div>
 
       <div className="overflow-hidden rounded-lg border border-line">
-        <div className="grid grid-cols-7 gap-px bg-neutral-200 dark:bg-neutral-800">
+        <div className="grid grid-cols-7 gap-px bg-fill-strong">
           {WEEKDAYS.map((w) => (
             <div
               key={w}
@@ -209,7 +209,7 @@ export function CalendarClient() {
           );
           return (
             <div key={wi} className="relative">
-              <div className="grid grid-cols-7 gap-px bg-neutral-200 dark:bg-neutral-800">
+              <div className="grid grid-cols-7 gap-px bg-fill-strong">
                 {week.map((d, i) => (
                   <div
                     key={i}

@@ -13,6 +13,7 @@ import { PendingActionProvider } from './PendingActionProvider';
 import { PlaylistPlayerProvider } from './player/PlaylistPlayer';
 import { RouteProgress } from './RouteProgress';
 import { ThemeKeeper } from './ThemeKeeper';
+import { StageOnLive } from './StageOnLive';
 import { ToastProvider } from './ToastProvider';
 import './globals.css';
 import { THEME_COLORS, THEME_IS_DARK, THEMES } from './theme';
@@ -128,6 +129,8 @@ export default async function RootLayout({
         {/* Restores the theme class when a re-render of this layout drops it
             (see ThemeKeeper). */}
         <ThemeKeeper />
+        {/* Dims the app on Live/Practice when that's been turned on. */}
+        <StageOnLive />
         {/* Suspense: `RouteProgress` reads the query string, which opts its
             subtree out of prerendering. */}
         <Suspense fallback={null}>

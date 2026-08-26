@@ -79,10 +79,8 @@ export function DeleteAccount({ email }: { email: string | null }) {
   };
 
   return (
-    <div className="rounded-lg border border-red-300 p-4 dark:border-red-900">
-      <p className="font-medium text-red-700 dark:text-red-400">
-        Delete account
-      </p>
+    <div className="rounded-lg border border-danger-line p-4">
+      <p className="font-medium text-danger">Delete account</p>
       <p className="mt-1 text-xs minor-text-theme-colors dark:text-neutral-400">
         Permanently removes your account and everything personal to it. Any band
         you’re the only owner of is deleted too, along with its songs and files
@@ -92,7 +90,7 @@ export function DeleteAccount({ email }: { email: string | null }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="rounded-md border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-danger-fill md:px-3 md:py-1.5 dark:border-red-900 dark:text-red-400"
+          className="rounded-md border border-danger-line px-4 py-3 text-sm font-medium text-danger hover:bg-danger-fill md:px-3 md:py-1.5"
         >
           Delete account
         </button>
@@ -107,7 +105,7 @@ export function DeleteAccount({ email }: { email: string | null }) {
         >
           <h2
             id="delete-account-title"
-            className="text-base font-semibold text-red-700 dark:text-red-400"
+            className="text-base font-semibold text-danger"
           >
             Delete your account?
           </h2>
@@ -121,7 +119,7 @@ export function DeleteAccount({ email }: { email: string | null }) {
           ) : (
             <div className="mt-4 flex flex-col gap-3 text-sm">
               {plan.bandsDeleted.length > 0 && (
-                <div className="rounded-md border border-red-300 bg-danger-fill px-3 py-2 dark:border-red-900">
+                <div className="rounded-md border border-danger-line bg-danger-fill px-3 py-2">
                   <p className="font-medium text-danger-strong">
                     These bands will be deleted for everyone:
                   </p>

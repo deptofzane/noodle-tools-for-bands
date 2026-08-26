@@ -34,7 +34,7 @@ export function OfflineBanner() {
   return (
     <div
       role="status"
-      className="fixed inset-x-0 top-0 z-[55] flex items-center justify-center gap-3 bg-amber-100 px-3 py-1.5 text-xs text-amber-900 lg:top-[var(--app-nav-h)] dark:bg-amber-950 dark:text-amber-200"
+      className="fixed inset-x-0 top-0 z-[55] flex items-center justify-center gap-3 bg-warn-fill px-3 py-1.5 text-xs text-amber-900 lg:top-[var(--app-nav-h)] dark:text-amber-200"
     >
       <span>You’re offline.</span>
       <a href="/offline" className="font-medium underline">

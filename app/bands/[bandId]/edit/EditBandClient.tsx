@@ -407,7 +407,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
         </form>
 
         {createdLink && (
-          <div className="flex flex-col gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 dark:border-blue-900 dark:bg-blue-950/40">
+          <div className="flex flex-col gap-2 rounded-md border border-blue-200 bg-accent-fill px-3 py-2 dark:border-blue-900">
             <p className="text-xs text-fg-dim">
               Invite link for{' '}
               <span className="font-medium">{createdLink.email}</span> — copy
@@ -460,13 +460,11 @@ export function EditBandClient({ bandId }: { bandId: string }) {
       </section>
 
       <section className="flex flex-col gap-2 border-t border-line pt-4">
-        <h2 className="text-sm font-medium text-red-700 dark:text-red-400">
-          Danger zone
-        </h2>
+        <h2 className="text-sm font-medium text-danger">Danger zone</h2>
         <button
           type="button"
           onClick={() => setDeleteOpen(true)}
-          className="self-start rounded-md border border-red-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-red-700 hover:bg-danger-fill dark:border-red-800 dark:text-red-400"
+          className="self-start rounded-md border border-danger-line px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-danger hover:bg-danger-fill"
         >
           Delete band
         </button>

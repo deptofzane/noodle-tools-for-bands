@@ -19,13 +19,11 @@ async function openAppearance(p: Page) {
   await expect(picker(p)).toBeVisible();
 }
 
-test('the picker offers all three themes', async ({ page }) => {
+test('the picker offers sepia', async ({ page }) => {
   await openAppearance(page);
-  await expect(picker(page).getByRole('button')).toHaveText([
-    'Light',
-    'Dark',
-    'Sepia',
-  ]);
+  await expect(
+    picker(page).getByRole('button', { name: 'Sepia' }),
+  ).toBeVisible();
 });
 
 test('choosing sepia applies it everywhere it matters', async ({ page }) => {

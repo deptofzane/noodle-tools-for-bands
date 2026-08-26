@@ -103,7 +103,7 @@ export function CalendarSubscription({ token }: { token: string }) {
               type="button"
               onClick={reset}
               disabled={resetting}
-              className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger-fill disabled:opacity-50 dark:border-red-800"
+              className="rounded-md border border-danger-line px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger-fill disabled:opacity-50"
             >
               {resetting ? 'Resetting…' : 'Reset link'}
             </button>

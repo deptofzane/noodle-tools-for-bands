@@ -221,7 +221,7 @@ export function EditPollClient({
         <button
           type="button"
           onClick={() => setCancelOpen(true)}
-          className="self-start rounded-md border border-red-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-danger hover:bg-danger-fill dark:border-red-800"
+          className="self-start rounded-md border border-danger-line px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-danger hover:bg-danger-fill"
         >
           Cancel poll
         </button>

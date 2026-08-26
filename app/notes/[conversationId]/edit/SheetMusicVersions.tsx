@@ -580,7 +580,7 @@ export function SheetMusicVersions({
                     className={
                       'rounded-md px-2 py-1 text-xs font-medium ' +
                       (pasteFormat === f.id
-                        ? 'bg-neutral-200 text-fg dark:bg-neutral-700'
+                        ? 'bg-fill-strong text-fg'
                         : 'minor-text-theme-colors hover:bg-surface-hover')
                     }
                   >
@@ -747,7 +747,7 @@ export function SheetMusicVersions({
                 className={
                   'rounded-md px-2 py-1 text-xs font-medium ' +
                   (editContentFormat === f.id
-                    ? 'bg-neutral-200 text-fg dark:bg-neutral-700'
+                    ? 'bg-fill-strong text-fg'
                     : 'minor-text-theme-colors hover:bg-surface-hover')
                 }
               >

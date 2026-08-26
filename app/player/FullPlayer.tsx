@@ -390,9 +390,7 @@ export function FullPlayer({
                           aria-current={isCurrent ? 'true' : undefined}
                           className={
                             'flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left text-sm hover:bg-surface-soft ' +
-                            (isCurrent
-                              ? 'text-blue-700 dark:text-blue-400'
-                              : '')
+                            (isCurrent ? 'text-accent-strong' : '')
                           }
                         >
                           <span className="w-5 shrink-0 text-right text-xs tabular-nums text-neutral-400">

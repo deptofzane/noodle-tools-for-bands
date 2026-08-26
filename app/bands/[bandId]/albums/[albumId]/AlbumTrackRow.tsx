@@ -117,7 +117,7 @@ export function AlbumTrackRow({
         )}
 
         {track.state === 'unplayable' && (
-          <span className="truncate text-xs text-neutral-500 dark:text-neutral-400">
+          <span className="truncate text-xs text-fg-muted">
             {track.pinnedFileName
               ? `“${track.pinnedLabel ?? track.pinnedFileName}” was deleted, and this song has no other audio`
               : 'No audio yet'}

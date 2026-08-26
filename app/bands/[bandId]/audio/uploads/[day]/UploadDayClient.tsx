@@ -104,7 +104,7 @@ export function UploadDayClient({
               key={u.fileId}
               className={
                 'flex items-center gap-3 px-3 py-2 ' +
-                (isCurrent ? 'bg-blue-50 dark:bg-blue-950/40' : '')
+                (isCurrent ? 'bg-accent-fill' : '')
               }
             >
               <span className="w-5 shrink-0 text-right text-xs tabular-nums text-neutral-400">

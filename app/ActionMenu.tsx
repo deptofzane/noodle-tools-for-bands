@@ -157,7 +157,7 @@ export function MenuIconRow({
           {i > 0 && (
             <span
               aria-hidden="true"
-              className="my-1 w-px shrink-0 bg-neutral-200 dark:bg-neutral-800"
+              className="my-1 w-px shrink-0 bg-fill-strong"
             />
           )}
           <button
@@ -191,7 +191,7 @@ export function MenuSectionLabel({ children }: { children: ReactNode }) {
   return (
     <div
       role="none"
-      className="px-4 pb-0.5 pt-2 text-xs font-semibold uppercase tracking-wide text-neutral-500 sm:px-3 dark:text-neutral-400"
+      className="px-4 pb-0.5 pt-2 text-xs font-semibold uppercase tracking-wide text-fg-muted sm:px-3"
     >
       {children}
     </div>

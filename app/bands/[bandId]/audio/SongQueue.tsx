@@ -153,7 +153,7 @@ export function SongQueue() {
                 key={rowId}
                 className={
                   'flex items-center gap-3 pr-1 ' +
-                  (isCurrent ? 'bg-blue-50 dark:bg-blue-950/40' : '')
+                  (isCurrent ? 'bg-accent-fill' : '')
                 }
               >
                 <button
@@ -207,9 +207,7 @@ export function SongQueue() {
                       href={t.href}
                       className={
                         'block truncate text-sm hover:underline ' +
-                        (isCurrent
-                          ? 'font-medium text-blue-700 dark:text-blue-400'
-                          : '')
+                        (isCurrent ? 'font-medium text-accent-strong' : '')
                       }
                     >
                       {t.title}
@@ -329,7 +327,7 @@ function SortableQueueRow({
       className={
         'flex items-center gap-3 rounded-lg border px-3 py-3 text-sm ' +
         (isCurrent
-          ? 'border-blue-300 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/40'
+          ? 'border-blue-300 bg-accent-fill dark:border-blue-900'
           : 'border-line bg-surface') +
         (isDragging ? ' z-10 shadow-lg' : '')
       }
@@ -352,9 +350,7 @@ function SortableQueueRow({
         <span
           className={
             'block truncate ' +
-            (isCurrent
-              ? 'font-medium text-blue-700 dark:text-blue-400'
-              : 'font-medium')
+            (isCurrent ? 'font-medium text-accent-strong' : 'font-medium')
           }
         >
           {track.title}

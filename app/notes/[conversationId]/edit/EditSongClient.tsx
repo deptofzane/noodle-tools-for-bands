@@ -349,9 +349,7 @@ export function EditSongClient({
 
       {/* Danger zone */}
       <section className="flex flex-col gap-2 rounded-lg border border-red-200 p-4 dark:border-red-900">
-        <h2 className="text-sm font-medium text-red-700 dark:text-red-400">
-          Delete song
-        </h2>
+        <h2 className="text-sm font-medium text-danger">Delete song</h2>
         <p className="text-xs text-fg-muted">
           Permanently deletes this song and all of its notes, sheet music, and
           activity. This can’t be undone.
@@ -360,7 +358,7 @@ export function EditSongClient({
           <button
             type="button"
             onClick={() => setDeleteOpen(true)}
-            className="rounded-md border border-red-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-red-700 hover:bg-danger-fill dark:border-red-800 dark:text-red-400"
+            className="rounded-md border border-danger-line px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-danger hover:bg-danger-fill"
           >
             Delete song
           </button>

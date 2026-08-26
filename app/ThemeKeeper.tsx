@@ -34,6 +34,9 @@ export function ThemeKeeper() {
     };
 
     const apply = () => {
+      // A screen has imposed a theme (see `applyTheme`'s override) — restoring
+      // the stored one here would flip it straight back.
+      if (root.dataset.themeOverride) return;
       const want = wanted();
       // Nothing stored (storage cleared mid-session) — leave it alone rather
       // than guess, so this never fights the user.
@@ -52,7 +55,7 @@ export function ThemeKeeper() {
     const observer = new MutationObserver(apply);
     observer.observe(root, {
       attributes: true,
-      attributeFilter: ['class', 'data-theme'],
+      attributeFilter: ['class', 'data-theme', 'data-theme-override'],
     });
     return () => observer.disconnect();
   }, []);

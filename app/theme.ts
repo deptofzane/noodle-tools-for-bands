@@ -1,4 +1,12 @@
-export const THEMES = ['light', 'dark', 'sepia'] as const;
+export const THEMES = [
+  'light',
+  'dark',
+  'sepia',
+  'stage',
+  'rose-pine',
+  'synthwave-84',
+  'catppuccin-latte',
+] as const;
 export type Theme = (typeof THEMES)[number];
 
 export function isTheme(v: unknown): v is Theme {
@@ -10,6 +18,10 @@ export const THEME_LABELS: Record<Theme, string> = {
   light: 'Light',
   dark: 'Dark',
   sepia: 'Sepia',
+  stage: 'Stage',
+  'rose-pine': 'Rosé Pine',
+  'synthwave-84': "SynthWave '84",
+  'catppuccin-latte': 'Catppuccin Latte',
 };
 
 /**
@@ -24,6 +36,13 @@ export const THEME_IS_DARK: Record<Theme, boolean> = {
   light: false,
   dark: true,
   sepia: true,
+  stage: true,
+  'rose-pine': true,
+  'synthwave-84': true,
+  // The first light theme besides the default — so the `dark` class comes
+  // off, and the variants still awaiting migration correctly render their
+  // light values.
+  'catppuccin-latte': false,
 };
 
 /**
@@ -35,6 +54,10 @@ export const THEME_COLORS: Record<Theme, string> = {
   light: '#ffffff',
   dark: '#171717',
   sepia: '#1c1714',
+  stage: '#080808',
+  'rose-pine': '#191724',
+  'synthwave-84': '#262335',
+  'catppuccin-latte': '#e6e9ef',
 };
 
 /**
@@ -45,9 +68,16 @@ export const THEME_COLORS: Record<Theme, string> = {
  * root layout does the same three things inline, because it has to run before
  * any of this is loaded.
  */
-export function applyTheme(theme: Theme): void {
+export function applyTheme(theme: Theme, override = false): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
+  /*
+   * An override marks the theme as imposed by a screen rather than chosen in
+   * Settings — `ThemeKeeper` leaves it alone while it's set, instead of
+   * restoring the stored choice and fighting whatever put it there.
+   */
+  if (override) root.dataset.themeOverride = 'on';
+  else delete root.dataset.themeOverride;
   root.dataset.theme = theme;
   root.classList.toggle('dark', THEME_IS_DARK[theme]);
 

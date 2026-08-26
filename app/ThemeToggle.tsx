@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { applyTheme, isTheme, THEMES, THEME_LABELS, type Theme } from './theme';
+import { STAGE_ON_LIVE_KEY, stageOnLiveEnabled } from './StageOnLive';
 
 /**
  * Theme picker.
@@ -18,10 +19,12 @@ import { applyTheme, isTheme, THEMES, THEME_LABELS, type Theme } from './theme';
  */
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme | null>(null);
+  const [stageOnLive, setStageOnLive] = useState(false);
 
   useEffect(() => {
     const applied = document.documentElement.dataset.theme;
     setTheme(isTheme(applied) ? applied : 'light');
+    setStageOnLive(stageOnLiveEnabled());
   }, []);
 
   const choose = (next: Theme) => {
@@ -44,28 +47,56 @@ export function ThemeToggle() {
     );
   }
 
+  const toggleStageOnLive = (on: boolean) => {
+    setStageOnLive(on);
+    try {
+      localStorage.setItem(STAGE_ON_LIVE_KEY, on ? 'on' : 'off');
+    } catch {
+      // Storage unavailable — the setting just won't persist.
+    }
+  };
+
   return (
-    <span
-      role="group"
-      aria-label="Theme"
-      className="inline-flex items-center rounded-md border border-line-strong p-0.5 text-sm"
-    >
-      {THEMES.map((t) => (
-        <button
-          key={t}
-          type="button"
-          onClick={() => choose(t)}
-          aria-pressed={theme === t}
-          className={
-            'rounded px-3 py-1.5 ' +
-            (theme === t
-              ? 'bg-surface-hover font-medium text-fg'
-              : 'text-fg-muted hover:text-fg-strong')
-          }
-        >
-          {THEME_LABELS[t]}
-        </button>
-      ))}
-    </span>
+    <div className="flex flex-col gap-3">
+      <span
+        role="group"
+        aria-label="Theme"
+        className="inline-flex flex-wrap items-center gap-0.5 rounded-md border border-line-strong p-0.5 text-sm justify-between"
+      >
+        {THEMES.map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => choose(t)}
+            aria-pressed={theme === t}
+            className={
+              'rounded px-3 py-1.5 ' +
+              (theme === t
+                ? 'bg-surface-hover font-medium text-fg'
+                : 'text-fg-muted hover:text-fg-strong')
+            }
+          >
+            {THEME_LABELS[t]}
+          </button>
+        ))}
+      </span>
+
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={stageOnLive}
+          onChange={(e) => toggleStageOnLive(e.target.checked)}
+          className="mt-0.5 h-4 w-4"
+        />
+        <span>
+          <span className="font-medium">Use Stage while playing</span>
+          <span className="block text-xs minor-text-theme-colors">
+            Switches to the Stage theme on the Live and Practice screens, and
+            back when you leave. Dim and warm, so the screen doesn&rsquo;t light
+            up the room or your night vision.
+          </span>
+        </span>
+      </label>
+    </div>
   );
 }

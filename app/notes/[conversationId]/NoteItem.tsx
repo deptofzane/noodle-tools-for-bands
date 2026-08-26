@@ -165,7 +165,7 @@ export function NoteItem({
       ref={liRef}
       className={`rounded-lg border p-3 transition-colors duration-700 ${
         showHighlight
-          ? 'border-blue-400 bg-blue-50 ring-2 ring-blue-300 dark:border-blue-500 dark:bg-blue-950/40 dark:ring-blue-700'
+          ? 'border-blue-400 bg-accent-fill ring-2 ring-blue-300 dark:border-blue-500 dark:ring-blue-700'
           : 'border-line'
       }`}
     >
