@@ -172,7 +172,7 @@ export function EventSetlistActions({
           />
         )}
         <ActionMenuItem onClick={() => go(practiceHref(setlistId))}>
-          Practice
+          Practice setlist songs
         </ActionMenuItem>
         <ActionMenuItem onClick={() => go(liveHref(setlistId))}>
           Live

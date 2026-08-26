@@ -57,10 +57,7 @@ export function groupByDay(uploads: BandUpload[]): [string, BandUpload[]][] {
  * grouping now — the per-day page asks the server for its day rather than
  * filtering a list it would have had to hold all of.
  */
-function uploadsForDay(
-  uploads: BandUpload[],
-  key: string,
-): BandUpload[] {
+function uploadsForDay(uploads: BandUpload[], key: string): BandUpload[] {
   return uploads
     .filter((u) => dayKey(u.createdAt) === key)
     .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
@@ -86,7 +83,7 @@ export function uploadTrack(u: BandUpload): PlaylistTrack {
       `?version=${u.fileId}&name=${encodeURIComponent(u.fileName)}`,
     fileName: u.fileName,
     mimeType: u.mimeType,
-    href: `/notes/${u.conversationId}?from=audio`,
+    href: `/notes/${u.conversationId}/practice?from=audio`,
     originalBand: u.originalBand ?? undefined,
     bpm: u.bpm,
     songKey: u.key,

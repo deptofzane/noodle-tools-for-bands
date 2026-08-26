@@ -135,7 +135,7 @@ export function UploadHistory({ bandId }: { bandId: string }) {
                       className="flex items-center gap-2 pr-3 hover:bg-neutral-50 dark:hover:bg-neutral-900"
                     >
                       <Link
-                        href={`/notes/${u.conversationId}?from=audio`}
+                        href={`/notes/${u.conversationId}/practice?from=audio`}
                         className="min-w-0 flex-1 px-4 py-3 text-sm md:px-3 md:py-1.5"
                       >
                         <span className="block truncate">{u.title}</span>

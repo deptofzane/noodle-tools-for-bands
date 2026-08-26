@@ -188,7 +188,7 @@ export function BandAlbumList({
                       {t.position + 1}
                     </span>
                     <Link
-                      href={`/notes/${t.conversationId}`}
+                      href={`/notes/${t.conversationId}/practice`}
                       className="min-w-0 flex-1 truncate hover:underline"
                     >
                       {t.name}

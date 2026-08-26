@@ -265,12 +265,6 @@ export function SongQueue() {
                       },
                     ]}
                   />
-                  {/* Unconditional, unlike the Audio list's rows: a queue
-                      entry carries no sheet-music flag to gate Live on, and
-                      Live says so plainly when a song has none. */}
-                  <ActionMenuItem onClick={() => go(`/notes/${t.id}/practice`)}>
-                    Practice
-                  </ActionMenuItem>
                   {/* By row, not by track id: the same song can sit in the
                       queue twice, and only the one whose menu is open should
                       come out. */}

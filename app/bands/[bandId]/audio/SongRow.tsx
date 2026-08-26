@@ -68,7 +68,7 @@ export function SongRow({
         src,
         fileName: c.audioStoredName ?? undefined,
         mimeType: c.audioMimeType ?? undefined,
-        href: `/notes/${c.id}?from=audio`,
+        href: `/notes/${c.id}/practice?from=audio`,
         originalBand: c.originalBand ?? undefined,
         bpm: c.bpm,
         songKey: c.key,
@@ -130,7 +130,7 @@ export function SongRow({
       )}
 
       <Link
-        href={`/notes/${c.id}?from=audio`}
+        href={`/notes/${c.id}/practice?from=audio`}
         className="min-w-0 flex-1 px-4 py-3 md:py-1.5 md:px-3 text-sm"
       >
         <div className="flex items-center gap-2">
@@ -195,14 +195,6 @@ export function SongRow({
             }}
           >
             Add song to queue
-          </ActionMenuItem>
-        )}
-        {/* Live is sheet music on screen and nothing else, so it needs some.
-            Practice pairs the player with the sheet, and is worth opening with
-            either one. */}
-        {(c.hasSheetMusic || track) && (
-          <ActionMenuItem onClick={() => go(`/notes/${c.id}/practice`)}>
-            Practice
           </ActionMenuItem>
         )}
         {c.hasSheetMusic && (

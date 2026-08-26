@@ -47,7 +47,7 @@ export default async function SetlistPage({
           </span>
           <span className="min-w-0">
             <Link
-              href={`/notes/${s.conversationId}`}
+              href={`/notes/${s.conversationId}/practice`}
               className="hover:underline"
             >
               {s.name}

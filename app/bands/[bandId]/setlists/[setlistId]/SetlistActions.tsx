@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useNavigate } from '../../../../useNavigate';
 import {
   ActionMenu,
@@ -62,12 +61,6 @@ export function SetlistActions({
   // deliberate, and a mode left on would keep reordering later plays of it.
   const shuffleAll = () => player.play(shuffledCopy(queue), 0);
 
-  const downloadLabel = downloading
-    ? `↓ ${Math.round(offline.progress * 100)}%`
-    : rec
-      ? 'Update offline copy'
-      : 'Download';
-
   return (
     <span className="mt-2 flex shrink-0 items-center justify-end gap-2">
       {/* At-a-glance offline status (all breakpoints — covers the mobile
@@ -82,55 +75,6 @@ export function SetlistActions({
           stale={offline.isStale({ id: setlistId, songs })}
         />
       ) : null}
-
-      {/* Desktop: individual buttons. */}
-      <span
-        className={
-          (hasSongs ? 'hidden md:flex' : 'hidden') + ' items-center gap-2'
-        }
-      >
-        {queue.length > 0 && (
-          <>
-            <button type="button" onClick={playAll} className="btn-outline h-9">
-              Play all
-            </button>
-            <button
-              type="button"
-              onClick={shuffleAll}
-              className="btn-outline h-9"
-            >
-              Shuffle all
-            </button>
-          </>
-        )}
-        <Link href={practice} className="btn-outline h-9">
-          Practice
-        </Link>
-        <Link href={live} className="btn-outline h-9">
-          Live
-        </Link>
-        <button
-          type="button"
-          onClick={() => offline.openDownload(target)}
-          title={
-            rec
-              ? `Downloaded ${new Date(rec.downloadedAt).toLocaleString()}`
-              : undefined
-          }
-          className="btn-outline h-9"
-        >
-          {downloadLabel}
-        </button>
-        {rec && !downloading && (
-          <button
-            type="button"
-            onClick={() => void offline.remove({ bandId, setlistId, name })}
-            className="btn-ghost h-9"
-          >
-            Remove offline copy
-          </button>
-        )}
-      </span>
 
       {/*
         The overflow menu, shown at every width now that it carries "Edit
@@ -165,7 +109,7 @@ export function SetlistActions({
             beside this menu, so repeating them inside it would be two ways to
             do one thing in the same corner of the screen. */}
         {hasSongs && queue.length > 0 && (
-          <span role="none" className="block md:hidden">
+          <span role="none" className="block">
             <PlayShuffleRow
               label={name}
               onPlay={playAll}
@@ -175,9 +119,9 @@ export function SetlistActions({
           </span>
         )}
         {hasSongs && (
-          <span role="none" className="flex flex-col md:hidden">
+          <span role="none" className="flex flex-col">
             <ActionMenuItem onClick={() => go(practice)}>
-              Practice
+              Practice setlist songs
             </ActionMenuItem>
             <ActionMenuItem onClick={() => go(live)}>Live</ActionMenuItem>
             {rec ? (

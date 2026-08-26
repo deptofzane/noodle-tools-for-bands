@@ -149,7 +149,7 @@ export function UploadDayClient({
 
               <span className="min-w-0 flex-1">
                 <Link
-                  href={`/notes/${u.conversationId}?from=audio`}
+                  href={`/notes/${u.conversationId}/practice?from=audio`}
                   className="block truncate text-sm font-medium hover:underline"
                 >
                   {u.title}

@@ -85,7 +85,7 @@ export function EventSetlistSongs({
       `?version=${s.audioVersionId}&name=${encodeURIComponent(s.audioStoredName!)}`,
     fileName: s.audioStoredName!,
     mimeType: s.audioMimeType ?? undefined,
-    href: `/notes/${s.conversationId}`,
+    href: `/notes/${s.conversationId}/practice`,
     originalBand: s.originalBand ?? undefined,
     bpm: s.bpm,
     songKey: s.key,

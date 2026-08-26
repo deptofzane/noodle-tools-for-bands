@@ -1,6 +1,8 @@
 'use client';
 
 import { PlayerProvider } from './notes/[conversationId]/PlayerContext';
+import { NotesPanel } from './notes/[conversationId]/NotesPanel';
+import { usePlaylistPlayer } from './player/PlaylistPlayer';
 import {
   AudioPlayer,
   type PlayerVersion,
@@ -69,6 +71,8 @@ export function Practice({
   back,
   startIndex,
   shareHref,
+  canCloseConversation = false,
+  initialThreadId,
 }: {
   songs: PracticeSong[];
   apiKey: string;
@@ -95,6 +99,18 @@ export function Practice({
    */
   startIndex?: number | null;
   /**
+   * A note thread to open on arrival, from a `?thread=` link. Belongs to the
+   * song this screen opened on, so it's only meaningful for the single-song
+   * route — a setlist link names a song by position, not a thread.
+   */
+  initialThreadId?: string | null;
+  /**
+   * Whether the comments panel offers Close / Reopen. On for a single song,
+   * whose practice screen is that song's home; off while stepping a setlist,
+   * where closing a conversation isn't what you're there for.
+   */
+  canCloseConversation?: boolean;
+  /**
    * The URL for a given position. Supplying it makes the current song part of
    * the address (so the link in the bar is always the song on screen) and adds
    * a "Copy link" action — a PWA has no address bar to copy from.
@@ -111,6 +127,11 @@ export function Practice({
   // choice can't live in a `lg:` class. Resolves after mount (see the hook),
   // which means a beat of the bar layout before the rail takes over.
   const isDesktop = useIsDesktop();
+  // Who's looking, for the comments panel at the bottom. From the player's
+  // context rather than a prop: `/practice` is a precached static shell and
+  // can't resolve a user server-side. Null when signed out — the panel then
+  // has no one to attribute a comment to, so it isn't rendered.
+  const { currentUserId } = usePlaylistPlayer();
   const controlled = controlledIndex != null && onIndexChange != null;
   const index = controlled ? controlledIndex : ownIndex;
   const setIndex = controlled ? onIndexChange : setOwnIndex;
@@ -167,6 +188,8 @@ export function Practice({
   const song = songs[current]!;
   const canBack = current > 0;
   const canForward = current < total - 1;
+  // Both loaders fill `audioVersions`; the queue passes an explicit `src`.
+  const hasAudio = Boolean(song.src) || (song.audioVersions?.length ?? 0) > 0;
 
   const navBtn =
     'shrink-0 rounded-md border border-neutral-300 px-3 py-2 text-lg leading-none font-medium hover:bg-neutral-50 disabled:opacity-40 dark:border-neutral-700 dark:hover:bg-neutral-900';
@@ -207,6 +230,15 @@ export function Practice({
             >
               {copied ? 'Copied' : 'Copy link'}
             </button>
+          )}
+          {song.conversationId && song.sheetMusic && (
+            <Link
+              href={`/notes/${song.conversationId}/live`}
+              onClick={onNavigate}
+              className="py-4 hover:text-neutral-900 dark:hover:text-neutral-100"
+            >
+              Live
+            </Link>
           )}
           {song.conversationId && (
             <Link
@@ -268,7 +300,7 @@ export function Practice({
       </div>
 
       <div className={rowCls}>
-        {song.conversationId && (
+        {song.conversationId && hasAudio && (
           <div className={colCls}>
             <AudioPlayer
               src={
@@ -291,6 +323,14 @@ export function Practice({
         )}
 
         <div className={mainCls}>
+          {/* A song can exist before its audio does ("Create song without
+              audio"), and this screen is where that song now lives. Say so
+              rather than showing a player wired to a file that isn't there. */}
+          {song.conversationId && !hasAudio && (
+            <p className="mb-4 rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+              No audio yet. Add audio from the Edit song page.
+            </p>
+          )}
           {song.conversationId ? (
             <SheetMusic
               conversationId={song.conversationId}
@@ -309,6 +349,22 @@ export function Practice({
           )}
         </div>
       </div>
+
+      {/* Comments last, under the full width of both columns. Inside the
+          provider below, so clicking a comment's timestamp scrubs the player
+          that's on screen; keyed by song so stepping the set loads that
+          song's thread rather than keeping the last one's. */}
+      {song.conversationId && currentUserId && (
+        <div className="px-4 pt-6">
+          <NotesPanel
+            key={song.conversationId}
+            conversationId={song.conversationId}
+            currentUserId={currentUserId}
+            canCloseConversation={canCloseConversation}
+            initialThreadId={initialThreadId ?? null}
+          />
+        </div>
+      )}
     </>
   );
 

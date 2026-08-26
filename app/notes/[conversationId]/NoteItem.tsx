@@ -65,7 +65,7 @@ export function NoteItem({
   }, [highlighted]);
 
   const handleCopyLink = async () => {
-    const url = `${window.location.origin}/notes/${conversationId}?thread=${note.id}`;
+    const url = `${window.location.origin}/notes/${conversationId}/practice?thread=${note.id}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);

@@ -17,22 +17,20 @@ import { E2E, readSeed } from './fixtures';
 test('renaming a song shows on the song page after Save', async ({ page }) => {
   const { songId } = readSeed();
 
+  // The bare song URL redirects to Practice, which is the song's screen now.
   await page.goto(`/notes/${songId}`);
-  await expect(page.getByText(E2E.songName).first()).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/notes/${songId}/practice$`));
 
-  // Edit lives in the song's kebab, on the "Song details" header row — it used
-  // to be a link in the back-nav header. It is now a glyph in an icon row, so
-  // its accessible name is the aria-label rather than the visible words.
-  await page.getByRole('button', { name: 'Song actions' }).click();
-  await page.getByRole('menuitem', { name: 'Edit this song' }).click();
+  // Edit is a link in Practice's header, following whichever song is showing.
+  await page.getByRole('link', { name: 'Edit song' }).click();
   await expect(page).toHaveURL(new RegExp(`/notes/${songId}/edit$`));
 
   const name = page.locator('input[type="text"], input:not([type])').first();
   await name.fill(E2E.renamedSong);
   await page.getByRole('button', { name: 'Save' }).click();
 
-  // Back on the song page, showing the new name — not the cached old one.
-  await expect(page).toHaveURL(new RegExp(`/notes/${songId}$`));
+  // Back on the song's screen, showing the new name — not the cached old one.
+  await expect(page).toHaveURL(new RegExp(`/notes/${songId}/practice$`));
   await expect(page.getByText(E2E.renamedSong).first()).toBeVisible({
     timeout: 20_000,
   });
@@ -45,5 +43,5 @@ test('renaming a song shows on the song page after Save', async ({ page }) => {
     .first()
     .fill(E2E.songName);
   await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page).toHaveURL(new RegExp(`/notes/${songId}$`));
+  await expect(page).toHaveURL(new RegExp(`/notes/${songId}/practice$`));
 });

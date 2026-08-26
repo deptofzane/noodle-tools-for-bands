@@ -86,7 +86,7 @@ export function AnnotatedList() {
       {items.map((item) => (
         <li key={item.conversationId}>
           <Link
-            href={`/notes/${item.conversationId}`}
+            href={`/notes/${item.conversationId}/practice`}
             className="flex items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
           >
             <div className="min-w-0 flex-1">

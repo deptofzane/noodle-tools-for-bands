@@ -48,9 +48,16 @@ export function setlistHref(bandId: string, setlistId: string): string {
   return `/bands/${bandId}/setlists/${setlistId}`;
 }
 
-/** A song's page. Songs are conversations; the id is the conversation's. */
+/**
+ * A song's page. Songs are conversations; the id is the conversation's.
+ *
+ * That page is Practice: it does everything the old song screen did and more,
+ * so the song screen was retired rather than kept as a lesser twin.
+ * `/notes/<id>` still resolves — it redirects here — which is what keeps links
+ * shared before the change working.
+ */
 export function songHref(conversationId: string): string {
-  return `/notes/${conversationId}`;
+  return `/notes/${conversationId}/practice`;
 }
 
 export function albumHref(bandId: string, albumId: string): string {

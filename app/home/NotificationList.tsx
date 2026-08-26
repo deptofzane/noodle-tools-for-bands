@@ -50,7 +50,7 @@ const POLL_INTERVAL_MS = 60_000;
 function hrefFor(n: NotificationItem): string {
   switch (n.subjectType) {
     case 'conversation':
-      if (n.subjectId) return `/notes/${n.subjectId}`;
+      if (n.subjectId) return `/notes/${n.subjectId}/practice`;
       // An upload rollup: the day's own page lists exactly what it counted.
       return n.day
         ? `/bands/${n.bandId}/audio/uploads/${n.day}`

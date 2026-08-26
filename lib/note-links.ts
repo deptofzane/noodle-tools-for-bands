@@ -61,10 +61,10 @@ export function noteLinkHref(link: NoteLink, bandId: string): string | null {
   if (!link.targetId) return null;
   switch (link.kind) {
     case 'song':
-      // `practice` is only ever set on song links — see the column comment.
-      return link.practice
-        ? `/notes/${link.targetId}/practice`
-        : `/notes/${link.targetId}`;
+      // One destination: Practice is the song's screen. The `practice` column
+      // survives on existing rows and is ignored — both values meant the same
+      // thing the moment the old song page became a redirect to this one.
+      return `/notes/${link.targetId}/practice`;
     case 'event':
       return `/calendar/events/${link.targetId}`;
     case 'venue':

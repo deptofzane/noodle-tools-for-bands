@@ -133,27 +133,6 @@ test.describe('detail-page action menus', () => {
     );
   });
 
-  test('song: icon row is first, worded item gone', async ({ page }) => {
-    await page.goto(`/notes/${seed.songId}`);
-    const names = await openMenu(page, 'Song actions');
-
-    expect(names[0]).toBe('Edit this song');
-    expect(names[1]).toBe('Copy a link to this song');
-    expect(names).not.toContain('Edit song');
-
-    await page
-      .getByRole('menuitem', { name: 'Copy a link to this song' })
-      .click();
-    await expect(page.getByText('Song link copied.')).toBeVisible();
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-      `${new URL(page.url()).origin}/notes/${seed.songId}`,
-    );
-
-    await openMenu(page, 'Song actions');
-    await page.getByRole('menuitem', { name: 'Edit this song' }).click();
-    await expect(page).toHaveURL(`/notes/${seed.songId}/edit`);
-  });
-
   test('setlist: icon row leads, worded item gone', async ({ page }) => {
     await page.goto(`/bands/${seed.bandId}/setlists/${seed.setlistId}`);
     const names = await openMenu(page, 'Setlist actions');
@@ -212,7 +191,7 @@ test.describe('per-song action menus', () => {
 
   const SONG = E2E.songName;
   const songUrl = (page: Page) =>
-    `${new URL(page.url()).origin}/notes/${seed.songId}`;
+    `${new URL(page.url()).origin}/notes/${seed.songId}/practice`;
 
   /** Row first, in the documented order, with no worded leftovers. */
   async function expectSongRow(names: string[], at: number) {
@@ -282,11 +261,9 @@ test.describe('per-song action menus', () => {
 
     const names = await openMenu(page, `Actions for ${SONG}`);
     await expectSongRow(names, 0);
-    expect(names.slice(3)).toEqual([
-      'Practice',
-      'Remove from queue',
-      'Add to setlist',
-    ]);
+    // No worded "Practice": the row's View opens the practice screen, which
+    // is the song's page now, so a separate item said the same thing twice.
+    expect(names.slice(3)).toEqual(['Remove from queue', 'Add to setlist']);
   });
 
   test('full player: View keeps ?from=, Share drops it', async ({ page }) => {
@@ -397,27 +374,23 @@ test.describe('remaining action menus', () => {
     ]);
   });
 
-  test('overview event menu: both rows are named', async ({ page }) => {
+  test('overview event menu: the row is named and leads', async ({ page }) => {
     await page.goto(`/bands/${seed.bandId}?tab=events`);
     const names = await openMenu(page, 'Event actions');
 
-    // Event trio, then the setlist trio — the labels between them are not
-    // menuitems, so they don't appear here; their presence is checked below.
+    // The icon row acts on the event; the setlist's own actions are worded
+    // items below it. The section label is `role="none"`, so it isn't a
+    // menuitem and doesn't appear here — its presence is checked separately.
     expect(names.slice(0, 3)).toEqual([
       'View E2E Menu Gig',
       'Edit E2E Menu Gig',
       'Copy a link to E2E Menu Gig',
     ]);
-    expect(names.slice(3, 6)).toEqual([
-      'View the setlist for E2E Menu Gig',
-      'Edit the setlist for E2E Menu Gig',
-      'Copy a link to the setlist for E2E Menu Gig',
-    ]);
+    expect(names).not.toContain('View the setlist for E2E Menu Gig');
+    expect(names[3]).toBe('Add setlist songs to queue');
 
-    const menu = page.getByRole('menu');
-    await expect(menu.getByText('Event', { exact: true })).toBeVisible();
     await expect(
-      menu.getByText(E2E.setlistName, { exact: true }),
+      page.getByRole('menu').getByText('Event', { exact: true }),
     ).toBeVisible();
   });
 

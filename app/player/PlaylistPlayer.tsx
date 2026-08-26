@@ -122,6 +122,17 @@ type PlaylistPlayerValue = {
    */
   hydrated: boolean;
   /**
+   * The signed-in user's id (the session's `sub`, which is the database id),
+   * or null when signed out.
+   *
+   * Exposed here because the layout has already resolved the session and this
+   * provider wraps the whole app: surfaces that need to know who's looking —
+   * the comments panel, wherever it's embedded — can read it without their own
+   * route going dynamic. `/practice` is a precached static shell, so it can't
+   * fetch a user of its own.
+   */
+  currentUserId: string | null;
+  /**
    * Stop playback and take the bar off the screen. The queue is kept — playing
    * anything (here or from another surface's controls) brings the bar back.
    */
@@ -855,6 +866,7 @@ export function PlaylistPlayerProvider({
     setRate,
     isReady: duration > 0,
     hydrated,
+    currentUserId: userKey,
     close,
   };
 

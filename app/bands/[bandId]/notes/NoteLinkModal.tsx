@@ -95,12 +95,6 @@ export function NoteLinkModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
-  /*
-   * Song links only. Kept out of the kind switch below so it survives
-   * filtering the list, and reset when the kind changes so a stale tick can't
-   * ride along onto a venue.
-   */
-  const [practice, setPractice] = useState(false);
   const [otherUrl, setOtherUrl] = useState('');
   const [otherLabel, setOtherLabel] = useState('');
 
@@ -160,8 +154,6 @@ export function NoteLinkModal({
           onChange={(v) => {
             setKind(v as NoteLinkKind);
             setFilter('');
-            // Only songs have a Practice screen; don't carry a tick across.
-            if (v !== 'song') setPractice(false);
           }}
           options={NOTE_LINK_KINDS.map((k) => ({
             value: k.id,
@@ -200,28 +192,6 @@ export function NoteLinkModal({
         </div>
       ) : (
         <div className="mt-4 flex flex-col gap-2">
-          {/*
-            Above the list, not below it: choosing a song adds the link and
-            closes the picker, so a control underneath would never be reached
-            in time.
-          */}
-          {kind === 'song' && (
-            <label className="flex items-start gap-2 rounded-md border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800">
-              <input
-                type="checkbox"
-                checked={practice}
-                onChange={(e) => setPractice(e.target.checked)}
-                className="mt-0.5 h-4 w-4"
-              />
-              <span>
-                <span className="font-medium">Link to practice</span>
-                <span className="block text-[0.6875rem] minor-text-theme-colors">
-                  Opens the song’s Practice screen — player and sheet music —
-                  instead of its page.
-                </span>
-              </span>
-            </label>
-          )}
           {choices.length > 8 && (
             <input
               value={filter}
@@ -255,8 +225,9 @@ export function NoteLinkModal({
                         targetId: c.id,
                         url: null,
                         label: c.label,
-                        // Only songs have a Practice screen to open.
-                        practice: kind === 'song' && practice,
+                        // Vestigial: a song link has one destination now
+                        // that Practice is the song's only screen.
+                        practice: false,
                       })
                     }
                     className="flex w-full flex-col gap-0.5 rounded-md px-2 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"

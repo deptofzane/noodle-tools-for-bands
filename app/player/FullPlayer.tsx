@@ -452,11 +452,6 @@ export function FullPlayer({
                               },
                             ]}
                           />
-                          <ActionMenuItem
-                            onClick={() => goTo(`/notes/${t.id}/practice`)}
-                          >
-                            Practice
-                          </ActionMenuItem>
                           <ActionMenuItem onClick={() => remove(i)}>
                             Remove from queue
                           </ActionMenuItem>

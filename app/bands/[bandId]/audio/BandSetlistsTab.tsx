@@ -246,7 +246,7 @@ export function BandSetlistsTab({
                 Create event using this setlist
               </ActionMenuItem>
               <ActionMenuItem onClick={() => go(practiceHref(sl.id))}>
-                Practice
+                Practice setlist songs
               </ActionMenuItem>
               <ActionMenuItem onClick={() => go(liveHref(sl.id))}>
                 Live

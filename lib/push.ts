@@ -123,7 +123,7 @@ function pushUrl(
 ): string {
   switch (subjectType) {
     case 'conversation':
-      return subjectId ? `/notes/${subjectId}` : `/bands/${bandId}`;
+      return subjectId ? `/notes/${subjectId}/practice` : `/bands/${bandId}`;
     case 'event':
       return `/bands/${bandId}`;
     case 'band':

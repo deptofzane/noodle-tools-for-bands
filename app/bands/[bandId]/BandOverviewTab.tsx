@@ -32,7 +32,7 @@ import {
   type Show,
 } from './bandDetailShared';
 import { MapLink } from '../../MapLink';
-import { eventHref, liveHref, practiceHref, setlistHref } from '@/lib/routes';
+import { eventHref, liveHref, practiceHref } from '@/lib/routes';
 import { CollapsibleSection } from '@/app/CollapsibleSection';
 import { eventColorKey } from '../../calendar/eventColors';
 
@@ -211,46 +211,13 @@ export function BandOverviewTab({
             />
             {show.setlistId && (
               <>
-                {/* <MenuSectionLabel>
-                  {setlist ? setlist.name : 'Setlist'}
-                </MenuSectionLabel>
-                <MenuIconRow
-                  items={[
-                    {
-                      key: 'view',
-                      icon: <EyeIcon size={18} />,
-                      label: `View the setlist for ${show.title}`,
-                      title: 'View setlist',
-                      onClick: () => go(setlistHref(bandId, show.setlistId!)),
-                    },
-                    {
-                      key: 'edit',
-                      icon: <PencilIcon size={18} />,
-                      label: `Edit the setlist for ${show.title}`,
-                      title: 'Edit setlist',
-                      onClick: () =>
-                        go(`/bands/${bandId}/setlists/${show.setlistId}/edit`),
-                    },
-                    {
-                      key: 'share',
-                      icon: <LinkIcon size={18} />,
-                      label: `Copy a link to the setlist for ${show.title}`,
-                      title: 'Share setlist',
-                      onClick: () =>
-                        void share(
-                          setlistHref(bandId, show.setlistId!),
-                          'Setlist',
-                        ),
-                    },
-                  ]}
-                /> */}
                 <ActionMenuItem onClick={() => queueSetlist(setlist)}>
                   Add setlist songs to queue
                 </ActionMenuItem>
                 <ActionMenuItem
                   onClick={() => go(practiceHref(show.setlistId!))}
                 >
-                  Practice
+                  Practice setlist songs
                 </ActionMenuItem>
                 <ActionMenuItem onClick={() => go(liveHref(show.setlistId!))}>
                   Live

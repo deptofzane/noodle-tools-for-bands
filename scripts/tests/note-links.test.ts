@@ -71,11 +71,16 @@ test('note links: bare numbers are not silently turned into IPs', () => {
 // carried entirely by the flag — which makes it worth pinning down where the
 // flag is allowed to be true, and what it changes.
 
-test('a song link points at the song, unless it says practice', () => {
+test('a song link points at Practice, whatever the stored flag says', () => {
+  /*
+   * Practice is the song's only screen now, so both stored values resolve to
+   * it. The flag survives on rows written while the old song page existed and
+   * is deliberately ignored rather than migrated.
+   */
   const base = { id: '1', targetId: 'song-1', url: null, label: 'Cascade' };
   assert.equal(
     noteLinkHref({ ...base, kind: 'song', practice: false }, 'band-1'),
-    '/notes/song-1',
+    '/notes/song-1/practice',
   );
   assert.equal(
     noteLinkHref({ ...base, kind: 'song', practice: true }, 'band-1'),

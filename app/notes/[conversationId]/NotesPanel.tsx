@@ -57,6 +57,23 @@ export function NotesPanel({
   const [logOpen, setLogOpen] = useState(false);
   const [stateBusy, setStateBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /*
+   * Notes come from the network, and this panel now sits on the Practice
+   * screen — which is built to work from a downloaded setlist with no
+   * connection at all. Saying so beats an empty list that reads as "no one
+   * has commented".
+   */
+  const [offline, setOffline] = useState(false);
+  useEffect(() => {
+    const sync = () => setOffline(!navigator.onLine);
+    sync();
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    return () => {
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', sync);
+    };
+  }, []);
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerTime, setComposerTime] = useState(0);
   const inFlight = useRef(false);
@@ -283,7 +300,15 @@ export function NotesPanel({
         </p>
       )}
 
-      {notes === null && !error && <LoadingBlock label="Loading notes" />}
+      {offline && notes === null && (
+        <p className="rounded-md border border-neutral-200 px-3 py-4 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+          Notes need a connection.
+        </p>
+      )}
+
+      {notes === null && !error && !offline && (
+        <LoadingBlock label="Loading notes" />
+      )}
 
       {notes && notes.length === 0 && (
         <p className="text-sm minor-text-theme-colors">

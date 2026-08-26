@@ -64,7 +64,8 @@ export const AUDIO_PICKER_FILTER: PickerFilter = {
     'audio/x-flac',
     'audio/webm',
   ],
-  accepts: (file) => normalizeAudioMime(file.mimeType ?? '', file.name) !== null,
+  accepts: (file) =>
+    normalizeAudioMime(file.mimeType ?? '', file.name) !== null,
   singular: 'an audio file',
   plural: 'audio files',
 };
