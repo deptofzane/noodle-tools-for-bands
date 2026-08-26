@@ -173,24 +173,6 @@ export default async function SettingsPage({
         )}
       </div>
 
-      <details className="rounded-lg border border-line p-4 text-xs">
-        <summary className="cursor-pointer font-medium text-fg-soft">
-          Session details
-        </summary>
-        <pre className="mt-2 overflow-x-auto whitespace-pre-wrap font-mono text-[0.6875rem] text-fg-soft">
-          {JSON.stringify(
-            {
-              sub: session.user.sub,
-              email: session.user.email,
-              scopes: session.scopes,
-              error: session.error ?? null,
-            },
-            null,
-            2,
-          )}
-        </pre>
-      </details>
-
       {/* Last, and visually separated: the only irreversible thing here. */}
       <DeleteAccount email={dbUser?.email ?? session.user.email ?? null} />
     </div>
@@ -202,8 +184,7 @@ export default async function SettingsPage({
         <div>
           <p className="font-medium">Theme</p>
           <p className="mt-1 text-xs minor-text-theme-colors dark:text-neutral-400">
-            Choose a light or dark color scheme. Defaults to your system
-            preference until you change it.
+            Choose a color theme.
           </p>
         </div>
         <ThemeToggle />
