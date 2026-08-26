@@ -60,17 +60,32 @@ export function NoteForm({
    */
   const [confirmPin, setConfirmPin] = useState(false);
   const pinned = initial?.pinned ?? false;
+  /*
+   * What sharing and pinning looked like as of the last successful save.
+   *
+   * `initial` is a prop and never changes, which was fine while every save
+   * left the page. "Save without closing" means the same form can be saved
+   * repeatedly, and comparing against `initial` would re-ask the pin question
+   * on every save after the first.
+   */
+  const [savedShared, setSavedShared] = useState(initial?.shared ?? false);
+  const [savedPinned, setSavedPinned] = useState(pinned);
+  /** Whether the save now in flight should leave the page when it lands. */
+  const [closeOnSave, setCloseOnSave] = useState(true);
   const becomingShared =
-    Boolean(noteId) && pinned && !initial?.shared && shared;
+    Boolean(noteId) && savedPinned && !savedShared && shared;
 
   const backHref = `/bands/${bandId}?tab=notes`;
   const canSave = Boolean(title.trim() && !busy);
 
-  const save = async (keepPinned?: boolean) => {
+  const save = async (keepPinned?: boolean, close = true) => {
     if (!canSave) return;
     // Ask before a private pin becomes a public one; the answer comes back
-    // through this same function as `keepPinned`.
+    // through this same function as `keepPinned`. The modal's buttons carry
+    // the caller's intent so answering it doesn't close a page the user asked
+    // to keep open.
     if (becomingShared && keepPinned === undefined) {
+      setCloseOnSave(close);
       setConfirmPin(true);
       return;
     }
@@ -99,7 +114,13 @@ export function NoteForm({
         await ensureOk(res, [200, 201]);
       });
       showToast(noteId ? 'Note saved.' : 'Note created.', 'success');
-      router.push(backHref);
+      setSavedShared(shared);
+      if (keepPinned !== undefined) setSavedPinned(keepPinned);
+      if (close) {
+        router.push(backHref);
+        return;
+      }
+      setBusy(false);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setBusy(false);
@@ -112,14 +133,29 @@ export function NoteForm({
 
       <div className="flex items-center justify-between gap-2">
         <h1 className="title-text">{noteId ? 'Edit note' : 'New note'}</h1>
-        <button
-          type="button"
-          onClick={() => void save()}
-          disabled={!canSave}
-          className="shrink-0 btn-primary"
-        >
-          {busy ? 'Saving…' : 'Save'}
-        </button>
+        <span className="flex shrink-0 items-center gap-2">
+          {/* Editing only: on a new note this would have to create the note
+              and then switch the form over to editing it, which is a
+              different thing from what this button does. */}
+          {noteId && (
+            <button
+              type="button"
+              onClick={() => void save(undefined, false)}
+              disabled={!canSave}
+              className="btn-outline"
+            >
+              Save without closing
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => void save()}
+            disabled={!canSave}
+            className="btn-primary"
+          >
+            {busy ? 'Saving…' : 'Save'}
+          </button>
+        </span>
       </div>
 
       <p className="text-sm minor-text-theme-colors">{bandName}</p>
@@ -234,14 +270,14 @@ export function NoteForm({
           <div className="mt-4 flex flex-col gap-2">
             <button
               type="button"
-              onClick={() => void save(true)}
+              onClick={() => void save(true, closeOnSave)}
               className="btn-primary"
             >
               Keep it pinned
             </button>
             <button
               type="button"
-              onClick={() => void save(false)}
+              onClick={() => void save(false, closeOnSave)}
               className="btn-outline"
             >
               Share without pinning

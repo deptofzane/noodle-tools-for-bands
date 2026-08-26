@@ -144,9 +144,10 @@ export function HelpContent({ level = 2 }: { level?: 2 | 3 }) {
         <p>
           Noodle is a PWA (progressive web application), and can be installed on
           a phone or tablet home screen. On iPhone/iPad use{' '}
-          <B>Share → Add to Home Screen</B>. On Android your browser will offer
-          to install it, but you can always install it later from the browsers
-          options.
+          <B>Share → Add to Home Screen</B>. On Android you can install it from 
+          the browser's options. For Android, we recommend using Chrome to install 
+          as it installs an independent version of the app rather than Firefox which 
+          makes a shortcut to the browser and will lack some features.
         </p>
       </Section>
 
@@ -156,8 +157,9 @@ export function HelpContent({ level = 2 }: { level?: 2 | 3 }) {
           <a href={`mailto:${CONTACT_EMAIL}`} className="underline">
             {CONTACT_EMAIL}
           </a>
-          . Say what you were doing and what happened instead — it saves a round
-          trip.
+          . This is a pretty brief help page, and I'm working on expanding it. In the
+          meantime, if you have questions don't hesitate to reach out.  Also, suggestions
+          for improvement or letting me know about any bugs you run into would be appreciated.
         </p>
       </Section>
     </>
