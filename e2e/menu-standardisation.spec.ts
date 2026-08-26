@@ -1,12 +1,12 @@
 import '../scripts/load-env';
 import { test, expect, type Page } from '@playwright/test';
 import { readSeed, E2E } from './fixtures';
-import { createAlbum } from '../lib/db/albums';
-import { createTodo } from '../lib/db/todos';
-import { createEvent } from '../lib/db/events';
-import { createVenue } from '../lib/db/venues';
+import { createAlbum, listAlbums } from '../lib/db/albums';
+import { createTodo, listTodos } from '../lib/db/todos';
+import { createEvent, listBandEvents } from '../lib/db/events';
+import { createVenue, listBandVenues } from '../lib/db/venues';
 import { createBand } from '../lib/db/bands';
-import { createNote } from '../lib/db/user-notes';
+import { createNote, listBandNotesForUser } from '../lib/db/user-notes';
 
 /**
  * The four detail-page menus now lead with an icon row instead of worded
@@ -25,62 +25,107 @@ const TODO_TITLE = 'E2E Todo For Menus';
 const VENUE = 'E2E Menu Venue';
 const NOTE = 'E2E Menu Note';
 
+const ALBUM = 'E2E Album';
+const GIG = 'E2E Menu Gig';
+
+/**
+ * Fixtures, found before they're created.
+ *
+ * Playwright restarts its worker after a failed test, and a restart re-runs
+ * this hook for whatever is left in the file. With plain `create*` calls that
+ * turned one real failure into several bogus ones: a second venue and a third
+ * note meant `getByRole` matched more than one element, and strict mode
+ * rejected the lot. Reusing what's already there makes the hook safe to run
+ * any number of times — the same property `findOrCreateConversation` gives the
+ * seed, for the same reason.
+ */
 test.beforeAll(async () => {
-  albumId = await createAlbum(seed.bandId, seed.userId, 'E2E Album', [
-    { conversationId: seed.songId, audioVersionId: null },
-  ]);
-  const todo = await createTodo({
-    bandId: seed.bandId,
-    creatorId: seed.userId,
-    title: TODO_TITLE,
-    description: null,
-    shared: false,
-    ownerId: null,
-    deadline: null,
-    links: [],
-  });
-  todoId = todo.id;
+  const album = (await listAlbums(seed.bandId)).find((a) => a.name === ALBUM);
+  albumId =
+    album?.id ??
+    (await createAlbum(seed.bandId, seed.userId, ALBUM, [
+      { conversationId: seed.songId, audioVersionId: null },
+    ]));
 
-  const event = await createEvent({
-    bandId: seed.bandId,
-    title: 'E2E Menu Gig',
-    eventType: null,
-    date: '2030-01-01',
-    endDate: null,
-    time: null,
-    endTime: null,
-    location: null,
-    details: null,
-    notes: null,
-    setlistId: seed.setlistId,
-    venueId: null,
-    createdBy: seed.userId,
-  });
-  eventId = event.id;
+  const todo = (
+    await listTodos(seed.bandId, seed.userId, {
+      scope: 'mine',
+      status: 'active',
+    })
+  ).find((t) => t.title === TODO_TITLE);
+  todoId =
+    todo?.id ??
+    (
+      await createTodo({
+        bandId: seed.bandId,
+        creatorId: seed.userId,
+        title: TODO_TITLE,
+        description: null,
+        shared: false,
+        ownerId: null,
+        deadline: null,
+        links: [],
+      })
+    ).id;
 
-  const venue = await createVenue({
-    bandId: seed.bandId,
-    createdBy: seed.userId,
-    fields: {
-      name: VENUE,
-      address: '12 Test Street',
-      phone: '555-0100',
-      email: 'book@e2e.test',
-      contactName: 'E2E Booker',
-      notes: 'Load in through the back.',
-    },
-  });
-  venueId = venue.id;
+  const event = (await listBandEvents(seed.bandId)).find(
+    (e) => e.title === GIG,
+  );
+  eventId =
+    event?.id ??
+    (
+      await createEvent({
+        bandId: seed.bandId,
+        title: GIG,
+        eventType: null,
+        date: '2030-01-01',
+        endDate: null,
+        time: null,
+        endTime: null,
+        location: null,
+        details: null,
+        notes: null,
+        setlistId: seed.setlistId,
+        venueId: null,
+        createdBy: seed.userId,
+      })
+    ).id;
 
-  const note = await createNote({
-    bandId: seed.bandId,
-    authorId: seed.userId,
-    title: NOTE,
-    body: 'E2E note body',
-    shared: true,
-    links: [],
-  });
-  noteId = note.id;
+  const venue = (await listBandVenues(seed.bandId)).find(
+    (v) => v.name === VENUE,
+  );
+  venueId =
+    venue?.id ??
+    (
+      await createVenue({
+        bandId: seed.bandId,
+        createdBy: seed.userId,
+        fields: {
+          name: VENUE,
+          address: '12 Test Street',
+          phone: '555-0100',
+          email: 'book@e2e.test',
+          contactName: 'E2E Booker',
+          notes: 'Load in through the back.',
+        },
+      })
+    ).id;
+
+  const note = (await listBandNotesForUser(seed.bandId, seed.userId)).find(
+    (n) => n.title === NOTE,
+  );
+  noteId =
+    note?.id ??
+    (
+      await createNote({
+        bandId: seed.bandId,
+        authorId: seed.userId,
+        title: NOTE,
+        body: 'E2E note body',
+        shared: true,
+        links: [],
+      })
+    ).id;
 });
 
 /** Accessible names of the menu's children, in DOM order. */
