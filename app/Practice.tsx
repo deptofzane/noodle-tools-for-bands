@@ -3,6 +3,9 @@
 import { PlayerProvider } from './notes/[conversationId]/PlayerContext';
 import { NotesPanel } from './notes/[conversationId]/NotesPanel';
 import { usePlaylistPlayer } from './player/PlaylistPlayer';
+import { useShareLink } from './useShareLink';
+import { LinkIcon, PencilIcon } from './icons';
+import { songHref } from '@/lib/routes';
 import {
   AudioPlayer,
   type PlayerVersion,
@@ -18,7 +21,6 @@ import {
 import Link from 'next/link';
 import {
   useEffect,
-  useState,
   type Dispatch,
   type ReactNode,
   type SetStateAction,
@@ -122,7 +124,6 @@ export function Practice({
     songs.length,
     startIndex,
   );
-  const [copied, setCopied] = useState(false);
   // The desktop player is a different component, not a restyled one, so the
   // choice can't live in a `lg:` class. Resolves after mount (see the hook),
   // which means a beat of the bar layout before the rail takes over.
@@ -132,6 +133,7 @@ export function Practice({
   // can't resolve a user server-side. Null when signed out — the panel then
   // has no one to attribute a comment to, so it isn't rendered.
   const { currentUserId } = usePlaylistPlayer();
+  const share = useShareLink();
   const controlled = controlledIndex != null && onIndexChange != null;
   const index = controlled ? controlledIndex : ownIndex;
   const setIndex = controlled ? onIndexChange : setOwnIndex;
@@ -145,20 +147,6 @@ export function Practice({
     if (!shareUrl || typeof window === 'undefined') return;
     window.history.replaceState(window.history.state, '', shareUrl);
   }, [shareUrl]);
-
-  const copyLink = async () => {
-    if (!shareUrl) return;
-    try {
-      await navigator.clipboard.writeText(
-        new URL(shareUrl, window.location.origin).toString(),
-      );
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // Clipboard blocked (insecure context / denied) — the address bar and
-      // the share sheet are still there.
-    }
-  };
 
   // The page header, when we own it. `song` isn't resolved yet at the empty
   // check below, so the Edit link is passed in by each caller of this.
@@ -221,16 +209,6 @@ export function Practice({
     <>
       {header(
         <span className="flex shrink-0 items-center gap-3">
-          {shareUrl && (
-            <button
-              type="button"
-              onClick={() => void copyLink()}
-              title="Copy a link to this song for a bandmate"
-              className="py-4 hover:text-neutral-900 dark:hover:text-neutral-100"
-            >
-              {copied ? 'Copied' : 'Copy link'}
-            </button>
-          )}
           {song.conversationId && song.sheetMusic && (
             <Link
               href={`/notes/${song.conversationId}/live`}
@@ -240,14 +218,41 @@ export function Practice({
               Live
             </Link>
           )}
+          {/* The same glyphs the kebabs use, so the pencil and the chain mean
+              one thing wherever they appear. */}
           {song.conversationId && (
             <Link
               href={`/notes/${song.conversationId}/edit`}
               onClick={onNavigate}
-              className="py-4 hover:text-neutral-900 dark:hover:text-neutral-100"
+              aria-label="Edit song"
+              title="Edit song"
+              className="py-4 px-2 hover:text-neutral-900 dark:hover:text-neutral-100"
             >
-              Edit song
+              <PencilIcon size={18} />
             </Link>
+          )}
+          {/* Copies whatever this screen is showing: a setlist link carrying
+              the position when practising a set (the address is kept in step
+              above), the song's own link otherwise. */}
+          {(shareUrl || song.conversationId) && (
+            <button
+              type="button"
+              onClick={() =>
+                void share(
+                  shareUrl ?? songHref(song.conversationId!),
+                  shareUrl ? 'Setlist' : 'Song',
+                )
+              }
+              aria-label={
+                shareUrl
+                  ? 'Copy a link to this set'
+                  : 'Copy a link to this song'
+              }
+              title="Share"
+              className="py-4 px-2 hover:text-neutral-900 dark:hover:text-neutral-100"
+            >
+              <LinkIcon size={18} />
+            </button>
           )}
         </span>,
       )}

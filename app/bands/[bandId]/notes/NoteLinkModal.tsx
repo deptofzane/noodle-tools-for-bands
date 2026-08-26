@@ -95,6 +95,13 @@ export function NoteLinkModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
+  /*
+   * The row you've picked, committed by the button at the bottom rather than
+   * by the click itself. Choosing used to add the link and close in one go,
+   * which left no way to see what you'd chosen, change your mind, or notice
+   * you'd hit the wrong row in a long list.
+   */
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [otherUrl, setOtherUrl] = useState('');
   const [otherLabel, setOtherLabel] = useState('');
 
@@ -126,14 +133,31 @@ export function NoteLinkModal({
     ? choices.filter((c) => c.label.toLowerCase().includes(needle))
     : choices;
 
-  const addOther = () => {
-    const url = otherUrl.trim();
-    if (!url) return;
+  const canAdd =
+    kind === 'other' ? otherUrl.trim() !== '' : selectedId !== null;
+
+  const add = () => {
+    if (kind === 'other') {
+      const url = otherUrl.trim();
+      if (!url) return;
+      onAdd({
+        kind: 'other',
+        targetId: null,
+        url,
+        label: otherLabel.trim() || url,
+        practice: false,
+      });
+      return;
+    }
+    const chosen = choices.find((c) => c.id === selectedId);
+    if (!chosen) return;
     onAdd({
-      kind: 'other',
-      targetId: null,
-      url,
-      label: otherLabel.trim() || url,
+      kind,
+      targetId: chosen.id,
+      url: null,
+      label: chosen.label,
+      // Vestigial: a song link has one destination now that Practice is the
+      // song's only screen.
       practice: false,
     });
   };
@@ -154,6 +178,7 @@ export function NoteLinkModal({
           onChange={(v) => {
             setKind(v as NoteLinkKind);
             setFilter('');
+            setSelectedId(null);
           }}
           options={NOTE_LINK_KINDS.map((k) => ({
             value: k.id,
@@ -219,18 +244,14 @@ export function NoteLinkModal({
                 <li key={c.id}>
                   <button
                     type="button"
-                    onClick={() =>
-                      onAdd({
-                        kind,
-                        targetId: c.id,
-                        url: null,
-                        label: c.label,
-                        // Vestigial: a song link has one destination now
-                        // that Practice is the song's only screen.
-                        practice: false,
-                      })
+                    onClick={() => setSelectedId(c.id)}
+                    aria-pressed={selectedId === c.id}
+                    className={
+                      'flex w-full flex-col gap-0.5 rounded-md px-2 py-2 text-left text-sm ' +
+                      (selectedId === c.id
+                        ? 'bg-blue-50 ring-1 ring-blue-500 dark:bg-blue-950'
+                        : 'hover:bg-neutral-100 dark:hover:bg-neutral-800')
                     }
-                    className="flex w-full flex-col gap-0.5 rounded-md px-2 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"
                   >
                     <span className="flex min-w-0 items-center gap-2">
                       <span className="truncate font-medium">{c.label}</span>
@@ -257,16 +278,16 @@ export function NoteLinkModal({
         <button type="button" onClick={onClose} className="btn-ghost">
           Cancel
         </button>
-        {kind === 'other' && (
-          <button
-            type="button"
-            onClick={addOther}
-            disabled={!otherUrl.trim()}
-            className="btn-primary"
-          >
-            Add link
-          </button>
-        )}
+        {/* "Save", not "Add link": the Todo form's own trigger is called
+            "Add link", and two of those on screen at once is one too many. */}
+        <button
+          type="button"
+          onClick={add}
+          disabled={!canAdd}
+          className="btn-primary"
+        >
+          Save
+        </button>
       </div>
     </Modal>
   );
