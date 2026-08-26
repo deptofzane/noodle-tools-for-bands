@@ -42,9 +42,20 @@ test.describe('help: the ⋯ menu section', () => {
 
   test('the words carry it for screen readers', async ({ page }) => {
     await page.goto('/help');
-    // The visual is aria-hidden, so the explanation must stand alone.
-    await expect(page.getByText(/opens it for editing/)).toBeVisible();
-    await expect(page.getByText(/random order/)).toBeVisible();
-    await expect(page.getByText(/already playing/)).toBeVisible();
+    /*
+     * The visual is aria-hidden, so every glyph has to be named in the prose
+     * for anyone who can't see it. Anchored on the glyph names rather than
+     * whole sentences, so rewording the explanation doesn't fail this.
+     */
+    for (const glyph of [
+      /Eye/,
+      /pencil/,
+      /chain links/,
+      /Play/,
+      /Crossed arrows/,
+      /List with a/,
+    ]) {
+      await expect(page.getByText(glyph).first()).toBeVisible();
+    }
   });
 });

@@ -9,6 +9,12 @@ import { usePlayer } from './PlayerContext';
 import { LoadingBar } from '../../Spinner';
 import { RestartIcon } from '../../player/icons';
 import { ActionMenu, ActionMenuItem } from '../../ActionMenu';
+import {
+  parseSpeedPercent,
+  ratePercent,
+  SPEED_MAX,
+  SPEED_MIN,
+} from '@/lib/playback-speed';
 
 /** One selectable audio version, for the in-player version switcher. */
 export type PlayerVersion = {
@@ -50,8 +56,6 @@ type AudioPlayerProps = {
    */
   variant?: 'bar' | 'rail';
 };
-
-const SPEEDS = [0.5, 0.6, 0.7, 0.8, 0.9, 1] as const;
 
 /** Name this player claims when it takes over playback (see `audioFocus`). */
 const FOCUS_OWNER = 'song';
@@ -408,9 +412,64 @@ function useTransportKeys({
   }, [togglePlay, forward10, back10]);
 }
 
-/** "100%", "80%" — the speed button's whole label, so it fits the rail. */
-function speedLabel(rate: number): string {
-  return rate === 1 ? '100%' : `${Math.round(rate * 100)}%`;
+/**
+ * The speed field, shared by both player layouts so the clamping is written
+ * once.
+ *
+ * Typing is held in local state and only committed on blur or Enter: clamping
+ * every keystroke makes the field impossible to type in — clearing it to type
+ * "150" would snap to the minimum on the first digit. Escape abandons the
+ * edit. A junk value falls back to whatever was showing rather than resetting
+ * to 100, which would silently discard a speed someone had set.
+ */
+function SpeedInput({
+  rate,
+  onRateChange,
+  disabled,
+  className,
+}: {
+  rate: number;
+  onRateChange: (rate: number) => void;
+  disabled: boolean;
+  className: string;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+
+  const commit = (raw: string) => {
+    setDraft(null);
+    const next = parseSpeedPercent(raw);
+    if (next !== null) onRateChange(next);
+  };
+
+  return (
+    <span className="flex items-center gap-0.5">
+      <input
+        type="number"
+        inputMode="numeric"
+        min={SPEED_MIN}
+        max={SPEED_MAX}
+        step={5}
+        value={draft ?? String(ratePercent(rate))}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            commit((e.target as HTMLInputElement).value);
+          } else if (e.key === 'Escape') {
+            setDraft(null);
+          }
+        }}
+        disabled={disabled}
+        aria-label={`Playback speed, percent. ${SPEED_MIN} to ${SPEED_MAX}.`}
+        title="Playback speed"
+        className={className}
+      />
+      <span aria-hidden="true" className="text-xs text-neutral-500">
+        %
+      </span>
+    </span>
+  );
 }
 
 /** Stacked layers: this song's other audio versions. */
@@ -605,24 +664,16 @@ function AudioPlayerRail({
                 >
                   <span aria-hidden="true">↺</span>10s
                 </button>
-                {/* A dropdown showing "100%" doesn't fit the rail's width.
-                    Cycling wraps to the slowest speed, so every setting is
-                    reachable without a menu. */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const i = SPEEDS.indexOf(
-                      practice.rate as (typeof SPEEDS)[number],
-                    );
-                    practice.onRateChange(SPEEDS[(i + 1) % SPEEDS.length] ?? 1);
-                  }}
-                  disabled={!isReady}
-                  aria-label={`Playback speed: ${speedLabel(practice.rate)}. Tap to change.`}
-                  title="Playback speed"
-                  className={ctrl}
-                >
-                  {speedLabel(practice.rate)}
-                </button>
+                {/* The rail is narrow, so the field is sized to three digits
+                    and the % sits outside it. */}
+                <span className="flex w-full items-center justify-center gap-0.5">
+                  <SpeedInput
+                    rate={practice.rate}
+                    onRateChange={practice.onRateChange}
+                    disabled={!isReady}
+                    className="h-9 w-12 rounded-md border border-neutral-300 bg-transparent text-center text-xs font-medium text-neutral-700 disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-300"
+                  />
+                </span>
               </>
             )}
 
@@ -904,25 +955,15 @@ export function AudioPlayerView({
                 10s<span aria-hidden="true">↻</span>
               </button>
 
-              <label className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+              <span className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
                 Speed
-                <select
-                  value={practice.rate}
-                  onChange={(e) =>
-                    practice.onRateChange(parseFloat(e.target.value))
-                  }
+                <SpeedInput
+                  rate={practice.rate}
+                  onRateChange={practice.onRateChange}
                   disabled={!isReady}
-                  aria-label="Playback speed"
-                  title="Playback speed"
-                  className="shrink-0 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900"
-                >
-                  {SPEEDS.map((s) => (
-                    <option key={s} value={s}>
-                      {s === 1 ? '100%' : `${Math.round(s * 100)}%`}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  className="w-14 shrink-0 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900"
+                />
+              </span>
             </>
           )}
 

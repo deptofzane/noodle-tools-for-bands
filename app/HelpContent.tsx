@@ -29,24 +29,73 @@ export function HelpContent({ level = 2 }: { level?: 2 | 3 }) {
         </p>
       </Section>
 
+      <Section title="The ⋯ menu" level={level}>
+        <p>
+          Most things in Noodle carry a <B>⋯</B> menu. Related actions sit
+          together as a row of icons under a label naming what they act on. As
+          an example, a song&rsquo;s menu looks like this:
+        </p>
+        <span className="flex justify-center">
+          <MenuExample />
+        </span>
+
+        <p>
+          The top row is the View/Edit/Share row, while the second row is audio
+          options for Play/Shuffle/Add to play queue. View/Edit/Share appear on
+          most all items in Noodle, while audio options will only appear where
+          there is something to play.
+        </p>
+
+        <List
+          items={[
+            <>
+              <B>Top row</B>
+            </>,
+            <>
+              The <B>Eye</B> icon (eyecon?) will view the item, the{' '}
+              <B>pencil</B> will go to the edit screen, and <B>chain links</B>{' '}
+              copies a link you can send to the band — a link, rather than a
+              share sheet, because it&rsquo;s the address that travels. All
+              links in Noodle can be copied and sent to other people, but they
+              may need to have an account or be a band member depending on the
+              page.
+            </>,
+            <>
+              <B>Second row (audio options)</B>
+            </>,
+            <>
+              <B>Play</B> starts the songs in order. <B>Crossed arrows</B> will
+              shuffle the song, without changing the saved order.
+            </>,
+            <>
+              <B>List with a +</B> adds the songs to the player queue after
+              whatever is currently playing.
+            </>,
+          ]}
+        />
+      </Section>
+
       <Section title="Audio and songs" level={level}>
         <List
           items={[
             <>
-              In the Songs tab on the Audio page, there is a menu with upload
-              music options. <B>Upload audio file(s)</B> creates a song from
-              each recording you add — from Google Drive, Dropbox, or this
-              device. <B>Create song without audio</B> starts a song from just a
-              name.
+              In the Songs tab on the Audio page, to the right of the Song/Album
+              toggle is a menu with upload music options.{' '}
+              <B>Upload audio file(s)</B> creates a song from each recording you
+              add — from Google Drive, Dropbox, or this device.{' '}
+              <B>Create song without audio</B> starts a song from just a name.
             </>,
             <>
               A song can hold several <B>versions</B> of its audio and its sheet
-              music. One of each is the default; the rest stay available.
+              music. A default is set, but all versions of both sheet music and
+              audio can be accessed from the View song page.
             </>,
             <>
-              Comments on a song are stamped with the point in the recording you
-              were at, so clicking one jumps the player there. Mention someone
-              with <B>@</B> to notify them.
+              At the bottom of the View song page is the comments section.
+              Comments on a song are time stamped with the point in the
+              recording you were at. When another user clicks the time stamp
+              they will be jumped to that point in the song. Use an <B>@</B>{' '}
+              sign before a username to notify other band members.
             </>,
           ]}
         />
@@ -56,56 +105,26 @@ export function HelpContent({ level = 2 }: { level?: 2 | 3 }) {
         <List
           items={[
             <>
-              A <B>setlist</B> is an ordered list of songs, with set breaks if
-              you want them.
+              <B>Setlists</B> can be created in the Setlist tab on the Audio
+              page. Songs can be added, removed, reordered, and other markers
+              for set break, encore, or whatever you like can be added.
             </>,
             <>
-              <B>Practice</B> shows each chart with playback, speed control and
-              skip. <B>Live</B> is the stripped-back version for a stage.
+              The View song page is also the <B>Practice</B> page, and will show
+              sheet music and audio playback with tools to slow down .{' '}
+              <B>Live</B> is the stripped-back version for a stage.
             </>,
             <>
               A setlist&rsquo;s <B>⋯</B> menu carries both icon rows — see{' '}
               <B>The ⋯ menu</B> below.
             </>,
             <>
-              <B>Download</B> keeps a setlist&rsquo;s charts and audio on the
-              device, so it works with no connection. Downloads are per-device.
-            </>,
-          ]}
-        />
-      </Section>
-
-      <Section title="The ⋯ menu" level={level}>
-        <p>
-          Most things in Noodle carry a <B>⋯</B> menu. Actions that are
-          variations on one another sit together as a row of icons rather than a
-          stack of near-identical lines, under a label naming what they act on.
-          A song&rsquo;s menu looks like this:
-        </p>
-
-        <MenuExample />
-
-        <p>
-          The top row is the thing itself; the row under it is playback, and
-          only appears where there is something to play.
-        </p>
-
-        <List
-          items={[
-            <>
-              <B>Eye</B> opens it, <B>pencil</B> opens it for editing, and{' '}
-              <B>chain links</B> copies a link you can send to the band — a
-              link, rather than a share sheet, because it&rsquo;s the address
-              that travels.
-            </>,
-            <>
-              <B>Play</B> starts the songs in order. <B>Crossed arrows</B> play
-              the same songs once in a random order, without changing the saved
-              order.
-            </>,
-            <>
-              <B>List with a +</B> adds the songs to the end of whatever is
-              already playing, instead of replacing it.
+              <B>Download for offline</B> keeps a setlist&rsquo;s charts and
+              audio on the device, and will work when internet is spotty or
+              nonexistent. Downloads are per-device. When new audio or sheet
+              music is added, or the setlist is modified an indicator to update
+              the setlist will show. Setlists can be updated by clicking
+              <B>Update offline copy</B> in the setlist menu.
             </>,
           ]}
         />
@@ -123,9 +142,11 @@ export function HelpContent({ level = 2 }: { level?: 2 | 3 }) {
 
       <Section title="Installing Noodle" level={level}>
         <p>
-          Noodle installs to a phone or tablet home screen and runs without
-          browser chrome. On iPhone/iPad use <B>Share → Add to Home Screen</B>;
-          on Android your browser will offer to install it.
+          Noodle is a PWA (progressive web application), and can be installed on
+          a phone or tablet home screen. On iPhone/iPad use{' '}
+          <B>Share → Add to Home Screen</B>. On Android your browser will offer
+          to install it, but you can always install it later from the browsers
+          options.
         </p>
       </Section>
 
