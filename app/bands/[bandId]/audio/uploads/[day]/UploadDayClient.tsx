@@ -27,7 +27,7 @@ export function UploadDayClient({
 
   if (error) {
     return (
-      <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+      <p className="rounded-md border border-danger-line bg-danger-fill px-3 py-2 text-sm text-danger-strong">
         {error}
       </p>
     );
@@ -52,7 +52,7 @@ export function UploadDayClient({
     return (
       <div className="flex flex-col gap-4">
         <h1 className="title-text">{label}</h1>
-        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+        <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
           Nothing was uploaded on this day.
         </p>
       </div>
@@ -95,7 +95,7 @@ export function UploadDayClient({
         </span>
       </div>
 
-      <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+      <ul className="divide-y divide-line rounded-lg border border-line">
         {items.map((u, i) => {
           const isCurrent =
             player.track?.id === u.conversationId && player.index === i;
@@ -121,7 +121,7 @@ export function UploadDayClient({
                     ? `Pause ${u.title}`
                     : `Play ${u.title}`
                 }
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-900"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line-strong text-fg-body hover:bg-surface-soft"
               >
                 {isCurrent && player.isPlaying ? (
                   <svg

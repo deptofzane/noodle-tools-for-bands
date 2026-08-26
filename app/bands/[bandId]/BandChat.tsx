@@ -50,7 +50,7 @@ function renderBody(text: string, memberLabels: string[]): ReactNode {
     out.push(
       <span
         key={key++}
-        className="rounded bg-blue-100 px-0.5 font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+        className="rounded bg-accent-fill-strong px-0.5 font-medium text-accent-strong"
       >
         {m[0]}
       </span>,
@@ -227,7 +227,7 @@ export function BandChat({
       <div
         ref={scrollRef}
         onScroll={onScroll}
-        className="flex h-[50vh] md:h-[60vh] md:h-[50vh] flex-col gap-3 overflow-y-auto rounded-lg border border-neutral-200 p-3 dark:border-neutral-800"
+        className="flex h-[50vh] md:h-[60vh] md:h-[50vh] flex-col gap-3 overflow-y-auto rounded-lg border border-line p-3"
       >
         {hasMore && (
           <button
@@ -236,7 +236,7 @@ export function BandChat({
             disabled={loadingOlder}
             // Fixed min-width so swapping the label for the spinner doesn't
             // make the button jump.
-            className="mx-auto flex min-w-[10rem] items-center justify-center rounded-md border border-neutral-300 px-3 py-1 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+            className="mx-auto flex min-w-[10rem] items-center justify-center rounded-md border border-line-strong px-3 py-1 text-xs font-medium hover:bg-surface-soft disabled:opacity-50"
           >
             {loadingOlder ? (
               <Spinner size="xs" label="Loading older messages" />
@@ -257,10 +257,7 @@ export function BandChat({
           const mentionsMe = m.mentions.includes(currentUserId);
           if (editingId === m.id) {
             return (
-              <div
-                key={m.id}
-                className="rounded-md bg-neutral-50 p-2 dark:bg-neutral-900"
-              >
+              <div key={m.id} className="rounded-md bg-surface-soft p-2">
                 <NoteForm
                   initialBody={m.body}
                   mentionables={mentionables}
@@ -298,7 +295,7 @@ export function BandChat({
                     <button
                       type="button"
                       onClick={() => setEditingId(m.id)}
-                      className="text-[0.6875rem] minor-text-theme-colors hover:text-neutral-700 dark:hover:text-neutral-200"
+                      className="text-[0.6875rem] minor-text-theme-colors hover:text-fg-body"
                     >
                       Edit
                     </button>
@@ -307,7 +304,7 @@ export function BandChat({
                     <button
                       type="button"
                       onClick={() => setDeleteTarget(m)}
-                      className="text-[0.6875rem] minor-text-theme-colors hover:text-red-600 dark:hover:text-red-400"
+                      className="text-[0.6875rem] minor-text-theme-colors hover:text-danger"
                       aria-label="Delete message"
                     >
                       Delete

@@ -54,9 +54,7 @@ export function AcceptInvite({
       >
         {busy ? 'Joining…' : `Join ${bandName}`}
       </button>
-      {error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </div>
   );
 }

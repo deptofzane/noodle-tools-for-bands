@@ -30,7 +30,7 @@ interface EventFields {
 }
 
 const field =
-  'rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900';
+  'rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
 
 /**
  * Edit an event's fields and, optionally, associate a setlist from the
@@ -333,7 +333,7 @@ export function EditEventClient({
               setNewSetlistName('');
               setCreateOpen(true);
             }}
-            className="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+            className="text-xs font-medium text-accent hover:underline"
           >
             + Create a new setlist
           </button>
@@ -410,7 +410,7 @@ export function EditEventClient({
             <h2 id="new-setlist-title" className="text-base font-semibold">
               Create a setlist
             </h2>
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="mt-1 text-sm text-fg-muted">
               It’ll be added to this event. You can add songs to it later.
             </p>
             <input
@@ -419,7 +419,7 @@ export function EditEventClient({
               placeholder="Setlist name"
               autoFocus
               maxLength={255}
-              className="mt-3 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+              className="mt-3 w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
             <div className="mt-4 flex justify-end gap-2">
               <button

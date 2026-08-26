@@ -69,7 +69,7 @@ export default async function ViewVenuePage({
               <span className="font-medium">Phone:</span>{' '}
               <a
                 href={`tel:${venue.phone}`}
-                className="text-blue-600 hover:underline dark:text-blue-400"
+                className="text-accent hover:underline"
               >
                 {venue.phone}
               </a>
@@ -80,7 +80,7 @@ export default async function ViewVenuePage({
               <span className="font-medium">Email:</span>{' '}
               <a
                 href={`mailto:${venue.email}`}
-                className="text-blue-600 hover:underline dark:text-blue-400"
+                className="text-accent hover:underline"
               >
                 {venue.email}
               </a>
@@ -94,9 +94,7 @@ export default async function ViewVenuePage({
           {venue.notes && (
             <div className="mt-2 flex flex-col gap-0.5">
               <span className="font-medium">Notes:</span>
-              <p className="whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
-                {venue.notes}
-              </p>
+              <p className="whitespace-pre-wrap text-fg-muted">{venue.notes}</p>
             </div>
           )}
         </div>

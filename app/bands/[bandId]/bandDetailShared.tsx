@@ -211,10 +211,7 @@ export function MinimizeToggle({
       title={minimized ? `Expand ${label}` : `Minimize ${label}`}
       className="-mr-1 px-2 py-2 text-xl leading-none flex items-center gap-2"
     >
-      <span
-        aria-hidden="true"
-        className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
-      >
+      <span aria-hidden="true" className="text-neutral-400 hover:text-fg-body">
         {minimized ? '▸' : '▾'}
       </span>
       {children}

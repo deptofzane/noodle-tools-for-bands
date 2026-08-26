@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 const field =
-  'rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900';
+  'rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
 
 export default function ForgotPage() {
   const [email, setEmail] = useState('');
@@ -30,10 +30,10 @@ export default function ForgotPage() {
       <h3 className="mb-2 font-serif text-4xl">
         noo<span className="text-cyan-600">dle</span>
       </h3>
-      <div className="w-full max-w-sm rounded-lg border border-neutral-200 p-8 dark:border-neutral-800">
+      <div className="w-full max-w-sm rounded-lg border border-line p-8">
         <h1 className="title-text">Reset password</h1>
         {sent ? (
-          <p className="mt-3 text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="mt-3 text-sm text-fg-muted">
             If an account exists for that email, we&apos;ve sent a reset link.
             Check your inbox — it expires in 30 minutes.
           </p>

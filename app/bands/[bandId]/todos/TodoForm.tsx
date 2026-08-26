@@ -14,7 +14,7 @@ import type { NoteLinkInput } from '@/lib/db/user-notes';
 import type { TodoStatus } from '@/lib/db/todos';
 
 const field =
-  'rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900';
+  'rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
 
 export interface BandMemberOption {
   id: string;
@@ -228,9 +228,9 @@ export function TodoForm({
             {links.map((l, i) => (
               <li
                 key={`${l.kind}-${l.targetId ?? l.url}-${i}`}
-                className="flex items-center gap-2 rounded-md border border-neutral-200 px-2 py-1 text-xs dark:border-neutral-800"
+                className="flex items-center gap-2 rounded-md border border-line px-2 py-1 text-xs"
               >
-                <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide minor-text-theme-colors dark:bg-neutral-900">
+                <span className="shrink-0 rounded bg-fill-muted px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide minor-text-theme-colors">
                   {noteLinkBadge(l)}
                 </span>
                 <span className="min-w-0 flex-1 truncate">{l.label}</span>
@@ -240,7 +240,7 @@ export function TodoForm({
                     setLinks((prev) => prev.filter((_, j) => j !== i))
                   }
                   aria-label={`Remove ${l.label}`}
-                  className="shrink-0 px-1 minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200"
+                  className="shrink-0 px-1 minor-text-theme-colors hover:text-fg-strong"
                 >
                   <span aria-hidden="true">✕</span>
                 </button>
@@ -251,7 +251,7 @@ export function TodoForm({
       </div>
 
       {!todoId && (
-        <label className="flex items-start gap-3 rounded-md border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800">
+        <label className="flex items-start gap-3 rounded-md border border-line px-3 py-2 text-sm">
           <input
             type="checkbox"
             checked={shared}

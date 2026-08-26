@@ -410,7 +410,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
                   'flex min-w-0 flex-col items-center gap-1 rounded-md px-2 py-1 ' +
                   (isActive
                     ? 'font-medium text-cyan-600 dark:text-cyan-400'
-                    : 'minor-text-theme-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100')
+                    : 'minor-text-theme-colors hover:text-fg dark:text-neutral-400')
                 }
               >
                 {link.icon}
@@ -464,7 +464,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
               aria-label={
                 chatUnread.count > 0 ? `Menu, ${chatUnreadLabel}` : 'Menu'
               }
-              className="relative rounded-md px-3 pt-2 pb-3 hover:text-neutral-900 lg:py-2 dark:hover:text-neutral-100 hover:bg-surface-hover text-fg-muted"
+              className="relative rounded-md px-3 pt-2 pb-3 hover:text-fg lg:py-2 hover:bg-surface-hover text-fg-muted"
             >
               <span aria-hidden="true" className="block text-xl leading-none">
                 ☰
@@ -812,8 +812,8 @@ function menuItemClass(isActive: boolean): string {
   return (
     'flex w-full items-center rounded px-4 py-3 text-left text-base lg:px-3 lg:py-2 lg:text-sm ' +
     (isActive
-      ? 'bg-neutral-100 font-medium dark:bg-neutral-900 text-fg'
-      : 'text-neutral-700 dark:text-neutral-300 hover:bg-surface-hover')
+      ? 'bg-fill-muted font-medium text-fg'
+      : 'text-fg-soft hover:bg-surface-hover')
   );
 }
 
@@ -822,7 +822,7 @@ function navLinkClass(isActive: boolean): string {
   return (
     'text-nowrap rounded-md px-3 py-1.5 text-sm transition ' +
     (isActive
-      ? 'bg-neutral-100 font-medium dark:bg-neutral-900 text-fg'
-      : 'hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-surface-soft text-fg-muted')
+      ? 'bg-fill-muted font-medium text-fg'
+      : 'hover:text-fg hover:bg-surface-soft text-fg-muted')
   );
 }

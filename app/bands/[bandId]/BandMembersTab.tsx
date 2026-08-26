@@ -105,7 +105,7 @@ export function BandMembersTab({
   const closedPolls = polls?.filter((p) => p.closed) ?? [];
 
   const renderPollList = (list: PollSummary[]) => (
-    <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+    <ul className="divide-y divide-line rounded-lg border border-line">
       {list.map((p) => (
         <PollCard
           key={p.id}
@@ -130,17 +130,17 @@ export function BandMembersTab({
         {!pollsLoaded && (
           <LoadingBlock
             label="Loading polls"
-            className="rounded-md border border-neutral-200 py-6 dark:border-neutral-800"
+            className="rounded-md border border-line py-6"
           />
         )}
         {polls && polls.length === 0 && (
-          <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+          <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
             No polls yet. Use “New poll” to ask the band something.
           </p>
         )}
         {openPolls && openPolls.length > 0 && renderPollList(openPolls)}
         {polls && openPolls?.length === 0 && closedPolls.length > 0 && (
-          <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+          <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
             No open polls. Use “New poll” to ask the band something.
           </p>
         )}
@@ -163,7 +163,7 @@ export function BandMembersTab({
           )}
         </div>
         {!membersMinimized && (
-          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+          <ul className="divide-y divide-line rounded-lg border border-line">
             {members.map((m) => (
               <li
                 key={m.userId}
@@ -179,7 +179,7 @@ export function BandMembersTab({
                     </div>
                   )}
                 </div>
-                <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium text-neutral-600 dark:bg-neutral-900 dark:text-neutral-300">
+                <span className="shrink-0 rounded bg-fill-muted px-1.5 py-0.5 text-[0.625rem] font-medium text-fg-dim">
                   {m.role}
                 </span>
                 {canManage && m.role !== 'owner' && (

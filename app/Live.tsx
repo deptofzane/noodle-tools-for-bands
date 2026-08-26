@@ -226,15 +226,15 @@ export function Live({
   }, []);
 
   const navBtn =
-    'flex h-12 w-12 items-center justify-center rounded-md border border-neutral-300 text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:border-neutral-700 dark:hover:bg-neutral-900';
+    'flex h-12 w-12 items-center justify-center rounded-md border border-line-strong text-xl leading-none hover:bg-surface-soft disabled:opacity-30';
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-white dark:bg-neutral-900">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-surface">
       {/* Controls header. */}
-      {/* <header className="flex items-center justify-between border-b border-neutral-200 px-2 py-2 dark:border-neutral-800"> */}
+      {/* <header className="flex items-center justify-between border-b border-line px-2 py-2"> */}
       <header className="w-100 flex flex-col">
         <p className="mt-1 mb-1 text-sm mx-auto ">{song?.title}</p>
-        <span className="flex items-center justify-between border-b border-neutral-200 px-2 pb-2 dark:border-neutral-800">
+        <span className="flex items-center justify-between border-b border-line px-2 pb-2">
           <button
             type="button"
             onClick={goPrev}
@@ -260,13 +260,13 @@ export function Live({
 
           <div className="flex items-center gap-2">
             {zoomable ? (
-              <div className="flex items-center gap-0.5 rounded-md border border-neutral-300 dark:border-neutral-700">
+              <div className="flex items-center gap-0.5 rounded-md border border-line-strong">
                 <button
                   type="button"
                   onClick={zoomOut}
                   disabled={zoom <= 50}
                   aria-label="Zoom out"
-                  className="flex h-12 w-9 items-center justify-center rounded-l-md text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:hover:bg-neutral-900"
+                  className="flex h-12 w-9 items-center justify-center rounded-l-md text-xl leading-none hover:bg-surface-soft disabled:opacity-30"
                 >
                   −
                 </button>
@@ -274,7 +274,7 @@ export function Live({
                   type="button"
                   onClick={resetZoom}
                   aria-label="Reset zoom"
-                  className="min-w-[3.25rem] px-1 text-center text-xs font-medium tabular-nums hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                  className="min-w-[3.25rem] px-1 text-center text-xs font-medium tabular-nums hover:bg-surface-soft"
                 >
                   {zoom}%
                 </button>
@@ -283,7 +283,7 @@ export function Live({
                   onClick={zoomIn}
                   disabled={zoom >= 400}
                   aria-label="Zoom in"
-                  className="flex h-12 w-9 items-center justify-center rounded-r-md text-xl leading-none hover:bg-neutral-50 disabled:opacity-30 dark:hover:bg-neutral-900"
+                  className="flex h-12 w-9 items-center justify-center rounded-r-md text-xl leading-none hover:bg-surface-soft disabled:opacity-30"
                 >
                   +
                 </button>
@@ -305,7 +305,7 @@ export function Live({
                     onClick={() => selectSheetVersion(v.id)}
                   >
                     <span className="flex items-center gap-2">
-                      <span className="w-3 shrink-0 text-blue-600 dark:text-blue-400">
+                      <span className="w-3 shrink-0 text-accent">
                         {v.id === sheetSelectedId ? '✓' : ''}
                       </span>
                       <span className="truncate">
@@ -324,7 +324,7 @@ export function Live({
               type="button"
               onClick={exit}
               aria-label="Exit live mode"
-              className="hidden h-9 items-center rounded-md border border-neutral-300 px-3 text-sm font-medium hover:bg-neutral-50 lg:inline-flex dark:border-neutral-700 dark:hover:bg-neutral-900"
+              className="hidden h-9 items-center rounded-md border border-line-strong px-3 text-sm font-medium hover:bg-surface-soft lg:inline-flex"
             >
               ✕ Exit
             </button>
@@ -509,7 +509,7 @@ function SheetView({
       <div
         ref={pinchRef}
         style={{ touchAction: 'pan-x pan-y' }}
-        className="h-full w-full overflow-auto bg-neutral-100 py-4 dark:bg-neutral-900"
+        className="h-full w-full overflow-auto bg-fill-muted py-4"
       >
         <div style={{ width: `${zoom}%` }} className="mx-auto">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -561,7 +561,7 @@ function SheetView({
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-2 text-sm text-blue-600 underline dark:text-blue-400"
+          className="mt-2 text-sm text-accent underline"
         >
           Open sheet music
         </a>

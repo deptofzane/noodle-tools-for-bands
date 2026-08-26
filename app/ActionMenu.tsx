@@ -99,7 +99,7 @@ export function ActionMenu({
         aria-label={label}
         className={
           triggerClassName ??
-          'rounded-md px-4 py-3 md:px-2 md:py-1 my-1 minor-text-theme-colors hover:text-neutral-800 disabled:opacity-50 dark:hover:text-neutral-200 hover:bg-surface-hover'
+          'rounded-md px-4 py-3 md:px-2 md:py-1 my-1 minor-text-theme-colors hover:text-fg-strong disabled:opacity-50 hover:bg-surface-hover'
         }
       >
         {icon ?? <span aria-hidden="true">⋯</span>}
@@ -166,7 +166,7 @@ export function MenuIconRow({
             onClick={item.onClick}
             aria-label={item.label}
             title={item.title}
-            className="flex flex-1 items-center justify-center px-4 py-3 text-neutral-700 sm:py-1.5 dark:text-neutral-200 hover:bg-surface-hover"
+            className="flex flex-1 items-center justify-center px-4 py-3 text-fg-body sm:py-1.5 hover:bg-surface-hover"
           >
             {item.icon}
           </button>
@@ -226,8 +226,8 @@ export function ActionMenuItem({
       onClick={onClick}
       className={`block w-full text-nowrap px-4 py-2 sm:py-3 text-left text-base hover:bg-surface-hover sm:px-3 sm:py-1.5 sm:text-sm ${disabled && 'opacity-60'} ${
         destructive
-          ? 'text-red-600 dark:text-red-400 pt-2 border-t border-gray-700'
-          : 'text-neutral-700 dark:text-neutral-200'
+          ? 'text-danger pt-2 border-t border-gray-700'
+          : 'text-fg-body'
       }`}
     >
       {children}

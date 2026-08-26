@@ -65,7 +65,7 @@ export default async function AlbumPage({
           play it should learn a take is missing before pressing play, not by
           noticing the wrong recording. */}
       {lostCount > 0 && (
-        <p className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+        <p className="mb-3 rounded-md border border-amber-300 bg-warn-fill px-3 py-2 text-sm text-warn-strong dark:border-amber-800">
           {lostCount === 1
             ? 'One track’s chosen version was deleted; it plays the song’s current version instead.'
             : `${lostCount} tracks’ chosen versions were deleted; they play the songs’ current versions instead.`}
@@ -73,11 +73,11 @@ export default async function AlbumPage({
       )}
 
       {album.tracks.length === 0 ? (
-        <p className="rounded-md border border-neutral-200 px-1 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+        <p className="rounded-md border border-line px-1 py-6 text-center text-sm minor-text-theme-colors">
           This album has no tracks yet.
         </p>
       ) : (
-        <ul className="flex flex-col divide-y divide-neutral-200 rounded-lg border border-neutral-200 px-2 py-1 dark:divide-neutral-800 dark:border-neutral-800">
+        <ul className="flex flex-col divide-y divide-line rounded-lg border border-line px-2 py-1">
           {album.tracks.map((t, i) => (
             <AlbumTrackRow key={t.id} album={album} track={t} index={i} />
           ))}

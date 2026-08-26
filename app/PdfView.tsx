@@ -114,8 +114,8 @@ export function PdfView({
        */
       className={
         fitHeight
-          ? 'w-full overflow-x-auto bg-neutral-100 dark:bg-neutral-900'
-          : 'h-full w-full overflow-auto bg-neutral-100 dark:bg-neutral-900'
+          ? 'w-full overflow-x-auto bg-fill-muted'
+          : 'h-full w-full overflow-auto bg-fill-muted'
       }
     >
       <div

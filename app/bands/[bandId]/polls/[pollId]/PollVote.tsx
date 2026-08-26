@@ -94,10 +94,7 @@ export function PollVote({
                   'relative w-full overflow-hidden rounded-lg border px-4 py-3 text-left transition disabled:cursor-default ' +
                   (mine
                     ? 'border-blue-500 dark:border-blue-500'
-                    : 'border-neutral-200 dark:border-neutral-800 ' +
-                      (closed
-                        ? ''
-                        : 'hover:bg-neutral-50 dark:hover:bg-neutral-900'))
+                    : 'border-line ' + (closed ? '' : 'hover:bg-surface-soft'))
                 }
               >
                 <span

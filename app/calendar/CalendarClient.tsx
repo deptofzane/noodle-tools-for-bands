@@ -183,12 +183,12 @@ export function CalendarClient() {
         </span>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800">
+      <div className="overflow-hidden rounded-lg border border-line">
         <div className="grid grid-cols-7 gap-px bg-neutral-200 dark:bg-neutral-800">
           {WEEKDAYS.map((w) => (
             <div
               key={w}
-              className="bg-neutral-50 py-1.5 text-center text-xs font-medium minor-text-theme-colors dark:bg-neutral-900"
+              className="bg-surface-soft py-1.5 text-center text-xs font-medium minor-text-theme-colors"
             >
               {w}
             </div>
@@ -217,7 +217,7 @@ export function CalendarClient() {
                     className={
                       d === null
                         ? 'bg-neutral-50/60 dark:bg-neutral-900/40'
-                        : 'bg-white dark:bg-neutral-900'
+                        : 'bg-surface'
                     }
                   >
                     {d !== null && (
@@ -227,13 +227,13 @@ export function CalendarClient() {
                         type="button"
                         onClick={() => setSummaryDate(dateStr(d))}
                         aria-label={`Events on ${dateStr(d)}`}
-                        className="flex h-full w-full flex-col items-start p-1 text-left hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                        className="flex h-full w-full flex-col items-start p-1 text-left hover:bg-surface-soft"
                       >
                         <span
                           className={
                             isToday(d)
                               ? 'inline-flex h-6 w-6 items-center justify-center rounded-full bg-cyan-600 text-xs font-medium text-white'
-                              : 'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs text-neutral-600 dark:text-neutral-400'
+                              : 'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs text-fg-muted'
                           }
                         >
                           {d}
@@ -310,7 +310,7 @@ export function CalendarClient() {
                     <Link
                       href={`/calendar/events/${ev.id}`}
                       data-event-type={eventColorKey(ev.eventType)}
-                      className="block rounded-md border border-neutral-200 border-l-[3px] border-l-[var(--event-accent)] px-3 py-2 hover:bg-neutral-50 dark:border-neutral-800 dark:border-l-[var(--event-accent)] dark:hover:bg-neutral-900"
+                      className="block rounded-md border border-line border-l-[3px] border-l-[var(--event-accent)] px-3 py-2 hover:bg-surface-soft dark:border-l-[var(--event-accent)]"
                     >
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="truncate font-medium">

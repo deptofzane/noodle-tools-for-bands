@@ -36,9 +36,7 @@ function PollResults({
             key={o.id}
             className={
               'relative overflow-hidden rounded-md border px-3 py-2 ' +
-              (mine
-                ? 'border-blue-500 dark:border-blue-500'
-                : 'border-neutral-200 dark:border-neutral-800')
+              (mine ? 'border-blue-500 dark:border-blue-500' : 'border-line')
             }
           >
             <span
@@ -113,7 +111,7 @@ export function PollCard({
         type="button"
         onClick={toggle}
         aria-expanded={expanded}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-left text-sm hover:bg-surface-soft"
       >
         <span className="flex min-w-0 items-center gap-2">
           <span
@@ -135,13 +133,11 @@ export function PollCard({
       {expanded && (
         <div className="flex flex-col gap-2 px-4 pb-3 md:px-3 mt-1">
           {loading && <LoadingBlock size="sm" className="py-4" />}
-          {error && (
-            <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-          )}
+          {error && <p className="text-xs text-danger">{error}</p>}
           {poll && (
             <>
               {poll.description && (
-                <p className="whitespace-pre-wrap text-sm text-neutral-600 dark:text-neutral-400 mt-2">
+                <p className="whitespace-pre-wrap text-sm text-fg-muted mt-2">
                   {poll.description}
                 </p>
               )}
@@ -156,7 +152,7 @@ export function PollCard({
                 </span>
                 <Link
                   href={`/bands/${bandId}/polls/${id}`}
-                  className="text-xs text-blue-600 hover:underline dark:text-blue-400"
+                  className="text-xs text-accent hover:underline"
                 >
                   {poll.closed ? 'View poll' : 'Open poll to vote'} →
                 </Link>

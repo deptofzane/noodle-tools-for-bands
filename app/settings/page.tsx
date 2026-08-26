@@ -69,14 +69,14 @@ export default async function SettingsPage({
             'rounded-md border px-3 py-2 text-sm ' +
             (banner.tone === 'ok'
               ? 'border-green-300 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200'
-              : 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200')
+              : 'border-amber-300 bg-warn-fill text-warn-strong dark:border-amber-800')
           }
         >
           {banner.text}
         </p>
       )}
 
-      <div className="flex items-center gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+      <div className="flex items-center gap-3 rounded-lg border border-line p-4">
         {session.user.image && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -101,7 +101,7 @@ export default async function SettingsPage({
         >
           <button
             type="submit"
-            className="min-w-max rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 text-sm hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+            className="min-w-max rounded-md border border-line-strong px-4 py-3 md:py-1.5 md:px-3 text-sm hover:bg-surface-soft"
           >
             Sign out
           </button>
@@ -109,7 +109,7 @@ export default async function SettingsPage({
       </div>
 
       {/* Google account (may differ from the login email) */}
-      <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+      <div className="rounded-lg border border-line p-4">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="font-medium">Google account</p>
@@ -173,11 +173,11 @@ export default async function SettingsPage({
         )}
       </div>
 
-      <details className="rounded-lg border border-neutral-200 p-4 text-xs dark:border-neutral-800">
-        <summary className="cursor-pointer font-medium text-neutral-700 dark:text-neutral-300">
+      <details className="rounded-lg border border-line p-4 text-xs">
+        <summary className="cursor-pointer font-medium text-fg-soft">
           Session details
         </summary>
-        <pre className="mt-2 overflow-x-auto whitespace-pre-wrap font-mono text-[0.6875rem] text-neutral-700 dark:text-neutral-300">
+        <pre className="mt-2 overflow-x-auto whitespace-pre-wrap font-mono text-[0.6875rem] text-fg-soft">
           {JSON.stringify(
             {
               sub: session.user.sub,
@@ -198,7 +198,7 @@ export default async function SettingsPage({
 
   const appearance = (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+      <div className="flex items-center justify-between gap-4 rounded-lg border border-line p-4">
         <div>
           <p className="font-medium">Theme</p>
           <p className="mt-1 text-xs minor-text-theme-colors dark:text-neutral-400">
@@ -209,7 +209,7 @@ export default async function SettingsPage({
         <ThemeToggle />
       </div>
 
-      <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+      <div className="flex flex-col gap-3 rounded-lg border border-line p-4">
         <div>
           <p className="font-medium">Font size</p>
           <p className="mt-1 text-xs minor-text-theme-colors dark:text-neutral-400">
@@ -253,7 +253,7 @@ export default async function SettingsPage({
     <main className="main-container pt-2">
       <div>
         <h1 className="title-text">Settings</h1>
-        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="mt-1 text-sm text-fg-muted">
           Manage your account and preferences.
         </p>
       </div>

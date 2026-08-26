@@ -103,7 +103,7 @@ function CollapsibleShell({
       >
         <span
           aria-hidden="true"
-          className="text-neutral-400 transition hover:text-neutral-700 dark:hover:text-neutral-200"
+          className="text-neutral-400 transition hover:text-fg-body"
         >
           {open ? '▾' : '▸'}
         </span>

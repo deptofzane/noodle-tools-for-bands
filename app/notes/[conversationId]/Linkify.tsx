@@ -59,7 +59,7 @@ export function Linkify({
     out.push(
       <span
         key={key++}
-        className="rounded bg-blue-100 px-1 font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+        className="rounded bg-accent-fill-strong px-1 font-medium text-accent-strong"
       >
         {match[0]}
       </span>,
@@ -103,7 +103,7 @@ function linkifyUrls(text: string, nextKey: () => number): ReactNode[] {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+        className="text-accent underline hover:text-blue-800 dark:hover:text-blue-300"
       >
         {url}
       </a>,

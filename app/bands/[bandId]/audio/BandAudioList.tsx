@@ -119,7 +119,7 @@ export function BandAudioList({
         onChange={(e) => setSearch(e.target.value)}
         placeholder={albumView ? 'Search albums and songs…' : 'Search audio…'}
         aria-label={albumView ? 'Search albums and songs' : 'Search audio'}
-        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:placeholder:minor-text-theme-colors"
+        className="w-full rounded-md border border-line-strong px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none dark:bg-neutral-900 dark:placeholder:minor-text-theme-colors"
       />
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
@@ -160,7 +160,7 @@ export function BandAudioList({
             <span
               role="group"
               aria-label="View"
-              className="flex items-center rounded-md border border-neutral-300 p-0.5 text-xs dark:border-neutral-700"
+              className="flex items-center rounded-md border border-line-strong p-0.5 text-xs"
             >
               {([false, true] as const).map((wantAlbums) => (
                 <button
@@ -171,8 +171,8 @@ export function BandAudioList({
                   className={
                     'rounded px-2 py-1 ' +
                     (albumView === wantAlbums
-                      ? 'bg-neutral-100 font-medium text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
-                      : 'minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
+                      ? 'bg-fill-2 font-medium text-fg'
+                      : 'minor-text-theme-colors hover:text-fg-strong')
                   }
                 >
                   {wantAlbums ? 'Albums' : 'Songs'}
@@ -222,7 +222,7 @@ export function BandAudioList({
           !albumView &&
           activeSongs &&
           activeSongs.length === 0 && (
-            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+            <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
               No songs yet. Use the ⋯ menu above to “Create song without audio”
               from a name, or “Upload audio file(s)”{' '}
               {canUseDrive ? 'from Drive or your device' : 'from your device'}.
@@ -234,7 +234,7 @@ export function BandAudioList({
           activeSongs.length > 0 &&
           visibleActive &&
           visibleActive.length === 0 && (
-            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+            <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
               No audio matches “{search.trim()}”.
             </p>
           )}
@@ -242,7 +242,7 @@ export function BandAudioList({
           !albumView &&
           visibleActive &&
           visibleActive.length > 0 && (
-            <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+            <ul className="divide-y divide-line rounded-lg border border-line">
               {visibleActive.map(row)}
             </ul>
           )}
@@ -260,12 +260,12 @@ export function BandAudioList({
             </h2>
           </MinimizeToggle>
           {!archivedMinimized && visibleArchived.length > 0 && (
-            <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+            <ul className="divide-y divide-line rounded-lg border border-line">
               {visibleArchived.map(row)}
             </ul>
           )}
           {!archivedMinimized && visibleArchived.length === 0 && (
-            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+            <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
               No archived audio matches “{search.trim()}”.
             </p>
           )}

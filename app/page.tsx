@@ -32,7 +32,7 @@ export default async function RootPage() {
         tools for<span className="text-cyan-600"> bands</span>
       </p>
 
-      <p className="max-w-sm text-sm text-neutral-600 dark:text-neutral-400">
+      <p className="max-w-sm text-sm text-fg-muted">
         Setlists, sheet music, and practice tools for your band — on stage and
         off.
       </p>

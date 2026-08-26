@@ -112,7 +112,7 @@ export function RecentEvents({
       >
         <span
           aria-hidden="true"
-          className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+          className="text-neutral-400 hover:text-fg-body"
         >
           {open ? '▾' : '▸'}
         </span>
@@ -123,7 +123,7 @@ export function RecentEvents({
       </button>
 
       {open && (
-        <ul className="divide-y divide-neutral-200 overflow-hidden rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+        <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line">
           {recent.map((s) => (
             <li
               key={s.id}
@@ -146,7 +146,7 @@ export function RecentEvents({
                   </span>
                 </span>
                 <span className="shrink-0 text-[0.6875rem] minor-text-theme-colors">
-                  <span className="block font-medium text-neutral-700 dark:text-neutral-300">
+                  <span className="block font-medium text-fg-soft">
                     {formatDateRange(s.date, s.endDate, formatDateShort)}
                   </span>
                   {s.time && <span>{formatTimeRange(s.time, s.endTime)}</span>}
@@ -156,7 +156,7 @@ export function RecentEvents({
                 <button
                   type="button"
                   onClick={() => void openNotes(s)}
-                  className="ml-2 shrink-0 rounded-md border border-neutral-300 px-2.5 py-2 text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                  className="ml-2 shrink-0 rounded-md border border-line-strong px-2.5 py-2 text-xs font-medium hover:bg-surface-soft"
                 >
                   Add/Edit notes
                 </button>
@@ -176,7 +176,7 @@ export function RecentEvents({
           <h2 id="recent-notes-title" className="text-base font-semibold">
             Notes — {target.title}
           </h2>
-          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="mt-1 text-sm text-fg-muted">
             Only band members can see this.
           </p>
           <textarea
@@ -187,7 +187,7 @@ export function RecentEvents({
             disabled={loading || saving}
             autoFocus
             placeholder={loading ? 'Loading…' : 'Lay it on me.'}
-            className="mt-3 w-full min-h-96 resize-y rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-900"
+            className="mt-3 w-full min-h-96 resize-y rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60"
           />
           <div className="mt-4 flex items-center justify-end gap-2">
             <button

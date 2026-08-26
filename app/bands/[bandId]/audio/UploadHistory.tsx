@@ -57,7 +57,7 @@ export function UploadHistory({ bandId }: { bandId: string }) {
 
   if (error) {
     return (
-      <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+      <p className="rounded-md border border-danger-line bg-danger-fill px-3 py-2 text-sm text-danger-strong">
         {error}
       </p>
     );
@@ -67,7 +67,7 @@ export function UploadHistory({ bandId }: { bandId: string }) {
 
   if (uploads.length === 0) {
     return (
-      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+      <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
         Nothing uploaded yet. Audio you add shows up here, grouped by day.
       </p>
     );
@@ -87,10 +87,7 @@ export function UploadHistory({ bandId }: { bandId: string }) {
           // `groupByDay` is newest first, so index 0 is the latest upload day.
           const open = (dayIndex === 0) !== toggled.has(key);
           return (
-            <li
-              key={key}
-              className="rounded-lg border border-neutral-200 dark:border-neutral-800"
-            >
+            <li key={key} className="rounded-lg border border-line">
               <div className="flex items-center justify-between gap-2 px-1">
                 <MinimizeToggle
                   minimized={!open}
@@ -128,11 +125,11 @@ export function UploadHistory({ bandId }: { bandId: string }) {
                 </div>
               </div>
               {open && (
-                <ul className="divide-y divide-neutral-200 border-t border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+                <ul className="divide-y divide-line border-t border-line">
                   {dayUploads.map((u) => (
                     <li
                       key={u.fileId}
-                      className="flex items-center gap-2 pr-3 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                      className="flex items-center gap-2 pr-3 hover:bg-surface-soft"
                     >
                       <Link
                         href={`/notes/${u.conversationId}/practice?from=audio`}

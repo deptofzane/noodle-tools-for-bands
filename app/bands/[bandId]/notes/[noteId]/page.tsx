@@ -62,7 +62,7 @@ export default async function ViewNotePage({
       </p>
 
       {note.body ? (
-        <p className="mt-4 whitespace-pre-wrap text-sm text-neutral-700 dark:text-neutral-300">
+        <p className="mt-4 whitespace-pre-wrap text-sm text-fg-soft">
           {note.body}
         </p>
       ) : (

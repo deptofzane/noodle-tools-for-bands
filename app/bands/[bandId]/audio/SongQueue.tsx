@@ -62,7 +62,7 @@ export function SongQueue() {
 
   if (queue.length === 0) {
     return (
-      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+      <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
         Nothing queued. Use a song’s play button, or “Add song to queue” from
         its menu, to build a queue.
       </p>
@@ -145,7 +145,7 @@ export function SongQueue() {
           </DndContext>
         </>
       ) : (
-        <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+        <ul className="divide-y divide-line rounded-lg border border-line">
           {rows.map(({ id: rowId, track: t }, i) => {
             const isCurrent = i === index;
             return (
@@ -171,7 +171,7 @@ export function SongQueue() {
                       ? `Pause ${t.title}`
                       : `Play ${t.title}`
                   }
-                  className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 bg-blue-50 hover:bg-blue-100 dark:border-neutral-700 dark:text-neutral-200 dark:bg-blue-700 dark:hover:bg-blue-500"
+                  className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line-strong text-fg-body bg-blue-50 hover:bg-blue-100 dark:bg-blue-700 dark:hover:bg-blue-500"
                 >
                   {isCurrent && isPlaying ? (
                     <svg
@@ -330,14 +330,14 @@ function SortableQueueRow({
         'flex items-center gap-3 rounded-lg border px-3 py-3 text-sm ' +
         (isCurrent
           ? 'border-blue-300 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/40'
-          : 'border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900') +
+          : 'border-line bg-surface') +
         (isDragging ? ' z-10 shadow-lg' : '')
       }
     >
       <button
         type="button"
         aria-label={`Reorder ${track.title}`}
-        className="-my-2 flex h-11 w-11 cursor-grab touch-none items-center justify-center text-neutral-400 hover:text-neutral-700 active:cursor-grabbing dark:hover:text-neutral-200"
+        className="-my-2 flex h-11 w-11 cursor-grab touch-none items-center justify-center text-neutral-400 hover:text-fg-body active:cursor-grabbing"
         {...attributes}
         {...listeners}
       >

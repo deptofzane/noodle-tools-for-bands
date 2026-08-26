@@ -199,7 +199,7 @@ export function NoteLinkModal({
               onChange={(e) => setOtherUrl(e.target.value)}
               placeholder="https://… or anything you want to note"
               autoFocus
-              className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+              className="rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -211,7 +211,7 @@ export function NoteLinkModal({
               value={otherLabel}
               onChange={(e) => setOtherLabel(e.target.value)}
               placeholder="What to call it"
-              className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+              className="rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
         </div>
@@ -223,17 +223,17 @@ export function NoteLinkModal({
               onChange={(e) => setFilter(e.target.value)}
               placeholder="Filter…"
               aria-label="Filter the list"
-              className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+              className="rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           )}
           {loading ? (
             <LoadingBlock size="sm" className="py-8" label="Loading" />
           ) : error ? (
-            <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+            <p className="rounded-md border border-danger-line bg-danger-fill px-3 py-2 text-sm text-danger-strong">
               {error}
             </p>
           ) : shown.length === 0 ? (
-            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+            <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
               {choices.length === 0
                 ? 'Nothing of this type in the band yet.'
                 : 'Nothing matches that.'}
@@ -249,14 +249,14 @@ export function NoteLinkModal({
                     className={
                       'flex w-full flex-col gap-0.5 rounded-md px-2 py-2 text-left text-sm ' +
                       (selectedId === c.id
-                        ? 'bg-blue-50 ring-1 ring-blue-500 dark:bg-blue-950'
-                        : 'hover:bg-neutral-100 dark:hover:bg-neutral-800')
+                        ? 'bg-accent-fill ring-1 ring-blue-500'
+                        : 'hover:bg-surface-hover')
                     }
                   >
                     <span className="flex min-w-0 items-center gap-2">
                       <span className="truncate font-medium">{c.label}</span>
                       {c.noMedia && (
-                        <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium minor-text-theme-colors dark:bg-neutral-800">
+                        <span className="shrink-0 rounded bg-fill-2 px-1.5 py-0.5 text-[0.625rem] font-medium minor-text-theme-colors">
                           No media attached
                         </span>
                       )}

@@ -83,7 +83,7 @@ export default async function ViewTodoPage({
       </p>
 
       {todo.description ? (
-        <p className="mt-4 whitespace-pre-wrap text-sm text-neutral-700 dark:text-neutral-300">
+        <p className="mt-4 whitespace-pre-wrap text-sm text-fg-soft">
           {todo.description}
         </p>
       ) : (

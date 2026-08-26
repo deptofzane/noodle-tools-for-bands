@@ -24,14 +24,14 @@ function LinkChip({
   const external = externalUrl !== null;
   const inner = (
     <>
-      <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide minor-text-theme-colors dark:bg-neutral-900">
+      <span className="shrink-0 rounded bg-fill-muted px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide minor-text-theme-colors">
         {noteLinkBadge(link)}
       </span>
       <span className="truncate">{link.label}</span>
     </>
   );
   const shell =
-    'flex min-w-0 max-w-full items-center gap-1.5 rounded-md border border-neutral-200 px-2 py-1 text-xs dark:border-neutral-800';
+    'flex min-w-0 max-w-full items-center gap-1.5 rounded-md border border-line px-2 py-1 text-xs';
 
   // `other` holds whatever was pasted, which may not be a URL at all.
   if (!href || (link.kind === 'other' && !external))

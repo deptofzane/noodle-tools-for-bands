@@ -273,7 +273,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
 
   if (error) {
     return (
-      <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+      <p className="rounded-md border border-danger-line bg-danger-fill px-3 py-2 text-sm text-danger-strong">
         {error}
       </p>
     );
@@ -297,7 +297,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
             maxLength={100}
             placeholder="Band name"
             aria-label="Band name"
-            className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+            className="flex-1 rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
           <button
             type="submit"
@@ -313,7 +313,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium">Members</h2>
-        <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+        <ul className="divide-y divide-line rounded-lg border border-line">
           {data.members.map((m) => (
             <li
               key={m.userId}
@@ -330,7 +330,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium text-neutral-600 dark:bg-neutral-900 dark:text-neutral-300">
+                <span className="rounded bg-fill-muted px-1.5 py-0.5 text-[0.625rem] font-medium text-fg-dim">
                   {m.role}
                 </span>
                 {m.role === 'member' && (
@@ -348,7 +348,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
                     type="button"
                     onClick={() => setRemoveTarget(m)}
                     disabled={removing}
-                    className="text-xs minor-text-theme-colors hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
+                    className="text-xs minor-text-theme-colors hover:text-danger disabled:opacity-50"
                   >
                     Remove
                   </button>
@@ -364,7 +364,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Add member by email"
-              className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+              className="flex-1 rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
             <button
               type="submit"
@@ -390,7 +390,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
               placeholder="Invite by email"
-              className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+              className="flex-1 rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
             <button
               type="submit"
@@ -408,7 +408,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
 
         {createdLink && (
           <div className="flex flex-col gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 dark:border-blue-900 dark:bg-blue-950/40">
-            <p className="text-xs text-neutral-600 dark:text-neutral-300">
+            <p className="text-xs text-fg-dim">
               Invite link for{' '}
               <span className="font-medium">{createdLink.email}</span> — copy
               and share it:
@@ -418,12 +418,12 @@ export function EditBandClient({ bandId }: { bandId: string }) {
                 readOnly
                 value={createdLink.url}
                 onFocus={(e) => e.currentTarget.select()}
-                className="min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1.5 font-mono text-xs dark:border-neutral-700 dark:bg-neutral-900"
+                className="min-w-0 flex-1 rounded-md border border-line-strong bg-surface px-2 py-1.5 font-mono text-xs"
               />
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="shrink-0 rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
+                className="shrink-0 rounded-md border border-line-strong px-3 py-1.5 text-xs font-medium hover:bg-surface-hover"
               >
                 {copied ? 'Copied' : 'Copy'}
               </button>
@@ -432,7 +432,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
         )}
 
         {invites && invites.length > 0 && (
-          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+          <ul className="divide-y divide-line rounded-lg border border-line">
             {invites.map((inv) => (
               <li
                 key={inv.id}
@@ -449,7 +449,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
                   type="button"
                   onClick={() => handleRevokeInvite(inv.id)}
                   disabled={revokingId === inv.id}
-                  className="shrink-0 text-xs minor-text-theme-colors hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
+                  className="shrink-0 text-xs minor-text-theme-colors hover:text-danger disabled:opacity-50"
                 >
                   {revokingId === inv.id ? 'Revoking…' : 'Revoke'}
                 </button>
@@ -459,14 +459,14 @@ export function EditBandClient({ bandId }: { bandId: string }) {
         )}
       </section>
 
-      <section className="flex flex-col gap-2 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+      <section className="flex flex-col gap-2 border-t border-line pt-4">
         <h2 className="text-sm font-medium text-red-700 dark:text-red-400">
           Danger zone
         </h2>
         <button
           type="button"
           onClick={() => setDeleteOpen(true)}
-          className="self-start rounded-md border border-red-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+          className="self-start rounded-md border border-red-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-red-700 hover:bg-danger-fill dark:border-red-800 dark:text-red-400"
         >
           Delete band
         </button>

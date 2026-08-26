@@ -545,11 +545,11 @@ function AudioPlayerRail({
   const songMeta = formatSongMeta(bpm ?? null, songKey ?? null);
   const hasVersionSwitcher = Boolean(versions && versions.list.length > 1);
   const ctrl =
-    'flex h-9 w-full items-center justify-center rounded-md border border-neutral-300 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900';
+    'flex h-9 w-full items-center justify-center rounded-md border border-line-strong text-xs font-medium text-fg-soft hover:bg-surface-soft disabled:opacity-40';
 
   return (
     // IN PROGRESS
-    <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900 h-fit">
+    <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-3 h-fit">
       {/* Info box */}
       <div className="flex flex-col gap-0.5">
         <h2 className="truncate text-sm font-medium" title={fileName}>
@@ -566,7 +566,7 @@ function AudioPlayerRail({
       </div>
 
       {error ? (
-        <p className="rounded-md border border-red-300 bg-red-50 px-2 py-1.5 text-xs text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+        <p className="rounded-md border border-danger-line bg-danger-fill px-2 py-1.5 text-xs text-danger-strong">
           {error}
         </p>
       ) : (
@@ -671,7 +671,7 @@ function AudioPlayerRail({
                     rate={practice.rate}
                     onRateChange={practice.onRateChange}
                     disabled={!isReady}
-                    className="h-9 w-12 rounded-md border border-neutral-300 bg-transparent text-center text-xs font-medium text-neutral-700 disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-300"
+                    className="h-9 w-12 rounded-md border border-line-strong bg-transparent text-center text-xs font-medium text-fg-soft disabled:opacity-40"
                   />
                 </span>
               </>
@@ -823,8 +823,8 @@ export function AudioPlayerView({
   return (
     <div
       className={
-        'border border-neutral-200 p-4 dark:border-neutral-800' +
-        (sticky ? ' sticky top-0 z-30 bg-white dark:bg-neutral-900' : '')
+        'border border-line p-4' +
+        (sticky ? ' sticky top-0 z-30 bg-surface' : '')
       }
     >
       <div className="flex items-baseline justify-between gap-3">
@@ -893,7 +893,7 @@ export function AudioPlayerView({
             aria-controls="audio-player-options"
             aria-label="Playback options"
             title="Playback options"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line-strong text-fg-dim hover:bg-surface-soft"
           >
             <svg
               viewBox="0 0 24 24"
@@ -918,7 +918,7 @@ export function AudioPlayerView({
       {optionsOpen && (practice || hasVersionSwitcher) && (
         <div
           id="audio-player-options"
-          className="mt-3 flex flex-wrap items-center gap-4 border-t border-neutral-200 pt-3 dark:border-neutral-800"
+          className="mt-3 flex flex-wrap items-center gap-4 border-t border-line pt-3"
         >
           {practice && (
             <>
@@ -928,7 +928,7 @@ export function AudioPlayerView({
                 disabled={!isReady}
                 aria-label="Start over"
                 title="Start over"
-                className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+                className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-line-strong px-2.5 text-xs font-medium text-fg-soft hover:bg-surface-soft disabled:opacity-50"
               >
                 <span aria-hidden="true">Start over</span>
               </button>
@@ -939,7 +939,7 @@ export function AudioPlayerView({
                 disabled={!isReady}
                 aria-label="Back 10 seconds"
                 title="Back 10 seconds"
-                className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+                className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-line-strong px-2.5 text-xs font-medium text-fg-soft hover:bg-surface-soft disabled:opacity-50"
               >
                 <span aria-hidden="true">↺</span>10s
               </button>
@@ -950,32 +950,32 @@ export function AudioPlayerView({
                 disabled={!isReady}
                 aria-label="Forward 10 seconds"
                 title="Forward 10 seconds"
-                className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-neutral-300 px-2.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+                className="flex h-9 shrink-0 items-center gap-0.5 rounded-full border border-line-strong px-2.5 text-xs font-medium text-fg-soft hover:bg-surface-soft disabled:opacity-50"
               >
                 10s<span aria-hidden="true">↻</span>
               </button>
 
-              <span className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+              <span className="flex items-center gap-1.5 text-xs text-fg-muted">
                 Speed
                 <SpeedInput
                   rate={practice.rate}
                   onRateChange={practice.onRateChange}
                   disabled={!isReady}
-                  className="w-14 shrink-0 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900"
+                  className="w-14 shrink-0 rounded-md border border-line-strong bg-surface px-1.5 py-1 text-xs disabled:opacity-50"
                 />
               </span>
             </>
           )}
 
           {hasVersionSwitcher && (
-            <label className="flex min-w-0 items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+            <label className="flex min-w-0 items-center gap-1.5 text-xs text-fg-muted">
               Version
               <select
                 value={versions!.selectedId}
                 onChange={(e) => versions!.onSelect(e.target.value)}
                 aria-label="Audio version"
                 title="Audio version"
-                className="min-w-0 max-w-[10rem] truncate rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+                className="min-w-0 max-w-[10rem] truncate rounded-md border border-line-strong bg-surface px-1.5 py-1 text-xs"
               >
                 {versions!.list.map((v) => (
                   <option key={v.id} value={v.id}>
@@ -990,7 +990,7 @@ export function AudioPlayerView({
           {/* `ml-auto` rather than `justify-between` on the row: the panel
               wraps, and only this needs to sit at the right edge. */}
           {songMeta && (
-            <span className="ml-auto shrink-0 text-xs text-neutral-600 dark:text-neutral-400">
+            <span className="ml-auto shrink-0 text-xs text-fg-muted">
               {songMeta}
             </span>
           )}
@@ -1001,7 +1001,7 @@ export function AudioPlayerView({
         <LoadingBar className="mt-4" label="Loading audio" />
       )}
       {error && (
-        <p className="mt-3 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+        <p className="mt-3 rounded-md border border-danger-line bg-danger-fill px-3 py-2 text-xs text-danger-strong">
           {error}
         </p>
       )}

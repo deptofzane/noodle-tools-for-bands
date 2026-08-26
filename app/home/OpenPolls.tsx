@@ -30,7 +30,7 @@ export function OpenPolls({ polls }: { polls: OpenPoll[] }) {
       >
         <span
           aria-hidden="true"
-          className="minor-text-theme-colors hover:text-neutral-700 dark:hover:text-neutral-200"
+          className="minor-text-theme-colors hover:text-fg-body"
         >
           {open ? '▾' : '▸'}
         </span>
@@ -41,12 +41,12 @@ export function OpenPolls({ polls }: { polls: OpenPoll[] }) {
       </button>
 
       {open && (
-        <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+        <ul className="divide-y divide-line rounded-lg border border-line">
           {polls.map((p) => (
             <li key={p.id}>
               <Link
                 href={`/bands/${p.bandId}/polls/${p.id}`}
-                className="flex flex-col gap-0.5 px-3 py-2.5 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                className="flex flex-col gap-0.5 px-3 py-2.5 hover:bg-surface-soft"
               >
                 <span className="text-sm font-medium">{p.title}</span>
                 {p.description && (

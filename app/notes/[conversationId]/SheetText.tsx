@@ -45,9 +45,7 @@ function LyricLine({
     <div
       className={
         'whitespace-nowrap ' +
-        (chorus
-          ? 'border-l-2 border-neutral-300 pl-2 dark:border-neutral-700'
-          : '')
+        (chorus ? 'border-l-2 border-line-strong pl-2' : '')
       }
     >
       {tokens.map((t, i) => (
@@ -117,10 +115,7 @@ function ChordChart({ text }: { text: string }) {
       }
       if (name === 'subtitle' || name === 'artist' || name === 'composer') {
         out.push(
-          <div
-            key={i}
-            className="text-[1.05em] text-neutral-600 dark:text-neutral-400"
-          >
+          <div key={i} className="text-[1.05em] text-fg-muted">
             {value}
           </div>,
         );
@@ -209,7 +204,7 @@ export function SheetText({
 
   const body =
     mode === 'source' ? (
-      <pre className="overflow-x-auto whitespace-pre rounded-md bg-neutral-50 p-3 font-mono text-[0.85em] dark:bg-neutral-900">
+      <pre className="overflow-x-auto whitespace-pre rounded-md bg-surface-soft p-3 font-mono text-[0.85em]">
         {text}
       </pre>
     ) : mode === 'chords' ? (
@@ -254,7 +249,7 @@ export function SheetText({
                 onChange={(e) => setFormat(e.target.value as SheetTextFormat)}
                 disabled={saving}
                 aria-label="Sheet music format"
-                className="rounded-md border border-neutral-300 bg-white px-1.5 py-0.5 text-xs disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900"
+                className="rounded-md border border-line-strong bg-surface px-1.5 py-0.5 text-xs disabled:opacity-50"
               >
                 {SHEET_TEXT_FORMATS.map((f) => (
                   <option key={f.id} value={f.id}>
@@ -281,7 +276,7 @@ export function SheetText({
           disabled={saving}
           aria-label="Sheet music content"
           spellCheck={false}
-          className="min-h-64 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900"
+          className="min-h-64 w-full rounded-md border border-line-strong bg-surface px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
         />
       </div>
     );
@@ -315,8 +310,8 @@ export function SheetText({
                 smallBtn +
                 ' ' +
                 (mode === m.id
-                  ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100'
-                  : 'minor-text-theme-colors hover:bg-neutral-100 dark:hover:bg-neutral-800')
+                  ? 'bg-neutral-200 text-fg dark:bg-neutral-700'
+                  : 'minor-text-theme-colors hover:bg-surface-hover')
               }
             >
               {m.label}

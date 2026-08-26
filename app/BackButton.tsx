@@ -30,7 +30,7 @@ export function BackButton({
         if (checkUseCanGoBack() && !!canGoBack) router.back();
         else router.push(defaultHref);
       }}
-      className="hover:text-neutral-900 dark:hover:text-neutral-100 py-4"
+      className="hover:text-fg py-4"
     >
       ← {!canGoBack && !!defaultHrefName ? defaultHrefName : 'Back'}
     </button>

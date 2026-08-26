@@ -110,7 +110,7 @@ export function AlbumTrackRow({
         )}
 
         {track.state === 'lost' && (
-          <span className="truncate text-xs text-amber-700 dark:text-amber-400">
+          <span className="truncate text-xs text-warn">
             “{track.pinnedLabel ?? track.pinnedFileName}” was deleted — playing
             the song’s current version
           </span>

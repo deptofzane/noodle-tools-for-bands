@@ -9,7 +9,7 @@ import Link from 'next/link';
 export default function NotFound() {
   return (
     <main className="main-container">
-      <div className="mt-10 flex flex-col items-center gap-4 rounded-lg border border-neutral-200 px-4 py-10 text-center dark:border-neutral-800">
+      <div className="mt-10 flex flex-col items-center gap-4 rounded-lg border border-line px-4 py-10 text-center">
         <h1 className="title-text">Not found</h1>
         <p className="max-w-sm text-sm minor-text-theme-colors">
           This page doesn’t exist, or it belongs to a band you’re not in.

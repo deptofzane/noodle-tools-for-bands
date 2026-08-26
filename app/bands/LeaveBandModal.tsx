@@ -131,9 +131,7 @@ export function LeaveBandModal({
         </>
       ) : loadError ? (
         <>
-          <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-            {loadError}
-          </p>
+          <p className="mt-2 text-sm text-danger">{loadError}</p>
           <div className="mt-4 flex justify-end">
             <button type="button" onClick={onCancel} className="btn-ghost">
               Close
@@ -142,7 +140,7 @@ export function LeaveBandModal({
         </>
       ) : soleOwner ? (
         <>
-          <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="mt-2 text-sm text-fg-muted">
             You’re the only member. To leave, delete the band from its Edit page
             instead.
           </p>
@@ -154,7 +152,7 @@ export function LeaveBandModal({
         </>
       ) : needsChoice ? (
         <>
-          <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="mt-2 text-sm text-fg-muted">
             You’re the only owner. Choose who becomes the new owner. You’ll lose
             access unless they add you back later.
           </p>
@@ -163,7 +161,7 @@ export function LeaveBandModal({
             {candidates.map((c) => (
               <label
                 key={c.userId}
-                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-surface-soft"
               >
                 <input
                   type="radio"
@@ -203,7 +201,7 @@ export function LeaveBandModal({
         </>
       ) : (
         <>
-          <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="mt-2 text-sm text-fg-muted">
             {otherOwnerRemains
               ? 'Another owner will remain to manage the band. You’ll lose access unless an owner adds you back later.'
               : 'You’ll lose access to this band’s audio and conversations. An owner can add you back later.'}

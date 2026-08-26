@@ -27,13 +27,10 @@ export default async function HistoryPage({
 
       <div className="mb-4">
         <h1 className="title-text">History</h1>
-        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="mt-1 text-sm text-fg-muted">
           Conversations you&apos;ve closed, polls that have been decided, and
           events that have already happened. Anything still active lives in{' '}
-          <Link
-            href="/open-conversations"
-            className="text-blue-600 underline dark:text-blue-400"
-          >
+          <Link href="/open-conversations" className="text-accent underline">
             Open Conversations
           </Link>
           .

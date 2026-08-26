@@ -121,7 +121,7 @@ export function UpcomingShows({
           </span>
         </span>
         <span className="shrink-0 text-[0.6875rem] minor-text-theme-colors">
-          <span className="block font-medium text-neutral-700 dark:text-neutral-300">
+          <span className="block font-medium text-fg-soft">
             {formatDateRange(s.date, s.endDate, formatDateShort)}
           </span>
           {s.time && <span>{formatTimeRange(s.time, s.endTime)}</span>}
@@ -135,14 +135,14 @@ export function UpcomingShows({
           <Link
             href={practiceHref(s.setlistId)}
             title="Practice this event’s setlist"
-            className="rounded-md border border-neutral-300 px-2.5 py-2 text-center text-xs font-medium hover:bg-black/[0.04] dark:border-neutral-700 dark:hover:bg-white/[0.06]"
+            className="rounded-md border border-line-strong px-2.5 py-2 text-center text-xs font-medium hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
           >
             Practice
           </Link>
           <Link
             href={liveHref(s.setlistId)}
             title="Perform this event’s setlist live"
-            className="rounded-md border border-neutral-300 px-2.5 py-2 text-center text-xs font-medium hover:bg-black/[0.04] dark:border-neutral-700 dark:hover:bg-white/[0.06]"
+            className="rounded-md border border-line-strong px-2.5 py-2 text-center text-xs font-medium hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
           >
             Live
           </Link>
@@ -155,7 +155,7 @@ export function UpcomingShows({
           </span>
           <Link
             href={`/bands/${s.bandId}/setlists/${s.setlistId}`}
-            className="rounded-md border border-neutral-300 px-2.5 py-2 text-center text-xs font-medium hover:bg-black/[0.04] dark:border-neutral-700 dark:hover:bg-white/[0.06]"
+            className="rounded-md border border-line-strong px-2.5 py-2 text-center text-xs font-medium hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
           >
             View setlist
           </Link>
@@ -174,7 +174,7 @@ export function UpcomingShows({
       >
         <span
           aria-hidden="true"
-          className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+          className="text-neutral-400 hover:text-fg-body"
         >
           {open ? '▾' : '▸'}
         </span>
@@ -186,7 +186,7 @@ export function UpcomingShows({
       </button>
 
       {open && (
-        <ul className="divide-y divide-neutral-200 overflow-hidden rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+        <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line">
           {items.map(renderShow)}
         </ul>
       )}

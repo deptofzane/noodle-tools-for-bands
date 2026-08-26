@@ -22,7 +22,7 @@ export function Section({
   return (
     <section className="flex flex-col gap-2">
       <Heading className="text-base font-medium">{title}</Heading>
-      <div className="flex flex-col gap-2 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
+      <div className="flex flex-col gap-2 text-sm leading-relaxed text-fg-soft">
         {children}
       </div>
     </section>
@@ -45,7 +45,7 @@ export function B({ children }: { children: React.ReactNode }) {
 
 export function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded bg-neutral-100 px-1 py-0.5 text-[0.8125rem] dark:bg-neutral-900">
+    <code className="rounded bg-fill-muted px-1 py-0.5 text-[0.8125rem]">
       {children}
     </code>
   );

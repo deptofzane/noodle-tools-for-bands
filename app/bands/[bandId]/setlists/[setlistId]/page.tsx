@@ -113,11 +113,11 @@ export default async function SetlistPage({
       </span>
 
       {setlist.songs.length === 0 ? (
-        <p className="rounded-md border border-neutral-200 px-1 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+        <p className="rounded-md border border-line px-1 py-6 text-center text-sm minor-text-theme-colors">
           This setlist has no songs.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-1 py-3 dark:border-neutral-800">
+        <ul className="flex flex-col gap-2 rounded-lg border border-line px-1 py-3">
           {itemRows}
         </ul>
       )}

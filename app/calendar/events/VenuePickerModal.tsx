@@ -50,7 +50,7 @@ export function VenuePickerModal({
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search venues…"
         autoFocus
-        className="mt-3 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+        className="mt-3 w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
       />
 
       <ul className="mt-3 flex max-h-[50vh] flex-col overflow-y-auto">
@@ -58,9 +58,9 @@ export function VenuePickerModal({
           <button
             type="button"
             onClick={() => onPick(null)}
-            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-surface-hover"
           >
-            <span className="w-3 shrink-0 text-blue-600 dark:text-blue-400">
+            <span className="w-3 shrink-0 text-accent">
               {selectedId === null ? '✓' : ''}
             </span>
             <span className="minor-text-theme-colors">No venue</span>
@@ -72,9 +72,9 @@ export function VenuePickerModal({
             <button
               type="button"
               onClick={() => onPick(v.id)}
-              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-surface-hover"
             >
-              <span className="w-3 shrink-0 text-blue-600 dark:text-blue-400">
+              <span className="w-3 shrink-0 text-accent">
                 {v.id === selectedId ? '✓' : ''}
               </span>
               <span className="min-w-0">

@@ -196,7 +196,7 @@ function MenuExample() {
   return (
     <div
       aria-hidden="true"
-      className="my-1 w-full max-w-[14rem] select-none overflow-hidden rounded-md border border-neutral-200 bg-white py-1.5 shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
+      className="my-1 w-full max-w-[14rem] select-none overflow-hidden rounded-md border border-line bg-surface py-1.5 shadow-lg"
     >
       <MenuSectionLabel>Song</MenuSectionLabel>
       {rows.map((row, r) => (
@@ -206,7 +206,7 @@ function MenuExample() {
               {i > 0 && (
                 <span className="my-1 w-px shrink-0 bg-neutral-200 dark:bg-neutral-800" />
               )}
-              <span className="flex flex-1 items-center justify-center px-4 py-1.5 text-neutral-700 dark:text-neutral-200">
+              <span className="flex flex-1 items-center justify-center px-4 py-1.5 text-fg-body">
                 {icon}
               </span>
             </Fragment>

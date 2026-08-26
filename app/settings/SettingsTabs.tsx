@@ -110,8 +110,8 @@ export function SettingsTabs({
             className={
               '-mb-px shrink-0 whitespace-nowrap border-b-2 border-transparent px-3 py-2 text-sm font-medium transition ' +
               (active === tab.id
-                ? 'text-blue-600 dark:text-blue-400'
-                : 'minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
+                ? 'text-accent'
+                : 'minor-text-theme-colors hover:text-fg-strong')
             }
           >
             {tab.label}

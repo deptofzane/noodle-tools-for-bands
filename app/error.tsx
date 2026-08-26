@@ -29,7 +29,7 @@ export default function RouteError({
 
   return (
     <main className="main-container">
-      <div className="mt-10 flex flex-col items-center gap-4 rounded-lg border border-neutral-200 px-4 py-10 text-center dark:border-neutral-800">
+      <div className="mt-10 flex flex-col items-center gap-4 rounded-lg border border-line px-4 py-10 text-center">
         <h1 className="title-text">Something went wrong</h1>
         <p className="max-w-sm text-sm minor-text-theme-colors">
           This page didn’t load. Trying again often works — if it doesn’t, head

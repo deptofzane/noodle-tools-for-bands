@@ -224,9 +224,9 @@ export function EventSetlistActions({
                 <button
                   type="button"
                   onClick={() => void choose('')}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-surface-hover"
                 >
-                  <span className="w-3 shrink-0 text-blue-600 dark:text-blue-400">
+                  <span className="w-3 shrink-0 text-accent">
                     {setlistId === '' ? '✓' : ''}
                   </span>
                   <span className="minor-text-theme-colors">No setlist</span>
@@ -237,9 +237,9 @@ export function EventSetlistActions({
                   <button
                     type="button"
                     onClick={() => void choose(s.id)}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-surface-hover"
                   >
-                    <span className="w-3 shrink-0 text-blue-600 dark:text-blue-400">
+                    <span className="w-3 shrink-0 text-accent">
                       {s.id === setlistId ? '✓' : ''}
                     </span>
                     <span className="truncate">{s.name}</span>

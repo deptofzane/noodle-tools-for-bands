@@ -27,7 +27,7 @@ export function PushNotificationToggle() {
   })();
 
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+    <div className="flex items-center justify-between gap-4 rounded-lg border border-line p-4">
       <div className="min-w-0">
         <p className="font-medium">Push notifications</p>
         <p className="mt-1 text-xs minor-text-theme-colors dark:text-neutral-400">
@@ -38,7 +38,7 @@ export function PushNotificationToggle() {
         <button
           type="button"
           onClick={() => void disable()}
-          className="shrink-0 rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+          className="shrink-0 rounded-md border border-line-strong px-4 py-2 text-sm font-medium hover:bg-surface-soft"
         >
           Turn off
         </button>

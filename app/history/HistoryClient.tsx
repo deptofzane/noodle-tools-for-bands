@@ -65,8 +65,8 @@ export function HistoryClient({ initialTab }: { initialTab?: HistoryTab }) {
             className={
               '-mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-3 py-2 text-sm font-medium transition ' +
               (activeTab === tab
-                ? 'text-blue-600 dark:text-blue-400'
-                : 'minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
+                ? 'text-accent'
+                : 'minor-text-theme-colors hover:text-fg-strong')
             }
           >
             {HISTORY_TAB_LABELS[tab]}

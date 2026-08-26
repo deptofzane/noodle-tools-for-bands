@@ -120,12 +120,10 @@ export function EditSetlistClient({
           onChange={(e) => setTitle(e.target.value)}
           maxLength={255}
           aria-invalid={!nameValid}
-          className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-lg font-semibold focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+          className="rounded-md border border-line-strong bg-surface px-3 py-2 text-lg font-semibold focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
         {!nameValid && (
-          <p className="text-xs text-red-600 dark:text-red-400">
-            A setlist needs a name.
-          </p>
+          <p className="text-xs text-danger">A setlist needs a name.</p>
         )}
       </div>
 

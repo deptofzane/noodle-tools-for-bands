@@ -350,7 +350,7 @@ export function AudioVersions({
         onDrop={onDrop}
       >
         {versions.length > 0 ? (
-          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+          <ul className="divide-y divide-line rounded-lg border border-line">
             {versions.map((v) => (
               <li
                 key={v.id}
@@ -374,7 +374,7 @@ export function AudioVersions({
                       maxLength={100}
                       placeholder={v.fileName}
                       aria-label="Version label"
-                      className="min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+                      className="min-w-0 flex-1 rounded-md border border-line-strong bg-surface px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                     <button
                       type="submit"
@@ -387,7 +387,7 @@ export function AudioVersions({
                       type="button"
                       onClick={() => setEditingId(null)}
                       disabled={busy}
-                      className="shrink-0 rounded-md px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                      className="shrink-0 rounded-md px-2 py-1 text-xs text-fg-muted hover:bg-surface-hover disabled:opacity-50"
                     >
                       Cancel
                     </button>
@@ -400,7 +400,7 @@ export function AudioVersions({
                           {v.label || v.fileName}
                         </span>
                         {v.isDefault && (
-                          <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[0.625rem] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                          <span className="shrink-0 rounded-full bg-accent-fill-strong px-2 py-0.5 text-[0.625rem] font-medium text-accent-strong">
                             Default
                           </span>
                         )}
@@ -424,7 +424,7 @@ export function AudioVersions({
                         onClick={() => startEdit(v)}
                         disabled={busy}
                         aria-label={`Edit label for ${v.label || v.fileName}`}
-                        className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                        className="rounded-md border border-line-strong px-2 py-1 text-xs font-medium hover:bg-surface-soft disabled:opacity-50"
                       >
                         {v.label ? 'Rename' : 'Label'}
                       </button>
@@ -433,7 +433,7 @@ export function AudioVersions({
                           type="button"
                           onClick={() => makeDefault(v.id)}
                           disabled={busy}
-                          className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                          className="rounded-md border border-line-strong px-2 py-1 text-xs font-medium hover:bg-surface-soft disabled:opacity-50"
                         >
                           Set default
                         </button>
@@ -443,7 +443,7 @@ export function AudioVersions({
                         onClick={() => setDeleteTarget(v)}
                         disabled={busy}
                         aria-label={`Delete version ${v.label || v.fileName}`}
-                        className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-neutral-700 dark:text-red-400 dark:hover:bg-red-950"
+                        className="rounded-md border border-line-strong px-2 py-1 text-xs font-medium text-danger hover:bg-danger-fill disabled:opacity-50"
                       >
                         Delete
                       </button>
@@ -454,7 +454,7 @@ export function AudioVersions({
             ))}
           </ul>
         ) : (
-          <p className="rounded-md border border-neutral-200 px-3 py-4 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+          <p className="rounded-md border border-line px-3 py-4 text-center text-sm minor-text-theme-colors">
             No audio yet. Add a version below, or drag files here.
           </p>
         )}
@@ -468,7 +468,7 @@ export function AudioVersions({
         {dragging && (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg border-2 border-dashed border-blue-500 bg-blue-50/90 text-sm font-medium text-blue-700 dark:bg-blue-950/90 dark:text-blue-300"
+            className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg border-2 border-dashed border-blue-500 bg-blue-50/90 text-sm font-medium text-accent-strong dark:bg-blue-950/90"
           >
             Drop to add {versions.length === 1 ? 'another version' : 'versions'}
           </div>
@@ -528,7 +528,7 @@ export function AudioVersions({
           <h2 id="version-source-title" className="text-base font-semibold">
             Add audio version
           </h2>
-          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="mt-1 text-sm text-fg-muted">
             {canUseDrive
               ? 'Choose a file from Google Drive or upload one from this device.'
               : 'Sign in with Google to import from Drive, or upload one from this device.'}

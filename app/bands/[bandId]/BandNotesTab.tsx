@@ -214,7 +214,7 @@ export function BandNotesTab({
     return (
       <li
         key={note.id}
-        className="flex flex-col gap-2 rounded-lg border border-neutral-200 px-4 py-3 dark:border-neutral-800"
+        className="flex flex-col gap-2 rounded-lg border border-line px-4 py-3"
       >
         <div className="flex items-start justify-between gap-1 items-center">
           {/* The whole heading toggles, so the target is the note, not
@@ -329,7 +329,7 @@ export function BandNotesTab({
         </div>
 
         {open && note.body && (
-          <p className="whitespace-pre-wrap text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="whitespace-pre-wrap text-sm text-fg-muted">
             {note.body}
           </p>
         )}
@@ -353,7 +353,7 @@ export function BandNotesTab({
             <span
               role="group"
               aria-label="Notes"
-              className="flex items-center rounded-md border border-neutral-300 p-0.5 text-xs dark:border-neutral-700"
+              className="flex items-center rounded-md border border-line-strong p-0.5 text-xs"
             >
               {([true, false] as const).map((wantShared) => (
                 <button
@@ -364,8 +364,8 @@ export function BandNotesTab({
                   className={
                     'rounded px-2 py-1 ' +
                     (sharedView === wantShared
-                      ? 'bg-neutral-100 font-medium text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
-                      : 'minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
+                      ? 'bg-fill-2 font-medium text-fg'
+                      : 'minor-text-theme-colors hover:text-fg-strong')
                   }
                 >
                   {wantShared ? 'All' : 'Mine'}
@@ -417,7 +417,7 @@ export function BandNotesTab({
                 <button
                   type="button"
                   onClick={() => void loadPinned(true)}
-                  className="self-center rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                  className="self-center rounded-md border border-line-strong px-3 py-1.5 text-xs font-medium hover:bg-surface-soft"
                 >
                   Load all {pinnedTotal}
                 </button>
@@ -428,7 +428,7 @@ export function BandNotesTab({
       )}
 
       {error && (
-        <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+        <p className="rounded-md border border-danger-line bg-danger-fill px-3 py-2 text-sm text-danger-strong">
           {error}
         </p>
       )}
@@ -436,7 +436,7 @@ export function BandNotesTab({
       {notes === null ? (
         <LoadingBlock label="Loading notes" />
       ) : notes.length === 0 ? (
-        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+        <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
           {sharedView
             ? 'No shared notes yet. Notes you or a bandmate share with the band show up here.'
             : '“New note” in the menu starts one — it stays here until you share it with the band.'}

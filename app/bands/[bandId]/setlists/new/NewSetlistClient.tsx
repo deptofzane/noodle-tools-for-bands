@@ -82,7 +82,7 @@ export function NewSetlistClient({
         onChange={(e) => setName(e.target.value)}
         maxLength={255}
         placeholder="Setlist name"
-        className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+        className="rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
       />
 
       <SetlistItemsEditor

@@ -41,7 +41,7 @@ export function AddAudioSourceModal({
       <h2 id="audio-source-title" className="text-base font-semibold">
         Upload audio file(s)
       </h2>
-      <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+      <p className="mt-1 text-sm text-fg-muted">
         {canUseDrive
           ? 'Choose one or more files from Google Drive, or upload one from this device.'
           : 'Sign in with Google to import from Drive, or upload one from this device.'}

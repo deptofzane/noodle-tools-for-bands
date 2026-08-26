@@ -80,7 +80,7 @@ export function SongRow({
     : null;
 
   return (
-    <li className="flex items-center gap-2 pr-4 hover:bg-neutral-50 dark:hover:bg-neutral-900">
+    <li className="flex items-center gap-2 pr-4 hover:bg-surface-soft">
       {track ? (
         <button
           type="button"
@@ -97,7 +97,7 @@ export function SongRow({
               ? `Pause ${track.title}`
               : `Play ${track.title}`
           }
-          className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 bg-blue-50 hover:bg-blue-100 dark:border-neutral-700 dark:text-neutral-200 dark:bg-blue-700 dark:hover:bg-blue-500"
+          className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line-strong text-fg-body bg-blue-50 hover:bg-blue-100 dark:bg-blue-700 dark:hover:bg-blue-500"
         >
           {isCurrent && player.isPlaying ? (
             <svg
@@ -125,7 +125,7 @@ export function SongRow({
       ) : (
         <span
           aria-hidden="true"
-          className="ml-3 h-8 w-8 shrink-0 rounded-full border border-dashed border-neutral-300 dark:border-neutral-700"
+          className="ml-3 h-8 w-8 shrink-0 rounded-full border border-dashed border-line-strong"
         />
       )}
 
@@ -143,7 +143,7 @@ export function SongRow({
             {c.audioFileName ?? 'Untitled audio'}
           </span>
           {c.closed && (
-            <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium minor-text-theme-colors dark:bg-neutral-900 dark:text-neutral-400">
+            <span className="shrink-0 rounded bg-fill-muted px-1.5 py-0.5 text-[0.625rem] font-medium minor-text-theme-colors dark:text-neutral-400">
               closed
             </span>
           )}

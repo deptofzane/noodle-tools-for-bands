@@ -280,7 +280,7 @@ export function NotificationList({
         >
           <span
             aria-hidden="true"
-            className="text-xl leading-none minor-text-theme-colors hover:text-neutral-700 dark:hover:text-neutral-200"
+            className="text-xl leading-none minor-text-theme-colors hover:text-fg-body"
           >
             {minimized ? '▸' : '▾'}
           </span>
@@ -295,17 +295,17 @@ export function NotificationList({
 
       {!minimized &&
         (items.length === 0 ? (
-          <p className="rounded-lg border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+          <p className="rounded-lg border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
             No notifications yet. Activity from your bands shows up here.
           </p>
         ) : (
           <>
-            <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+            <ul className="divide-y divide-line rounded-lg border border-line">
               {items.map((n) => (
                 <li
                   key={n.id}
                   className={
-                    'flex items-center gap-2 pr-2 hover:bg-neutral-50 dark:hover:bg-neutral-900 ' +
+                    'flex items-center gap-2 pr-2 hover:bg-surface-soft ' +
                     (n.unread ? 'bg-blue-50/50 dark:bg-blue-950/20' : '')
                   }
                 >
@@ -346,7 +346,7 @@ export function NotificationList({
                 disabled={loadingMore}
                 // Fixed min-width so swapping the label for the spinner
                 // doesn't make the button jump.
-                className="flex min-w-[6.5rem] items-center justify-center self-center rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-900"
+                className="flex min-w-[6.5rem] items-center justify-center self-center rounded-md border border-line px-3 py-1.5 text-xs font-medium text-fg-dim hover:bg-surface-soft disabled:opacity-50"
               >
                 {loadingMore ? (
                   <Spinner size="xs" label="Loading older notifications" />

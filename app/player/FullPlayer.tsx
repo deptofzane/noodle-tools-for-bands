@@ -131,17 +131,17 @@ export function FullPlayer({
       role="dialog"
       aria-modal="true"
       aria-label="Audio player"
-      className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-neutral-900"
+      className="fixed inset-0 z-50 flex flex-col bg-surface"
     >
       {/* Collapse is the only way out of here — dismissing the queue lives on
           the bar this collapses back to. */}
-      <header className="flex shrink-0 items-center justify-end gap-2 border-b border-neutral-200 px-3 py-2 lg:px-6 dark:border-neutral-800">
+      <header className="flex shrink-0 items-center justify-end gap-2 border-b border-line px-3 py-2 lg:px-6">
         <button
           type="button"
           onClick={onCollapse}
           aria-label="Collapse player"
           title="Collapse player"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-fg-dim hover:bg-surface-hover"
         >
           <svg
             viewBox="0 0 24 24"
@@ -186,7 +186,7 @@ export function FullPlayer({
           </div>
 
           {error ? (
-            <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-center text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+            <p className="rounded-md border border-danger-line bg-danger-fill px-3 py-2 text-center text-sm text-danger-strong">
               {error}
             </p>
           ) : (
@@ -226,8 +226,8 @@ export function FullPlayer({
               className={
                 'flex h-11 w-11 items-center justify-center rounded-full disabled:opacity-40 ' +
                 (shuffle
-                  ? 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-neutral-800'
-                  : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800')
+                  ? 'text-accent hover:bg-blue-50 dark:hover:bg-neutral-800'
+                  : 'text-fg-body hover:bg-surface-hover')
               }
             >
               <ShuffleIcon size={20} />
@@ -237,7 +237,7 @@ export function FullPlayer({
               onClick={previous}
               aria-label="Previous song"
               title="Previous song"
-              className="flex h-11 w-11 items-center justify-center rounded-full text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-fg-body hover:bg-surface-hover"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -285,7 +285,7 @@ export function FullPlayer({
               disabled={!hasNext}
               aria-label="Next song"
               title="Next song"
-              className="flex h-11 w-11 items-center justify-center rounded-full text-neutral-700 hover:bg-neutral-100 disabled:opacity-40 dark:text-neutral-200 dark:hover:bg-neutral-800"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-fg-body hover:bg-surface-hover disabled:opacity-40"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -308,8 +308,8 @@ export function FullPlayer({
               className={
                 'flex h-11 w-11 items-center justify-center rounded-full ' +
                 (repeat === 'off'
-                  ? 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
-                  : 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-neutral-800')
+                  ? 'text-fg-body hover:bg-surface-hover'
+                  : 'text-accent hover:bg-blue-50 dark:hover:bg-neutral-800')
               }
             >
               <svg
@@ -357,7 +357,7 @@ export function FullPlayer({
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto border-t border-neutral-200 dark:border-neutral-800">
+        <div className="min-h-0 flex-1 overflow-y-auto border-t border-line">
           <div className="mx-auto w-full max-w-2xl px-4 py-3">
             {showComments && currentUserId ? (
               /* Keyed by song: stepping the queue with comments open should
@@ -375,7 +375,7 @@ export function FullPlayer({
                 <h3 className="pb-2 text-xs font-medium uppercase tracking-wide minor-text-theme-colors">
                   Queue
                 </h3>
-                <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                <ul className="divide-y divide-line">
                   {queue.map((t, i) => {
                     const isCurrent = i === index;
                     return (
@@ -389,7 +389,7 @@ export function FullPlayer({
                           onClick={() => play(queue, i)}
                           aria-current={isCurrent ? 'true' : undefined}
                           className={
-                            'flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900 ' +
+                            'flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left text-sm hover:bg-surface-soft ' +
                             (isCurrent
                               ? 'text-blue-700 dark:text-blue-400'
                               : '')

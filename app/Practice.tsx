@@ -163,7 +163,7 @@ export function Practice({
     return (
       <>
         {header()}
-        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+        <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
           This setlist has no songs to practice.
         </p>
       </>
@@ -180,7 +180,7 @@ export function Practice({
   const hasAudio = Boolean(song.src) || (song.audioVersions?.length ?? 0) > 0;
 
   const navBtn =
-    'shrink-0 rounded-md border border-neutral-300 px-3 py-2 text-lg leading-none font-medium hover:bg-neutral-50 disabled:opacity-40 dark:border-neutral-700 dark:hover:bg-neutral-900';
+    'shrink-0 rounded-md border border-line-strong px-3 py-2 text-lg leading-none font-medium hover:bg-surface-soft disabled:opacity-40';
 
   // Desktop (`lg`+): a narrow player rail on the left, sheet music filling the
   // rest. Below `lg` they stack. The song nav sits above both, full width —
@@ -213,7 +213,7 @@ export function Practice({
             <Link
               href={`/notes/${song.conversationId}/live`}
               onClick={onNavigate}
-              className="py-4 hover:text-neutral-900 dark:hover:text-neutral-100"
+              className="py-4 hover:text-fg"
             >
               Live
             </Link>
@@ -226,7 +226,7 @@ export function Practice({
               onClick={onNavigate}
               aria-label="Edit song"
               title="Edit song"
-              className="py-4 px-2 hover:text-neutral-900 dark:hover:text-neutral-100"
+              className="py-4 px-2 hover:text-fg"
             >
               <PencilIcon size={18} />
             </Link>
@@ -249,7 +249,7 @@ export function Practice({
                   : 'Copy a link to this song'
               }
               title="Share"
-              className="py-4 px-2 hover:text-neutral-900 dark:hover:text-neutral-100"
+              className="py-4 px-2 hover:text-fg"
             >
               <LinkIcon size={18} />
             </button>
@@ -332,7 +332,7 @@ export function Practice({
               audio"), and this screen is where that song now lives. Say so
               rather than showing a player wired to a file that isn't there. */}
           {song.conversationId && !hasAudio && (
-            <p className="mb-4 rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+            <p className="mb-4 rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
               No audio yet. Add audio from the Edit song page.
             </p>
           )}
@@ -345,7 +345,7 @@ export function Practice({
               zoomKey={song.conversationId}
             />
           ) : (
-            <div className="flex flex-col items-center justify-center border-t border-b border-dashed border-neutral-300 py-16 text-center dark:border-neutral-700 lg:mr-4 lg:ml-0">
+            <div className="flex flex-col items-center justify-center border-t border-b border-dashed border-line-strong py-16 text-center lg:mr-4 lg:ml-0">
               <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
                 Break
               </p>

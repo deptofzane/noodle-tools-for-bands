@@ -150,7 +150,7 @@ export function NotificationPlayButton({
       onClick={handleClick}
       disabled={loading}
       aria-label={isPlaying ? `Pause ${noun}` : `Play ${noun}`}
-      className="flex h-9 w-9 shrink-0 items-center justify-center self-center rounded-full border border-neutral-300 text-neutral-700 hover:bg-neutral-100 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+      className="flex h-9 w-9 shrink-0 items-center justify-center self-center rounded-full border border-line-strong text-fg-body hover:bg-surface-hover disabled:opacity-50"
     >
       {loading ? (
         <Spinner />

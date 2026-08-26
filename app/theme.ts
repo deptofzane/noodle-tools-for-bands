@@ -1,36 +1,56 @@
-export type Theme = 'light' | 'dark';
+export const THEMES = ['light', 'dark', 'sepia'] as const;
+export type Theme = (typeof THEMES)[number];
+
+export function isTheme(v: unknown): v is Theme {
+  return typeof v === 'string' && (THEMES as readonly string[]).includes(v);
+}
+
+/** How each theme is presented in the picker. */
+export const THEME_LABELS: Record<Theme, string> = {
+  light: 'Light',
+  dark: 'Dark',
+  sepia: 'Sepia',
+};
 
 /**
- * The page background for each theme, mirrored into `<meta name="theme-color">`.
+ * Whether a theme is dark *enough* to keep the `dark` class on.
  *
- * That meta is what colours the system bar: the status bar in an installed
- * app, the address bar in a browser tab. Left fixed it reads as a stripe in
- * some other app's colour pinned above this one — most obvious on a dark
- * theme, where a bright bar sits over a black page.
- *
- * The values are the body's own background (`bg-white` / `dark:bg-neutral-900`
- * in the root layout), so the bar disappears into the page rather than framing
- * it. Keep them in step if that background changes.
- *
- * Deliberately *not* a `prefers-color-scheme` media query on the meta tag:
- * that would follow the OS, and this app follows the theme the user picked —
- * the same reason `globals.css` pins `color-scheme` rather than accepting
- * `light dark`.
+ * The class is no longer "the theme" — it's the switch for the `dark:`
+ * variants still left in the tree. A low-light theme has to keep it on, or
+ * every unmigrated colour would render its light value against a dark page.
+ * It also drives `color-scheme`, and so the look of native controls.
+ */
+export const THEME_IS_DARK: Record<Theme, boolean> = {
+  light: false,
+  dark: true,
+  sepia: true,
+};
+
+/**
+ * The page background per theme, mirrored into `<meta name="theme-color">` so
+ * the system bar disappears into the page instead of framing it. Keep in step
+ * with `--page` in globals.css.
  */
 export const THEME_COLORS: Record<Theme, string> = {
   light: '#ffffff',
   dark: '#171717',
+  sepia: '#1c1714',
 };
 
 /**
- * Point the system bar at the applied theme.
+ * Put a theme on the document: the `data-theme` the tokens key off, the
+ * `dark` class the remaining variants key off, and the system bar's colour.
  *
- * Creates the tag if it isn't there — the pre-paint script runs before any
- * metadata React might render, and owning it here means exactly one tag with
- * one writer, rather than racing whatever the framework emits.
+ * One function so the three can't drift apart. The pre-paint script in the
+ * root layout does the same three things inline, because it has to run before
+ * any of this is loaded.
  */
-export function applyThemeColor(theme: Theme): void {
+export function applyTheme(theme: Theme): void {
   if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  root.dataset.theme = theme;
+  root.classList.toggle('dark', THEME_IS_DARK[theme]);
+
   let meta = document.querySelector<HTMLMetaElement>(
     'meta[name="theme-color"]',
   );

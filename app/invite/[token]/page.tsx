@@ -25,7 +25,7 @@ export default async function InvitePage({
       <h3 className="mb-2 font-serif text-4xl">
         noo<span className="text-cyan-600">dle</span>
       </h3>
-      <div className="w-full max-w-sm rounded-lg border border-neutral-200 p-8 dark:border-neutral-800">
+      <div className="w-full max-w-sm rounded-lg border border-line p-8">
         {children}
       </div>
     </main>
@@ -35,7 +35,7 @@ export default async function InvitePage({
     return (
       <Shell>
         <h1 className="title-text">Invite unavailable</h1>
-        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="mt-2 text-sm text-fg-muted">
           {invite?.accepted
             ? 'This invite has already been used.'
             : invite?.expired
@@ -43,10 +43,7 @@ export default async function InvitePage({
               : 'This invite link is invalid. Ask an owner for a new link.'}
         </p>
         <p className="mt-4 text-sm">
-          <Link
-            href="/home"
-            className="text-blue-600 hover:underline dark:text-blue-400"
-          >
+          <Link href="/home" className="text-accent hover:underline">
             Go to Noodle
           </Link>
         </p>
@@ -61,13 +58,13 @@ export default async function InvitePage({
   return (
     <Shell>
       <h1 className="title-text">Join {invite.bandName}</h1>
-      <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+      <p className="mt-2 text-sm text-fg-muted">
         You’ve been invited to join{' '}
         <span className="font-medium">{invite.bandName}</span> on Noodle.
       </p>
 
       {user && emailMismatch ? (
-        <p className="mt-5 text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="mt-5 text-sm text-fg-muted">
           This invite is for <span className="font-medium">{invite.email}</span>
           , but you’re signed in as{' '}
           <span className="font-medium">{user.email}</span>. Sign out and sign
@@ -80,9 +77,7 @@ export default async function InvitePage({
         </div>
       ) : (
         <div className="mt-5 flex flex-col gap-3">
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            Sign up or log in to accept.
-          </p>
+          <p className="text-sm text-fg-muted">Sign up or log in to accept.</p>
           <div className="flex gap-2">
             <Link
               href={`/signup?email=${encodeURIComponent(invite.email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`}
@@ -92,7 +87,7 @@ export default async function InvitePage({
             </Link>
             <Link
               href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}
-              className="flex-1 rounded-md border border-neutral-300 px-4 py-2 text-center text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+              className="flex-1 rounded-md border border-line-strong px-4 py-2 text-center text-sm font-medium hover:bg-surface-soft"
             >
               Log in
             </Link>

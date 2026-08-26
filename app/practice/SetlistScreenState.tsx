@@ -43,7 +43,7 @@ export function SetlistScreenState({
 
   const { title, detail } = MESSAGES[state.status]!;
   return (
-    <div className="mx-4 flex flex-col items-center gap-3 rounded-md border border-neutral-200 px-3 py-10 text-center dark:border-neutral-800">
+    <div className="mx-4 flex flex-col items-center gap-3 rounded-md border border-line px-3 py-10 text-center">
       <p className="font-medium">{title}</p>
       <p className="max-w-sm text-sm minor-text-theme-colors">{detail}</p>
       {state.status === 'offline' ? (

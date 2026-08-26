@@ -20,7 +20,7 @@ export function HomePushNudge() {
   if (status !== 'off' && status !== 'working') return null;
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-900 dark:bg-blue-950">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-accent-fill px-4 py-3 dark:border-blue-900">
       <div className="min-w-0">
         <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
           Turn on notifications

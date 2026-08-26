@@ -13,7 +13,7 @@ import { noteLinkBadge } from '@/lib/note-links';
 import type { NoteLinkInput } from '@/lib/db/user-notes';
 
 const field =
-  'rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900';
+  'rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
 
 /**
  * The New note / Edit note screen. One component for both: `noteId` decides
@@ -207,10 +207,10 @@ export function NoteForm({
             {links.map((l, i) => (
               <li
                 key={`${l.kind}-${l.targetId ?? l.url}-${i}`}
-                className="flex items-center justify-between gap-2 rounded-md border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800"
+                className="flex items-center justify-between gap-2 rounded-md border border-line px-3 py-2 text-sm"
               >
                 <span className="flex min-w-0 items-center gap-2">
-                  <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide minor-text-theme-colors dark:bg-neutral-900">
+                  <span className="shrink-0 rounded bg-fill-muted px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wide minor-text-theme-colors">
                     {noteLinkBadge(l)}
                   </span>
                   <span className="truncate">{l.label}</span>
@@ -221,7 +221,7 @@ export function NoteForm({
                     setLinks((prev) => prev.filter((_, j) => j !== i))
                   }
                   aria-label={`Remove link to ${l.label}`}
-                  className="shrink-0 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+                  className="shrink-0 text-neutral-400 hover:text-fg-body"
                 >
                   <span aria-hidden="true">✕</span>
                 </button>
@@ -231,7 +231,7 @@ export function NoteForm({
         )}
       </div>
 
-      <label className="flex items-start gap-3 rounded-md border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800">
+      <label className="flex items-start gap-3 rounded-md border border-line px-3 py-2 text-sm">
         <input
           type="checkbox"
           checked={shared}
@@ -262,7 +262,7 @@ export function NoteForm({
           <h2 id="keep-pin-title" className="text-base font-semibold">
             Keep this note pinned?
           </h2>
-          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="mt-1 text-sm text-fg-muted">
             “{title.trim()}” is pinned to the top of your own notes. Sharing it
             pins it to the top of the band’s shared notes too, and everyone will
             be told you pinned it.

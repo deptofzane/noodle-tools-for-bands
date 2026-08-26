@@ -9,8 +9,7 @@ const SIZE = {
 /** Ring colours. The head is the quarter that reads as motion. */
 const TONE = {
   /** The app's spinner: neutral track, cyan head. Right on page backgrounds. */
-  brand:
-    'border-neutral-300 border-t-cyan-600 dark:border-neutral-700 dark:border-t-cyan-400',
+  brand: 'border-line-strong border-t-cyan-600 dark:border-t-cyan-400',
   /**
    * White ring for spinners inside a filled control — `btn-primary` is white
    * on blue, where the brand cyan has almost nothing to contrast against.

@@ -63,20 +63,30 @@
   --fg-strong: #262626; /* neutral-800 */
   --fg-muted: #525252; /* neutral-600 — the app's second-most-used colour */
   --fg-faint: #a3a3a3; /* neutral-400 */
+  --fg-body: #404040; /* neutral-700 — body copy, a step below --fg */
+  --fg-soft: #404040; /* neutral-700 → neutral-300 in dark */
+  --fg-dim: #525252; /* neutral-600 → neutral-300 in dark */
+  --fill-muted: #f5f5f5; /* neutral-100 — inset panels, disabled fills */
+  --fill-2: #f5f5f5; /* neutral-100 → neutral-800 in dark */
+  --fill-strong: #e5e5e5; /* neutral-200 → neutral-900 in dark */
 
   /* Accent (the app's blue) */
   --accent: #2563eb; /* blue-600 */
   --accent-fill: #eff6ff; /* blue-50 */
   --accent-line: #3b82f6; /* blue-500 */
+  --accent-strong: #1d4ed8; /* blue-700 → blue-300 in dark */
+  --accent-fill-strong: #dbeafe; /* blue-100 → blue-950 in dark */
   --on-accent: #ffffff; /* text on a filled accent */
 
   /* Destructive */
-  --danger: #b91c1c; /* red-700 */
+  --danger: #dc2626; /* red-600 — the app's actual danger text */
+  --danger-strong: #991b1b; /* red-800 — danger text on a danger fill */
   --danger-fill: #fef2f2; /* red-50 */
   --danger-line: #fca5a5; /* red-300 */
 
   /* Warning */
   --warn: #b45309; /* amber-700 */
+  --warn-strong: #92400e; /* amber-800 — on a warn fill */
   --warn-fill: #fffbeb; /* amber-50 */
   --warn-line: #fcd34d; /* amber-300 */
 }
@@ -104,19 +114,81 @@
   --fg-strong: #e5e5e5; /* neutral-200 */
   --fg-muted: #a3a3a3; /* neutral-400 */
   --fg-faint: #737373; /* neutral-500 */
+  --fg-body: #e5e5e5; /* neutral-200 */
+  --fg-soft: #d4d4d4; /* neutral-300 */
+  --fg-dim: #d4d4d4; /* neutral-300 */
+  --fill-muted: #171717; /* neutral-900 */
+  --fill-2: #262626; /* neutral-800 */
+  --fill-strong: #171717; /* neutral-900 */
 
   --accent: #60a5fa; /* blue-400 */
   --accent-fill: #172554; /* blue-950 */
   --accent-line: #3b82f6; /* blue-500 */
+  --accent-strong: #93c5fd; /* blue-300 */
+  --accent-fill-strong: #172554; /* blue-950 */
   --on-accent: #ffffff;
 
   --danger: #f87171; /* red-400 */
+  --danger-strong: #fecaca; /* red-200 */
   --danger-fill: #450a0a; /* red-950 */
   --danger-line: #b91c1c; /* red-700 */
 
   --warn: #fbbf24; /* amber-400 */
+  --warn-strong: #fde68a; /* amber-200 */
   --warn-fill: #451a03; /* amber-950 */
   --warn-line: #b45309; /* amber-700 */
+}
+
+/*
+ * Sepia — low light, warm.
+ *
+ * A dark theme by construction (`color-scheme: dark`, and `THEME_IS_DARK`
+ * keeps the `dark` class on): the greys are replaced with warm browns, and
+ * anything still on a `dark:` variant lands on a neutral dark that reads as
+ * quiet rather than wrong while the migration finishes.
+ *
+ * Chosen for reading in a dim room — a paper-tinted ink rather than white on
+ * black. Sheet music deliberately doesn't follow it; charts keep their own
+ * high-contrast treatment (see `.sheet-prose`).
+ */
+:root[data-theme='sepia'] {
+  color-scheme: dark;
+
+  --page: #1c1714;
+  --surface: #221c18;
+  --surface-2: #2a231e;
+  --surface-soft: #1c1714;
+  --surface-hover: #2a231e;
+  --fill-muted: #221c18;
+  --fill-2: #2a231e;
+  --fill-strong: #1c1714;
+  --line: #322a22;
+  --line-strong: #453a2f;
+
+  --fg: #f0e6d8;
+  --fg-strong: #e6dbc9;
+  --fg-body: #d9cdb8;
+  --fg-soft: #cdbfa8;
+  --fg-dim: #bdae96;
+  --fg-muted: #a89881;
+  --fg-faint: #7d6f5e;
+
+  --accent: #d7a86e;
+  --accent-fill: #2e2318;
+  --accent-line: #a9793f;
+  --accent-strong: #e8bd86;
+  --accent-fill-strong: #3a2c1c;
+  --on-accent: #1c1714;
+
+  --danger: #e08b7a;
+  --danger-strong: #f0b3a4;
+  --danger-fill: #2e1d18;
+  --danger-line: #7a3d30;
+
+  --warn: #d9b26a;
+  --warn-strong: #ecd39a;
+  --warn-fill: #2b2113;
+  --warn-line: #7a5f2a;
 }
 
 /* Sheet-music text containers opt out of global font scaling via this base. */

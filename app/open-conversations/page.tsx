@@ -21,12 +21,9 @@ export default async function AnnotatedPage() {
 
       <div className="mb-4">
         <h1 className="title-text">Open conversations</h1>
-        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="mt-1 text-sm text-fg-muted">
           Conversations you&apos;re still working on. Closed ones live in{' '}
-          <Link
-            href="/history"
-            className="text-blue-600 underline dark:text-blue-400"
-          >
+          <Link href="/history" className="text-accent underline">
             History
           </Link>
           .

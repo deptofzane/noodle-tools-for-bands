@@ -36,12 +36,12 @@ export function AddToSetlistModal({
       <h2 id="add-setlist-title" className="text-base font-semibold">
         Add to setlist
       </h2>
-      <p className="mt-1 truncate text-sm text-neutral-600 dark:text-neutral-400">
+      <p className="mt-1 truncate text-sm text-fg-muted">
         {target.audioFileName ?? 'Untitled audio'}
       </p>
 
       {setlists.length === 0 ? (
-        <p className="mt-4 rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+        <p className="mt-4 rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
           No setlists yet. Create one first.
         </p>
       ) : (
@@ -50,7 +50,7 @@ export function AddToSetlistModal({
             const checked = selected.has(sl.id);
             return (
               <li key={sl.id}>
-                <label className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800">
+                <label className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-surface-2">
                   <input
                     type="checkbox"
                     checked={checked}

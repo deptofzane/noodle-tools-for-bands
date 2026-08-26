@@ -166,7 +166,7 @@ export function NoteItem({
       className={`rounded-lg border p-3 transition-colors duration-700 ${
         showHighlight
           ? 'border-blue-400 bg-blue-50 ring-2 ring-blue-300 dark:border-blue-500 dark:bg-blue-950/40 dark:ring-blue-700'
-          : 'border-neutral-200 dark:border-neutral-800'
+          : 'border-line'
       }`}
     >
       <div className="flex items-start justify-between gap-2 items-center">
@@ -177,7 +177,7 @@ export function NoteItem({
             aria-label={isMinimized ? 'Expand thread' : 'Minimize thread'}
             aria-expanded={!isMinimized}
             title={isMinimized ? 'Expand thread' : 'Minimize thread'}
-            className="-mr-1 px-2 py-2 text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+            className="-mr-1 px-2 py-2 text-xl leading-none text-neutral-400 hover:text-fg-body"
           >
             <span aria-hidden="true">{isMinimized ? '▸' : '▾'}</span>
           </button>
@@ -191,7 +191,7 @@ export function NoteItem({
         <button
           type="button"
           onClick={seekToNote}
-          className="font-mono text-xs font-medium text-blue-600 tabular-nums hover:underline dark:text-blue-400"
+          className="font-mono text-xs font-medium text-accent tabular-nums hover:underline"
           title="Jump to this timestamp"
         >
           {formatDuration(note.timestampMs / 1000)}
@@ -237,7 +237,7 @@ export function NoteItem({
               <button
                 type="button"
                 onClick={() => setIsReplying((v) => !v)}
-                className="hover:text-neutral-900 dark:hover:text-neutral-100 py-2 pr-2 md:p-0"
+                className="hover:text-fg py-2 pr-2 md:p-0"
               >
                 Reply
               </button>
@@ -245,7 +245,7 @@ export function NoteItem({
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="hover:text-neutral-900 dark:hover:text-neutral-100 p-2 md:p-0"
+                className="hover:text-fg p-2 md:p-0"
                 title="Copy a link to this thread"
               >
                 {copied ? 'Link copied' : 'Copy link'}
@@ -256,7 +256,7 @@ export function NoteItem({
                   <button
                     type="button"
                     onClick={() => setIsEditing(true)}
-                    className="hover:text-neutral-900 dark:hover:text-neutral-100 p-2 md:p-0"
+                    className="hover:text-fg p-2 md:p-0"
                   >
                     Edit
                   </button>
@@ -264,7 +264,7 @@ export function NoteItem({
                   <button
                     type="button"
                     onClick={() => setConfirmDeleteOpen(true)}
-                    className="hover:text-red-600 dark:hover:text-red-400 p-2 md:p-0"
+                    className="hover:text-danger p-2 md:p-0"
                   >
                     Delete
                   </button>
@@ -274,7 +274,7 @@ export function NoteItem({
           )}
 
           {isReplying && (
-            <div className="mt-3 rounded-md border border-neutral-200 bg-neutral-50 p-2 dark:border-neutral-800 dark:bg-neutral-900">
+            <div className="mt-3 rounded-md border border-line bg-surface-soft p-2">
               <NoteForm
                 placeholder="Write a reply… Use @ to tag someone."
                 submitLabel="Reply"
@@ -286,7 +286,7 @@ export function NoteItem({
           )}
 
           {replyCount > 0 && (
-            <ul className="mt-3 space-y-3 border-l-2 border-neutral-200 pl-3 dark:border-neutral-800">
+            <ul className="mt-3 space-y-3 border-l-2 border-line pl-3">
               {note.replies.map((reply) => (
                 <ReplyItem
                   key={reply.id}
@@ -388,7 +388,7 @@ function ReplyItem({
           <button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="hover:text-neutral-900 dark:hover:text-neutral-100"
+            className="hover:text-fg"
           >
             Edit
           </button>
@@ -396,7 +396,7 @@ function ReplyItem({
           <button
             type="button"
             onClick={() => setConfirmDeleteOpen(true)}
-            className="hover:text-red-600 dark:hover:text-red-400"
+            className="hover:text-danger"
           >
             Delete
           </button>
@@ -420,13 +420,10 @@ function ReplyItem({
 function AuthorTag({ note }: { note: ApiNote }) {
   const displayName = note.author?.name ?? note.author?.email ?? 'Someone';
   return (
-    <span
-      className="text-xs text-neutral-600 dark:text-neutral-400"
-      title={note.author?.email ?? ''}
-    >
+    <span className="text-xs text-fg-muted" title={note.author?.email ?? ''}>
       {displayName}
       {note.isMine && (
-        <span className="ml-1 rounded bg-blue-100 px-1 py-0.5 text-[0.625rem] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+        <span className="ml-1 rounded bg-accent-fill-strong px-1 py-0.5 text-[0.625rem] font-medium text-accent-strong">
           you
         </span>
       )}

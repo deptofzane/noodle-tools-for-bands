@@ -93,9 +93,9 @@ export function HelpDialog({ onClose }: { onClose: () => void }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="help-dialog-title"
-      className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-neutral-900"
+      className="fixed inset-0 z-50 flex flex-col bg-surface"
     >
-      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-neutral-200 px-4 py-2 lg:px-6 dark:border-neutral-800">
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-line px-4 py-2 lg:px-6">
         <h2 id="help-dialog-title" className="text-base font-semibold">
           Help
         </h2>
@@ -104,7 +104,7 @@ export function HelpDialog({ onClose }: { onClose: () => void }) {
           onClick={onClose}
           aria-label="Close help"
           title="Close help"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-fg-dim hover:bg-surface-hover"
         >
           <svg
             viewBox="0 0 24 24"

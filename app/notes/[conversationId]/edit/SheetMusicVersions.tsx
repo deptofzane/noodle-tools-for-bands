@@ -341,7 +341,7 @@ export function SheetMusicVersions({
       </p>
 
       {versions.length > 0 ? (
-        <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+        <ul className="divide-y divide-line rounded-lg border border-line">
           {versions.map((v) => (
             <li key={v.id} className="flex flex-col gap-2 px-3 py-2">
               {editingId === v.id ? (
@@ -362,7 +362,7 @@ export function SheetMusicVersions({
                     maxLength={100}
                     placeholder={v.fileName}
                     aria-label="Version label"
-                    className="min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+                    className="min-w-0 flex-1 rounded-md border border-line-strong bg-surface px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <button
                     type="submit"
@@ -375,7 +375,7 @@ export function SheetMusicVersions({
                     type="button"
                     onClick={() => setEditingId(null)}
                     disabled={busy}
-                    className="shrink-0 rounded-md px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                    className="shrink-0 rounded-md px-2 py-1 text-xs text-fg-muted hover:bg-surface-hover disabled:opacity-50"
                   >
                     Cancel
                   </button>
@@ -411,7 +411,7 @@ export function SheetMusicVersions({
                             {formatBytes(v.sizeBytes)}
                           </span>
                           {v.isDefault && (
-                            <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[0.625rem] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                            <span className="shrink-0 rounded-full bg-accent-fill-strong px-2 py-0.5 text-[0.625rem] font-medium text-accent-strong">
                               Default
                             </span>
                           )}
@@ -456,7 +456,7 @@ export function SheetMusicVersions({
                           href={previewUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-blue-600 hover:underline dark:text-blue-400"
+                          className="text-xs text-accent hover:underline"
                         >
                           Open in new tab
                         </a>
@@ -466,18 +466,18 @@ export function SheetMusicVersions({
                         <img
                           src={previewUrl}
                           alt={v.label || v.fileName}
-                          className="max-h-[60vh] w-full rounded-md border border-neutral-200 object-contain dark:border-neutral-800"
+                          className="max-h-[60vh] w-full rounded-md border border-line object-contain"
                         />
                       )}
                       {previewKindResolved === 'pdf' && (
                         <iframe
                           title={v.label || v.fileName}
                           src={previewUrl}
-                          className="h-[60vh] w-full rounded-md border border-neutral-200 dark:border-neutral-800"
+                          className="h-[60vh] w-full rounded-md border border-line"
                         />
                       )}
                       {previewKindResolved === 'text' && (
-                        <div className="sheet-base max-h-[60vh] overflow-auto rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900">
+                        <div className="sheet-base max-h-[60vh] overflow-auto rounded-md border border-line bg-surface-soft p-3">
                           {previewText === null ? (
                             <LoadingBlock
                               size="sm"
@@ -493,7 +493,7 @@ export function SheetMusicVersions({
                         </div>
                       )}
                       {previewKindResolved === 'other' && (
-                        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+                        <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
                           Preview isn’t available for this file type.
                         </p>
                       )}
@@ -505,7 +505,7 @@ export function SheetMusicVersions({
           ))}
         </ul>
       ) : (
-        <p className="rounded-md border border-neutral-200 px-3 py-4 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+        <p className="rounded-md border border-line px-3 py-4 text-center text-sm minor-text-theme-colors">
           No sheet music yet. Add a version below.
         </p>
       )}
@@ -565,7 +565,7 @@ export function SheetMusicVersions({
 
           {pasteMode ? (
             <>
-              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              <p className="mt-1 text-sm text-fg-muted">
                 Write or paste or plain source text, Markdown, or a ChordPro
                 chart ([C]lyrics with {'{directives}'}).
               </p>
@@ -580,8 +580,8 @@ export function SheetMusicVersions({
                     className={
                       'rounded-md px-2 py-1 text-xs font-medium ' +
                       (pasteFormat === f.id
-                        ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100'
-                        : 'minor-text-theme-colors hover:bg-neutral-100 dark:hover:bg-neutral-800')
+                        ? 'bg-neutral-200 text-fg dark:bg-neutral-700'
+                        : 'minor-text-theme-colors hover:bg-surface-hover')
                     }
                   >
                     {f.label}
@@ -598,7 +598,7 @@ export function SheetMusicVersions({
                   onChange={(e) => setPasteLabel(e.target.value)}
                   maxLength={100}
                   placeholder="e.g. Bass chart, Capo 2"
-                  className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+                  className="w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </label>
               <textarea
@@ -607,7 +607,7 @@ export function SheetMusicVersions({
                 rows={12}
                 autoFocus
                 placeholder="Lyrics, chords, or Markdown…"
-                className="mt-3 w-full resize-y rounded-md border border-neutral-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+                className="mt-3 w-full resize-y rounded-md border border-line-strong bg-surface px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
               <div className="mt-4 flex items-center justify-between gap-2">
                 <button
@@ -640,7 +640,7 @@ export function SheetMusicVersions({
             </>
           ) : (
             <>
-              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              <p className="mt-1 text-sm text-fg-muted">
                 {canUseDrive
                   ? 'Choose a file from Google Drive, upload one, or paste text.'
                   : 'Sign in with Google to import from Drive, upload one, or paste text.'}
@@ -747,8 +747,8 @@ export function SheetMusicVersions({
                 className={
                   'rounded-md px-2 py-1 text-xs font-medium ' +
                   (editContentFormat === f.id
-                    ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100'
-                    : 'minor-text-theme-colors hover:bg-neutral-100 dark:hover:bg-neutral-800')
+                    ? 'bg-neutral-200 text-fg dark:bg-neutral-700'
+                    : 'minor-text-theme-colors hover:bg-surface-hover')
                 }
               >
                 {f.label}
@@ -764,7 +764,7 @@ export function SheetMusicVersions({
             placeholder={
               editContentLoading ? 'Loading…' : 'Lyrics, chords, or Markdown…'
             }
-            className="mt-3 w-full resize-y rounded-md border border-neutral-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-900"
+            className="mt-3 w-full resize-y rounded-md border border-line-strong bg-surface px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60"
           />
           <div className="mt-4 flex items-center justify-end gap-2">
             <button

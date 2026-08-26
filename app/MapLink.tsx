@@ -26,9 +26,7 @@ export function MapLink({
       target="_blank"
       rel="noopener noreferrer"
       title={label ? address : undefined}
-      className={
-        className ?? 'text-blue-600 hover:underline dark:text-blue-400'
-      }
+      className={className ?? 'text-accent hover:underline'}
     >
       {label ?? address}
     </a>

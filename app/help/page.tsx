@@ -20,7 +20,7 @@ export default function HelpPage() {
     <main className="main-container flex flex-col gap-8 py-8">
       <div className="flex flex-col gap-2">
         <h1 className="title-text">Help</h1>
-        <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
+        <p className="text-sm leading-relaxed text-fg-soft">
           How Noodle fits together, and what to do when something doesn&rsquo;t.
         </p>
       </div>

@@ -20,13 +20,16 @@ test.describe('system bar colour follows the theme', () => {
 
   test('it changes when the theme is switched', async ({ page }) => {
     await page.goto('/settings');
-    // Settings opens on Account; the theme control is under Appearance.
+    // Settings opens on Account; the theme control is under Appearance. It's
+    // a picker now, not a two-state toggle.
     await page.getByRole('tab', { name: 'Appearance' }).click();
-    const toggle = page.getByRole('button', { name: /Switch to (light|dark)/ });
-    await expect(toggle).toBeVisible();
+    const picker = page.getByRole('group', { name: 'Theme' });
+    await expect(picker).toBeVisible();
 
     const before = await content(page);
-    await toggle.click();
+    await picker.getByRole('button', { name: 'Dark' }).click();
+    await picker.getByRole('button', { name: 'Light' }).click();
+    await picker.getByRole('button', { name: 'Dark' }).click();
     await expect.poll(() => content(page)).not.toBe(before);
 
     const nowDark = await page.evaluate(() =>

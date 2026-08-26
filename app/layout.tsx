@@ -15,7 +15,7 @@ import { RouteProgress } from './RouteProgress';
 import { ThemeKeeper } from './ThemeKeeper';
 import { ToastProvider } from './ToastProvider';
 import './globals.css';
-import { THEME_COLORS } from './theme';
+import { THEME_COLORS, THEME_IS_DARK, THEMES } from './theme';
 
 export const metadata: Metadata = {
   title: 'Noodle',
@@ -61,18 +61,21 @@ export const metadata: Metadata = {
 const themeInitScript = `
 (function(){try{
   var colors = ${JSON.stringify(THEME_COLORS)};
+  var isDark = ${JSON.stringify(THEME_IS_DARK)};
+  var known = ${JSON.stringify(THEMES)};
   var stored = localStorage.getItem('theme');
-  var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  var isDark = stored === 'dark' || (!stored && systemDark);
+  // Anything unrecognised (an older value, a hand-edited key) falls back to
+  // the OS once, then pins — the same rule the two-theme version used.
+  var theme = known.indexOf(stored) !== -1
+    ? stored
+    : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   var root = document.documentElement;
-  if (isDark) { root.classList.add('dark'); } else { root.classList.remove('dark'); }
-  // Before paint, so the bar is never briefly the wrong colour.
+  root.setAttribute('data-theme', theme);
+  if (isDark[theme]) { root.classList.add('dark'); } else { root.classList.remove('dark'); }
   var meta = document.querySelector('meta[name="theme-color"]');
   if (!meta) { meta = document.createElement('meta'); meta.name = 'theme-color'; document.head.appendChild(meta); }
-  meta.setAttribute('content', colors[isDark ? 'dark' : 'light']);
-  // Pin the resolved theme on first run (class already applied above, so a
-  // storage failure can't leave the page unstyled).
-  if (!stored) { try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch(e){} }
+  meta.setAttribute('content', colors[theme]);
+  if (stored !== theme) { try { localStorage.setItem('theme', theme); } catch(e){} }
 }catch(e){}})();
 `;
 
@@ -117,7 +120,7 @@ export default async function RootLayout({
       </head>
       <body
         className={
-          'min-h-screen antialiased bg-surface text-fg' +
+          'min-h-screen antialiased bg-page text-fg' +
           // Reserves room for the fixed nav bar on the side it's pinned to.
           (isSignedIn ? ' has-app-nav' : '')
         }

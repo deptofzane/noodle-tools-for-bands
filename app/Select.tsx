@@ -173,7 +173,7 @@ export function Select({
                   'cursor-pointer px-3 py-2 ' +
                   (isActive
                     ? 'bg-blue-600 text-white '
-                    : 'hover:bg-neutral-50 dark:hover:bg-neutral-800 ') +
+                    : 'hover:bg-surface-2 ') +
                   (isSelected && !isActive ? 'font-medium' : '')
                 }
               >

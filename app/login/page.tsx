@@ -23,9 +23,9 @@ export default async function LoginPage({
       <span className="m-0 pb-3 minor-text-theme-colors text-sm">
         tools for<span className="text-cyan-600"> bands</span>
       </span>
-      <div className="w-full max-w-sm rounded-lg border border-neutral-200 p-8 dark:border-neutral-800">
+      <div className="w-full max-w-sm rounded-lg border border-line p-8">
         <h1 className="title-text">Sign in</h1>
-        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="mt-2 text-sm text-fg-muted">
           Use your Google account to access your audio files and notes.
         </p>
 
@@ -52,9 +52,9 @@ export default async function LoginPage({
         </p>
 
         <div className="my-6 flex items-center gap-3 text-xs text-neutral-400">
-          <span className="h-px flex-1 bg-neutral-200 dark:bg-neutral-900" />
+          <span className="h-px flex-1 bg-fill-strong" />
           or
-          <span className="h-px flex-1 bg-neutral-200 dark:bg-neutral-900" />
+          <span className="h-px flex-1 bg-fill-strong" />
         </div>
 
         <CredentialsForm callbackUrl={callbackUrl ?? '/home'} />

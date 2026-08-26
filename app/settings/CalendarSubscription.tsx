@@ -49,7 +49,7 @@ export function CalendarSubscription({ token }: { token: string }) {
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+    <div className="flex flex-col gap-3 rounded-lg border border-line p-4">
       <div>
         <p className="font-medium">Calendar subscription</p>
         <p className="mt-1 text-xs minor-text-theme-colors dark:text-neutral-400">
@@ -66,7 +66,7 @@ export function CalendarSubscription({ token }: { token: string }) {
           value={url}
           onFocus={(e) => e.currentTarget.select()}
           aria-label="Calendar feed URL"
-          className="min-w-0 flex-1 rounded-md border border-neutral-300 bg-neutral-50 px-3 py-2 font-mono text-xs dark:border-neutral-700 dark:bg-neutral-900"
+          className="min-w-0 flex-1 rounded-md border border-line-strong bg-surface-soft px-3 py-2 font-mono text-xs"
         />
         <button type="button" onClick={copy} className="btn-outline shrink-0">
           {copied ? 'Copied' : 'Copy'}
@@ -91,9 +91,7 @@ export function CalendarSubscription({ token }: { token: string }) {
         </ul>
       </details>
 
-      {error && (
-        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="text-xs text-danger">{error}</p>}
 
       <div className="flex items-center gap-2">
         {confirmingReset ? (
@@ -105,7 +103,7 @@ export function CalendarSubscription({ token }: { token: string }) {
               type="button"
               onClick={reset}
               disabled={resetting}
-              className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+              className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger-fill disabled:opacity-50 dark:border-red-800"
             >
               {resetting ? 'Resetting…' : 'Reset link'}
             </button>

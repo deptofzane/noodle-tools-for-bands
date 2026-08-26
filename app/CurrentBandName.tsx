@@ -25,7 +25,7 @@ export function CurrentBandName() {
       <Link
         href={`/bands/${band.id}`}
         title={band.name}
-        className="min-w-0 truncate font-medium text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100"
+        className="min-w-0 truncate font-medium text-fg-dim hover:text-fg"
       >
         {band.name}
       </Link>

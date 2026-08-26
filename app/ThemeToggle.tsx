@@ -1,71 +1,71 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { applyThemeColor, type Theme } from './theme';
+import { applyTheme, isTheme, THEMES, THEME_LABELS, type Theme } from './theme';
 
 /**
- * Reads the *currently applied* theme by inspecting the `.dark` class
- * the inline head script set on `<html>` before paint. This avoids a
- * separate read from localStorage on first paint (the script already
- * resolved system-pref fallback for us).
- */
-function readAppliedTheme(): Theme {
-  if (typeof document === 'undefined') return 'light';
-  return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-}
-
-/**
- * Theme toggle button.
+ * Theme picker.
  *
- * Renders nothing meaningful on the server (initial state is `null`),
- * then hydrates to the actual theme via effect. This is intentional —
- * server-rendering a wrong label and flipping it on hydrate would be
- * visually noisier than a brief skeleton.
+ * A segmented control rather than a toggle: with more than two themes there
+ * is no "the other one" to flip to, and naming each destination beats a
+ * button whose label depends on where you already are. Same shape as the
+ * Songs/Albums and All/Mine selectors elsewhere.
+ *
+ * Reads the *applied* theme off `<html>` rather than storage — the pre-paint
+ * script has already resolved the system fallback, so the DOM is the answer.
+ * Renders a skeleton until that read happens on mount; server-rendering a
+ * guess and correcting it on hydrate would be visually noisier.
  */
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme | null>(null);
 
   useEffect(() => {
-    setTheme(readAppliedTheme());
+    const applied = document.documentElement.dataset.theme;
+    setTheme(isTheme(applied) ? applied : 'light');
   }, []);
 
-  function toggle() {
-    const next: Theme = theme === 'dark' ? 'light' : 'dark';
+  const choose = (next: Theme) => {
     setTheme(next);
     try {
       localStorage.setItem('theme', next);
     } catch {
-      // Storage might be unavailable (private mode, quota); the class
-      // change below still applies for the current page session.
+      // Storage unavailable (private mode, quota) — the DOM change below
+      // still applies for this page session.
     }
-    document.documentElement.classList.toggle('dark', next === 'dark');
-    // The system bar tracks the page, not the OS — see `app/theme.ts`.
-    applyThemeColor(next);
-  }
+    applyTheme(next);
+  };
 
-  // Skeleton — same dimensions as the real button to avoid layout shift.
   if (theme === null) {
     return (
       <div
         aria-hidden
-        className="h-9 w-32 rounded-md border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900"
+        className="h-9 w-48 rounded-md border border-line bg-surface-soft"
       />
     );
   }
 
-  const label = theme === 'dark' ? 'Switch to light' : 'Switch to dark';
-
   return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-pressed={theme === 'dark'}
-      className="min-w-max inline-flex h-9 items-center gap-2 rounded-md border border-neutral-300 px-3 text-sm font-medium text-neutral-800 transition hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-900"
+    <span
+      role="group"
+      aria-label="Theme"
+      className="inline-flex items-center rounded-md border border-line-strong p-0.5 text-sm"
     >
-      <span aria-hidden className="text-base leading-none">
-        {theme === 'dark' ? '☀' : '☾'}
-      </span>
-      {label}
-    </button>
+      {THEMES.map((t) => (
+        <button
+          key={t}
+          type="button"
+          onClick={() => choose(t)}
+          aria-pressed={theme === t}
+          className={
+            'rounded px-3 py-1.5 ' +
+            (theme === t
+              ? 'bg-surface-hover font-medium text-fg'
+              : 'text-fg-muted hover:text-fg-strong')
+          }
+        >
+          {THEME_LABELS[t]}
+        </button>
+      ))}
+    </span>
   );
 }

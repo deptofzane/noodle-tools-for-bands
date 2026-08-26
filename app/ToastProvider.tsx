@@ -107,10 +107,10 @@ function toastStyles(type: ToastType): string {
     case 'success':
       return 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-200';
     case 'info':
-      return 'border-neutral-300 bg-white text-neutral-800 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100';
+      return 'border-line-strong bg-surface text-neutral-800 dark:text-neutral-100';
     case 'error':
     default:
-      return 'border-red-300 bg-red-50 text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200';
+      return 'border-danger-line bg-danger-fill text-danger-strong';
   }
 }
 

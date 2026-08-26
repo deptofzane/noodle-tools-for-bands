@@ -219,7 +219,7 @@ export function SetlistItemsEditor({
       </div>
 
       {items.length === 0 ? (
-        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+        <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
           {emptyText}
         </p>
       ) : (
@@ -265,9 +265,9 @@ export function SetlistItemsEditor({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="flex h-full w-full flex-col bg-white dark:bg-neutral-900 sm:h-[80vh] sm:max-w-md sm:rounded-lg sm:border sm:border-neutral-200 sm:shadow-xl dark:sm:border-neutral-800"
+            className="flex h-full w-full flex-col bg-surface sm:h-[80vh] sm:max-w-md sm:rounded-lg sm:border sm:border-neutral-200 sm:shadow-xl dark:sm:border-neutral-800"
           >
-            <div className="flex items-center justify-between gap-2 border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
+            <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
               <h2 id="add-songs-title" className="text-base font-semibold">
                 Add songs
               </h2>
@@ -282,7 +282,7 @@ export function SetlistItemsEditor({
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search songs"
                 autoFocus
-                className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+                className="w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
 
@@ -299,7 +299,7 @@ export function SetlistItemsEditor({
                     const checked = selectedToAdd.has(s.conversationId);
                     return (
                       <li key={s.conversationId}>
-                        <label className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800">
+                        <label className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-surface-2">
                           <input
                             type="checkbox"
                             checked={checked}
@@ -317,7 +317,7 @@ export function SetlistItemsEditor({
               )}
             </div>
 
-            <div className="flex justify-end gap-2 border-t border-neutral-200 px-4 py-3 dark:border-neutral-800">
+            <div className="flex justify-end gap-2 border-t border-line px-4 py-3">
               <button
                 type="button"
                 onClick={() => setAddOpen(false)}
@@ -353,7 +353,7 @@ export function SetlistItemsEditor({
             <h2 id="add-other-title" className="text-base font-semibold">
               Add item
             </h2>
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="mt-1 text-sm text-fg-muted">
               A custom entry that isn’t a song (e.g. “Encore”, “Announcements”).
             </p>
             <input
@@ -362,7 +362,7 @@ export function SetlistItemsEditor({
               placeholder="Name"
               autoFocus
               maxLength={100}
-              className="mt-3 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+              className="mt-3 w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
             <div className="mt-4 flex justify-end gap-2">
               <button
@@ -418,14 +418,14 @@ function SortableRow({
       style={style}
       className={`flex items-center gap-3 rounded-lg border px-3 py-3 text-sm ${
         isMarker
-          ? 'border-dashed border-neutral-300 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900/50'
-          : 'border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900'
+          ? 'border-dashed border-line-strong bg-neutral-50 dark:bg-neutral-900/50'
+          : 'border-line bg-surface'
       } ${isDragging ? 'z-10 shadow-lg' : ''}`}
     >
       <button
         type="button"
         aria-label={`Reorder ${name}`}
-        className="unselectable -my-2 flex h-11 w-11 cursor-grab touch-none items-center justify-center text-neutral-400 hover:text-neutral-700 active:cursor-grabbing dark:hover:text-neutral-200"
+        className="unselectable -my-2 flex h-11 w-11 cursor-grab touch-none items-center justify-center text-neutral-400 hover:text-fg-body active:cursor-grabbing"
         {...attributes}
         {...listeners}
       >
@@ -445,7 +445,7 @@ function SortableRow({
         type="button"
         onClick={onRemove}
         aria-label={`Remove ${name}`}
-        className="shrink-0 rounded px-1.5 text-neutral-400 hover:text-red-600 dark:hover:text-red-400"
+        className="shrink-0 rounded px-1.5 text-neutral-400 hover:text-danger"
       >
         <span aria-hidden="true">✕</span>
       </button>

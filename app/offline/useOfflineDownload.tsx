@@ -116,7 +116,7 @@ export function useOfflineDownload(): OfflineDownloadApi {
       <h2 id="offline-download-title" className="text-base font-semibold">
         Download “{target.name}” for offline
       </h2>
-      <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+      <p className="mt-1 text-sm text-fg-muted">
         Choose what to save to this device so it works without a connection.
       </p>
       <div className="mt-4 flex flex-col gap-3">

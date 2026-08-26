@@ -24,7 +24,7 @@ export default function AboutPage() {
     <main className="main-container flex flex-col gap-8 py-8">
       <div className="flex flex-col gap-2">
         <h1 className="title-text">About Noodle</h1>
-        <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
+        <p className="text-sm leading-relaxed text-fg-soft">
           Noodle is a tool for bands: one place for the recordings you make, the
           charts you play from, the notes you leave each other, and the dates
           you have to remember. Bands are private, there is no advertising, and
@@ -34,7 +34,7 @@ export default function AboutPage() {
 
       <section className="flex flex-col gap-2">
         <h2 className="text-base font-medium">Contact</h2>
-        <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
+        <p className="text-sm leading-relaxed text-fg-soft">
           Questions, problems, a request about your data, or a copyright concern
           — write to{' '}
           <a href={`mailto:${CONTACT_EMAIL}`} className="underline">
@@ -45,7 +45,7 @@ export default function AboutPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1 border-t border-neutral-200 pt-6 dark:border-neutral-800">
+        <div className="flex flex-col gap-1 border-t border-line pt-6">
           <h2 className="title-text text-xl">Privacy policy</h2>
           <p className="text-sm minor-text-theme-colors">
             Last updated {POLICY_UPDATED}
@@ -56,7 +56,7 @@ export default function AboutPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1 border-t border-neutral-200 pt-6 dark:border-neutral-800">
+        <div className="flex flex-col gap-1 border-t border-line pt-6">
           <h2 className="title-text text-xl">Terms of service</h2>
           <p className="text-sm minor-text-theme-colors">
             Last updated {TERMS_UPDATED}

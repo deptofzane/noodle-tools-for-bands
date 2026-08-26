@@ -175,7 +175,7 @@ export function EventSetlistSongs({
                       ? `Pause ${s.name}`
                       : `Play ${s.name}`
                   }
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-900"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line-strong text-fg-body hover:bg-surface-soft"
                 >
                   {isCurrent && player.isPlaying ? (
                     <svg
@@ -204,7 +204,7 @@ export function EventSetlistSongs({
                 // Keeps names aligned with the playable rows.
                 <span
                   aria-hidden="true"
-                  className="h-8 w-8 shrink-0 rounded-full border border-dashed border-neutral-300 dark:border-neutral-700"
+                  className="h-8 w-8 shrink-0 rounded-full border border-dashed border-line-strong"
                 />
               )}
 

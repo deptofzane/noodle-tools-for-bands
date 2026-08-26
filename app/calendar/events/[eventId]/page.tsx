@@ -100,7 +100,7 @@ export default async function EventPage({
               ) : canManage && event.venueId ? (
                 <Link
                   href={`/bands/${event.bandId}/venues/${event.venueId}/edit`}
-                  className="text-blue-600 hover:underline dark:text-blue-400"
+                  className="text-accent hover:underline"
                 >
                   {event.venueName}
                 </Link>
@@ -118,7 +118,7 @@ export default async function EventPage({
       {event.details && (
         <section className="rounded-lg text-sm mb-4">
           <CollapsibleSection title="Details" persistKey="eventDetailsOpen">
-            <p className="mt-2 ml-3 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+            <p className="mt-2 ml-3 whitespace-pre-wrap text-fg-muted">
               {event.details}
             </p>
           </CollapsibleSection>
@@ -128,7 +128,7 @@ export default async function EventPage({
       {canManage && event.notes && (
         <section className="rounded-lg text-sm mb-4">
           <CollapsibleSection title="Notes" persistKey="eventNotesOpen">
-            <p className="mt-2 ml-3 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+            <p className="mt-2 ml-3 whitespace-pre-wrap text-fg-muted">
               {event.notes}
             </p>
           </CollapsibleSection>
@@ -136,7 +136,7 @@ export default async function EventPage({
       )}
 
       {setlist && (
-        <section className="flex flex-col gap-2 border-t border-b border-neutral-200 py-2 dark:border-neutral-800 mt-2 mb-4">
+        <section className="flex flex-col gap-2 border-t border-b border-line py-2 mt-2 mb-4">
           <span className="flex justify-between items-center">
             <Link
               href={`/bands/${event.bandId}/setlists/${setlist.id}`}

@@ -81,10 +81,7 @@ export function BandVenuesTab({
       venue.notes,
     );
     return (
-      <li
-        key={venue.id}
-        className="rounded-lg border border-neutral-200 dark:border-neutral-800"
-      >
+      <li key={venue.id} className="rounded-lg border border-line">
         <div className="flex items-center gap-1 pr-1">
           <button
             type="button"
@@ -137,7 +134,7 @@ export function BandVenuesTab({
           </ActionMenu>
         </div>
         {!collapsed && (
-          <div className="flex flex-col gap-1 border-t border-neutral-200 px-4 py-3 text-sm md:px-3 dark:border-neutral-800">
+          <div className="flex flex-col gap-1 border-t border-line px-4 py-3 text-sm md:px-3">
             {hasDetails ? (
               <>
                 {venue.address && (
@@ -151,7 +148,7 @@ export function BandVenuesTab({
                     <span className="font-medium">Phone:</span>{' '}
                     <a
                       href={`tel:${venue.phone}`}
-                      className="text-blue-600 hover:underline dark:text-blue-400"
+                      className="text-accent hover:underline"
                     >
                       {venue.phone}
                     </a>
@@ -162,7 +159,7 @@ export function BandVenuesTab({
                     <span className="font-medium">Email:</span>{' '}
                     <a
                       href={`mailto:${venue.email}`}
-                      className="text-blue-600 hover:underline dark:text-blue-400"
+                      className="text-accent hover:underline"
                     >
                       {venue.email}
                     </a>
@@ -177,7 +174,7 @@ export function BandVenuesTab({
                 {venue.notes && (
                   <div className="flex flex-col gap-0.5">
                     <span className="font-medium">Notes:</span>
-                    <p className="whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+                    <p className="whitespace-pre-wrap text-fg-muted">
                       {venue.notes}
                     </p>
                   </div>
@@ -211,7 +208,7 @@ export function BandVenuesTab({
           (venues.length > 0 ? (
             <ul className="flex flex-col gap-2">{venues.map(renderVenue)}</ul>
           ) : (
-            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+            <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
               No venues yet. Use “Create venue” to add one.
             </p>
           ))}

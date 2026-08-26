@@ -59,8 +59,8 @@ export function FontSizeControl() {
             className={
               'rounded-md border px-3 py-1.5 text-sm font-medium transition ' +
               (active
-                ? 'border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-950 dark:text-blue-300'
-                : 'border-neutral-300 text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900')
+                ? 'border-blue-600 bg-accent-fill text-accent-strong dark:border-blue-500'
+                : 'border-line-strong text-fg-soft hover:bg-surface-soft')
             }
           >
             {o.label}

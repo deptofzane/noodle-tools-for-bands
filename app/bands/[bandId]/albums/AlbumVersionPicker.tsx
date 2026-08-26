@@ -79,7 +79,7 @@ export function AlbumVersionPicker({
       </h2>
 
       {error ? (
-        <p className="mt-4 text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p className="mt-4 text-sm text-danger">{error}</p>
       ) : !versions ? (
         <LoadingBlock label="Loading versions" className="py-6" />
       ) : (
@@ -141,17 +141,14 @@ function rowClass(selected: boolean): string {
   return (
     'flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm ' +
     (selected
-      ? 'bg-neutral-100 dark:bg-neutral-800'
+      ? 'bg-fill-2'
       : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/60')
   );
 }
 
 function Tick() {
   return (
-    <span
-      aria-hidden="true"
-      className="shrink-0 text-blue-600 dark:text-blue-400"
-    >
+    <span aria-hidden="true" className="shrink-0 text-accent">
       ✓
     </span>
   );

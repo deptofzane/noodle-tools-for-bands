@@ -56,7 +56,7 @@ export function SetlistNav({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Jump to song"
-        className="flex min-w-0 max-w-[40vw] md:max-w-[60vw] lg:max-w-[20vw] h-12 items-center gap-1 rounded-md px-2 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+        className="flex min-w-0 max-w-[40vw] md:max-w-[60vw] lg:max-w-[20vw] h-12 items-center gap-1 rounded-md px-2 py-1 hover:bg-surface-hover"
       >
         <span className="min-w-0 truncate">{children}</span>
         <span aria-hidden="true" className="text-neutral-400">
@@ -67,7 +67,7 @@ export function SetlistNav({
         <div
           role="menu"
           className={
-            'absolute top-full z-50 mt-1 max-h-[60vh] w-64 max-w-[80vw] overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-left shadow-lg dark:border-neutral-800 dark:bg-neutral-900 ' +
+            'absolute top-full z-50 mt-1 max-h-[60vh] w-64 max-w-[80vw] overflow-auto rounded-md border border-line bg-surface py-1 text-left shadow-lg ' +
             alignCls
           }
         >
@@ -81,10 +81,8 @@ export function SetlistNav({
                 setOpen(false);
               }}
               className={
-                'flex w-full items-baseline gap-2 px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 ' +
-                (i === current
-                  ? 'bg-neutral-100 font-medium dark:bg-neutral-900'
-                  : 'text-neutral-700 dark:text-neutral-200')
+                'flex w-full items-baseline gap-2 px-3 py-2 text-left text-sm hover:bg-surface-hover ' +
+                (i === current ? 'bg-fill-muted font-medium' : 'text-fg-body')
               }
             >
               <span className="w-5 shrink-0 text-right text-xs tabular-nums text-neutral-400">

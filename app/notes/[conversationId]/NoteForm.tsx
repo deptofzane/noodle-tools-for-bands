@@ -201,10 +201,10 @@ export function NoteForm({
           placeholder={placeholder}
           autoFocus={autoFocus}
           rows={3}
-          className="w-full resize-y rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+          className="w-full resize-y rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
         {menuOpen && matches.length > 0 && (
-          <ul className="absolute left-2 right-2 top-full z-10 mt-1 max-h-48 overflow-auto rounded-md border border-neutral-200 bg-white py-1 text-sm shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
+          <ul className="absolute left-2 right-2 top-full z-10 mt-1 max-h-48 overflow-auto rounded-md border border-neutral-200 bg-surface py-1 text-sm shadow-lg dark:border-neutral-700">
             {matches.map((m, i) => (
               <li key={m.id}>
                 <button
@@ -216,8 +216,8 @@ export function NoteForm({
                   className={
                     'flex w-full flex-col items-start px-4 py-3 md:py-1.5 md:px-3 text-left ' +
                     (i === activeIndex
-                      ? 'bg-blue-50 dark:bg-blue-950'
-                      : 'hover:bg-neutral-50 dark:hover:bg-neutral-800')
+                      ? 'bg-accent-fill'
+                      : 'hover:bg-surface-2')
                   }
                 >
                   <span className="font-medium">{mentionLabel(m)}</span>
@@ -232,9 +232,7 @@ export function NoteForm({
           </ul>
         )}
       </div>
-      {error && (
-        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="text-xs text-danger">{error}</p>}
       <div className="flex items-center justify-between gap-2">
         <span className="text-[0.625rem] minor-text-theme-colors">
           ⌘ Enter to submit
@@ -244,7 +242,7 @@ export function NoteForm({
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-xs text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+              className="rounded-md px-4 py-3 md:py-1.5 md:px-3 text-xs text-fg-muted hover:bg-surface-hover"
             >
               Cancel
             </button>

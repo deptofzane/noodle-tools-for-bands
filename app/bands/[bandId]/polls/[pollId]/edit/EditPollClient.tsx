@@ -13,7 +13,7 @@ interface OptionRow {
 }
 
 const field =
-  'rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900';
+  'rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
 
 const uid = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
@@ -194,7 +194,7 @@ export function EditPollClient({
                 onClick={() => removeOption(o.id)}
                 disabled={options.length <= 2}
                 aria-label={`Remove option ${i + 1}`}
-                className="shrink-0 rounded px-2 py-1 text-neutral-400 hover:text-red-600 disabled:opacity-30 dark:hover:text-red-400"
+                className="shrink-0 rounded px-2 py-1 text-neutral-400 hover:text-danger disabled:opacity-30"
               >
                 <span aria-hidden="true">✕</span>
               </button>
@@ -221,7 +221,7 @@ export function EditPollClient({
         <button
           type="button"
           onClick={() => setCancelOpen(true)}
-          className="self-start rounded-md border border-red-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+          className="self-start rounded-md border border-red-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-danger hover:bg-danger-fill dark:border-red-800"
         >
           Cancel poll
         </button>

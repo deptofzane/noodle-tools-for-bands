@@ -223,7 +223,7 @@ export function NotesPanel({
   return (
     <section
       aria-label="Notes"
-      className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
+      className="flex flex-col gap-3 rounded-lg border border-line p-4"
     >
       <header className="flex items-center justify-between gap-2">
         <h2 className="text-sm font-medium">Notes</h2>
@@ -234,7 +234,7 @@ export function NotesPanel({
               type="button"
               onClick={() => setConversationClosed(!closed)}
               disabled={stateBusy}
-              className="rounded-md border border-neutral-300 px-2 py-0.5 text-[0.6875rem] font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+              className="rounded-md border border-line-strong px-2 py-0.5 text-[0.6875rem] font-medium text-fg-soft hover:bg-surface-soft disabled:opacity-50"
               title={
                 closed
                   ? 'Reopen this conversation so it shows up in Open Conversations'
@@ -261,13 +261,13 @@ export function NotesPanel({
       )}
 
       {closed && (
-        <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+        <div className="rounded-md border border-amber-300 bg-warn-fill px-3 py-2 text-xs text-warn-strong dark:border-amber-700">
           This conversation is closed and lives in History.
         </div>
       )}
 
       {composerOpen ? (
-        <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="rounded-md border border-line bg-surface-soft p-3">
           <NoteForm
             header={
               <>
@@ -288,20 +288,20 @@ export function NotesPanel({
         <button
           type="button"
           onClick={openComposer}
-          className="rounded-md border border-dashed border-neutral-300 px-3 py-2 text-left text-sm text-neutral-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-blue-500 dark:hover:bg-blue-950 dark:hover:text-blue-300"
+          className="rounded-md border border-dashed border-line-strong px-3 py-2 text-left text-sm text-fg-muted hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 dark:hover:border-blue-500 dark:hover:bg-blue-950 dark:hover:text-blue-300"
         >
           + Add note at current time
         </button>
       )}
 
       {error && (
-        <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+        <p className="rounded-md border border-danger-line bg-danger-fill px-3 py-2 text-xs text-danger-strong">
           {error}
         </p>
       )}
 
       {offline && notes === null && (
-        <p className="rounded-md border border-neutral-200 px-3 py-4 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+        <p className="rounded-md border border-line px-3 py-4 text-center text-sm minor-text-theme-colors">
           Notes need a connection.
         </p>
       )}
@@ -358,7 +358,7 @@ function ActivityHeader({
   const entries = (activity.log ?? []).slice(0, MAX_LOG_ENTRIES_DISPLAYED);
 
   return (
-    <div className="rounded-md bg-neutral-50 px-3 py-2 text-xs text-neutral-600 dark:bg-neutral-900 dark:text-neutral-400">
+    <div className="rounded-md bg-surface-soft px-3 py-2 text-xs text-fg-muted">
       <div className="flex items-center justify-between gap-2">
         <span className="truncate">
           Last activity by{' '}
@@ -371,7 +371,7 @@ function ActivityHeader({
           <button
             type="button"
             onClick={onToggle}
-            className="shrink-0 text-[0.6875rem] text-blue-600 hover:underline dark:text-blue-400"
+            className="shrink-0 text-[0.6875rem] text-accent hover:underline"
           >
             {open ? 'hide log' : `show log (${entries.length})`}
           </button>
@@ -379,7 +379,7 @@ function ActivityHeader({
       </div>
 
       {open && entries.length > 1 && (
-        <ul className="mt-2 space-y-1 border-t border-neutral-200 pt-2 dark:border-neutral-800">
+        <ul className="mt-2 space-y-1 border-t border-line pt-2">
           {entries.map((entry, i) => (
             <li
               key={`${entry.at}-${i}`}

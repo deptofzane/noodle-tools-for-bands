@@ -20,9 +20,9 @@ export default async function SignupPage({
       <h3 className="mb-2 font-serif text-4xl">
         noo<span className="text-cyan-600">dle</span>
       </h3>
-      <div className="w-full max-w-sm rounded-lg border border-neutral-200 p-8 dark:border-neutral-800">
+      <div className="w-full max-w-sm rounded-lg border border-line p-8">
         <h1 className="title-text">Create account</h1>
-        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="mt-2 text-sm text-fg-muted">
           Sign up with an email and password.
         </p>
 

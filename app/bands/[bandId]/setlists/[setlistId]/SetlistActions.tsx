@@ -66,7 +66,7 @@ export function SetlistActions({
       {/* At-a-glance offline status (all breakpoints — covers the mobile
           kebab, which can't show it while collapsed). */}
       {downloading ? (
-        <span className="text-xs tabular-nums text-blue-600 dark:text-blue-400">
+        <span className="text-xs tabular-nums text-accent">
           ↓ {Math.round(offline.progress * 100)}%
         </span>
       ) : rec ? (

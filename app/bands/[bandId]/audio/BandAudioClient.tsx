@@ -382,7 +382,7 @@ export function BandAudioClient({
 
   if (error) {
     return (
-      <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+      <p className="rounded-md border border-danger-line bg-danger-fill px-3 py-2 text-sm text-danger-strong">
         {error}
       </p>
     );
@@ -411,8 +411,8 @@ export function BandAudioClient({
             className={
               '-mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-3 py-2 text-sm font-medium transition ' +
               (activeTab === tab
-                ? 'text-blue-600 dark:text-blue-400'
-                : 'minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
+                ? 'text-accent'
+                : 'minor-text-theme-colors hover:text-fg-strong')
             }
           >
             {TAB_LABELS[tab]}
@@ -519,7 +519,7 @@ export function BandAudioClient({
               aria-label="Song name"
               autoFocus
               disabled={creating}
-              className="mt-4 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:placeholder:minor-text-theme-colors"
+              className="mt-4 w-full rounded-md border border-line-strong px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none disabled:opacity-50 dark:bg-neutral-900 dark:placeholder:minor-text-theme-colors"
             />
             <div className="mt-5 flex justify-end gap-2">
               <button

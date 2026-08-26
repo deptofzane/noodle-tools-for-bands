@@ -21,7 +21,7 @@ const SLIDE_MS = 200;
 const PLAY_BTN_CLS =
   'flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-500';
 const ICON_BTN_CLS =
-  'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 disabled:opacity-40 dark:text-neutral-300 dark:hover:bg-neutral-800';
+  'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-fg-dim hover:bg-surface-hover disabled:opacity-40';
 const ROW_CLS = 'flex w-full items-center gap-3 px-3 py-2 lg:px-6';
 const TIME_CLS =
   'shrink-0 font-mono text-[0.6875rem] tabular-nums minor-text-theme-colors';
@@ -94,9 +94,7 @@ function TrackColumn({
       </div>
 
       {error ? (
-        <p className="truncate text-xs text-red-600 dark:text-red-400">
-          {error}
-        </p>
+        <p className="truncate text-xs text-danger">{error}</p>
       ) : (
         <div className="flex items-center gap-2">
           <span className={TIME_CLS}>{formatDuration(currentTime)}</span>
@@ -123,7 +121,7 @@ function TrackColumn({
               aria-valuemax={Math.round(duration) || 0}
               aria-valuenow={Math.round(currentTime)}
               aria-valuetext={`${formatDuration(currentTime)} of ${formatDuration(duration)}`}
-              className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-900"
+              className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-fill-strong"
             >
               <div
                 className="h-full rounded-full bg-blue-600"
@@ -409,7 +407,7 @@ export function MiniPlayer({
       aria-label="Audio player"
       // `.player-bar` anchors it above the nav on mobile, and to the bottom
       // edge on desktop where the nav sits at the top.
-      className="player-bar fixed inset-x-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95"
+      className="player-bar fixed inset-x-0 z-40 border-t border-line bg-white/95 backdrop-blur dark:bg-neutral-900/95"
     >
       {/* Clips to the bar's own width, so the parked neighbours stay hidden
           until a drag uncovers them. */}
@@ -531,7 +529,7 @@ export function MiniPlayer({
             onClick={() => setExpanded(true)}
             aria-label="Expand player"
             title="Expand player"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full minor-text-theme-colors hover:bg-neutral-100 hover:text-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full minor-text-theme-colors hover:bg-surface-hover hover:text-fg-strong"
           >
             <svg
               viewBox="0 0 24 24"
@@ -556,7 +554,7 @@ export function MiniPlayer({
             }}
             aria-label="Close player"
             title="Close player"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full minor-text-theme-colors hover:bg-neutral-100 hover:text-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full minor-text-theme-colors hover:bg-surface-hover hover:text-fg-strong"
           >
             <span aria-hidden="true" className="text-lg leading-none">
               ×

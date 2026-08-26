@@ -27,7 +27,7 @@ interface BandOption {
  * enforces membership.
  */
 const inputCls =
-  'w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900';
+  'w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
 
 export function EditSongClient({
   conversationId,
@@ -352,7 +352,7 @@ export function EditSongClient({
         <h2 className="text-sm font-medium text-red-700 dark:text-red-400">
           Delete song
         </h2>
-        <p className="text-xs text-neutral-600 dark:text-neutral-400">
+        <p className="text-xs text-fg-muted">
           Permanently deletes this song and all of its notes, sheet music, and
           activity. This can’t be undone.
         </p>
@@ -360,7 +360,7 @@ export function EditSongClient({
           <button
             type="button"
             onClick={() => setDeleteOpen(true)}
-            className="rounded-md border border-red-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+            className="rounded-md border border-red-300 px-4 py-3 md:py-1.5 md:px-3 text-sm font-medium text-red-700 hover:bg-danger-fill dark:border-red-800 dark:text-red-400"
           >
             Delete song
           </button>

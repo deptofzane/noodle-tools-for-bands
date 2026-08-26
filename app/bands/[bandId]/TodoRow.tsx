@@ -68,7 +68,7 @@ export function TodoRow({
     /* The left rule and the title carry the todo's colour; see `todoTone`. */
     <li
       data-event-type={todoTone(todo.status, todo.shared)}
-      className="flex flex-col gap-2 rounded-lg border border-neutral-200 border-l-[3px] border-l-[color:var(--event-accent)] px-4 py-3 dark:border-neutral-800 dark:border-l-[color:var(--event-accent)]"
+      className="flex flex-col gap-2 rounded-lg border border-line border-l-[3px] border-l-[color:var(--event-accent)] px-4 py-3 dark:border-l-[color:var(--event-accent)]"
     >
       <div className="flex items-start justify-between gap-1">
         <button
@@ -96,11 +96,7 @@ export function TodoRow({
             {todo.deadline ? (
               /* Overdue is a property of an active todo, not a fourth
                  status — a cancelled one being "late" means nothing. */
-              <span
-                className={
-                  overdue ? 'font-medium text-red-600 dark:text-red-400' : ''
-                }
-              >
+              <span className={overdue ? 'font-medium text-danger' : ''}>
                 Due {todo.deadline}
                 {overdue ? ' · overdue' : ''}
               </span>

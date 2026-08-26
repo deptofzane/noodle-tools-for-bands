@@ -295,7 +295,7 @@ export function NotificationPreferences({
           </div>
         </div>
         {isOpen && (
-          <ul className="border-t border-neutral-200 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-900/40">
+          <ul className="border-t border-line bg-neutral-50/60 dark:bg-neutral-900/40">
             {g.rows.map(renderRow)}
           </ul>
         )}
@@ -307,16 +307,14 @@ export function NotificationPreferences({
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm text-neutral-600 dark:text-neutral-400">
+      <p className="text-sm text-fg-muted">
         Choose which activity from your bands reaches you, and how. “In app”
         shows it in your notification feed; “Push” sends it to your devices.
         These apply only to you.
       </p>
-      {error && (
-        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="text-xs text-danger">{error}</p>}
 
-      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800">
+      <div className="rounded-lg border border-line">
         <div className="flex items-center justify-end gap-5 px-4 py-2 text-[0.6875rem] font-medium minor-text-theme-colors">
           <span className="w-11 text-center">In app</span>
           <span className="w-11 text-center">Push</span>
@@ -324,7 +322,7 @@ export function NotificationPreferences({
 
         {/* Everything, in one gesture. Sits above the groups under the same
             two columns, so the layers read top-down. */}
-        <div className="flex items-center justify-between gap-4 border-t border-neutral-200 px-4 py-3 dark:border-neutral-800">
+        <div className="flex items-center justify-between gap-4 border-t border-line px-4 py-3">
           <p className="text-sm font-medium">All notifications</p>
           <div className="flex shrink-0 items-center gap-5">
             {master(
@@ -344,7 +342,7 @@ export function NotificationPreferences({
           </div>
         </div>
 
-        <ul className="divide-y divide-neutral-200 border-t border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+        <ul className="divide-y divide-line border-t border-line">
           {PREF_GROUPS.map(renderGroup)}
         </ul>
       </div>

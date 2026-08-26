@@ -84,7 +84,7 @@ export function BandAlbumList({
 
   if (albums.length === 0)
     return (
-      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+      <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
         No albums yet. Use the ⋯ menu above to create one, then add songs to it.
       </p>
     );
@@ -92,7 +92,7 @@ export function BandAlbumList({
   return (
     <div className="flex flex-col gap-3">
       {groups.length === 0 && looseSongs.length === 0 && (
-        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+        <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
           Nothing matches “{search.trim()}”.
         </p>
       )}
@@ -103,10 +103,7 @@ export function BandAlbumList({
         const seconds = playable.reduce((s, t) => s + (t.songLength ?? 0), 0);
         const lost = tracks.filter((t) => t.state === 'lost').length;
         return (
-          <section
-            key={album.id}
-            className="rounded-lg border border-neutral-200 dark:border-neutral-800"
-          >
+          <section key={album.id} className="rounded-lg border border-line">
             <div className="flex items-center justify-between gap-2 px-1">
               <MinimizeToggle
                 minimized={!isOpen}
@@ -119,7 +116,7 @@ export function BandAlbumList({
                 {lost > 0 && (
                   <span
                     title={`${lost} track${lost === 1 ? '' : 's'} lost its chosen version`}
-                    className="text-xs text-amber-700 dark:text-amber-400"
+                    className="text-xs text-warn"
                   >
                     ⚠ {lost}
                   </span>
@@ -178,7 +175,7 @@ export function BandAlbumList({
               </span>
             </div>
             {isOpen && (
-              <ul className="divide-y divide-neutral-200 border-t border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+              <ul className="divide-y divide-line border-t border-line">
                 {tracks.map((t) => (
                   <li
                     key={t.id}
@@ -199,7 +196,7 @@ export function BandAlbumList({
                       </span>
                     )}
                     {t.state === 'lost' && (
-                      <span className="shrink-0 text-xs text-amber-700 dark:text-amber-400">
+                      <span className="shrink-0 text-xs text-warn">
                         version deleted
                       </span>
                     )}
@@ -228,7 +225,7 @@ export function BandAlbumList({
           <h3 className="text-sm font-medium minor-text-theme-colors">
             Unassociated
           </h3>
-          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+          <ul className="divide-y divide-line rounded-lg border border-line">
             {looseSongs.map((c) => (
               <SongRow
                 key={c.id}

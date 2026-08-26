@@ -105,12 +105,10 @@ export function AddTrackToSetlistModal({
       <h2 id="queue-add-setlist-title" className="text-base font-semibold">
         Add to setlist
       </h2>
-      <p className="mt-1 truncate text-sm text-neutral-600 dark:text-neutral-400">
-        {track.title}
-      </p>
+      <p className="mt-1 truncate text-sm text-fg-muted">{track.title}</p>
 
       {loadError ? (
-        <p className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+        <p className="mt-4 rounded-md border border-danger-line bg-danger-fill px-3 py-2 text-sm text-danger-strong">
           {loadError}
         </p>
       ) : !data ? (
@@ -120,14 +118,14 @@ export function AddTrackToSetlistModal({
           label="Loading setlists"
         />
       ) : data.setlists.length === 0 ? (
-        <p className="mt-4 rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+        <p className="mt-4 rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
           No setlists yet. Create one first.
         </p>
       ) : (
         <ul className="mt-4 flex max-h-64 flex-col gap-1 overflow-auto">
           {data.setlists.map((sl) => (
             <li key={sl.id}>
-              <label className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800">
+              <label className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-surface-2">
                 <input
                   type="checkbox"
                   checked={selected.has(sl.id)}

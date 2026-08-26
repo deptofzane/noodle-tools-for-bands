@@ -267,20 +267,16 @@ export function PickerButton({
         type="button"
         onClick={openPicker}
         disabled={!pickerReady || !apiKey || disabled}
-        className="rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+        className="rounded-md border border-line-strong px-4 py-3 md:py-1.5 md:px-3 md:py-1.5 md:px-3 text-sm font-medium hover:bg-surface-soft disabled:opacity-50"
       >
         {label}
       </button>
       {!apiKey && (
-        <p className="text-[0.6875rem] text-amber-700 dark:text-amber-400">
+        <p className="text-[0.6875rem] text-warn">
           NEXT_PUBLIC_GOOGLE_API_KEY isn’t set; the Picker won’t open.
         </p>
       )}
-      {error && (
-        <p className="text-[0.6875rem] text-red-600 dark:text-red-400">
-          {error}
-        </p>
-      )}
+      {error && <p className="text-[0.6875rem] text-danger">{error}</p>}
     </div>
   );
 }

@@ -162,10 +162,7 @@ export function BandSetlistsTab({
     const offlineRec = offline.records?.get(sl.id);
     const downloading = offline.busyId === sl.id;
     return (
-      <li
-        key={sl.id}
-        className="rounded-lg border border-neutral-200 dark:border-neutral-800"
-      >
+      <li key={sl.id} className="rounded-lg border border-line">
         <div className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left">
           <button
             type="button"
@@ -182,7 +179,7 @@ export function BandSetlistsTab({
           </button>
           <span className="flex shrink-0 items-center gap-2 pr-1">
             {downloading ? (
-              <span className="text-xs tabular-nums text-blue-600 dark:text-blue-400">
+              <span className="text-xs tabular-nums text-accent">
                 ↓ {Math.round(offline.progress * 100)}%
               </span>
             ) : offlineRec ? (
@@ -277,7 +274,7 @@ export function BandSetlistsTab({
         {!collapsed && sl.songs.length > 0 ? (
           <Link
             href={`/bands/${bandId}/setlists/${sl.id}`}
-            className="flex min-w-0 flex-1 items-start flex-col justify-start gap-3 rounded hover:bg-neutral-50 dark:hover:bg-neutral-900"
+            className="flex min-w-0 flex-1 items-start flex-col justify-start gap-3 rounded hover:bg-surface-soft"
           >
             <ul className="flex flex-col gap-0.5 px-4 py-3 text-sm minor-text-theme-colors">
               {sl.songs.map((s, i) => {
@@ -310,7 +307,7 @@ export function BandSetlistsTab({
           </Link>
         ) : (
           !collapsed && (
-            <p className="px-4 pb-3 text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="px-4 pb-3 text-sm text-fg-muted">
               No songs in this setlist.
             </p>
           )
@@ -337,7 +334,7 @@ export function BandSetlistsTab({
         {!setlistsMinimized && (
           <>
             {setlists.length === 0 && (
-              <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+              <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
                 No setlists yet. Use “Create setlist” to build one.
               </p>
             )}
@@ -347,7 +344,7 @@ export function BandSetlistsTab({
               </ul>
             )}
             {setlists.length > 0 && activeSetlists.length === 0 && (
-              <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+              <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
                 No active setlists. Use “Create setlist” to build one.
               </p>
             )}

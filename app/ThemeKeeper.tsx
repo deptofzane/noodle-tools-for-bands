@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { applyThemeColor } from './theme';
+import { applyTheme, isTheme, THEME_IS_DARK, type Theme } from './theme';
 
 /**
  * Keeps the `dark` class on `<html>` from being lost.
@@ -24,35 +24,36 @@ export function ThemeKeeper() {
   useEffect(() => {
     const root = document.documentElement;
 
-    const wantsDark = (): boolean => {
+    const wanted = (): Theme | null => {
       try {
         const stored = localStorage.getItem('theme');
-        // Nothing stored (storage cleared mid-session) — leave it as-is rather
-        // than guess, so this never fights the user.
-        if (stored !== 'dark' && stored !== 'light') {
-          return root.classList.contains('dark');
-        }
-        return stored === 'dark';
+        return isTheme(stored) ? stored : null;
       } catch {
-        return root.classList.contains('dark');
+        return null;
       }
     };
 
     const apply = () => {
-      const want = wantsDark();
+      const want = wanted();
+      // Nothing stored (storage cleared mid-session) — leave it alone rather
+      // than guess, so this never fights the user.
+      if (!want) return;
       // Only touch the DOM on a real disagreement, so this can't loop: the
-      // toggle below re-triggers the observer, which then finds nothing to do.
-      if (want !== root.classList.contains('dark')) {
-        root.classList.toggle('dark', want);
-        // A re-render that drops the class drops nothing else, but the bar
-        // has to come back with it.
-        applyThemeColor(want ? 'dark' : 'light');
+      // change below re-triggers the observer, which then finds nothing to do.
+      if (
+        root.dataset.theme !== want ||
+        root.classList.contains('dark') !== THEME_IS_DARK[want]
+      ) {
+        applyTheme(want);
       }
     };
 
     apply();
     const observer = new MutationObserver(apply);
-    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ['class', 'data-theme'],
+    });
     return () => observer.disconnect();
   }, []);
 

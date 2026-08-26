@@ -59,7 +59,7 @@ export function AnnotatedList() {
 
   if (error) {
     return (
-      <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+      <p className="rounded-md border border-danger-line bg-danger-fill px-3 py-2 text-sm text-danger-strong">
         {error}
       </p>
     );
@@ -71,7 +71,7 @@ export function AnnotatedList() {
 
   if (items.length === 0) {
     return (
-      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+      <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
         No open conversations. Register audio in a{' '}
         <Link href="/bands" className="text-blue-600 underline">
           band
@@ -82,12 +82,12 @@ export function AnnotatedList() {
   }
 
   return (
-    <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+    <ul className="divide-y divide-line rounded-lg border border-line">
       {items.map((item) => (
         <li key={item.conversationId}>
           <Link
             href={`/notes/${item.conversationId}/practice`}
-            className="flex items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"
+            className="flex items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm hover:bg-surface-soft"
           >
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">

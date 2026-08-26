@@ -87,12 +87,12 @@ export function EventMembersClient({
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-medium">People</h2>
       {members.length === 0 ? (
-        <p className="rounded-md border border-neutral-200 px-3 py-4 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+        <p className="rounded-md border border-line px-3 py-4 text-center text-sm minor-text-theme-colors">
           The owning band’s members can already see this. No one else has been
           added.
         </p>
       ) : (
-        <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+        <ul className="divide-y divide-line rounded-lg border border-line">
           {members.map((m) => (
             <li
               key={m.userId}
@@ -113,7 +113,7 @@ export function EventMembersClient({
                   type="button"
                   onClick={() => handleRemove(m.userId)}
                   disabled={busy}
-                  className="shrink-0 text-xs minor-text-theme-colors hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
+                  className="shrink-0 text-xs minor-text-theme-colors hover:text-danger disabled:opacity-50"
                 >
                   Remove
                 </button>
@@ -131,7 +131,7 @@ export function EventMembersClient({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Add someone by email"
-              className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+              className="flex-1 rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
             <button
               type="submit"

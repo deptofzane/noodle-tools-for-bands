@@ -146,7 +146,7 @@ export function BandOverviewTab({
       <li
         key={show.id}
         data-event-type={eventColorKey(show.eventType)}
-        className="rounded-lg border border-neutral-200 dark:border-neutral-800"
+        className="rounded-lg border border-line"
       >
         {/* The colour stops at the title row. Tinting the panel below it too
             would turn a list of events into a wall of colour, and the details
@@ -258,7 +258,7 @@ export function BandOverviewTab({
           </ActionMenu>
         </div>
         {expanded && (
-          <div className="flex flex-col gap-1 border-t border-neutral-200 px-4 py-3 text-sm md:px-3 dark:border-neutral-800">
+          <div className="flex flex-col gap-1 border-t border-line px-4 py-3 text-sm md:px-3">
             <div>
               <span className="font-medium">Date:</span>{' '}
               {formatDateRange(show.date, show.endDate)}
@@ -285,12 +285,12 @@ export function BandOverviewTab({
                 <span className="font-medium">Setlist:</span>{' '}
                 <Link
                   href={`/bands/${bandId}/setlists/${show.setlistId}`}
-                  className="text-blue-600 hover:underline dark:text-blue-400"
+                  className="text-accent hover:underline"
                 >
                   {show.setlistName ?? 'View setlist'}
                 </Link>
                 {downloading ? (
-                  <span className="ml-2 text-xs tabular-nums text-blue-600 dark:text-blue-400">
+                  <span className="ml-2 text-xs tabular-nums text-accent">
                     ↓ {Math.round(offline.progress * 100)}%
                   </span>
                 ) : offlineRec ? (
@@ -310,7 +310,7 @@ export function BandOverviewTab({
                   title="Details"
                   persistKey="eventDetailsOpen"
                 >
-                  <p className="mt-2 ml-3 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+                  <p className="mt-2 ml-3 whitespace-pre-wrap text-fg-muted">
                     {show.details}
                   </p>
                 </CollapsibleSection>
@@ -320,7 +320,7 @@ export function BandOverviewTab({
             {show.notes && (
               <section className="rounded-lg py-2 text-sm">
                 <CollapsibleSection title="Notes" persistKey="eventNotesOpen">
-                  <p className="mt-2 ml-3 whitespace-pre-wrap text-neutral-600 dark:text-neutral-400">
+                  <p className="mt-2 ml-3 whitespace-pre-wrap text-fg-muted">
                     {show.notes}
                   </p>
                 </CollapsibleSection>
@@ -358,7 +358,7 @@ export function BandOverviewTab({
               {upcomingShows.map(renderShow)}
             </ul>
           ) : (
-            <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+            <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
               No upcoming events. Use “Add event” to schedule one.
             </p>
           ))}
@@ -386,7 +386,7 @@ export function BandOverviewTab({
       <button
         type="button"
         onClick={onLeave}
-        className="shrink-0 rounded-md border border-neutral-300 px-4 py-3 md:py-1.5 md:px-3 mt-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
+        className="shrink-0 rounded-md border border-line-strong px-4 py-3 md:py-1.5 md:px-3 mt-3 text-sm font-medium text-fg-soft hover:bg-surface-soft"
       >
         Leave band
       </button>

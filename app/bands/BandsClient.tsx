@@ -89,7 +89,7 @@ export function BandsClient({ currentUserId }: { currentUserId: string }) {
           onChange={(e) => setName(e.target.value)}
           placeholder="New band name"
           maxLength={100}
-          className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+          className="flex-1 rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
         <button
           type="submit"
@@ -101,7 +101,7 @@ export function BandsClient({ currentUserId }: { currentUserId: string }) {
       </form>
 
       {error && (
-        <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+        <p className="rounded-md border border-danger-line bg-danger-fill px-3 py-2 text-sm text-danger-strong">
           {error}
         </p>
       )}
@@ -109,24 +109,24 @@ export function BandsClient({ currentUserId }: { currentUserId: string }) {
       {bands === null && !error && <LoadingBlock />}
 
       {bands && bands.length === 0 && (
-        <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+        <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
           You’re not in any bands yet. Create one above.
         </p>
       )}
 
       {bands && bands.length > 0 && (
-        <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+        <ul className="divide-y divide-line rounded-lg border border-line">
           {bands.map((band) => (
             <li
               key={band.id}
-              className="flex items-center gap-2 pr-2 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+              className="flex items-center gap-2 pr-2 hover:bg-surface-soft"
             >
               <Link
                 href={`/bands/${band.id}`}
                 className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-3 md:py-1.5 md:px-3 text-sm"
               >
                 <span className="truncate font-medium">{band.name}</span>
-                <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-[0.625rem] font-medium text-neutral-600 dark:bg-neutral-900 dark:text-neutral-300">
+                <span className="shrink-0 rounded bg-fill-muted px-1.5 py-0.5 text-[0.625rem] font-medium text-fg-dim">
                   {band.role}
                 </span>
               </Link>

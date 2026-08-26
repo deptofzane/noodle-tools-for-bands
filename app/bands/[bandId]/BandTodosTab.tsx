@@ -85,14 +85,14 @@ function TodoSection({
 
   if (error)
     return (
-      <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+      <p className="rounded-md border border-danger-line bg-danger-fill px-3 py-2 text-sm text-danger-strong">
         {error}
       </p>
     );
   if (items === null) return <LoadingBlock size="sm" className="py-6" />;
   if (items.length === 0)
     return (
-      <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+      <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
         {empty}
       </p>
     );
@@ -284,7 +284,7 @@ export function BandTodosTab({
             <span
               role="group"
               aria-label="Todos"
-              className="flex items-center rounded-md border border-neutral-300 p-0.5 text-xs dark:border-neutral-700"
+              className="flex items-center rounded-md border border-line-strong p-0.5 text-xs"
             >
               {([false, true] as const).map((wantMine) => (
                 <button
@@ -295,8 +295,8 @@ export function BandTodosTab({
                   className={
                     'rounded px-2 py-1 ' +
                     (mine === wantMine
-                      ? 'bg-neutral-100 font-medium text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100'
-                      : 'minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
+                      ? 'bg-fill-2 font-medium text-fg'
+                      : 'minor-text-theme-colors hover:text-fg-strong')
                   }
                 >
                   {wantMine ? 'Mine' : 'All'}

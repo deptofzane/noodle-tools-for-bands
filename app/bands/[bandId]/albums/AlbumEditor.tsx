@@ -28,7 +28,7 @@ export interface AlbumEditorTrack extends SetlistItem {
 }
 
 const inputCls =
-  'w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900';
+  'w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
 
 /**
  * The shared body of the New and Edit album screens.
@@ -210,8 +210,8 @@ export function AlbumEditor({
               className={
                 'shrink-0 rounded px-2 py-1 text-xs ' +
                 (t.lost
-                  ? 'text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-neutral-800'
-                  : 'minor-text-theme-colors hover:bg-neutral-100 dark:hover:bg-neutral-800')
+                  ? 'text-warn hover:bg-amber-50 dark:hover:bg-neutral-800'
+                  : 'minor-text-theme-colors hover:bg-surface-hover')
               }
             >
               {versionCaption(t)}

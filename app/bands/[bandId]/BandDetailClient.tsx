@@ -94,7 +94,7 @@ export function BandDetailClient({
 
   if (error) {
     return (
-      <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+      <p className="rounded-md border border-danger-line bg-danger-fill px-3 py-2 text-sm text-danger-strong">
         {error}
       </p>
     );
@@ -130,8 +130,8 @@ export function BandDetailClient({
             className={
               '-mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-3 py-2 text-sm font-medium capitalize transition ' +
               (activeTab === tab
-                ? 'text-blue-600 dark:text-blue-400'
-                : 'minor-text-theme-colors hover:text-neutral-800 dark:hover:text-neutral-200')
+                ? 'text-accent'
+                : 'minor-text-theme-colors hover:text-fg-strong')
             }
           >
             {tab}

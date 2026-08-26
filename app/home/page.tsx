@@ -71,20 +71,14 @@ export default async function HomePage() {
         initialCursor={notifPage.nextCursor}
       />
 
-      <div className="rounded-lg border border-neutral-200 p-4 text-sm text-neutral-600 dark:border-neutral-800 dark:text-neutral-400">
+      <div className="rounded-lg border border-line p-4 text-sm text-fg-muted">
         Audio and conversations are organized by band. Open or create a{' '}
-        <Link
-          href="/bands"
-          className="text-blue-600 underline dark:text-blue-400"
-        >
+        <Link href="/bands" className="text-accent underline">
           band
         </Link>{' '}
         to register audio (via the Drive picker) and open its conversations, or
         jump to your{' '}
-        <Link
-          href="/open-conversations"
-          className="text-blue-600 underline dark:text-blue-400"
-        >
+        <Link href="/open-conversations" className="text-accent underline">
           open conversations
         </Link>
         .

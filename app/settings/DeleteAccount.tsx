@@ -92,7 +92,7 @@ export function DeleteAccount({ email }: { email: string | null }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="rounded-md border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-red-50 md:px-3 md:py-1.5 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
+          className="rounded-md border border-red-300 px-4 py-3 text-sm font-medium text-red-700 hover:bg-danger-fill md:px-3 md:py-1.5 dark:border-red-900 dark:text-red-400"
         >
           Delete account
         </button>
@@ -113,7 +113,7 @@ export function DeleteAccount({ email }: { email: string | null }) {
           </h2>
 
           {planError ? (
-            <p className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950 dark:text-red-200">
+            <p className="mt-4 rounded-md border border-danger-line bg-danger-fill px-3 py-2 text-sm text-danger-strong">
               {planError}
             </p>
           ) : plan === null ? (
@@ -121,11 +121,11 @@ export function DeleteAccount({ email }: { email: string | null }) {
           ) : (
             <div className="mt-4 flex flex-col gap-3 text-sm">
               {plan.bandsDeleted.length > 0 && (
-                <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 dark:border-red-900 dark:bg-red-950">
-                  <p className="font-medium text-red-800 dark:text-red-200">
+                <div className="rounded-md border border-red-300 bg-danger-fill px-3 py-2 dark:border-red-900">
+                  <p className="font-medium text-danger-strong">
                     These bands will be deleted for everyone:
                   </p>
-                  <ul className="mt-1 list-inside list-disc text-red-800 dark:text-red-200">
+                  <ul className="mt-1 list-inside list-disc text-danger-strong">
                     {plan.bandsDeleted.map((b) => (
                       <li key={b.id} className="truncate">
                         {b.name}
@@ -140,7 +140,7 @@ export function DeleteAccount({ email }: { email: string | null }) {
               )}
 
               {plan.bandsLeft.length > 0 && (
-                <p className="text-neutral-600 dark:text-neutral-400">
+                <p className="text-fg-muted">
                   You’ll be removed from{' '}
                   <span className="font-medium">
                     {plan.bandsLeft.map((b) => b.name).join(', ')}
@@ -149,7 +149,7 @@ export function DeleteAccount({ email }: { email: string | null }) {
                 </p>
               )}
 
-              <p className="text-neutral-600 dark:text-neutral-400">
+              <p className="text-fg-muted">
                 Your {plan.personalNotesDeleted} personal note
                 {plan.personalNotesDeleted === 1 ? '' : 's'}, votes and
                 preferences are deleted. Comments you left on songs stay, shown
@@ -159,7 +159,7 @@ export function DeleteAccount({ email }: { email: string | null }) {
               <div className="flex flex-col gap-1">
                 <label
                   htmlFor="confirm-email"
-                  className="text-sm font-medium text-neutral-900 dark:text-neutral-100"
+                  className="text-sm font-medium text-fg"
                 >
                   Type {email ? <b>{email}</b> : 'your email address'} to
                   confirm
@@ -171,7 +171,7 @@ export function DeleteAccount({ email }: { email: string | null }) {
                   autoComplete="off"
                   autoFocus
                   disabled={busy}
-                  className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900"
+                  className="rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
                 />
               </div>
             </div>

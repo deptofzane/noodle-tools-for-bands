@@ -310,7 +310,7 @@ export function SheetMusic({
   const hasSheet = (versions?.length ?? 0) > 0;
 
   return (
-    <section className="flex flex-col gap-2 border-b border-neutral-200 py-2 dark:border-neutral-800">
+    <section className="flex flex-col gap-2 border-b border-line py-2">
       <div className="flex items-center justify-between gap-2 mr-2">
         <span className="flex min-w-0 items-center gap-2">
           <button
@@ -320,7 +320,7 @@ export function SheetMusic({
               isMinimized ? 'Expand sheet music' : 'Minimize sheet music'
             }
             aria-expanded={!isMinimized}
-            className="-mr-1 flex gap-2 w-full px-2 py-2 text-xl leading-none text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+            className="-mr-1 flex gap-2 w-full px-2 py-2 text-xl leading-none text-neutral-400 hover:text-fg-body"
           >
             <span aria-hidden="true">{isMinimized ? '▸' : '▾'}</span>
             <h2 className="text-sm text-nowrap font-medium">Sheet music</h2>
@@ -334,13 +334,13 @@ export function SheetMusic({
         {!isMinimized && hasSheet && (zoomable || versions!.length > 1) && (
           <div className="flex items-center gap-2">
             {zoomable && (
-              <div className="flex items-center rounded-md border border-neutral-300 dark:border-neutral-700">
+              <div className="flex items-center rounded-md border border-line-strong">
                 <button
                   type="button"
                   onClick={zoomOut}
                   disabled={zoom <= ZOOM_MIN}
                   aria-label="Zoom out"
-                  className="px-2 py-1 text-base leading-none hover:bg-neutral-50 disabled:opacity-30 dark:hover:bg-neutral-900"
+                  className="px-2 py-1 text-base leading-none hover:bg-surface-soft disabled:opacity-30"
                 >
                   −
                 </button>
@@ -349,7 +349,7 @@ export function SheetMusic({
                   onClick={resetZoom}
                   aria-label="Reset zoom"
                   title="Reset zoom"
-                  className="min-w-[2.75rem] px-1 text-center text-xs font-medium tabular-nums hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                  className="min-w-[2.75rem] px-1 text-center text-xs font-medium tabular-nums hover:bg-surface-soft"
                 >
                   {zoom}%
                 </button>
@@ -358,7 +358,7 @@ export function SheetMusic({
                   onClick={zoomIn}
                   disabled={zoom >= ZOOM_MAX}
                   aria-label="Zoom in"
-                  className="px-2 py-1 text-base leading-none hover:bg-neutral-50 disabled:opacity-30 dark:hover:bg-neutral-900"
+                  className="px-2 py-1 text-base leading-none hover:bg-surface-soft disabled:opacity-30"
                 >
                   +
                 </button>
@@ -370,7 +370,7 @@ export function SheetMusic({
                 onChange={(e) => selectVersion(e.target.value)}
                 aria-label="Sheet music version"
                 title="Version to view"
-                className="min-w-0 max-w-[12rem] shrink truncate rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+                className="min-w-0 max-w-[12rem] shrink truncate rounded-md border border-line-strong bg-surface px-1.5 py-1 text-xs"
               >
                 {versions!.map((v) => (
                   <option key={v.id} value={v.id}>
@@ -403,7 +403,7 @@ export function SheetMusic({
                 // page scrolls it, rather than a short box scrolling inside a
                 // page that also scrolls. Zooming in still overflows
                 // sideways, which is what `overflow-x-auto` is left for.
-                <div className="overflow-x-auto rounded-md border border-neutral-200 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900">
+                <div className="overflow-x-auto rounded-md border border-line bg-fill-muted">
                   <div style={{ width: `${zoom}%` }} className="mx-auto">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -418,7 +418,7 @@ export function SheetMusic({
                 <img
                   src={viewUrl}
                   alt={selected.label || selected.fileName}
-                  className="max-h-[85vh] w-full rounded-md border border-neutral-200 object-contain dark:border-neutral-800"
+                  className="max-h-[85vh] w-full rounded-md border border-line object-contain"
                 />
               ))}
             {kind === 'pdf' &&
@@ -429,7 +429,7 @@ export function SheetMusic({
                 // `fitHeight` lets every page stack out at full height, so
                 // the whole chart is one page-scroll instead of a 85vh
                 // window. `overflow-hidden` stays only to clip the corners.
-                <div className="w-full overflow-hidden rounded-md border border-neutral-200 dark:border-neutral-800">
+                <div className="w-full overflow-hidden rounded-md border border-line">
                   <PdfView
                     url={viewUrl}
                     title={selected.label || selected.fileName}
@@ -442,7 +442,7 @@ export function SheetMusic({
                 <iframe
                   title={selected.label || selected.fileName}
                   src={viewUrl}
-                  className="h-[85vh] w-full rounded-md border border-neutral-200 dark:border-neutral-800"
+                  className="h-[85vh] w-full rounded-md border border-line"
                 />
               ))}
             {kind === 'text' && (
@@ -453,7 +453,7 @@ export function SheetMusic({
                     : undefined
                 }
                 className={
-                  'overflow-auto rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900' +
+                  'overflow-auto rounded-md border border-line bg-surface-soft p-3' +
                   (zoomEnabled ? '' : ' sheet-base')
                 }
               >
@@ -473,7 +473,7 @@ export function SheetMusic({
               </div>
             )}
             {kind === 'other' && (
-              <p className="rounded-md border border-neutral-200 px-3 py-6 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+              <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
                 Preview isn’t available for this file type.
               </p>
             )}
@@ -483,7 +483,7 @@ export function SheetMusic({
                 href={viewUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="truncate text-blue-600 hover:underline dark:text-blue-400"
+                className="truncate text-accent hover:underline"
               >
                 Open “{selected.label || selected.fileName}” in a new tab
               </a>
@@ -491,7 +491,7 @@ export function SheetMusic({
                 type="button"
                 onClick={openChooser}
                 disabled={busy}
-                className="shrink-0 rounded-md border border-neutral-300 px-2 py-1 font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+                className="shrink-0 rounded-md border border-line-strong px-2 py-1 font-medium hover:bg-surface-soft disabled:opacity-50"
               >
                 {busy ? 'Adding…' : 'Add version'}
               </button>
@@ -502,7 +502,7 @@ export function SheetMusic({
             type="button"
             onClick={openChooser}
             disabled={busy}
-            className="rounded-md border border-dashed border-neutral-300 px-3 py-2 text-left text-sm text-neutral-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-blue-500 dark:hover:bg-blue-950 dark:hover:text-blue-300"
+            className="rounded-md border border-dashed border-line-strong px-3 py-2 text-left text-sm text-fg-muted hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-50 dark:hover:border-blue-500 dark:hover:bg-blue-950 dark:hover:text-blue-300"
           >
             {busy ? 'Uploading…' : '+ Add sheet music (PDF, text, image)'}
           </button>
@@ -532,7 +532,7 @@ export function SheetMusic({
 
           {pasteMode ? (
             <>
-              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              <p className="mt-1 text-sm text-fg-muted">
                 Write or paste Markdown, a ChordPro chart ([C]lyrics with{' '}
                 {'{directives}'}), or plain source text.
               </p>
@@ -547,8 +547,8 @@ export function SheetMusic({
                     className={
                       'rounded-md px-2 py-1 text-xs font-medium ' +
                       (pasteFormat === f.id
-                        ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100'
-                        : 'minor-text-theme-colors hover:bg-neutral-100 dark:hover:bg-neutral-800')
+                        ? 'bg-neutral-200 text-fg dark:bg-neutral-700'
+                        : 'minor-text-theme-colors hover:bg-surface-hover')
                     }
                   >
                     {f.label}
@@ -565,7 +565,7 @@ export function SheetMusic({
                   onChange={(e) => setPasteLabel(e.target.value)}
                   maxLength={100}
                   placeholder="e.g. Bass chart, Capo 2"
-                  className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+                  className="w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </label>
               <textarea
@@ -574,7 +574,7 @@ export function SheetMusic({
                 rows={12}
                 autoFocus
                 placeholder="Lyrics, chords, or Markdown…"
-                className="mt-3 w-full resize-y rounded-md border border-neutral-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+                className="mt-3 w-full resize-y rounded-md border border-line-strong bg-surface px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
               <div className="mt-4 flex items-center justify-between gap-2">
                 <button
@@ -601,7 +601,7 @@ export function SheetMusic({
             </>
           ) : (
             <>
-              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              <p className="mt-1 text-sm text-fg-muted">
                 {canUseDrive
                   ? 'Choose a file from Google Drive, upload one, or paste text.'
                   : 'Sign in with Google to import from Drive, upload one, or paste text.'}

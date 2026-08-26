@@ -134,7 +134,7 @@ export function OfflineClient() {
       {records === null ? (
         <LoadingBlock label="Loading downloads" />
       ) : records.length === 0 ? (
-        <div className="rounded-md border border-neutral-200 px-3 py-8 text-center text-sm minor-text-theme-colors dark:border-neutral-800">
+        <div className="rounded-md border border-line px-3 py-8 text-center text-sm minor-text-theme-colors">
           <p>Nothing is downloaded on this device.</p>
           <p className="mt-1">
             {online
@@ -150,7 +150,7 @@ export function OfflineClient() {
             return (
               <li
                 key={rec.setlistId}
-                className="flex flex-col gap-3 rounded-lg border border-neutral-200 px-4 py-3 dark:border-neutral-800"
+                className="flex flex-col gap-3 rounded-lg border border-line px-4 py-3"
               >
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <span className="truncate font-medium">{rec.name}</span>

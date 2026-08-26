@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 const field =
-  'rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900';
+  'rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
 
 export function ResetForm({ token }: { token: string }) {
   const [password, setPassword] = useState('');
@@ -15,7 +15,7 @@ export function ResetForm({ token }: { token: string }) {
 
   if (!token) {
     return (
-      <p className="mt-3 text-sm text-red-600 dark:text-red-400">
+      <p className="mt-3 text-sm text-danger">
         This reset link is missing its token. Request a new one from{' '}
         <Link href="/forgot" className="underline">
           Forgot password
@@ -27,7 +27,7 @@ export function ResetForm({ token }: { token: string }) {
 
   if (done) {
     return (
-      <p className="mt-3 text-sm text-neutral-600 dark:text-neutral-400">
+      <p className="mt-3 text-sm text-fg-muted">
         Your password has been updated.{' '}
         <Link href="/login" className="underline">
           Sign in
@@ -67,9 +67,7 @@ export function ResetForm({ token }: { token: string }) {
         minLength={8}
         className={field}
       />
-      {error && (
-        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="text-xs text-danger">{error}</p>}
       <button
         type="submit"
         disabled={busy || password.length < 8}

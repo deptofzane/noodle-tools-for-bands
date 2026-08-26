@@ -12,7 +12,7 @@ interface OptionRow {
 }
 
 const field =
-  'rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900';
+  'rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
 
 const uid = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
@@ -134,7 +134,7 @@ export function NewPollClient({ bandId }: { bandId: string }) {
                 onClick={() => removeOption(o.id)}
                 disabled={options.length <= 2}
                 aria-label={`Remove option ${i + 1}`}
-                className="shrink-0 rounded px-2 py-1 text-neutral-400 hover:text-red-600 disabled:opacity-30 dark:hover:text-red-400"
+                className="shrink-0 rounded px-2 py-1 text-neutral-400 hover:text-danger disabled:opacity-30"
               >
                 <span aria-hidden="true">✕</span>
               </button>
