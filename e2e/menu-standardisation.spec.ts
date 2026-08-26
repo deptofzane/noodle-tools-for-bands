@@ -146,6 +146,19 @@ async function openMenu(page: Page, name: string): Promise<string[]> {
   return menuItemNames(page);
 }
 
+/**
+ * The seeded song's kebab in a list, scoped to its own row.
+ *
+ * The Songs tab holds every song the band has, and other specs add their own,
+ * so an unscoped "Song actions" matches however many happen to exist by the
+ * time this runs — and `.first()` picks whichever sorts first, not ours.
+ */
+const songMenu = (page: Page) =>
+  page
+    .locator('li', { hasText: E2E.songName })
+    .first()
+    .getByRole('button', { name: 'Song actions' });
+
 test.describe('detail-page action menus', () => {
   test.use({ permissions: ['clipboard-read', 'clipboard-write'] });
 
@@ -283,7 +296,8 @@ test.describe('per-song action menus', () => {
 
   test('audio list: the worded trio is gone', async ({ page }) => {
     await page.goto(`/bands/${seed.bandId}/audio?tab=songs`);
-    const names = await openMenu(page, 'Song actions');
+    await songMenu(page).click();
+    const names = await menuItemNames(page);
     await expectSongRow(names, 0);
     // Single-song row: no Play/Shuffle to fold a queue icon into, so the
     // worded queue item stays.
@@ -300,7 +314,7 @@ test.describe('per-song action menus', () => {
 
   test('queue: row first, other items kept', async ({ page }) => {
     await page.goto(`/bands/${seed.bandId}/audio?tab=songs`);
-    await page.getByRole('button', { name: 'Song actions' }).first().click();
+    await songMenu(page).click();
     await page.getByRole('menuitem', { name: 'Add song to queue' }).click();
     await page.getByRole('tab', { name: 'Song queue', exact: true }).click();
 
@@ -313,7 +327,7 @@ test.describe('per-song action menus', () => {
 
   test('full player: View keeps ?from=, Share drops it', async ({ page }) => {
     await page.goto(`/bands/${seed.bandId}/audio?tab=songs`);
-    await page.getByRole('button', { name: 'Song actions' }).first().click();
+    await songMenu(page).click();
     await page.getByRole('menuitem', { name: 'Add song to queue' }).click();
     await page.getByRole('button', { name: 'Expand player' }).click();
 
@@ -507,7 +521,7 @@ test.describe('route progress from menus', () => {
       await new Promise((r) => setTimeout(r, 2000));
       await route.continue();
     });
-    await page.getByRole('button', { name: 'Song actions' }).first().click();
+    await songMenu(page).click();
     await page.getByRole('menuitem', { name: `View ${E2E.songName}` }).click();
     await expect(bar(page)).toHaveAttribute('data-route-progress', 'active');
   });

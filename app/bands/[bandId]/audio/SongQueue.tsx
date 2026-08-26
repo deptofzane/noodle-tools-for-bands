@@ -121,6 +121,10 @@ export function SongQueue() {
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
+            /* Auto-scroll, gentler than the default acceleration of 10: at
+               that speed a drag near the top or bottom of a phone screen runs
+               away from you. The 20% edge zone is left alone. */
+            autoScroll={{ acceleration: 6 }}
           >
             <SortableContext
               items={rowIds}
@@ -333,7 +337,7 @@ function SortableQueueRow({
       <button
         type="button"
         aria-label={`Reorder ${track.title}`}
-        className="cursor-grab touch-none px-1 text-neutral-400 hover:text-neutral-700 active:cursor-grabbing dark:hover:text-neutral-200"
+        className="-my-2 flex h-11 w-11 cursor-grab touch-none items-center justify-center text-neutral-400 hover:text-neutral-700 active:cursor-grabbing dark:hover:text-neutral-200"
         {...attributes}
         {...listeners}
       >
