@@ -418,8 +418,9 @@
   --event-fill: #34294f;
 }
 :root[data-theme='synthwave-84'] [data-event-type='show'] {
-  --event-accent: #ff8b39;
-  --event-fill: #3d2a1c;
+  /* --event-accent: #f3e70f; */
+  --event-accent: #fffde7;
+  --event-fill: #b1260d;
 }
 :root[data-theme='synthwave-84'] [data-event-type='practice'] {
   --event-accent: #36f9f6;

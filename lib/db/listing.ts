@@ -56,6 +56,12 @@ export async function listConversationsForUser(
    * the whole list, which is what the Open Conversations view wants.
    */
   window?: { limit: number; offset: number },
+  /**
+   * Narrow to a single band. The membership join below is what grants access,
+   * so this only ever subtracts from what the user could already see — a band
+   * they aren't in simply matches nothing.
+   */
+  bandId?: string,
 ): Promise<ConversationListItem[]> {
   const closedFilter =
     filter === 'open'
@@ -111,7 +117,14 @@ export async function listConversationsForUser(
         eq(conversationReads.userId, userId),
       ),
     )
-    .where(and(closedFilter, archivedFilter, hasComment))
+    .where(
+      and(
+        closedFilter,
+        archivedFilter,
+        hasComment,
+        bandId ? eq(conversations.bandId, bandId) : undefined,
+      ),
+    )
     .orderBy(desc(conversations.updatedAt))
     .limit(window ? window.limit : Number.MAX_SAFE_INTEGER)
     .offset(window ? window.offset : 0);

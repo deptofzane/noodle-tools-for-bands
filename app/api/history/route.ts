@@ -9,7 +9,9 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 /**
  * GET /api/history?category=polls|events[&limit=&offset=]
  *   → one page of a History category, scoped to the caller's bands, plus
- *   `hasMore`. Fetched a category at a time, when its tab is opened — history
+ *   `hasMore`. `&bandId=` narrows to one of them — History shows the band
+ *   you have selected, not every band at once. Fetched a category at a
+ *   time, when its tab is opened — history
  *   is browsed rather than watched, so loading all of it up front would be
  *   work nobody asked for.
  *
@@ -23,11 +25,14 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const category = url.searchParams.get('category');
   const { limit, offset } = readWindow(url);
+  // Optional band scope. The queries join on membership, so an id the caller
+  // isn't a member of returns nothing rather than someone else's history.
+  const bandId = url.searchParams.get('bandId') ?? undefined;
   // One past the page, so `hasMore` costs nothing extra.
   const probe = { limit: limit + 1, offset };
 
   if (category === 'polls') {
-    const rows = await listClosedPollsForUser(user.id, probe);
+    const rows = await listClosedPollsForUser(user.id, probe, bandId);
     const { items, hasMore } = splitPage(rows, limit);
     return NextResponse.json({ polls: items, hasMore });
   }
@@ -39,7 +44,7 @@ export async function GET(req: Request) {
         { error: 'bad_date', message: 'today must be YYYY-MM-DD.' },
         { status: 400 },
       );
-    const rows = await listPastEventsForUser(user.id, today, probe);
+    const rows = await listPastEventsForUser(user.id, today, probe, bandId);
     const { items, hasMore } = splitPage(rows, limit);
     return NextResponse.json({ events: items, hasMore });
   }

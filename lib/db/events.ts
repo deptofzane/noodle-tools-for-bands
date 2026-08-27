@@ -233,6 +233,12 @@ export async function listPastEventsForUser(
   userId: string,
   before: string,
   window?: { limit: number; offset: number },
+  /**
+   * Narrow to one band. `visible` below also admits events the user was
+   * invited to personally outside their bands; asking for a band excludes
+   * those, which is what "this band's history" means.
+   */
+  bandId?: string,
 ): Promise<EventListItem[]> {
   const bandIds = await userBandIds(userId);
   const visible =
@@ -278,7 +284,13 @@ export async function listPastEventsForUser(
       )
       .leftJoin(users, eq(users.id, events.createdBy))
       .leftJoin(venues, eq(venues.id, events.venueId))
-      .where(and(lt(lastDay, before), visible))
+      .where(
+        and(
+          lt(lastDay, before),
+          visible,
+          bandId ? eq(events.bandId, bandId) : undefined,
+        ),
+      )
       .orderBy(desc(events.date), desc(events.time))
       .limit(window ? window.limit : Number.MAX_SAFE_INTEGER)
       .offset(window ? window.offset : 0)

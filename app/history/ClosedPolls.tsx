@@ -7,6 +7,7 @@ import { LoadingBlock } from '../Spinner';
 import { PAGE_SIZE } from '@/lib/paging';
 import { LoadMore } from '../LoadMore';
 import { usePagedList } from '../usePagedList';
+import { useCurrentBand } from '../CurrentBandProvider';
 
 interface ClosedPoll {
   id: string;
@@ -24,12 +25,15 @@ interface ClosedPoll {
  * to read.
  */
 export function ClosedPolls() {
+  const { bandId } = useCurrentBand();
   const fetchPage = useCallback(
     (offset: number) =>
-      fetch(`/api/history?category=polls&limit=${PAGE_SIZE}&offset=${offset}`, {
-        cache: 'no-store',
-      }),
-    [],
+      fetch(
+        `/api/history?category=polls&limit=${PAGE_SIZE}&offset=${offset}` +
+          (bandId ? `&bandId=${bandId}` : ''),
+        { cache: 'no-store' },
+      ),
+    [bandId],
   );
   const pick = useCallback(
     (d: unknown) => (d as { polls: ClosedPoll[] }).polls,

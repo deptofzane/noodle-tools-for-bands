@@ -22,6 +22,12 @@ interface CurrentBandValue {
   bands: BandOption[];
   /** Id of the band the app is "in", or '' when the user has none. */
   bandId: string;
+  /**
+   * Whether the band list has come back. Until it has, `bandId` is '' for a
+   * reason nobody can tell apart from "this user has no bands" — anything
+   * band-scoped has to wait rather than ask for the wrong thing.
+   */
+  loaded: boolean;
   /** That band's record, for its name. */
   band: BandOption | null;
   /** Make `id` the current band and remember it across sessions. */
@@ -50,6 +56,7 @@ export function CurrentBandProvider({
   const pathname = usePathname();
   const [bands, setBands] = useState<BandOption[]>([]);
   const [bandId, setBandIdState] = useState('');
+  const [loaded, setLoaded] = useState(false);
 
   // Load the user's bands and reconcile the selection: keep the current one if
   // it still exists, else the saved one, else the first band.
@@ -70,6 +77,9 @@ export function CurrentBandProvider({
       });
     } catch {
       // best-effort; consumers just see an empty list
+    } finally {
+      // Settled either way: a failed load must not leave callers waiting.
+      setLoaded(true);
     }
   }, []);
 
@@ -105,6 +115,7 @@ export function CurrentBandProvider({
   const value: CurrentBandValue = {
     bands,
     bandId,
+    loaded,
     band: bands.find((b) => b.id === bandId) ?? null,
     setBandId,
   };
@@ -125,6 +136,7 @@ export function useCurrentBand(): CurrentBandValue {
     useContext(CurrentBandContext) ?? {
       bands: [],
       bandId: '',
+      loaded: false,
       band: null,
       setBandId: () => {},
     }

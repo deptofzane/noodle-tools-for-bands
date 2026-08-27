@@ -12,6 +12,8 @@ import {
   type HistoryTab,
 } from './historyTabs';
 import { TabStrip } from '../TabStrip';
+import { useCurrentBand } from '../CurrentBandProvider';
+import { LoadingBlock } from '../Spinner';
 
 /** Remembers the last category, so returning lands where you left off. */
 const TAB_STORAGE_KEY = 'historyTab';
@@ -24,6 +26,7 @@ const TAB_STORAGE_KEY = 'historyTab';
  * all three for a visit that only wanted one.
  */
 export function HistoryClient({ initialTab }: { initialTab?: HistoryTab }) {
+  const { bandId, loaded } = useCurrentBand();
   const [activeTab, setActiveTab] = useState<HistoryTab>(() => {
     if (initialTab) return initialTab;
     if (typeof window === 'undefined') return DEFAULT_HISTORY_TAB;
@@ -74,9 +77,25 @@ export function HistoryClient({ initialTab }: { initialTab?: HistoryTab }) {
         ))}
       </TabStrip>
 
-      {activeTab === 'conversations' && <HistoryList />}
-      {activeTab === 'polls' && <ClosedPolls />}
-      {activeTab === 'events' && <PastEvents />}
+      {/*
+        History is the selected band's record, so the panels wait for that
+        selection. Asking before it lands would fetch every band the viewer
+        belongs to and show it for a moment.
+      */}
+      {!loaded ? (
+        <LoadingBlock />
+      ) : !bandId ? (
+        <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
+          You’re not in a band yet. History shows a band’s closed conversations,
+          decided polls, and past events.
+        </p>
+      ) : (
+        <>
+          {activeTab === 'conversations' && <HistoryList />}
+          {activeTab === 'polls' && <ClosedPolls />}
+          {activeTab === 'events' && <PastEvents />}
+        </>
+      )}
     </div>
   );
 }

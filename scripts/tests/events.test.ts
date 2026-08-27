@@ -360,3 +360,49 @@ test('events: queries carry the creator name that time off is labelled with', as
     assert.equal(detail?.createdByName, 'Multi');
   });
 });
+
+test('events: a band scope keeps past events to that band', async () => {
+  const subs = ['E_SCOPE'];
+  const bandIds: string[] = [];
+  try {
+    const user = await upsertUser({
+      googleSub: 'E_SCOPE',
+      email: 'escope@x.com',
+      name: 'Scope',
+    });
+    const mine = await createBand(user.id, 'Scope Events Mine');
+    const also = await createBand(user.id, 'Scope Events Also');
+    bandIds.push(mine.id, also.id);
+
+    const a = await makeEvent(mine.id, user.id, '2026-07-01', null, 'Mine Gig');
+    const b = await makeEvent(also.id, user.id, '2026-07-02', null, 'Also Gig');
+
+    const today = '2026-08-01';
+    const all = await listPastEventsForUser(user.id, today);
+    assert.ok(
+      all.some((e) => e.id === a.id) && all.some((e) => e.id === b.id),
+      'both bands without a scope',
+    );
+
+    const scoped = await listPastEventsForUser(
+      user.id,
+      today,
+      undefined,
+      mine.id,
+    );
+    assert.ok(
+      scoped.some((e) => e.id === a.id),
+      'the scoped band is present',
+    );
+    assert.ok(
+      !scoped.some((e) => e.id === b.id),
+      'the other band is filtered out',
+    );
+  } finally {
+    for (const id of bandIds) {
+      await db.delete(events).where(eq(events.bandId, id));
+      await db.delete(bands).where(eq(bands.id, id));
+    }
+    await deleteUsersByGoogleSub(subs);
+  }
+});

@@ -7,9 +7,15 @@ import { bands, users } from '../../lib/db/schema';
 import { upsertUser } from '../../lib/db/users';
 import { deleteUsersByGoogleSub } from '../../lib/db/accounts';
 import { addMember, createBand } from '../../lib/db/bands';
-import { findOrCreateConversation, setConversationClosed } from '../../lib/db/conversations';
+import {
+  findOrCreateConversation,
+  setConversationClosed,
+} from '../../lib/db/conversations';
 import { createNote } from '../../lib/db/notes';
-import { listConversationsForUser, markConversationRead } from '../../lib/db/listing';
+import {
+  listConversationsForUser,
+  markConversationRead,
+} from '../../lib/db/listing';
 
 after(closeDb);
 
@@ -20,8 +26,16 @@ test('listing: mention reach, unread vs self, badges clear on read', async () =>
   const subs = ['L_OWNER', 'L_MEMBER'];
   let bandId: string | undefined;
   try {
-    const owner = await upsertUser({ googleSub: 'L_OWNER', email: 'o@x.com', name: 'Owner' });
-    const member = await upsertUser({ googleSub: 'L_MEMBER', email: 'm@x.com', name: 'Member' });
+    const owner = await upsertUser({
+      googleSub: 'L_OWNER',
+      email: 'o@x.com',
+      name: 'Owner',
+    });
+    const member = await upsertUser({
+      googleSub: 'L_MEMBER',
+      email: 'm@x.com',
+      name: 'Member',
+    });
     const band = await createBand(owner.id, 'List Band');
     bandId = band.id;
     await addMember(band.id, member.id, 'member');
@@ -61,6 +75,69 @@ test('listing: mention reach, unread vs self, badges clear on read', async () =>
     );
   } finally {
     if (bandId) await db.delete(bands).where(eq(bands.id, bandId));
+    await deleteUsersByGoogleSub(subs);
+  }
+});
+
+test('listing: a band scope hides the other bands, and grants nothing', async () => {
+  const subs = ['L_SCOPE_OWNER', 'L_SCOPE_OTHER'];
+  const bandIds: string[] = [];
+  try {
+    const owner = await upsertUser({
+      googleSub: 'L_SCOPE_OWNER',
+      email: 'scope-o@x.com',
+      name: 'Scope Owner',
+    });
+    const stranger = await upsertUser({
+      googleSub: 'L_SCOPE_OTHER',
+      email: 'scope-s@x.com',
+      name: 'Stranger',
+    });
+
+    const mine = await createBand(owner.id, 'Scope Mine');
+    const also = await createBand(owner.id, 'Scope Also');
+    // A band the owner is not a member of at all.
+    const theirs = await createBand(stranger.id, 'Scope Theirs');
+    bandIds.push(mine.id, also.id, theirs.id);
+
+    const seed = async (bandId: string, key: string, userId: string) => {
+      const conv = await findOrCreateConversation(bandId, key, `${key}.mp3`);
+      await createNote(conv.id, userId, 0, 'closing thoughts', []);
+      await setConversationClosed(conv.id, userId, true);
+      return conv;
+    };
+    const a = await seed(mine.id, 'scope-a', owner.id);
+    const b = await seed(also.id, 'scope-b', owner.id);
+    const c = await seed(theirs.id, 'scope-c', stranger.id);
+
+    // Unscoped: both of the owner's bands, never the stranger's.
+    const all = await listConversationsForUser(owner.id, 'closed');
+    assert.ok(find(all, a.id) && find(all, b.id), 'both bands without a scope');
+    assert.ok(!find(all, c.id), 'never a band they are not in');
+
+    // Scoped: only that band.
+    const scoped = await listConversationsForUser(
+      owner.id,
+      'closed',
+      undefined,
+      mine.id,
+    );
+    assert.ok(find(scoped, a.id), 'the scoped band is present');
+    assert.ok(!find(scoped, b.id), 'their other band is filtered out');
+
+    /*
+     * The scope narrows; it can't widen. Asking for a band you're not in is
+     * empty rather than a way to read someone else's history.
+     */
+    const borrowed = await listConversationsForUser(
+      owner.id,
+      'closed',
+      undefined,
+      theirs.id,
+    );
+    assert.deepEqual(borrowed, [], 'a band you are not in yields nothing');
+  } finally {
+    for (const id of bandIds) await db.delete(bands).where(eq(bands.id, id));
     await deleteUsersByGoogleSub(subs);
   }
 });

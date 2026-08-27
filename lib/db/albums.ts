@@ -323,7 +323,12 @@ export async function songsOnAnyAlbum(
  */
 async function validPins(
   items: AlbumTrackInput[],
-): Promise<Map<string, { fileName: string; label: string | null; songLength: number | null }>> {
+): Promise<
+  Map<
+    string,
+    { fileName: string; label: string | null; songLength: number | null }
+  >
+> {
   const wanted = items
     .filter((i) => i.audioVersionId)
     .map((i) => i.audioVersionId!);
@@ -368,7 +373,9 @@ export class AlbumPinError extends Error {
     readonly versionId: string,
     readonly conversationId: string,
   ) {
-    super(`Audio version ${versionId} does not belong to song ${conversationId}`);
+    super(
+      `Audio version ${versionId} does not belong to song ${conversationId}`,
+    );
     this.name = 'AlbumPinError';
   }
 }

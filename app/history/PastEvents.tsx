@@ -7,6 +7,7 @@ import { LoadingBlock } from '../Spinner';
 import { PAGE_SIZE } from '@/lib/paging';
 import { LoadMore } from '../LoadMore';
 import { usePagedList } from '../usePagedList';
+import { useCurrentBand } from '../CurrentBandProvider';
 import { eventLabel } from '../calendar/eventLabel';
 
 interface PastEvent {
@@ -40,14 +41,16 @@ function localToday(): string {
  * and computing it during render would risk a hydration mismatch.
  */
 export function PastEvents() {
+  const { bandId } = useCurrentBand();
   const fetchPage = useCallback(
     (offset: number) =>
       fetch(
         `/api/history?category=events&today=${localToday()}` +
-          `&limit=${PAGE_SIZE}&offset=${offset}`,
+          `&limit=${PAGE_SIZE}&offset=${offset}` +
+          (bandId ? `&bandId=${bandId}` : ''),
         { cache: 'no-store' },
       ),
-    [],
+    [bandId],
   );
   const pick = useCallback(
     (d: unknown) => (d as { events: PastEvent[] }).events,

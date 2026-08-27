@@ -7,6 +7,7 @@ import { LoadingBlock } from '../Spinner';
 import { PAGE_SIZE } from '@/lib/paging';
 import { LoadMore } from '../LoadMore';
 import { usePagedList } from '../usePagedList';
+import { useCurrentBand } from '../CurrentBandProvider';
 
 /**
  * History list — closed conversations only.
@@ -25,14 +26,16 @@ interface ConversationListItem {
 }
 
 export function HistoryList() {
+  const { bandId } = useCurrentBand();
   const fetchPage = useCallback(
     (offset: number) =>
       fetch(
         `/api/conversations/annotated?filter=closed` +
-          `&limit=${PAGE_SIZE}&offset=${offset}`,
+          `&limit=${PAGE_SIZE}&offset=${offset}` +
+          (bandId ? `&bandId=${bandId}` : ''),
         { cache: 'no-store' },
       ),
-    [],
+    [bandId],
   );
   const pick = useCallback(
     (d: unknown) =>

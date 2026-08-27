@@ -96,6 +96,8 @@ export interface ClosedPoll {
 export async function listClosedPollsForUser(
   userId: string,
   window?: { limit: number; offset: number },
+  /** Narrow to one band; the membership join still decides access. */
+  bandId?: string,
 ): Promise<ClosedPoll[]> {
   const rows = await db
     .select({
@@ -117,7 +119,12 @@ export async function listClosedPollsForUser(
       pollVotes,
       and(eq(pollVotes.pollId, polls.id), eq(pollVotes.userId, userId)),
     )
-    .where(isNotNull(polls.closedAt))
+    .where(
+      and(
+        isNotNull(polls.closedAt),
+        bandId ? eq(polls.bandId, bandId) : undefined,
+      ),
+    )
     .orderBy(desc(polls.closedAt))
     .limit(window ? window.limit : Number.MAX_SAFE_INTEGER)
     .offset(window ? window.offset : 0);
