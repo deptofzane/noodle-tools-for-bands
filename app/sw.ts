@@ -48,7 +48,12 @@ const offlineRuntimeCaching: RuntimeCaching[] = [
   {
     matcher: ({ url, sameOrigin }) =>
       sameOrigin &&
-      /^\/api\/conversations\/[^/]+\/files\/sheet_music/.test(url.pathname),
+      /^\/api\/conversations\/[^/]+\/files\/sheet_music/.test(url.pathname) &&
+      // A download is a one-off: it must reach the network so its
+      // `attachment` disposition survives. The cache key drops `download`,
+      // so serving one from here would hand back the `inline` copy and the
+      // file would open instead of saving.
+      url.searchParams.get('download') !== '1',
     handler: new CacheFirst({
       cacheName: 'noodle-files',
       matchOptions: { ignoreVary: true },
@@ -75,7 +80,12 @@ const offlineRuntimeCaching: RuntimeCaching[] = [
   {
     matcher: ({ url, sameOrigin }) =>
       sameOrigin &&
-      /^\/api\/conversations\/[^/]+\/files\/audio/.test(url.pathname),
+      /^\/api\/conversations\/[^/]+\/files\/audio/.test(url.pathname) &&
+      // A download is a one-off: it must reach the network so its
+      // `attachment` disposition survives. The cache key drops `download`,
+      // so serving one from here would hand back the `inline` copy and the
+      // file would open instead of saving.
+      url.searchParams.get('download') !== '1',
     handler: new CacheFirst({
       cacheName: AUDIO_CACHE,
       matchOptions: { ignoreVary: true },

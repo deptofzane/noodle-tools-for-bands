@@ -8,6 +8,7 @@ import { ConfirmModal } from '../../../ConfirmModal';
 import { Modal } from '../../../Modal';
 import { PickerButton, type PickedFile } from '../../../PickerButton';
 import { SHEET_PICKER_FILTER } from '@/lib/picker-filters';
+import { StorageWarning } from '../../../StorageWarning';
 import {
   DropboxChooserButton,
   type DropboxPickedFile,
@@ -52,10 +53,13 @@ export interface SheetVersionMeta {
  * (upload, Drive, or a pasted Markdown/ChordPro chart). Mirrors AudioVersions.
  */
 export function SheetMusicVersions({
+  bandId,
   conversationId,
   apiKey,
   initial,
 }: {
+  /** The song's band, for the storage warning. */
+  bandId: string;
   conversationId: string;
   apiKey: string;
   initial: SheetVersionMeta[];
@@ -646,6 +650,7 @@ export function SheetMusicVersions({
                   : 'Sign in with Google to import from Drive, upload one, or paste text.'}
               </p>
               <div className="mt-4 flex flex-col gap-2">
+                <StorageWarning bandId={bandId} />
                 {canUseDrive ? (
                   <PickerButton
                     apiKey={apiKey}

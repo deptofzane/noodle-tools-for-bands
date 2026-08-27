@@ -102,7 +102,14 @@ export async function GET(
     'Content-Type': contentType,
     'Accept-Ranges': 'bytes',
     'Cache-Control': fileCacheControl(kind, versionId, url.searchParams),
-    'Content-Disposition': `inline; filename="${sanitizeFilename(target.fileName)}"`,
+    /*
+     * `inline` by default — the player and the sheet viewer embed these.
+     * `?download=1` flips it to `attachment` so the File management page can
+     * hand someone the actual file instead of navigating to it.
+     */
+    'Content-Disposition': `${
+      url.searchParams.get('download') === '1' ? 'attachment' : 'inline'
+    }; filename="${sanitizeFilename(target.fileName)}"`,
     // Don't let the browser re-interpret the bytes (e.g. a .txt sniffed as
     // HTML) — these are embedded same-origin.
     'X-Content-Type-Options': 'nosniff',

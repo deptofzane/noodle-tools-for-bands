@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 import { ConfirmModal } from '../../../ConfirmModal';
 import { Modal } from '../../../Modal';
 import { PickerButton, type PickedFile } from '../../../PickerButton';
+import { StorageWarning } from '../../../StorageWarning';
 import { AUDIO_PICKER_FILTER } from '@/lib/picker-filters';
 import { MAX_AUDIO_BYTES, normalizeAudioMime } from '@/lib/audio-mime';
 import {
@@ -49,10 +50,13 @@ export interface AudioVersionMeta {
  * The default is enforced server-side; this UI just reflects it.
  */
 export function AudioVersions({
+  bandId,
   conversationId,
   apiKey,
   initial,
 }: {
+  /** The song's band, for the storage warning. */
+  bandId: string;
   conversationId: string;
   /** Google Picker API key, passed from a server component (see SheetMusic). */
   apiKey: string;
@@ -506,6 +510,8 @@ export function AudioVersions({
         />
         Make new versions the default
       </label>
+
+      <StorageWarning bandId={bandId} />
 
       <input
         ref={inputRef}

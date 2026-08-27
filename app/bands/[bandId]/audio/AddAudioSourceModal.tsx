@@ -6,6 +6,7 @@ import {
   type DropboxPickedFile,
 } from '../../../DropboxChooserButton';
 import { ConnectDriveButton } from '../../../ConnectDriveButton';
+import { StorageWarning } from '../../../StorageWarning';
 
 /**
  * "Add audio" source chooser: import one or more files from Google Drive (or
@@ -15,6 +16,7 @@ import { ConnectDriveButton } from '../../../ConnectDriveButton';
  * only appears when Dropbox is configured.
  */
 export function AddAudioSourceModal({
+  bandId,
   canUseDrive,
   apiKey,
   busy,
@@ -23,6 +25,7 @@ export function AddAudioSourceModal({
   onUploadLocal,
   onClose,
 }: {
+  bandId: string;
   canUseDrive: boolean;
   apiKey: string;
   busy: boolean;
@@ -47,6 +50,7 @@ export function AddAudioSourceModal({
           : 'Sign in with Google to import from Drive, or upload one from this device.'}
       </p>
       <div className="mt-4 flex flex-col gap-2">
+        <StorageWarning bandId={bandId} />
         {canUseDrive ? (
           <PickerButton
             apiKey={apiKey}

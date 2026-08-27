@@ -4,6 +4,7 @@ import { getMembership } from '@/lib/db/bands';
 import { getConversationMembership } from '@/lib/db/conversations';
 
 type DbUser = NonNullable<Awaited<ReturnType<typeof getCurrentDbUser>>>;
+type BandMembership = NonNullable<Awaited<ReturnType<typeof getMembership>>>;
 type ConversationMembership = NonNullable<
   Awaited<ReturnType<typeof getConversationMembership>>
 >;
@@ -28,13 +29,35 @@ export async function requireUser(): Promise<DbUser | NextResponse> {
   return user ?? unauthenticated();
 }
 
-/** The signed-in user, requiring membership in `bandId` (else 401/403). */
+/**
+ * The signed-in user and their band membership (which carries their role),
+ * requiring membership in `bandId` (else 401/403).
+ */
 export async function requireBandMember(
+  bandId: string,
+): Promise<{ user: DbUser; membership: BandMembership } | NextResponse> {
+  const user = await getCurrentDbUser();
+  if (!user) return unauthenticated();
+  const membership = await getMembership(user.id, bandId);
+  if (!membership) return forbidden();
+  return { user, membership };
+}
+
+/**
+ * As `requireBandMember`, but the member must own the band.
+ *
+ * For actions that are destructive and *shared*: one person removing a chart
+ * the whole band plays from is not the same as removing their own note. The
+ * check is here rather than only in the UI — hiding a button is a courtesy,
+ * not authorization.
+ */
+export async function requireBandOwner(
   bandId: string,
 ): Promise<{ user: DbUser } | NextResponse> {
   const user = await getCurrentDbUser();
   if (!user) return unauthenticated();
-  if (!(await getMembership(user.id, bandId))) return forbidden();
+  const membership = await getMembership(user.id, bandId);
+  if (!membership || membership.role !== 'owner') return forbidden();
   return { user };
 }
 

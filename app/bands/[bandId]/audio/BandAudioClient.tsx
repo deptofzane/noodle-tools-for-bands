@@ -547,6 +547,7 @@ export function BandAudioClient({
 
       {chooseOpen && (
         <AddAudioSourceModal
+          bandId={bandId}
           canUseDrive={canUseDrive}
           apiKey={apiKey}
           busy={audioBusy}

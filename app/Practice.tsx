@@ -65,6 +65,7 @@ export interface PracticeSong {
  */
 export function Practice({
   songs,
+  bandId,
   apiKey,
   persistKey,
   index: controlledIndex,
@@ -77,6 +78,8 @@ export function Practice({
   initialThreadId,
 }: {
   songs: PracticeSong[];
+  /** The band these songs belong to, for the storage warning. */
+  bandId?: string;
   apiKey: string;
   /** localStorage key to remember the last-viewed song (per set). */
   persistKey?: string;
@@ -338,6 +341,7 @@ export function Practice({
           )}
           {song.conversationId ? (
             <SheetMusic
+              bandId={bandId}
               conversationId={song.conversationId}
               apiKey={apiKey}
               initial={song.sheetMusic}

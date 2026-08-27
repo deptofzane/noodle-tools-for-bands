@@ -52,6 +52,7 @@ export default async function SongPracticePage({
           whichever song you've stepped to. */}
       <Practice
         songs={[song]}
+        bandId={bandId}
         apiKey={process.env.NEXT_PUBLIC_GOOGLE_API_KEY ?? ''}
         back={back}
         // This screen is the song's home, so it owns Close / Reopen. Stepping

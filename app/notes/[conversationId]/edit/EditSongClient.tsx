@@ -314,7 +314,11 @@ export function EditSongClient({
       </p>
 
       {/* Audio versions */}
+      {/* `savedBandId`, not the picker's `bandId`: uploads save immediately,
+          so they land in the band the song is in now, not one chosen but not
+          yet saved. */}
       <AudioVersions
+        bandId={savedBandId}
         conversationId={conversationId}
         apiKey={apiKey}
         initial={audioVersions}
@@ -322,6 +326,7 @@ export function EditSongClient({
 
       {/* Sheet music versions */}
       <SheetMusicVersions
+        bandId={savedBandId}
         conversationId={conversationId}
         apiKey={apiKey}
         initial={sheetVersions}

@@ -4,6 +4,7 @@ import { ensureOk } from '@/lib/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal } from '../../Modal';
 import { PickerButton, type PickedFile } from '../../PickerButton';
+import { StorageWarning } from '../../StorageWarning';
 import { SHEET_PICKER_FILTER } from '@/lib/picker-filters';
 import {
   DropboxChooserButton,
@@ -77,11 +78,14 @@ interface SheetVersion {
  * `X-Content-Type-Options: nosniff`.
  */
 export function SheetMusic({
+  bandId,
   conversationId,
   apiKey,
   startClosed = true,
   zoomKey,
 }: {
+  /** The song's band, for the storage warning. Omitted where unknown. */
+  bandId?: string;
   conversationId: string;
   /** Google Picker API key, passed from a server component. */
   apiKey: string;
@@ -617,6 +621,7 @@ export function SheetMusic({
                   : 'Sign in with Google to import from Drive, upload one, or paste text.'}
               </p>
               <div className="mt-4 flex flex-col gap-2">
+                <StorageWarning bandId={bandId} />
                 {canUseDrive ? (
                   <PickerButton
                     apiKey={apiKey}

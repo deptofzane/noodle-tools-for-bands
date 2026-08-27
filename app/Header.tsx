@@ -138,6 +138,9 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
     ? `/bands/${selectedBandId}/audio`
     : '/bands';
   const chatHref = selectedBandId ? `/bands/${selectedBandId}/chat` : '/bands';
+  const filesHref = selectedBandId
+    ? `/bands/${selectedBandId}/files`
+    : '/bands';
   const chatMessageLabel = (n: number, mentioned: boolean) =>
     `${n} unread chat message${n === 1 ? '' : 's'}${
       mentioned ? ', mentioned' : ''
@@ -211,6 +214,11 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
       menuOnly: true,
     },
     { href: '/history', label: 'History' },
+    {
+      href: filesHref,
+      label: 'File management',
+      menuOnly: true,
+    },
     { href: '/settings', label: 'Settings', menuOnly: true },
     { href: '/about', label: 'About', menuOnly: true },
   ];

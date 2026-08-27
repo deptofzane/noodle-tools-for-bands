@@ -1,5 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import { and, asc, desc, eq, gte, lt } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lt,
+  ne,
+  sum,
+} from 'drizzle-orm';
 import type { Readable } from 'node:stream';
 import {
   DeleteObjectsCommand,
@@ -596,6 +607,256 @@ export async function reprobeAudioDurations(opts?: {
  * — adding a second take is an upload, and a song created without audio isn't
  * one — so they read this rather than the conversation list.
  */
+/** One stored file, for the band's File management page. */
+export interface BandFile {
+  /** The `song_files` row — one *version*, not the song. */
+  id: string;
+  conversationId: string;
+  /** The song this belongs to. */
+  songName: string;
+  /** Archived songs stay in the band but move to a separate list. */
+  songArchived: boolean;
+  kind: SongFileKind;
+  fileName: string;
+  label: string | null;
+  mimeType: string;
+  sizeBytes: number;
+  /** Whether this is the song's default version of its kind. */
+  isDefault: boolean;
+  createdAt: string;
+}
+
+/**
+ * What a band is using, in bytes.
+ *
+ * Summed from `song_files`, which is what a member can actually see and act
+ * on. It can drift below what the bucket holds: object deletes are
+ * best-effort rather than transactional with the database, so a failed delete
+ * leaves bytes behind that no row points at. `scripts/r2-sweep.mjs` reclaims
+ * those. Reporting the bucket instead would show people a number they have no
+ * way to reduce.
+ */
+export async function bandStorageUsage(
+  bandId: string,
+): Promise<{ bytes: number; files: number }> {
+  const [row] = await db
+    .select({
+      // `sum` returns a numeric string, and null for a band with no files.
+      bytes: sum(songFiles.sizeBytes),
+      files: count(songFiles.id),
+    })
+    .from(songFiles)
+    .innerJoin(conversations, eq(conversations.id, songFiles.conversationId))
+    .where(eq(conversations.bandId, bandId));
+
+  return { bytes: Number(row?.bytes ?? 0), files: Number(row?.files ?? 0) };
+}
+
+/**
+ * Every stored file in a band, newest first.
+ *
+ * Deliberately not an extension of `listBandUploads`: that one is audio-only
+ * and shapes its rows for the Uploads tab, which would break if this grew new
+ * columns onto it. This returns both kinds with the sizes and the song's
+ * archived state, and is unpaged — the page sorts and filters in the browser,
+ * so it needs the whole set.
+ */
+export async function listBandFiles(bandId: string): Promise<BandFile[]> {
+  const rows = await db
+    .select({
+      id: songFiles.id,
+      conversationId: songFiles.conversationId,
+      songName: conversations.audioFileName,
+      songArchived: conversations.archived,
+      kind: songFiles.kind,
+      fileName: songFiles.fileName,
+      label: songFiles.label,
+      mimeType: songFiles.mimeType,
+      sizeBytes: songFiles.sizeBytes,
+      isDefault: songFiles.isDefault,
+      createdAt: songFiles.createdAt,
+    })
+    .from(songFiles)
+    .innerJoin(conversations, eq(conversations.id, songFiles.conversationId))
+    .where(eq(conversations.bandId, bandId))
+    // Ties broken by id, so two files uploaded in the same millisecond — which
+    // a bulk import does routinely — keep a stable order.
+    .orderBy(desc(songFiles.createdAt), desc(songFiles.id));
+
+  return rows.map((r) => ({
+    ...r,
+    songName: r.songName ?? r.fileName,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
+/**
+ * Delete a set of files, refusing anything outside the given band.
+ *
+ * The band scope is the security boundary: ids arrive from a client, so the
+ * rows are resolved against `bandId` here rather than trusted. Anything that
+ * doesn't resolve is reported as skipped instead of failing the batch — a
+ * stale id from a page someone left open shouldn't block the rest.
+ *
+ * Each delete goes through the existing per-kind helpers, so a removed
+ * default still promotes a replacement and the bytes still leave storage.
+ */
+export async function deleteBandFiles(
+  bandId: string,
+  fileIds: string[],
+): Promise<{ deleted: string[]; skipped: string[]; freedBytes: number }> {
+  const ids = fileIds.filter(isUuid);
+  if (ids.length === 0) return { deleted: [], skipped: fileIds, freedBytes: 0 };
+
+  const rows = await db
+    .select({
+      id: songFiles.id,
+      conversationId: songFiles.conversationId,
+      kind: songFiles.kind,
+      sizeBytes: songFiles.sizeBytes,
+    })
+    .from(songFiles)
+    .innerJoin(conversations, eq(conversations.id, songFiles.conversationId))
+    .where(and(inArray(songFiles.id, ids), eq(conversations.bandId, bandId)));
+
+  const found = new Set(rows.map((r) => r.id));
+  const deleted: string[] = [];
+  let freedBytes = 0;
+
+  for (const row of rows) {
+    const gone =
+      row.kind === 'audio'
+        ? await deleteAudioVersion(row.conversationId, row.id)
+        : await deleteSheetVersion(row.conversationId, row.id);
+    if (gone) {
+      deleted.push(row.id);
+      freedBytes += row.sizeBytes;
+    }
+  }
+
+  return {
+    deleted,
+    skipped: fileIds.filter((id) => !found.has(id) || !deleted.includes(id)),
+    freedBytes,
+  };
+}
+
+/** Why deleting a particular file deserves a second look. */
+export interface FileWarning {
+  fileId: string;
+  /**
+   * Deleting the current selection leaves this file's song with no audio.
+   * Judged against what the song is left with, so selecting every take of a
+   * song warns on each of them.
+   */
+  lastAudio: boolean;
+  /** Another member has chosen this sheet as the one they read. */
+  chosenByOthers: number;
+}
+
+/**
+ * The warnings for a set of files about to be deleted.
+ *
+ * Two set-based queries rather than one per file: a batch delete of thirty
+ * files shouldn't be sixty round trips.
+ *
+ * Only files that warrant a warning appear in the result — an empty array
+ * means the whole selection is unremarkable.
+ *
+ * `chosenByOthers` counts *other* members: your own chosen sheet reverting to
+ * the song's default is a consequence you can see, not a surprise you need
+ * warning about.
+ */
+export async function warningsForFiles(
+  fileIds: string[],
+  viewerId: string,
+): Promise<FileWarning[]> {
+  const ids = fileIds.filter(isUuid);
+  if (ids.length === 0) return [];
+
+  const rows = await db
+    .select({
+      id: songFiles.id,
+      kind: songFiles.kind,
+      conversationId: songFiles.conversationId,
+    })
+    .from(songFiles)
+    .where(inArray(songFiles.id, ids));
+  if (rows.length === 0) return [];
+
+  // How much audio each affected song has, so "the last one" is knowable
+  // without asking per file.
+  const audioConvIds = [
+    ...new Set(
+      rows.filter((r) => r.kind === 'audio').map((r) => r.conversationId),
+    ),
+  ];
+  const audioCounts = new Map<string, number>();
+  if (audioConvIds.length > 0) {
+    const counted = await db
+      .select({
+        conversationId: songFiles.conversationId,
+        n: count(songFiles.id),
+      })
+      .from(songFiles)
+      .where(
+        and(
+          inArray(songFiles.conversationId, audioConvIds),
+          eq(songFiles.kind, 'audio'),
+        ),
+      )
+      .groupBy(songFiles.conversationId);
+    for (const c of counted) audioCounts.set(c.conversationId, Number(c.n));
+  }
+
+  // Sheet music someone else reads. Audio has no per-member choice, so there
+  // is no equivalent lookup for it.
+  const sheetIds = rows
+    .filter((r) => r.kind === 'sheet_music')
+    .map((r) => r.id);
+  const chosen = new Map<string, number>();
+  if (sheetIds.length > 0) {
+    const picked = await db
+      .select({
+        versionId: sheetVersionPrefs.versionId,
+        n: count(sheetVersionPrefs.userId),
+      })
+      .from(sheetVersionPrefs)
+      .where(
+        and(
+          inArray(sheetVersionPrefs.versionId, sheetIds),
+          ne(sheetVersionPrefs.userId, viewerId),
+        ),
+      )
+      .groupBy(sheetVersionPrefs.versionId);
+    for (const p of picked) chosen.set(p.versionId, Number(p.n));
+  }
+
+  // How many of each song's audio files this selection would take with it.
+  // The question is what the song is *left* with, so selecting both takes of
+  // a two-take song has to warn just as loudly as deleting its only one.
+  const selectedPerConv = new Map<string, number>();
+  for (const r of rows) {
+    if (r.kind !== 'audio') continue;
+    selectedPerConv.set(
+      r.conversationId,
+      (selectedPerConv.get(r.conversationId) ?? 0) + 1,
+    );
+  }
+
+  const out: FileWarning[] = [];
+  for (const r of rows) {
+    const remaining =
+      (audioCounts.get(r.conversationId) ?? 0) -
+      (selectedPerConv.get(r.conversationId) ?? 0);
+    const lastAudio = r.kind === 'audio' && remaining <= 0;
+    const chosenByOthers = chosen.get(r.id) ?? 0;
+    if (lastAudio || chosenByOthers > 0)
+      out.push({ fileId: r.id, lastAudio, chosenByOthers });
+  }
+  return out;
+}
+
 export interface BandUpload {
   /** The `song_files` row, i.e. this particular version. */
   fileId: string;

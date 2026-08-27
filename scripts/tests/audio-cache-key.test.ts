@@ -49,3 +49,16 @@ test('audio cache key: other params are dropped, order does not matter', () => {
   assert.equal(a, b);
   assert.equal(a, `${AUDIO}?version=v1`);
 });
+
+test('a download request collapses onto the inline entry', () => {
+  // `download=1` is dropped here, so a download served from the audio cache
+  // would come back with the playback copy's `inline` disposition and open
+  // instead of saving. The service worker's matcher must send these to the
+  // network — see the `download` check in app/sw.ts.
+  assert.equal(
+    canonicalAudioKey(
+      '/api/conversations/c1/files/audio?version=v1&download=1',
+    ),
+    canonicalAudioKey('/api/conversations/c1/files/audio?version=v1'),
+  );
+});

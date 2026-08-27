@@ -72,11 +72,7 @@ export function AnnotatedList() {
   if (items.length === 0) {
     return (
       <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
-        No open conversations. Register audio in a{' '}
-        <Link href="/bands" className="text-blue-600 underline">
-          band
-        </Link>{' '}
-        to start one.
+        No open conversations.
       </p>
     );
   }

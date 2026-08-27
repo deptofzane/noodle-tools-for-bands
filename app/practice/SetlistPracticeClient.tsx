@@ -26,6 +26,7 @@ export function SetlistPracticeClient({ apiKey }: { apiKey: string }) {
   return (
     <Practice
       songs={state.songs}
+      bandId={state.setlist.bandId}
       apiKey={apiKey}
       persistKey={`practice:setlist:${state.setlist.id}`}
       startIndex={startIndex}
