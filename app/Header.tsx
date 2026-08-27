@@ -213,12 +213,12 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
       label: 'Open Conversations',
       menuOnly: true,
     },
-    { href: '/history', label: 'History', menuOnly: true },
     {
       href: filesHref,
       label: 'File management',
       menuOnly: true,
     },
+    { href: '/history', label: 'History', menuOnly: true },
     { href: '/settings', label: 'Settings', menuOnly: true },
     { href: '/about', label: 'About', menuOnly: true },
   ];

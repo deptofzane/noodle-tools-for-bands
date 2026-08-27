@@ -16,12 +16,12 @@ export function isTheme(v: unknown): v is Theme {
 /** How each theme is presented in the picker. */
 export const THEME_LABELS: Record<Theme, string> = {
   light: 'Light',
+  'catppuccin-latte': 'Catppuccin Latte',
   dark: 'Dark',
   sepia: 'Sepia',
   stage: 'Stage',
   'rose-pine': 'Rosé Pine',
   'synthwave-84': "SynthWave '84",
-  'catppuccin-latte': 'Catppuccin Latte',
 };
 
 /**

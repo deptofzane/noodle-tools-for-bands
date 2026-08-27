@@ -81,7 +81,7 @@ for (const [label, expected] of [
   [
     "SynthWave '84",
     {
-      show: '#ff8b39',
+      show: '#fffde7',
       practice: '#36f9f6',
       writing: '#72f1b8',
       studio: '#b381c5',
