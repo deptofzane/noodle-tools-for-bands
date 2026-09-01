@@ -4,7 +4,7 @@ Carry-over context for picking this up cold. Not a changelog — `git log` has
 that. This is the state of play, the decisions that would otherwise get
 re-litigated, and the traps that already cost a day.
 
-Last updated: 23 August 2026.
+Last updated: 27 August 2026.
 
 ---
 
@@ -12,39 +12,26 @@ Last updated: 23 August 2026.
 
 ### Blocking a Play Store release
 
-1. **Deploy migrations 0039–0055.** On disk, unapplied in production as far
-   as anyone here knows, and the app will 500 on any of them. Release command:
-   `node scripts/migrate.mjs`.
-   0045 backfills and de-duplicates before it adds a unique index — in
-   production that part is a no-op (no rollup has a `day` until 0043 lands),
-   but it matters for any database that already has rollups.
-   **0051 and 0055 are `ALTER TYPE … ADD VALUE`** (notification kinds and
-   subjects). Postgres won't let a value be _used_ in the transaction that
-   adds it, which is why they're their own migrations — apply them as
-   generated rather than folding them into anything.
-   0053 is the first of these with a foreign key (`notifications.recipient_id`
-   → `users`), so it must run before anything writes that column.
-2. **Publish the OAuth consent screen.** Console work. Changing scopes isn't
+1. **Publish the OAuth consent screen.** Console work. Changing scopes isn't
    the same as moving Testing → In production; until it moves, only accounts on
    the test list can sign in. `drive.file` is not a _restricted_ scope, so no
    CASA assessment — that's why `drive.readonly` was dropped.
-3. **Confirm `CONTACT_EMAIL`** in `app/legal.ts`. A Namecheap mailbox was set
+2. **Confirm `CONTACT_EMAIL`** in `app/legal.ts`. A Namecheap mailbox was set
    up on 23 August and the constant was repointed from `noodlehelp@yahoo.com`
    to `help@noodle.band` the same day. What's left is to confirm mail actually
    arrives there, then delete the TODO above the constant. It's the address
    Google's OAuth verification and Play's review will write to, and Play
    policy expects deletion requests to reach a human. `noodle.band` is also
    what the ICS UIDs and the default VAPID subject name.
-4. **Password reset email doesn't work, and fails silently.** The credentials
-   form is live again in `app/login/page.tsx`, so people can register with a
-   password — and the reset flow is the only way back in. Two things are
-   missing: `RESEND_API_KEY` and `EMAIL_FROM` in production (`EMAIL_FROM`
+3. **Set `RESEND_API_KEY` and `EMAIL_FROM` in production.** The credentials
+   form is live in `app/login/page.tsx`, so people can register with a
+   password — and the reset flow is the only way back in. `EMAIL_FROM`
    defaults to `onboarding@resend.dev`, which only delivers to the Resend
-   account's own address), and the send is never checked. See the Resend trap
-   below — this is why "I verified the domain and it still doesn't arrive"
-   produced no diagnostic at all. Fix the logging _first_, or the next attempt
-   is another guess.
-5. **Have the terms of service reviewed.** `app/TermsOfService.tsx` is a
+   account's own address. The silent-failure half of this is fixed:
+   `lib/email.ts` now inspects Resend's `{ data, error }` and logs a refusal
+   with its status and the `from` it tried, so the next attempt produces a
+   diagnostic instead of a guess.
+4. **Have the terms of service reviewed.** `app/TermsOfService.tsx` is a
    plain-language draft describing how the app actually works — upload rights,
    shared bands, no-warranty, account closure. Nobody with a law degree has
    read it, and it hasn't been checked against any jurisdiction's
@@ -52,12 +39,12 @@ Last updated: 23 August 2026.
    policy). The policy text itself now lives in `app/PrivacyPolicy.tsx` and is
    rendered by both `/privacy` and `/about`, so edit it in one place;
    `/privacy` stays the URL Play and Google were given.
-6. **`/.well-known/assetlinks.json`.** Ordering trap: the SHA-256 comes from
+5. **`/.well-known/assetlinks.json`.** Ordering trap: the SHA-256 comes from
    Play App Signing, which you only get _after_ uploading the first bundle. So:
    Bubblewrap build → internal testing upload → copy fingerprint → publish
    assetlinks → verify. Skip it and the TWA shows a browser address bar.
-7. **Bubblewrap + internal testing track.** New apps must target API 35.
-8. **Play data-safety form.** Must match the privacy policy — email, name,
+6. **Bubblewrap + internal testing track.** New apps must target API 35.
+7. **Play data-safety form.** Must match the privacy policy — email, name,
    audio/sheet uploads, push tokens, Drive access, Sentry. Inconsistency
    between the two is a common rejection.
 
@@ -71,16 +58,21 @@ Last updated: 23 August 2026.
 - **Content-Security-Policy.** Only `frame-ancestors 'none'` today. A real one
   has to enumerate the Google Picker (gstatic), the inline pre-paint theme
   script in `layout.tsx`, and the service worker. Do it report-only first.
+- **The 10 GB band storage cap is not enforced.** `lib/storage.ts` holds the
+  number and `usageLevel()`; File management shows the meter and the upload
+  surfaces warn at 80%/90% via `StorageWarning`, but nothing refuses an
+  upload. Enforcing it means rejecting server-side at the upload routes — the
+  warnings are already reading the same constant.
 - **Audio transcoding.** The biggest performance lever, measured: WAVs average
   34 MB at ~1.3 Mbps against MP3s at ~272 kbps. A 128 kbps delivery version
   alongside the archival original cuts them ~10×, fixes playback on venue wifi,
   and shrinks offline downloads. Needs ffmpeg in a background job plus a
   `delivery` variant on `song_files`.
-- **Empty-setlist notice** exists only on `/home` → Upcoming. The band Overview
-  event rows and the event detail page still offer Practice/Live for a setlist
-  with no songs.
-- **Event colours** aren't on the band Overview's _past_ shows list or anywhere
-  outside the surfaces listed below.
+- **Practice/Live are still offered for an empty setlist** on the band
+  Overview event rows (`BandOverviewTab`) and the event detail page
+  (`EventSetlistActions`). Both `/home` → Upcoming and the event page's song
+  list say when a setlist is empty; it's the actions beside them that don't
+  check.
 
 ---
 
@@ -189,6 +181,14 @@ Last updated: 23 August 2026.
   opens a three-way modal (keep / share unpinned / cancel) rather than a
   ConfirmModal, because dismissing has to mean _abort_ — mapping "share
   without the pin" onto cancel would make Escape silently save.
+- **The venue picker drafts its choice; only Save commits it.** A row click
+  used to call `onPick` and close, so a mis-tap in a list of similar names was
+  committed before you could read it back, and the way out was to reopen the
+  modal and hunt again. The click now sets a local `draftId` — seeded from
+  `selectedId` and never re-synced, because the modal is mounted only while
+  open — and Cancel, Escape and the backdrop all discard it. The deliberate
+  cost is a second tap in the common case where the first choice was right.
+  `venue-picker.spec.ts`, 3 tests.
 - **`notifications.recipient_id` null means broadcast.** Null is every kind
   that existed before targeting, and still most of them. Four readers honour
   it — the feed, the unread count, `listPushTargets`, and `notify()` — and the
@@ -291,10 +291,11 @@ Last updated: 23 August 2026.
   the db-tests job needs MinIO exactly as e2e does. Symptom is "Object storage
   is not configured", nowhere near the actual cause.
 - **Resend does not throw on API errors.** `emails.send()` returns
-  `{ data, error }` (SDK 6.x) and `lib/email.ts` discards it; `forgot/route.ts`
-  then catches anything that _does_ throw and always answers 200 for
-  enumeration safety. So a bad `EMAIL_FROM`, an unverified domain or a rate
-  limit look identical to success — no exception, no log, HTTP 200.
+  `{ data, error }` (SDK 6.x), and `forgot/route.ts` always answers 200 for
+  enumeration safety — so a bad `EMAIL_FROM`, an unverified domain or a rate
+  limit look identical to success at the HTTP level. `lib/email.ts` now
+  inspects the result and logs the refusal; the log is the only place a
+  failure is visible, so check it before theorising about DNS.
 - **dotenv does not override variables already in the environment.** Which
   means `env -u FOO` doesn't reproduce "FOO unset" — `scripts/load-env` just
   refills it from `.env.local`. Set it _empty_ instead to simulate CI.
@@ -302,6 +303,18 @@ Last updated: 23 August 2026.
   notification kinds; both broke the first time a kind was added. The
   `notification-groups` test now asserts every kind has exactly one home in
   Settings, which has since caught two real omissions.
+- **Toasts stack and linger 5s, so they are a bad wait signal.** In a loop,
+  `expect(getByText('Saved.')).toBeVisible()` either trips strict mode on two
+  of them or is satisfied by the _previous_ action's toast and lets the test
+  run ahead of a request still in flight — `note-save-open.spec.ts` failed both
+  ways. Wait on `page.waitForResponse` for the actual call instead.
+- **Wide content expands the mobile layout viewport, and fixed overlays with
+  it.** The suite runs `devices['Pixel 7']` (412px). A table with
+  `min-w-[32rem]` grew the layout viewport to 508px _even inside_
+  `overflow-x-auto`, which resized every `position: fixed` overlay and left a
+  modal's buttons unclickable — Playwright reported the button being
+  "intercepted by its own parent", forever. Scope wide minimums to `sm:` and
+  up. The symptom looks like a flaky click; it's a real phone-layout bug.
 - **Three separate bugs came from one URL change** (`/bands/../setlists/../practice`
   → `/practice?setlist=`): the precache match, a stale runtime SW rule, and
   `OfflineClient` passing a synthesised URL where a setlist id was expected. If
@@ -311,6 +324,15 @@ Last updated: 23 August 2026.
 
 ## Working conventions
 
+- **Production migrations run themselves.** `railway.json` sets
+  `preDeployCommand: pnpm db:migrate:deploy` → `scripts/migrate.mjs`, so a
+  deploy applies whatever the committed journal has that production doesn't,
+  before the new version takes traffic. Nothing to run by hand; a migration
+  that won't apply fails the deploy rather than the app.
+- **`ALTER TYPE … ADD VALUE` gets its own migration.** Postgres won't let a
+  new enum value be _used_ in the transaction that adds it, so folding one in
+  with the code that writes it fails. Comes up every time a notification kind
+  or subject is added.
 - **Local migrations are applied by hand.** `drizzle-kit`'s tracking is stale
   locally (dev uses `db:push`). Generate with `db:generate`, then apply the new
   `ALTER` to the local DB directly. Never run `db:migrate` locally.
@@ -345,22 +367,22 @@ harmlessly) and any real Google/Resend call.
 
 ## Test suite
 
-- `pnpm test:db` — **192 node tests across 33 files**, ~10s, self-cleaning.
+- `pnpm test:db` — **223 node tests across 37 files**, ~20s, self-cleaning.
   Must stay serialized (`--test-concurrency=1`).
-- `pnpm test:e2e` — Playwright, 4 specs, against a **production build**
-  (the service worker is disabled in dev, so offline specs run in dev prove
-  nothing). Seeds and tears down its own band; ids are written to
-  `e2e/.auth/seed.json` so specs navigate directly instead of clicking through.
-- **The e2e suite is deliberately small and curated** — it exists for things
-  that have actually broken (see the comment at the top of
-  `edit-refresh.spec.ts`). Most verification this month was done with
-  throwaway specs that were deleted afterwards; that's the convention, not an
-  oversight. One (`__sharing.spec.ts`) was committed by accident and later
-  removed.
-- **Sign-in is still not covered**, though the credentials form is live again
-  in `app/login/page.tsx` — so email/password registration and reset are now
-  reachable and untested. `auth.setup.ts` mints the session cookie directly.
-  Worth a real spec, and it would have caught the reset-email problem above.
+- `pnpm test:e2e` — Playwright, **118 tests across 26 specs**, against a
+  **production build** (the service worker is disabled in dev, so offline
+  specs run in dev prove nothing). Seeds and tears down its own band; ids are
+  written to `e2e/.auth/seed.json` so specs navigate directly instead of
+  clicking through.
+- **The e2e suite is curated, not exhaustive** — it exists for things that
+  have actually broken (see the comment at the top of `edit-refresh.spec.ts`).
+  Throwaway specs used to verify one change get deleted afterwards; that's the
+  convention, not an oversight.
+- **Signing in is still not covered end to end.** `login-password.spec.ts`
+  tests the reveal toggle and tab order on login/signup/reset, but nothing
+  registers an account or completes a reset — the flow that would have caught
+  the reset-email problem above. `auth.setup.ts` mints the session cookie
+  directly.
 - Pure-logic modules get their own node tests without a database:
   `note-links`, `notification-changes`, `notification-groups`,
   `format-timestamps`, `event-bars`, `band-switch`, `chordpro`, `staleness`.
@@ -372,13 +394,27 @@ harmlessly) and any real Google/Resend call.
   (`bandTabs.ts`). Chat and Audio/Setlists are **not** tabs any more: chat is
   `/bands/[id]/chat`, audio and setlists are `/bands/[id]/audio`. Old
   `?tab=chat`, `?tab=audio` and `?tab=setlists` links still redirect.
+- **`/notes/[conversationId]` is a 308 to `…/practice`.** The old "View song"
+  screen was retired into Practice, which absorbed its comments panel; the
+  redirect preserves the query string so old links keep their `?from=`.
+- `/bands/[id]/files` — File management (storage total, every file, owners-only
+  delete). Reached from ☰, directly above Settings.
+- **History (`/history`) is the selected band's**, not every band's, and lives
+  in ☰ rather than the desktop bar. Its three panels wait for
+  `useCurrentBand().loaded` before fetching — `bandId` is `''` both while the
+  band list is in flight and when the user has none, and asking during the
+  first is how you get a flash of every band's history.
 - Deep links that need a view, not just a tab, name it:
   `?tab=notes&notes=shared`, `?tab=todos&todos=mine`. Both are read in a plain
   effect so they beat the persisted choice, which `usePersistedBoolean`
   applies in a _layout_ effect.
 
-## Where the event colours are applied
+## Where the category colours are applied
 
-`CalendarClient` (month grid + day summary), `calendar/events/[eventId]`,
-`BandOverviewTab` (title row only — the expanded panel stays neutral),
-`home/UpcomingShows`, `home/RecentEvents`.
+Events (`data-event-type`): `CalendarClient` (month grid + day summary),
+`calendar/events/[eventId]`, `BandOverviewTab` (title row only — the expanded
+panel stays neutral), `home/UpcomingShows`, `home/RecentEvents`.
+
+Todos take the same mechanism: `TodoRow` and `bands/[bandId]/todos/[todoId]`.
+Both sets are re-tinted per theme in `globals.css`, so a new theme that wants
+its own palette overrides the tokens rather than any component.
