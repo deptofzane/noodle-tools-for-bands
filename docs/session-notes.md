@@ -4,7 +4,7 @@ Carry-over context for picking this up cold. Not a changelog — `git log` has
 that. This is the state of play, the decisions that would otherwise get
 re-litigated, and the traps that already cost a day.
 
-Last updated: 1 September 2026.
+Last updated: 2 September 2026.
 
 ---
 
