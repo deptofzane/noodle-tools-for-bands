@@ -59,6 +59,18 @@ export function EventActions({
           Share event
         </ActionMenuItem>
       )}
+      {/* Worded rather than a fourth glyph: cloning has no icon anyone would
+          read at a glance, and it acts on the whole event rather than being
+          another way to open it. Band members only — the copy is owned by
+          this event's band, so an attendee from outside has nowhere to put
+          it. */}
+      {canManage && (
+        <ActionMenuItem
+          onClick={() => go(`/calendar/events/new?cloneFrom=${eventId}`)}
+        >
+          Clone event
+        </ActionMenuItem>
+      )}
     </ActionMenu>
   );
 }

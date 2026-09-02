@@ -207,6 +207,13 @@ export function BandOverviewTab({
                 },
               ]}
             />
+            {/* Acts on the event, so it sits with the event's own row and
+                above anything belonging to the setlist booked for it. */}
+            <ActionMenuItem
+              onClick={() => go(`/calendar/events/new?cloneFrom=${show.id}`)}
+            >
+              Clone event
+            </ActionMenuItem>
             {show.setlistId && (
               <>
                 <ActionMenuItem onClick={() => queueSetlist(setlist)}>

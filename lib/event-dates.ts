@@ -59,3 +59,31 @@ export function eventDays(date: string, endDate: string | null): string[] {
 export function isMultiDay(date: string, endDate: string | null): boolean {
   return Boolean(endDate && endDate > date);
 }
+
+/**
+ * `date` moved by `days` calendar days, as `YYYY-MM-DD`.
+ *
+ * Steps a UTC date for the same reason `eventDays` does: these are calendar
+ * days, not instants, so stepping in local time lands on the wrong day across
+ * a DST boundary.
+ */
+export function addDays(date: string, days: number): string {
+  const cursor = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(cursor.getTime())) return date;
+  cursor.setUTCDate(cursor.getUTCDate() + days);
+  return cursor.toISOString().slice(0, 10);
+}
+
+/**
+ * How many days beyond its start an event runs — 0 when it ends the day it
+ * starts. Cloning remembers this so a copied festival keeps its length once a
+ * new start date is picked, rather than collapsing to a single day.
+ */
+export function daySpan(date: string, endDate: string | null): number {
+  if (!endDate || endDate <= date) return 0;
+  const start = new Date(`${date}T00:00:00Z`).getTime();
+  const end = new Date(`${endDate}T00:00:00Z`).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end)) return 0;
+  // Both are UTC midnights, so the difference is whole days exactly.
+  return Math.round((end - start) / 86_400_000);
+}

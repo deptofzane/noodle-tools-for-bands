@@ -3,7 +3,13 @@ import assert from 'node:assert/strict';
 import { layoutWeekBars, lastDayOf } from '../../app/calendar/eventBars';
 import { eventLabel } from '../../app/calendar/eventLabel';
 import { eventColorKey } from '../../app/calendar/eventColors';
-import { eventDays, isMultiDay, parseEndDate } from '../../lib/event-dates';
+import {
+  addDays,
+  daySpan,
+  eventDays,
+  isMultiDay,
+  parseEndDate,
+} from '../../lib/event-dates';
 
 /** Sun 12 – Sat 18 July 2026. */
 const WEEK = [
@@ -157,6 +163,43 @@ test('event dates: isMultiDay only counts a genuine span', () => {
   assert.equal(isMultiDay('2026-07-14', null), false);
   assert.equal(isMultiDay('2026-07-14', '2026-07-14'), false);
   assert.equal(isMultiDay('2026-07-14', '2026-07-15'), true);
+});
+
+test('event dates: addDays steps calendar days, not instants', () => {
+  assert.equal(addDays('2026-07-14', 2), '2026-07-16');
+  assert.equal(addDays('2026-07-14', 0), '2026-07-14');
+  // Month, year and leap-day rollovers.
+  assert.equal(addDays('2026-10-31', 2), '2026-11-02');
+  assert.equal(addDays('2026-12-31', 1), '2027-01-01');
+  assert.equal(addDays('2028-02-28', 1), '2028-02-29');
+  // Spring-forward and fall-back weekends: stepping in local time would
+  // land an hour off and round to the wrong day.
+  assert.equal(addDays('2026-03-07', 2), '2026-03-09');
+  assert.equal(addDays('2026-10-31', 1), '2026-11-01');
+});
+
+test('event dates: daySpan measures the gap the clone screen remembers', () => {
+  assert.equal(daySpan('2026-07-14', null), 0);
+  assert.equal(daySpan('2026-07-14', '2026-07-14'), 0);
+  assert.equal(daySpan('2026-07-14', '2026-07-16'), 2);
+  // A span that crosses a DST boundary is still whole days.
+  assert.equal(daySpan('2026-10-31', '2026-11-02'), 2);
+  // An end before the start is nonsense; treated as single-day, like the
+  // null that `normalizeEndDate` would have stored.
+  assert.equal(daySpan('2026-07-14', '2026-07-10'), 0);
+});
+
+// addDays and daySpan are inverses, which is the property the clone form
+// relies on: remember the span, then rebuild the end date from a new start.
+test('event dates: addDays undoes daySpan', () => {
+  const spans: [string, string][] = [
+    ['2026-07-14', '2026-07-16'],
+    ['2026-10-31', '2026-11-02'],
+    ['2026-12-30', '2027-01-03'],
+  ];
+  for (const [start, end] of spans) {
+    assert.equal(addDays(start, daySpan(start, end)), end);
+  }
 });
 
 test('event dates: parseEndDate normalizes and rejects', () => {

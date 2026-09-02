@@ -435,7 +435,14 @@ test.describe('remaining action menus', () => {
 
   test('overview event menu: the row is named and leads', async ({ page }) => {
     await page.goto(`/bands/${seed.bandId}?tab=events`);
-    const names = await openMenu(page, 'Event actions');
+    // Scoped to this gig's own row: the band holds more than one event, so an
+    // unscoped 'Event actions' is a strict-mode violation waiting to happen.
+    await page
+      .getByRole('listitem')
+      .filter({ hasText: GIG })
+      .getByLabel('Event actions')
+      .click();
+    const names = await menuItemNames(page);
 
     // The icon row acts on the event; the setlist's own actions are worded
     // items below it. The section label is `role="none"`, so it isn't a
@@ -446,7 +453,10 @@ test.describe('remaining action menus', () => {
       'Copy a link to E2E Menu Gig',
     ]);
     expect(names).not.toContain('View the setlist for E2E Menu Gig');
-    expect(names[3]).toBe('Add setlist songs to queue');
+    // Clone acts on the event, so it follows the event's icon row and comes
+    // before anything belonging to the setlist booked for it.
+    expect(names[3]).toBe('Clone event');
+    expect(names[4]).toBe('Add setlist songs to queue');
 
     await expect(
       page.getByRole('menu').getByText('Event', { exact: true }),
@@ -473,10 +483,14 @@ test.describe('remaining action menus', () => {
     await expect(page.getByText('Setlist link copied.')).toBeVisible();
   });
 
-  test('event page: its own menu is Edit + Share', async ({ page }) => {
+  test('event page: its own menu is Edit + Share + Clone', async ({ page }) => {
     await page.goto(`/calendar/events/${eventId}`);
     const names = await openMenu(page, 'Event actions');
-    expect(names).toEqual(['Edit this event', 'Copy a link to this event']);
+    expect(names).toEqual([
+      'Edit this event',
+      'Copy a link to this event',
+      'Clone event',
+    ]);
     expect(names).not.toContain('Edit event');
   });
 });

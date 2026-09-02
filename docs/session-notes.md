@@ -222,6 +222,20 @@ Last updated: 1 September 2026.
   - the href helpers in `lib/routes.ts`. Reading the address bar would paste
     whatever `?from=`/`?tab=` the sharer happened to arrive with — and in a list
     the address bar is the list, not the item.
+- **"Clone event" passes an id, not the fields.** `/calendar/events/new`
+  takes `?cloneFrom=<eventId>` and resolves the source server-side;
+  `details` and `notes` are multi-line free text and a query string is a poor
+  place for them. Two permissions are checked, not one: `getEventForUser` says
+  whether the user may _see_ it, but the copy is owned by the source's band,
+  so creating it also needs membership — an attendee added to one event of
+  another band can open the event and gets no Clone. Failing either check
+  drops the prefill and leaves an ordinary blank form rather than a 404.
+- **A clone carries the source's _length_, not its end date.** The date is the
+  one field deliberately left blank, so an absolute `endDate` can't come
+  across either; the page sends `spanDays` and the form rebuilds the end from
+  whatever start is typed, until the user sets one by hand. That mirrors how
+  `endTime` already follows `time` until `endEdited` flips — one mechanism,
+  not two. Private band notes _are_ carried over; event members are not.
 - **`/` is dynamic and public.** Signed out it's a landing page; signed in it
   redirects to `/home`. `start_url` stays `/` so installed apps are unaffected
   and no manifest refetch is needed. It is deliberately _not_ precached — its
@@ -367,9 +381,9 @@ harmlessly) and any real Google/Resend call.
 
 ## Test suite
 
-- `pnpm test:db` — **223 node tests across 37 files**, ~20s, self-cleaning.
+- `pnpm test:db` — **226 node tests across 37 files**, ~20s, self-cleaning.
   Must stay serialized (`--test-concurrency=1`).
-- `pnpm test:e2e` — Playwright, **118 tests across 26 specs**, against a
+- `pnpm test:e2e` — Playwright, **121 tests across 27 specs**, against a
   **production build** (the service worker is disabled in dev, so offline
   specs run in dev prove nothing). Seeds and tears down its own band; ids are
   written to `e2e/.auth/seed.json` so specs navigate directly instead of

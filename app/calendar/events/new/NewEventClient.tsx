@@ -2,6 +2,7 @@
 
 import { ensureOk } from '@/lib/api';
 import { addHoursToTime, DEFAULT_EVENT_DURATION_HOURS } from '@/lib/format';
+import { addDays } from '@/lib/event-dates';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Modal } from '../../../Modal';
@@ -17,6 +18,22 @@ import { isTimeOff, TIME_OFF_TITLE } from '../../eventLabel';
 interface BandOption {
   id: string;
   name: string;
+}
+
+/** Prefill for "Clone event" — every field but the date. */
+export interface CloneDefaults {
+  bandId: string;
+  title: string;
+  eventType: string;
+  time: string;
+  endTime: string;
+  /** Days the source ran beyond its start; 0 for a single-day event. */
+  spanDays: number;
+  location: string;
+  details: string;
+  notes: string;
+  setlistId: string;
+  venueId: string;
 }
 
 // The current band is persisted here; the New event page defaults to it (see
@@ -35,6 +52,7 @@ export function NewEventClient({
   defaultDate,
   defaultBandId = '',
   defaultSetlistId = '',
+  clone = null,
 }: {
   bands: BandOption[];
   defaultDate: string;
@@ -46,6 +64,13 @@ export function NewEventClient({
    * per-band, and one from another band is dropped once they load.
    */
   defaultSetlistId?: string;
+  /**
+   * Everything a "Clone event" carries over from its source, resolved server
+   * side. The date is absent by design: a clone is the same event on a
+   * different day, so the one field the user must supply is the one left
+   * blank. `spanDays` stands in for the end date — see the date input.
+   */
+  clone?: CloneDefaults | null;
 }) {
   const router = useRouter();
   const trackPending = useTrackPending();
@@ -74,21 +99,28 @@ export function NewEventClient({
     // Run once on mount; props are stable for this page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const [title, setTitle] = useState('');
-  const [eventType, setEventType] = useState('');
+  const [title, setTitle] = useState(clone?.title ?? '');
+  const [eventType, setEventType] = useState(clone?.eventType ?? '');
   const [date, setDate] = useState(defaultDate);
   const [endDate, setEndDate] = useState('');
-  const [time, setTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+  const [time, setTime] = useState(clone?.time ?? '');
+  const [endTime, setEndTime] = useState(clone?.endTime ?? '');
   // While false, the end time auto-follows the start (start + default). Once
-  // the user edits the end themselves, we stop overriding it.
-  const [endEdited, setEndEdited] = useState(false);
-  const [location, setLocation] = useState('');
-  const [details, setDetails] = useState('');
-  const [notes, setNotes] = useState('');
+  // the user edits the end themselves, we stop overriding it. A clone arrives
+  // with the source's own end time, which is just as deliberate as a typed
+  // one — so it starts settled rather than being overwritten on first edit.
+  const [endEdited, setEndEdited] = useState(Boolean(clone?.endTime));
+  // Same idea for the end date, which a clone can't inherit outright: it
+  // carries the source's *length* instead and rebuilds the end from whatever
+  // start date gets picked, until the user sets one by hand.
+  const [endDateEdited, setEndDateEdited] = useState(false);
+  const spanDays = clone?.spanDays ?? 0;
+  const [location, setLocation] = useState(clone?.location ?? '');
+  const [details, setDetails] = useState(clone?.details ?? '');
+  const [notes, setNotes] = useState(clone?.notes ?? '');
   const [setlistId, setSetlistId] = useState(defaultSetlistId);
   const [setlists, setSetlists] = useState<BandOption[]>([]);
-  const [venueId, setVenueId] = useState('');
+  const [venueId, setVenueId] = useState(clone?.venueId ?? '');
   const [venues, setVenues] = useState<PickableVenue[]>([]);
   const [venuePickerOpen, setVenuePickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -150,14 +182,22 @@ export function NewEventClient({
     fetch(`/api/bands/${bandId}/venues`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
       .then((d: { venues: PickableVenue[] }) => {
-        if (!cancelled)
-          setVenues(
-            d.venues.map((v) => ({
-              id: v.id,
-              name: v.name,
-              address: v.address,
-            })),
-          );
+        if (cancelled) return;
+        const list = d.venues.map((v) => ({
+          id: v.id,
+          name: v.name,
+          address: v.address,
+        }));
+        setVenues(list);
+        /*
+         * A venue id can now arrive prefilled (from a clone), and is only
+         * trustworthy once this band's own list confirms it — the same rule
+         * the setlist above follows, and for the same reason: otherwise the
+         * form looks filled in and fails on save.
+         */
+        setVenueId((cur) =>
+          cur && !list.some((v) => v.id === cur) ? '' : cur,
+        );
       })
       .catch(() => {
         if (!cancelled) setVenues([]);
@@ -312,6 +352,12 @@ export function NewEventClient({
             onChange={(e) => {
               const v = e.target.value;
               setDate(v);
+              // A clone keeps the length of what it copied: rebuild the end
+              // from the remembered span until the user sets one themselves.
+              if (spanDays > 0 && !endDateEdited) {
+                setEndDate(v ? addDays(v, spanDays) : '');
+                return;
+              }
               // A end that now precedes the start is no longer a range the
               // form can submit, so drop it rather than hold an invalid pair.
               if (endDate && v && endDate < v) setEndDate('');
@@ -328,7 +374,10 @@ export function NewEventClient({
             type="date"
             value={endDate}
             min={date || undefined}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={(e) => {
+              setEndDateEdited(true);
+              setEndDate(e.target.value);
+            }}
             className={field}
           />
           <span className="text-xs minor-text-theme-colors">
