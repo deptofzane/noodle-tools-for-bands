@@ -455,9 +455,9 @@
 :root[data-theme='catppuccin-latte'] {
   color-scheme: light;
 
-  --page: #e6e9ef; /* mantle */
-  --surface: #ffffff;
-  --surface-2: #eff1f5; /* base */
+  --page: #f6f6f6;
+  --surface: #eff1f5;
+  --surface-2: #ffffff; /* base */
   --surface-soft: #eff1f5;
   --surface-hover: #dce0e8; /* crust */
   --fill-muted: #eff1f5;

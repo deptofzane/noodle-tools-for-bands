@@ -44,6 +44,10 @@ export default async function RootPage() {
         Log in
       </Link>
 
+      {/* <span>
+
+      </span> */}
+
       {/* The three pages that are public for their own reasons (see
           middleware.ts) — and the ones someone deciding whether to sign up is
           most likely to want before they do. */}
