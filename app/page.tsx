@@ -95,11 +95,11 @@ export default async function RootPage() {
                     Rehearse against the record
                   </h3>
                   <p className="mt-3 max-w-md text-sm leading-relaxed text-fg-muted">
-                    Drop in a take and it becomes a workbench: slow the bridge
-                    to seventy percent, loop the last ten seconds, and leave a
-                    note at the exact moment you meant. Threads resolve when
-                    they&rsquo;re settled, so the song carries its own
-                    conversation.
+                    Drop in a take and it becomes a workbench. See the sheet
+                    music, slow the bridge down for practice, loop back and run
+                    it again, and leave a note at the exact moment you meant.
+                    Threads resolve when they&rsquo;re settled, so the song
+                    carries its own conversation.
                   </p>
                   <div className="mt-6 flex flex-wrap gap-2">
                     {[
@@ -129,10 +129,10 @@ export default async function RootPage() {
             {/* Two phones staggered — depth is what makes this read as a showcase
                 rather than a screenshot dump. */}
             <div className="relative flex flex-col overflow-hidden rounded-3xl border border-line bg-surface p-7 lg:col-span-2">
-              <h3 className="font-serif text-xl">One calendar, five people</h3>
+              <h3 className="font-serif text-xl">One calendar, one band</h3>
               <p className="mt-3 text-sm leading-relaxed text-fg-muted">
-                Shows, practice, studio and time off, color coded so you know at
-                a glance.
+                Shows, practice, studio, and time off, color coded so you know
+                at a glance.
               </p>
               {/*
                 The position lives on these wrappers, not on PhoneFrame's
@@ -161,7 +161,7 @@ export default async function RootPage() {
             </div>
 
             <div className="rounded-3xl border border-line bg-surface p-7 lg:col-span-2">
-              <h3 className="font-serif text-xl">Nothing lands on nobody</h3>
+              <h3 className="font-serif text-xl">Keep goals in mind</h3>
               <p className="mt-3 text-sm leading-relaxed text-fg-muted">
                 A shared todo belongs to the band — anyone can pick it up,
                 finish it, or hand it on. Private todos can only be seen by you.
@@ -195,9 +195,9 @@ export default async function RootPage() {
                 notes — in the app you already have open.
               </p>
               <p className="mt-4 text-sm leading-relaxed text-fg-muted">
-                Installing to the home screen will let you download audio and
-                sheet music for travel or that venue with less-than-reliable
-                internet.
+                Install Noodle on your mobile or tablet's home screen to
+                download audio and sheet music for offline use when travelling
+                or playing that venue with less-than-reliable internet.
               </p>
               <Link
                 href="/login"
