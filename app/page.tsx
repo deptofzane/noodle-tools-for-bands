@@ -196,7 +196,8 @@ export default async function RootPage() {
               </p>
               <p className="mt-4 text-sm leading-relaxed text-fg-muted">
                 Installing to the home screen will let you download audio and
-                sheet music for when the internet isn&rsquo;t so available.
+                sheet music for travel or that venue with less-than-reliable
+                internet.
               </p>
               <Link
                 href="/login"
