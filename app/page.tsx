@@ -177,8 +177,8 @@ export default async function RootPage() {
             <div className="rounded-3xl border border-line bg-surface p-7 lg:col-span-2">
               <h3 className="font-serif text-xl">Walk in already caught up</h3>
               <p className="mt-3 text-sm leading-relaxed text-fg-muted">
-                The landing page shows the week ahead and everything the band touched since you last
-                looked.
+                The landing page shows the week ahead and everything the band
+                touched since you last looked.
               </p>
               <PhoneFrame
                 src="/screenshots/home.png"
@@ -195,7 +195,8 @@ export default async function RootPage() {
                 notes — in the app you already have open.
               </p>
               <p className="mt-4 text-sm leading-relaxed text-fg-muted">
-                Installing to the home screen will let you download audio and sheet music for when the internet isn't so available.
+                Installing to the home screen will let you download audio and
+                sheet music for when the internet isn&rsquo;t so available.
               </p>
               <Link
                 href="/login"
