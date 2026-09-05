@@ -195,7 +195,7 @@ export default async function RootPage() {
                 notes — in the app you already have open.
               </p>
               <p className="mt-4 text-sm leading-relaxed text-fg-muted">
-                Install Noodle on your mobile or tablet's home screen to
+                Install Noodle on your mobile or tablet&rsquo;s home screen to
                 download audio and sheet music for offline use when travelling
                 or playing that venue with less-than-reliable internet.
               </p>

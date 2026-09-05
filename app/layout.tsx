@@ -93,6 +93,24 @@ const fontInitScript = `
 `;
 
 /**
+ * Pre-paint nav-order script. Mirrors the mobile nav bar and moves the ☰
+ * drawer to the left edge for the left-handed setting (Settings ›
+ * Appearance).
+ *
+ * Pre-paint for the same reason the two above are: without it the bar paints
+ * right-handed and visibly flips once React hydrates, on every page load. The
+ * attribute is all that ships — the mirroring itself is CSS, so no component
+ * has to know the preference.
+ */
+const navInitScript = `
+(function(){try{
+  if (localStorage.getItem('navReversed') === '1') {
+    document.documentElement.setAttribute('data-nav-reversed', '');
+  }
+}catch(e){}})();
+`;
+
+/**
  * Root layout. Reads the session server-side and renders the global
  * `<Header />` for any signed-in route. The login page falls through
  * with no nav. Public API routes are unaffected (they don't pass
@@ -118,6 +136,7 @@ export default async function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <script dangerouslySetInnerHTML={{ __html: fontInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: navInitScript }} />
       </head>
       <body
         className={

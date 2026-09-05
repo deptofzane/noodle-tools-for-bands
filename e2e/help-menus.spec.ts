@@ -48,12 +48,12 @@ test.describe('help: the ⋯ menu section', () => {
      * whole sentences, so rewording the explanation doesn't fail this.
      */
     for (const glyph of [
-      /Eye/,
+      /eye/,
       /pencil/,
       /chain links/,
       /Play/,
-      /Crossed arrows/,
-      /List with a/,
+      /crossed arrows/,
+      /list add/,
     ]) {
       await expect(page.getByText(glyph).first()).toBeVisible();
     }

@@ -580,6 +580,90 @@
 }
 
 /*
+ * The ☰ navigation drawer.
+ *
+ * Slides in from the edge rather than unfolding from the button, so the panel
+ * can run the full height of the screen and hold the whole nav on a phone.
+ *
+ * The travel lives here rather than in classes toggled from React because the
+ * closed state has to outlive the close: the component flips `data-open` and
+ * leaves the panel mounted for one transition, instead of unmounting it
+ * mid-slide with nothing to animate. `NAV_DRAWER_MS` in app/Header.tsx is how
+ * long it waits — keep the two in step.
+ *
+ * Reduced motion keeps the fade and drops the travel, matching `.toast-in`
+ * above: the panel still announces itself arriving without crossing the
+ * screen to do it.
+ */
+.nav-drawer {
+  /*
+   * Two variables rather than one offset, so the two things that want to
+   * change it can't fight. `--nav-drawer-travel` is how far it slides (zero
+   * under reduced motion); `--nav-drawer-dir` is which edge it comes from
+   * (-1 when the bar is mirrored). Whichever rule wins the cascade, each
+   * only ever sets its own half.
+   */
+  --nav-drawer-travel: 100%;
+  --nav-drawer-dir: 1;
+  transform: translateX(calc(var(--nav-drawer-travel) * var(--nav-drawer-dir)));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 200ms ease-out,
+    opacity 200ms ease-out;
+}
+.nav-drawer[data-open='true'] {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-drawer {
+    --nav-drawer-travel: 0%;
+    transition: opacity 200ms ease-out;
+  }
+}
+
+/*
+ * Left-handed mobile layout (Settings › Appearance).
+ *
+ * `data-nav-reversed` is set on <html> by the pre-paint script in
+ * app/layout.tsx, so the bar is already mirrored on the first paint instead
+ * of flipping after hydration.
+ *
+ * Mobile only, deliberately: the mirror is about which thumb reaches a bar
+ * pinned to the bottom of a phone, and the desktop bar is at the top with no
+ * thumb involved. The drawer follows the same rule, so on a wide screen it
+ * still arrives from the right whatever this setting says.
+ */
+@media (max-width: 1023.98px) {
+  [data-nav-reversed] #app-nav nav,
+  [data-nav-reversed] #app-nav .nav-tabs {
+    flex-direction: row-reverse;
+  }
+  [data-nav-reversed] .nav-drawer {
+    right: auto;
+    left: 0;
+    border-left-width: 0;
+    border-right-width: 1px;
+    --nav-drawer-dir: -1;
+  }
+  /* The close button follows the drawer to the other corner. */
+  [data-nav-reversed] .nav-close {
+    align-self: flex-start;
+  }
+}
+
+/* The drawer's backdrop, fading with it rather than snapping in. */
+.nav-scrim {
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+.nav-scrim[data-open='true'] {
+  opacity: 1;
+}
+
+/*
  * Event colours, by type (see app/calendar/eventColors.ts).
  *
  * A surface sets `data-event-type` and styles with the two variables; it never
@@ -734,10 +818,9 @@ body {
   }
 }
 
-
 /* pure css fade in */
 .fade-in-element {
-  opacity: 0; 
+  opacity: 0;
   animation: fadeIn 1s ease-in-out forwards;
 }
 

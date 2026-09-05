@@ -73,8 +73,8 @@ test('Catppuccin Latte is light: the dark class comes off', async ({
   // must fall back to their light values here.
   expect(s.dark).toBe(false);
   expect(s.scheme).toBe('light');
-  expect(s.page).toBe('#e6e9ef');
-  expect(s.bodyBg).toBe('rgb(230, 233, 239)');
+  expect(s.page).toBe('#f6f6f6');
+  expect(s.bodyBg).toBe('rgb(246, 246, 246)');
 });
 
 for (const [label, expected] of [

@@ -8,6 +8,7 @@ import { getOrCreateFeedToken } from '@/lib/db/calendarFeeds';
 import { startGoogleConnect, disconnectGoogle } from '../account-actions';
 import { ThemeToggle } from '../ThemeToggle';
 import { FontSizeControl } from './FontSizeControl';
+import { NavOrderControl } from './NavOrderControl';
 import { CalendarSubscription } from './CalendarSubscription';
 import { NotificationPreferences } from './NotificationPreferences';
 import { PushNotificationToggle } from './PushNotificationToggle';
@@ -199,6 +200,18 @@ export default async function SettingsPage({
           </p>
         </div>
         <FontSizeControl />
+      </div>
+
+      <div className="flex items-center justify-between gap-4 rounded-lg border border-line p-4">
+        <div className="min-w-0">
+          <p className="font-medium">Reverse mobile nav order (left handed)</p>
+          <p className="mt-1 text-xs minor-text-theme-colors dark:text-neutral-400">
+            Mirrors the bottom bar on phones so the ☰ button falls under a left
+            thumb, and opens its drawer from the left. This device only; the
+            desktop layout is unchanged.
+          </p>
+        </div>
+        <NavOrderControl />
       </div>
     </div>
   );

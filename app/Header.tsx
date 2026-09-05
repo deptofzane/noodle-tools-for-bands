@@ -70,13 +70,25 @@ interface NavLink {
  * leave the header un-highlighted, which is the least-wrong choice —
  * none of these links is a precise "parent" of that route.
  *
- * The menu's top level is bracketed by the signed-in account: the email at the
- * top (a label, not a target) and Sign out at the very bottom, below every
- * link at both breakpoints. `userEmail` is threaded down from the layout's
+ * The menu's top level opens with the signed-in account: the email (a label,
+ * not a target), and then Sign out — first on a phone, directly under it, and
+ * last on desktop, where the account brackets the menu instead. Both copies
+ * render and `hidden`/`lg:hidden` picks one, the same split the link groups
+ * use. `userEmail` is threaded down from the layout's
  * session rather than read here — the Header has no session of its own, and
  * adding a SessionProvider to fetch one client-side would cost a round trip
  * for a string the server already rendered with.
  */
+/**
+ * How long the ☰ drawer's slide runs, matching `.nav-drawer` in globals.css.
+ *
+ * The panel has to stay mounted for exactly this long after the menu closes,
+ * or it vanishes mid-slide with nothing to animate. Duplicated across the two
+ * files because CSS owns the travel and React owns the unmount; change one and
+ * the other has to follow.
+ */
+const NAV_DRAWER_MS = 200;
+
 export function Header({ userEmail }: { userEmail?: string | null }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -103,6 +115,17 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
     byBand: { bandId: string; count: number; mentioned: boolean }[];
   }>({ count: 0, mentioned: false, byBand: [] });
   const [helpOpen, setHelpOpen] = useState(false);
+  /*
+   * The drawer's two-step life, separate from `menuOpen` (the user's intent).
+   *
+   * `drawerMounted` keeps the panel in the DOM for one transition after the
+   * menu closes, so it slides out instead of disappearing. `drawerShown` is
+   * the `data-open` the CSS animates against — flipped a frame after mount,
+   * because an element that renders already-open has no previous state to
+   * transition from.
+   */
+  const [drawerMounted, setDrawerMounted] = useState(false);
+  const [drawerShown, setDrawerShown] = useState(false);
   const { bands, bandId: selectedBandId, band, setBandId } = useCurrentBand();
   const menuRef = useRef<HTMLDivElement>(null);
   const scrimRef = useRef<HTMLDivElement>(null);
@@ -356,6 +379,18 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
     };
   }, [menuOpen, bandsOpen]);
 
+  // Drive the drawer's mount/animate/unmount cycle off `menuOpen`.
+  useEffect(() => {
+    if (menuOpen) {
+      setDrawerMounted(true);
+      const frame = requestAnimationFrame(() => setDrawerShown(true));
+      return () => cancelAnimationFrame(frame);
+    }
+    setDrawerShown(false);
+    const timer = setTimeout(() => setDrawerMounted(false), NAV_DRAWER_MS);
+    return () => clearTimeout(timer);
+  }, [menuOpen]);
+
   return (
     // z-[45] sits above the player bar (z-40): on mobile the menu opens upward
     // out of this bar and over the player, and being positioned, this bar is a
@@ -367,23 +402,24 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
       ref={barRef}
       className="fixed inset-x-0 bottom-0 z-[45] border-t pb-[env(safe-area-inset-bottom)] lg:bottom-auto lg:top-0 lg:border-b lg:border-t-0 lg:pb-0 border-line bg-surface"
     >
-      {/* Swallows the tap that dismisses the menu, so closing it can't also
-          hit a link or a play button underneath. Sits below the menu (z-50)
+      {/* Swallows the tap that dismisses the drawer, so closing it can't also
+          hit a link or a play button underneath. Sits below the drawer (z-50)
           but above the rest of this bar, which means the bar's own buttons
           need a second tap too — dismissing is its own action. Tinted, so
           it's visible enough to read as "tap here to close", but lighter
           than the modal backdrop (black/40): this dims a menu, not the app.
-          
-          Mobile only. A mis-tap costs a thumb far more than a mouse, and on
-          desktop the outside-click listener below already closes the menu
-          without a second click. `hidden` there means it isn't hit-testable,
-          so that listener sees the real target as it always did. */}
-      {menuOpen && (
+
+          At every width now, where the dropdown's scrim was mobile-only: a
+          drawer covering the screen edge-to-edge reads as modal, and a modal
+          surface with a live page behind it doesn't. That does mean a desktop
+          click outside now costs a dismiss-tap, as it always has on a phone. */}
+      {drawerMounted && (
         <div
           ref={scrimRef}
           aria-hidden="true"
+          data-open={drawerShown}
           onClick={closeMenu}
-          className="fixed inset-0 z-40 bg-black/25 lg:hidden dark:bg-black/40"
+          className="nav-scrim fixed inset-0 z-40 bg-black/25 dark:bg-black/40"
         />
       )}
 
@@ -406,7 +442,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
           native-app style. Desktop shows them as inline text links instead
           (see the right cluster), so this strip is mobile-only.
         */}
-        <span className="flex min-w-0 flex-1 items-center justify-between gap-1 lg:hidden max-w-[60vw]">
+        <span className="nav-tabs flex min-w-0 max-w-[60vw] flex-1 items-center justify-between gap-1 lg:hidden">
           {mobileTabs.map((link) => {
             const isActive = pathname === link.href;
             return (
@@ -456,7 +492,9 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
             everyday links are already inline, it narrows to the Band panel and
             the `menuOnly` links.
           */}
-          <div ref={menuRef} className="relative">
+          {/* No longer `relative`: the drawer is fixed to the viewport, and
+              the unread dot positions against the button's own box. */}
+          <div ref={menuRef}>
             <button
               type="button"
               onClick={() => (menuOpen ? closeMenu() : setMenuOpen(true))}
@@ -493,13 +531,19 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
                 />
               )}
             </button>
-            {menuOpen && (
+            {drawerMounted && (
               <div
                 id="app-nav-menu"
                 role="menu"
-                // Opens upward from the mobile bar at the bottom, downward from
-                // the desktop bar at the top.
-                className="absolute bottom-full right-0 z-50 mb-2 flex min-w-56 max-w-[min(20rem,calc(100vw-1.5rem))] flex-col gap-0.5 rounded-md border p-1.5 shadow-lg lg:bottom-auto lg:top-full lg:mb-0 lg:mt-2 border-line bg-surface"
+                data-open={drawerShown}
+                /*
+                 * Full height against the right edge, sliding in — see
+                 * `.nav-drawer` in globals.css, which owns the travel.
+                 *
+                 * Scrolls internally: the band list can outrun a short screen,
+                 * and the drawer is the only thing on it that may.
+                 */
+                className="nav-drawer fixed inset-y-0 right-0 z-50 flex w-[min(20rem,85vw)] flex-col gap-0.5 overflow-y-auto border-l p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] shadow-xl border-line bg-surface"
               >
                 {bandsOpen ? (
                   // Band panel: it replaces the top level rather than nesting
@@ -580,6 +624,35 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
                         />
                       </>
                     )}
+
+                    {/*
+                      Sign out, twice over: first here on a phone, and last on
+                      desktop below. Rendered twice and picked by `hidden` /
+                      `lg:hidden` rather than moved with CSS `order`, which is
+                      how the two link groups above already split — and which
+                      keeps the tab order matching what's on screen, where
+                      reordering visually would have a keyboard user reach it
+                      last while seeing it first.
+
+                      It sits under the email because the two are one thought:
+                      whose account this is, and the way out of it. Outside the
+                      `userEmail` block, though, since there may not be one.
+                    */}
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        closeMenu();
+                        void signOut({ callbackUrl: '/login' });
+                      }}
+                      className={menuItemClass(false) + ' lg:hidden'}
+                    >
+                      Sign out
+                    </button>
+                    <span
+                      aria-hidden="true"
+                      className="my-1 border-t border-line lg:hidden"
+                    />
 
                     {bands.length > 0 && (
                       <>
@@ -686,11 +759,12 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
                       Help
                     </button>
 
-                    {/* Last at either breakpoint: it sits outside the two
-                        link groups above, which are the parts that swap. */}
+                    {/* Last on desktop, where the account brackets the menu:
+                        the email at the top, the way out at the bottom. The
+                        phone gets its copy at the top instead — see above. */}
                     <span
                       aria-hidden="true"
-                      className="my-1 border-t border-line"
+                      className="my-1 hidden border-t border-line lg:block"
                     />
 
                     <button
@@ -700,12 +774,45 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
                         closeMenu();
                         void signOut({ callbackUrl: '/login' });
                       }}
-                      className={menuItemClass(false)}
+                      className={menuItemClass(false) + ' hidden lg:flex'}
                     >
                       Sign out
                     </button>
                   </>
                 )}
+
+                {/*
+                  Close, pinned to the bottom of the drawer — the far corner
+                  from where the eye starts, and the corner the thumb holding
+                  the phone is already near. `mt-auto` puts it there whichever
+                  level is showing; when the bar is mirrored it moves to the
+                  other corner with everything else (see globals.css).
+
+                  A `menuitem` like its siblings: a bare button inside
+                  `role="menu"` is not a child role the container allows.
+                */}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={closeMenu}
+                  aria-label="Close menu"
+                  title="Close menu"
+                  className="nav-close mt-auto flex h-9 w-9 shrink-0 items-center justify-center self-end rounded-full text-fg-dim hover:bg-surface-hover"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
             )}
           </div>

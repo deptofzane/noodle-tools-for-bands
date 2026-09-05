@@ -29,8 +29,8 @@ export function HelpContent({ level = 2 }: { level?: 2 | 3 }) {
         <p>
           The band you&rsquo;re currently viewing is shown in the top left
           corner of the screen and in the ☰ menu under <b>Band</b>. Clicking
-          the <b>Band</b> option in the ☰ menu will show all the groups you're
-          currently a part of.
+          the <b>Band</b> option in the ☰ menu will show all the groups
+          you&rsquo;re currently a part of.
         </p>
       </Section>
 
@@ -54,17 +54,16 @@ export function HelpContent({ level = 2 }: { level?: 2 | 3 }) {
             <>
               <b>Top row</b>
             </>,
-            <span className="flex gap-1">
-              The <b>eye</b> icon <EyeIcon key="view" size={18} /> will view the
-              item.
+            <span key="view" className="flex gap-1">
+              The <b>eye</b> icon <EyeIcon size={18} /> will view the item.
             </span>,
-            <span className="flex gap-1">
-              The pencil icon <PencilIcon key="edit" size={18} /> will go to the
-              edit screen.
+            <span key="edit" className="flex gap-1">
+              The pencil icon <PencilIcon size={18} /> will go to the edit
+              screen.
             </span>,
-            <span className="flex gap-1">
-              The chains icon <LinkIcon key="share" size={18} /> will copy a
-              link to that asset.
+            <span key="share" className="flex gap-1">
+              The chain links icon <LinkIcon size={18} /> will copy a link to that
+              asset.
             </span>,
           ]}
         />
@@ -80,15 +79,15 @@ export function HelpContent({ level = 2 }: { level?: 2 | 3 }) {
             <>
               <b>Second row (audio options)</b>
             </>,
-            <span className="flex gap-1">
-              <PlayIcon key="play" size={18} /> starts the songs in order.
+            <span key="play" className="flex gap-1">
+              Play <PlayIcon size={18} /> starts the songs in order.
             </span>,
-            <span className="flex gap-1">
-              <ShuffleIcon key="shuffle" size={18} /> will shuffle the songs.
+            <span key="shuffle" className="flex gap-1">
+              The crossed arrows <ShuffleIcon size={18} /> will shuffle the songs.
             </span>,
-            <span className="flex gap-1">
-              <AddToQueueIcon key="queue" size={18} /> adds the songs to the
-              player queue after whatever is currently playing.
+            <span key="queue" className="flex gap-1">
+              The list add icon <AddToQueueIcon size={18} /> adds the songs to the player queue
+              after whatever is currently playing.
             </span>,
           ]}
         />
@@ -144,8 +143,8 @@ export function HelpContent({ level = 2 }: { level?: 2 | 3 }) {
               audio on the device, and will work when internet is spotty or
               nonexistent. Downloads are per-device. When new audio or sheet
               music is added, or the setlist is modified, an indicator will show
-              signaling it's out of sync. Setlists can be updated by clicking {' '}
-              <b>Update offline copy</b> in the setlist menu.
+              signaling it&rsquo;s out of sync. Setlists can be updated by
+              clicking <b>Update offline copy</b> in the setlist menu.
             </>,
           ]}
         />
