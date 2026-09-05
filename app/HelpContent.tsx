@@ -22,55 +22,74 @@ export function HelpContent({ level = 2 }: { level?: 2 | 3 }) {
       <Section title="Bands" level={level}>
         <p>
           Everything in Noodle belongs to a band. Create one, then add people by
-          the email address they sign in with — membership is what grants access
-          to that band&rsquo;s audio, charts, notes, and dates. Nothing is
-          public. The band you&rsquo;re currently in is shown in the ☰ menu
-          under <B>Band</B>.
+          the email address they use to sign in or creating and an invite link.
+          Membership is what grants access to that band&rsquo;s audio, charts,
+          notes, and dates. Nothing is public.
+        </p>
+        <p>
+          The band you&rsquo;re currently viewing is shown in the top left
+          corner of the screen and in the ☰ menu under <b>Band</b>. Clicking
+          the <b>Band</b> option in the ☰ menu will show all the groups you're
+          currently a part of.
         </p>
       </Section>
 
       <Section title="The ⋯ menu" level={level}>
         <p>
-          Most things in Noodle carry a <B>⋯</B> menu. Related actions sit
+          Most things in Noodle carry a <b>⋯</b> menu. Related actions sit
           together as a row of icons under a label naming what they act on. As
           an example, a song&rsquo;s menu looks like this:
         </p>
         <span className="flex justify-center">
           <MenuExample />
         </span>
-
         <p>
           The top row is the View/Edit/Share row, while the second row is audio
           options for Play/Shuffle/Add to play queue. View/Edit/Share appear on
           most all items in Noodle, while audio options will only appear where
           there is something to play.
         </p>
-
         <List
           items={[
             <>
-              <B>Top row</B>
+              <b>Top row</b>
             </>,
+            <span className="flex gap-1">
+              The <b>eye</b> icon <EyeIcon key="view" size={18} /> will view the
+              item.
+            </span>,
+            <span className="flex gap-1">
+              The pencil icon <PencilIcon key="edit" size={18} /> will go to the
+              edit screen.
+            </span>,
+            <span className="flex gap-1">
+              The chains icon <LinkIcon key="share" size={18} /> will copy a
+              link to that asset.
+            </span>,
+          ]}
+        />
+        <span>
+          <b>
+            All links in Noodle can be copied and sent to other people, but they
+            may need to have an account or be a band member depending on the
+            page.
+          </b>
+        </span>
+        <List
+          items={[
             <>
-              The <B>Eye</B> icon (eyecon?) will view the item, the{' '}
-              <B>pencil</B> will go to the edit screen, and <B>chain links</B>{' '}
-              copies a link you can send to the band — a link, rather than a
-              share sheet, because it&rsquo;s the address that travels. All
-              links in Noodle can be copied and sent to other people, but they
-              may need to have an account or be a band member depending on the
-              page.
+              <b>Second row (audio options)</b>
             </>,
-            <>
-              <B>Second row (audio options)</B>
-            </>,
-            <>
-              <B>Play</B> starts the songs in order. <B>Crossed arrows</B> will
-              shuffle the song, without changing the saved order.
-            </>,
-            <>
-              <B>List with a +</B> adds the songs to the player queue after
-              whatever is currently playing.
-            </>,
+            <span className="flex gap-1">
+              <PlayIcon key="play" size={18} /> starts the songs in order.
+            </span>,
+            <span className="flex gap-1">
+              <ShuffleIcon key="shuffle" size={18} /> will shuffle the songs.
+            </span>,
+            <span className="flex gap-1">
+              <AddToQueueIcon key="queue" size={18} /> adds the songs to the
+              player queue after whatever is currently playing.
+            </span>,
           ]}
         />
       </Section>
@@ -79,23 +98,24 @@ export function HelpContent({ level = 2 }: { level?: 2 | 3 }) {
         <List
           items={[
             <>
-              In the Songs tab on the Audio page, to the right of the Song/Album
-              toggle is a menu with upload music options.{' '}
-              <B>Upload audio file(s)</B> creates a song from each recording you
+              In the <b>Songs</b> tab on the <b>Audio</b> page, to the right of
+              the Song/Album toggle is a menu with upload music options.{' '}
+              <b>Upload audio file(s)</b> creates a song from each recording you
               add — from Google Drive, Dropbox, or this device.{' '}
-              <B>Create song without audio</B> starts a song from just a name.
+              <b>Create song without audio</b> starts a song from just a name.
             </>,
             <>
-              A song can hold several <B>versions</B> of its audio and its sheet
-              music. A default is set, but all versions of both sheet music and
-              audio can be accessed from the View song page.
+              A song can hold several versions of its audio and its sheet music.
+              A default is set, but all versions of both sheet music and audio
+              can be accessed from the <b>View song/Practice</b> page. New audio
+              and sheet music can be added in the <b>Edit song</b> page.
             </>,
             <>
-              At the bottom of the View song page is the comments section.
-              Comments on a song are time stamped with the point in the
-              recording you were at. When another user clicks the time stamp
-              they will be jumped to that point in the song. Use an <B>@</B>{' '}
-              sign before a username to notify other band members.
+              At the bottom of the <b>View song/Practice</b>. page is the
+              comments section. Comments on a song are time stamped with the
+              point in the recording you were at. When another user clicks the
+              time stamp they will be jumped to that point in the song. Use an{' '}
+              <b>@</b> sign before a username to notify other band members.
             </>,
           ]}
         />
@@ -105,26 +125,27 @@ export function HelpContent({ level = 2 }: { level?: 2 | 3 }) {
         <List
           items={[
             <>
-              <B>Setlists</B> can be created in the Setlist tab on the Audio
-              page. Songs can be added, removed, reordered, and other markers
-              for set break, encore, or whatever you like can be added.
+              <b>Setlists</b> can be created in the <b>Setlist</b> tab on the
+              Audio page. Songs can be added, removed, reordered, and other
+              markers for set break, encore, or whatever you like can be added.
             </>,
             <>
-              The View song page is also the <B>Practice</B> page, and will show
-              sheet music and audio playback with tools to slow down .{' '}
-              <B>Live</B> is the stripped-back version for a stage.
+              The <b>View song</b> page is also the <b>Practice</b> page, and
+              will show sheet music and audio playback with tools to slow down .{' '}
+              <b>Live</b> is the stripped-back version for a stage showing only
+              sheet music.
             </>,
             <>
-              A setlist&rsquo;s <B>⋯</B> menu carries both icon rows — see{' '}
-              <B>The ⋯ menu</B> below.
+              A setlist&rsquo;s <b>⋯</b> menu carries both icon rows — see{' '}
+              <b>The ⋯ menu</b> near the top of this page.
             </>,
             <>
-              <B>Download for offline</B> keeps a setlist&rsquo;s charts and
+              <b>Download for offline</b> keeps a setlist&rsquo;s charts and
               audio on the device, and will work when internet is spotty or
               nonexistent. Downloads are per-device. When new audio or sheet
-              music is added, or the setlist is modified an indicator to update
-              the setlist will show. Setlists can be updated by clicking
-              <B>Update offline copy</B> in the setlist menu.
+              music is added, or the setlist is modified, an indicator will show
+              signaling it's out of sync. Setlists can be updated by clicking {' '}
+              <b>Update offline copy</b> in the setlist menu.
             </>,
           ]}
         />
@@ -132,9 +153,9 @@ export function HelpContent({ level = 2 }: { level?: 2 | 3 }) {
 
       <Section title="Notifications" level={level}>
         <p>
-          Activity in your bands shows on the Home screen. For a push to reach
-          your phone when the app is closed, turn it on per-device in{' '}
-          <B>Settings → Notifications</B>, where you can also mute the kinds you
+          Activity in your bands shows on the <b>Home</b> screen. For a push to
+          reach your phone when the app is closed, turn it on per-device in{' '}
+          <b>Settings → Notifications</b>, where you can also mute the kinds you
           don&rsquo;t want. On iPhone and iPad this only works once Noodle has
           been added to the Home Screen and opened from there.
         </p>
@@ -144,7 +165,7 @@ export function HelpContent({ level = 2 }: { level?: 2 | 3 }) {
         <p>
           Noodle is a PWA (progressive web application), and can be installed on
           a phone or tablet home screen. On iPhone/iPad use{' '}
-          <B>Share → Add to Home Screen</B>. On Android you can install it from
+          <b>Share → Add to Home Screen</b>. On Android you can install it from
           the browser&rsquo;s options. For Android, we recommend using Chrome to
           install as it installs an independent version of the app rather than
           Firefox which makes a shortcut to the browser and will lack some

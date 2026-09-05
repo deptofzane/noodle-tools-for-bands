@@ -22,7 +22,7 @@ export function Section({
   return (
     <section className="flex flex-col gap-2">
       <Heading className="text-base font-medium">{title}</Heading>
-      <div className="flex flex-col gap-2 text-sm leading-relaxed text-fg-soft">
+      <div className="flex flex-col gap-2 text-md leading-relaxed text-fg-soft">
         {children}
       </div>
     </section>
