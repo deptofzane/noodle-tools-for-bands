@@ -167,6 +167,35 @@ test('Recent events reaches back seven days, and no further', async ({
   await expect(page.getByText('E2E Recent Out')).toHaveCount(0);
 });
 
+test('Todos and Upcoming events start expanded, and remember being minimized', async ({
+  page,
+}) => {
+  await page.addInitScript(() => localStorage.setItem('homeTab', 'activity'));
+  await page.goto('/home');
+
+  const todos = page.getByRole('button', { name: /^Todos/ });
+  const week = page.getByRole('button', { name: /^Upcoming events/ });
+  // First view: both open, contents showing.
+  await expect(todos).toHaveAttribute('aria-expanded', 'true');
+  await expect(week).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByText('E2E Home Todo A')).toBeVisible();
+
+  await todos.click();
+  await expect(todos).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByText('E2E Home Todo A')).toHaveCount(0);
+  // Independent: minimizing one leaves the other alone.
+  await expect(week).toHaveAttribute('aria-expanded', 'true');
+
+  await page.reload();
+  await expect(page.getByRole('button', { name: /^Todos/ })).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  );
+  await expect(
+    page.getByRole('button', { name: /^Upcoming events/ }),
+  ).toHaveAttribute('aria-expanded', 'true');
+});
+
 test('the chosen tab is remembered across visits', async ({ page }) => {
   await page.goto('/home');
   await page.getByRole('tab', { name: /Activity/ }).click();

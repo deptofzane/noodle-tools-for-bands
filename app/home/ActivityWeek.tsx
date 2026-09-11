@@ -11,6 +11,7 @@ import {
 } from '@/lib/format';
 import { WeekRow } from '../calendar/WeekRow';
 import { DaySummaryModal } from '../calendar/DaySummaryModal';
+import { ActivitySection } from './ActivitySection';
 import { lastDayOf } from '../calendar/eventBars';
 import { eventColorKey } from '../calendar/eventColors';
 import { eventLabel } from '../calendar/eventLabel';
@@ -71,11 +72,12 @@ export function ActivityWeek({
   );
 
   return (
-    <section className="flex flex-col gap-2" aria-labelledby="activity-week">
-      <h2 id="activity-week" className="text-base font-medium">
-        Upcoming events
-      </h2>
-
+    <ActivitySection
+      id="activity-week"
+      title="Upcoming events"
+      count={inWeek.length}
+      persistKey="homeActivityWeekOpen"
+    >
       {inWeek.length === 0 ? (
         <NothingThisWeek nextEvent={nextEvent} today={today} />
       ) : (
@@ -129,7 +131,7 @@ export function ActivityWeek({
           onClose={() => setSummaryDate(null)}
         />
       )}
-    </section>
+    </ActivitySection>
   );
 }
 

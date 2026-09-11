@@ -8,6 +8,7 @@ import { todoHref } from '@/lib/routes';
 import { Select } from '../Select';
 import { TodoSummary } from '../bands/[bandId]/TodoRow';
 import { todoTone } from '../bands/[bandId]/todos/todoTone';
+import { ActivitySection } from './ActivitySection';
 import { ActivityWeek } from './ActivityWeek';
 import { OpenPolls, type OpenPoll } from './OpenPolls';
 import { RecentEvents } from './RecentEvents';
@@ -91,10 +92,12 @@ export function ActivityTab({
         ]}
       />
 
-      <section className="flex flex-col gap-2" aria-labelledby="activity-todos">
-        <h2 id="activity-todos" className="text-base font-medium">
-          Todos
-        </h2>
+      <ActivitySection
+        id="activity-todos"
+        title="Todos"
+        count={inBand(todos).length}
+        persistKey="homeActivityTodosOpen"
+      >
         {inBand(todos).length === 0 ? (
           <p className="rounded-lg border border-line px-4 py-3 text-sm minor-text-theme-colors">
             No active todos.
@@ -125,7 +128,7 @@ export function ActivityTab({
             ))}
           </ul>
         )}
-      </section>
+      </ActivitySection>
 
       <ActivityWeek
         events={inBand(events)}
