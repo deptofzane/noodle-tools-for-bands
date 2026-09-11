@@ -7,7 +7,6 @@ import type {
 } from '@/lib/db/notifications';
 import Link from 'next/link';
 import { formatRelativeTime } from '@/lib/format';
-import { usePersistedBoolean } from '../usePersistedBoolean';
 import { Spinner } from '../Spinner';
 import {
   describeEventChange,
@@ -208,10 +207,6 @@ export function NotificationList({
   const [unread, setUnread] = useState(initialUnread);
   const [cursor, setCursor] = useState<string | null>(initialCursor);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [minimized, setMinimized] = usePersistedBoolean(
-    'homeNotificationsMinimized',
-    false,
-  );
 
   const markRead = useCallback(async () => {
     // Let the nav badge clear immediately, before the request resolves.
@@ -268,95 +263,76 @@ export function NotificationList({
 
   return (
     <section className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setMinimized((v) => !v)}
-          aria-expanded={!minimized}
-          aria-label={
-            minimized ? 'Expand Notifications' : 'Minimize Notifications'
-          }
-          className="flex items-center gap-2"
-        >
-          <span
-            aria-hidden="true"
-            className="text-xl leading-none minor-text-theme-colors hover:text-fg-body"
-          >
-            {minimized ? '▸' : '▾'}
-          </span>
-          <h2 className="text-sm font-medium">Notifications</h2>
-        </button>
-        {unread > 0 && (
-          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[0.625rem] font-semibold text-white">
-            {unread} new
-          </span>
-        )}
-      </div>
+      {/* No heading or collapse: this is the whole of its tab now, and the
+          tab already says what it is. The "new" count stays — marking read
+          clears the badge but keeps the highlights, so it still means
+          something while you're reading. */}
+      {unread > 0 && (
+        <span className="self-start rounded-full bg-blue-600 px-2 py-0.5 text-[0.625rem] font-semibold text-white">
+          {unread} new
+        </span>
+      )}
 
-      {!minimized &&
-        (items.length === 0 ? (
-          <p className="rounded-lg border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
-            No notifications yet. Activity from your bands shows up here.
-          </p>
-        ) : (
-          <>
-            <ul className="divide-y divide-line rounded-lg border border-line">
-              {items.map((n) => (
-                <li
-                  key={n.id}
-                  className={
-                    'flex items-center gap-2 pr-2 hover:bg-surface-soft ' +
-                    (n.unread ? 'bg-blue-50/50 dark:bg-blue-950/20' : '')
-                  }
-                >
-                  <Link
-                    href={hrefFor(n)}
-                    className="flex min-w-0 flex-1 items-start gap-3 px-3 py-2.5"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={
-                        'mt-1.5 h-2 w-2 shrink-0 rounded-full ' +
-                        (n.unread ? 'bg-blue-600' : 'bg-transparent')
-                      }
-                    />
-                    <span className="flex min-w-0 flex-col">
-                      <span className="text-sm">{messageFor(n)}</span>
-                      <span className="text-[0.6875rem] minor-text-theme-colors">
-                        <span className="minor-text-band-theme-colors">
-                          {n.bandName ? `${n.bandName} · ` : ''}
-                        </span>
-                        {formatRelativeTime(n.createdAt)}
-                      </span>
-                    </span>
-                  </Link>
-                  {isPlayableNotification(n) && (
-                    <NotificationPlayButton
-                      notification={n}
-                      bandId={n.bandId}
-                    />
-                  )}
-                </li>
-              ))}
-            </ul>
-            {cursor && (
-              <button
-                type="button"
-                onClick={() => void loadMore()}
-                disabled={loadingMore}
-                // Fixed min-width so swapping the label for the spinner
-                // doesn't make the button jump.
-                className="flex min-w-[6.5rem] items-center justify-center self-center rounded-md border border-line px-3 py-1.5 text-xs font-medium text-fg-dim hover:bg-surface-soft disabled:opacity-50"
+      {items.length === 0 ? (
+        <p className="rounded-lg border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
+          No notifications yet. Activity from your bands shows up here.
+        </p>
+      ) : (
+        <>
+          <ul className="divide-y divide-line rounded-lg border border-line">
+            {items.map((n) => (
+              <li
+                key={n.id}
+                className={
+                  'flex items-center gap-2 pr-2 hover:bg-surface-soft ' +
+                  (n.unread ? 'bg-blue-50/50 dark:bg-blue-950/20' : '')
+                }
               >
-                {loadingMore ? (
-                  <Spinner size="xs" label="Loading older notifications" />
-                ) : (
-                  'Load older'
+                <Link
+                  href={hrefFor(n)}
+                  className="flex min-w-0 flex-1 items-start gap-3 px-3 py-2.5"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={
+                      'mt-1.5 h-2 w-2 shrink-0 rounded-full ' +
+                      (n.unread ? 'bg-blue-600' : 'bg-transparent')
+                    }
+                  />
+                  <span className="flex min-w-0 flex-col">
+                    <span className="text-sm">{messageFor(n)}</span>
+                    <span className="text-[0.6875rem] minor-text-theme-colors">
+                      <span className="minor-text-band-theme-colors">
+                        {n.bandName ? `${n.bandName} · ` : ''}
+                      </span>
+                      {formatRelativeTime(n.createdAt)}
+                    </span>
+                  </span>
+                </Link>
+                {isPlayableNotification(n) && (
+                  <NotificationPlayButton notification={n} bandId={n.bandId} />
                 )}
-              </button>
-            )}
-          </>
-        ))}
+              </li>
+            ))}
+          </ul>
+          {cursor && (
+            <button
+              type="button"
+              onClick={() => void loadMore()}
+              disabled={loadingMore}
+              // Fixed min-width so swapping the label for the spinner
+              // doesn't make the button jump.
+              className="flex min-w-[6.5rem] items-center justify-center self-center rounded-md border border-line px-3 py-1.5 text-xs font-medium text-fg-dim hover:bg-surface-soft disabled:opacity-50"
+            >
+              {loadingMore ? (
+                <Spinner size="xs" label="Loading older notifications" />
+              ) : (
+                'Load older'
+              )}
+            </button>
+          )}
+        </>
+      )}
     </section>
   );
 }

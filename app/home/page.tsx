@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { auth } from '@/auth';
 import {
   getUnreadNotificationCount,
@@ -7,16 +6,21 @@ import {
 import { getNextEventForUser, listEventsForUserInRange } from '@/lib/db/events';
 import { listOpenPollsForUser } from '@/lib/db/polls';
 import { listMyBands } from '@/lib/db/bands';
+import { listMyTodos } from '@/lib/db/todos';
 import { NotificationList } from './NotificationList';
-import { OpenPolls } from './OpenPolls';
-import { UpcomingShows } from './UpcomingShows';
-import { RecentEvents } from './RecentEvents';
 import { HomePushNudge } from './HomePushNudge';
+import { HomeTabs } from './HomeTabs';
+import { ActivityTab } from './ActivityTab';
 
 /**
- * Home — the signed-in landing. Shows upcoming shows and the notification
- * feed, plus quick links into the app. Google Drive connection status now
- * lives on the Settings › Account tab, so this page no longer gates on it.
+ * Home — the signed-in landing, as two tabs: the notification feed, and
+ * Activity (your todos, the week ahead, open polls and the week behind).
+ *
+ * Both tabs' data is fetched here in one round, including the tab you're not
+ * looking at: it's a handful of cheap queries, and it means switching tabs —
+ * or bands inside Activity — never waits on the network. What must not happen
+ * eagerly is *mounting* the feed, which marks everything read; that's
+ * `HomeTabs`' job, not this page's.
  */
 export default async function HomePage() {
   const session = await auth();
@@ -24,18 +28,18 @@ export default async function HomePage() {
 
   const userId = session.user.sub ?? '';
 
-  // Upcoming shows are windowed to "the next 7 days" in the *viewer's*
-  // timezone (done client-side in UpcomingShows). The server can't know the
-  // viewer's TZ, so it fetches a buffered range around its own date — wide
-  // enough (±1 day covers any TZ offset) that the client always has the
-  // rows it needs to filter down to the exact local window.
+  // Activity's week and "recent" are windowed in the *viewer's* timezone,
+  // client-side, because the server can't know it. So the server fetches a
+  // buffered range around its own date: seven days back plus a day of slack
+  // for Recent events, and six ahead plus the same slack (and a little more)
+  // for the rolling week.
   const serverToday = new Date().toLocaleDateString('en-CA');
   const bufferFrom = new Date();
-  bufferFrom.setDate(bufferFrom.getDate() - 2);
+  bufferFrom.setDate(bufferFrom.getDate() - 8);
   const bufferTo = new Date();
   bufferTo.setDate(bufferTo.getDate() + 9);
 
-  const [notifPage, unreadCount, showsBuffer, nextEvent, openPolls, myBands] =
+  const [notifPage, unreadCount, events, nextEvent, openPolls, myBands, todos] =
     await Promise.all([
       listNotifications(userId),
       getUnreadNotificationCount(userId),
@@ -44,45 +48,37 @@ export default async function HomePage() {
         bufferFrom.toLocaleDateString('en-CA'),
         bufferTo.toLocaleDateString('en-CA'),
       ),
-      // Fallback for when nothing lands in the next 7 days: the next event,
-      // however far out. Windowed client-side to the viewer's "today".
+      // For an empty week: the next event, however far out.
       getNextEventForUser(userId, serverToday),
       listOpenPollsForUser(userId),
       listMyBands(userId),
+      listMyTodos(userId, 'active'),
     ]);
-
-  // The bands the viewer belongs to — used to show the notes editor only on
-  // their own bands' recent events (notes are band-private).
-  const myBandIds = myBands.map((b) => b.id);
 
   return (
     <main className="main-container pt-2">
       <HomePushNudge />
-      <RecentEvents shows={showsBuffer} bandIds={myBandIds} />
-      <UpcomingShows
-        shows={showsBuffer}
-        nextEvent={nextEvent}
-        serverToday={serverToday}
+      <HomeTabs
+        unread={unreadCount}
+        notifications={
+          <NotificationList
+            initial={notifPage.notifications}
+            initialUnread={unreadCount}
+            initialCursor={notifPage.nextCursor}
+          />
+        }
+        activity={
+          <ActivityTab
+            currentUserId={userId}
+            bands={myBands.map((b) => ({ id: b.id, name: b.name }))}
+            todos={todos}
+            events={events}
+            nextEvent={nextEvent}
+            polls={openPolls}
+            serverToday={serverToday}
+          />
+        }
       />
-      <OpenPolls polls={openPolls} />
-      <NotificationList
-        initial={notifPage.notifications}
-        initialUnread={unreadCount}
-        initialCursor={notifPage.nextCursor}
-      />
-
-      <div className="rounded-lg border border-line p-4 text-sm text-fg-muted">
-        Audio and conversations are organized by band. Open or create a{' '}
-        <Link href="/bands" className="text-accent underline">
-          band
-        </Link>{' '}
-        to register audio (via the Drive picker) and open its conversations, or
-        jump to your{' '}
-        <Link href="/open-conversations" className="text-accent underline">
-          open conversations
-        </Link>
-        .
-      </div>
     </main>
   );
 }

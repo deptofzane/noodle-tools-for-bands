@@ -261,6 +261,36 @@ Last updated: 2 September 2026.
   `preDeployCommand`. 0056 is hand-written as a `RENAME`, with a hand-built
   snapshot — re-running `db:generate` reports no drift, which is how you check
   a hand-written snapshot is right.
+- **Home is two tabs, and only the open one is mounted — never before the
+  remembered tab is known.** The notification feed marks everything read the
+  moment it mounts. So a panel hidden with CSS clears the badge for
+  notifications nobody saw, and so does one rendered as the default for a
+  single frame before the saved tab applies — that isn't theoretical: seeding
+  `useState` with `'notifications'` instead of `null` fired a read `POST` and
+  failed `home-tabs.spec.ts`. The panels arrive as elements, so the unchosen
+  one never mounts. The unread count rides on the Notifications pill while
+  Activity is open, and clears on the same `notifications:read` event the nav
+  badge listens for.
+- **Activity is one server fetch, filtered client-side by the band picker.**
+  "All bands" needs every row anyway, so switching bands costs no request. The
+  picker narrows what's _listed_, not what you may _do_: Recent events decides
+  whether to offer the band-private notes button from your full membership.
+  Under a specific band, the empty-week "next up" only appears if the overall
+  next event belongs to that band — pointing at another band's show would be
+  wrong, so it's omitted rather than wrong.
+- **`listMyTodos` joins `band_members`; per-band `listTodos` doesn't.** The
+  per-band query relies on its API route checking membership first. Nothing
+  gates a cross-band query, so without the join a private todo raised in a
+  band you've left stays on your Home. Removing the join fails exactly the
+  "leaving a band" test.
+- **Activity's week is rolling (today plus six) and tested by overlap.** An
+  event is on the week if `date <= lastDay && lastDayOf(ev) >= today` — the
+  old `UpcomingShows` compared `date >= today` and so dropped a festival that
+  started yesterday. Recent events reaches back seven days, so the fetch runs
+  from eight days back (a day of timezone slack) to nine ahead.
+- **Home's todo rows are read-only.** They reuse `TodoSummary` and link to the
+  todo. Status, sharing and delete carry confirmations and refresh rules in
+  the band's Todos tab that don't belong on Home.
 - **`/` is dynamic and public.** Signed out it's a landing page; signed in it
   redirects to `/home`. `start_url` stays `/` so installed apps are unaffected
   and no manifest refetch is needed. It is deliberately _not_ precached — its
@@ -406,9 +436,9 @@ harmlessly) and any real Google/Resend call.
 
 ## Test suite
 
-- `pnpm test:db` — **226 node tests across 37 files**, ~20s, self-cleaning.
+- `pnpm test:db` — **228 node tests across 37 files**, ~20s, self-cleaning.
   Must stay serialized (`--test-concurrency=1`).
-- `pnpm test:e2e` — Playwright, **121 tests across 27 specs**, against a
+- `pnpm test:e2e` — Playwright, **141 tests across 30 specs**, against a
   **production build** (the service worker is disabled in dev, so offline
   specs run in dev prove nothing). Seeds and tears down its own band; ids are
   written to `e2e/.auth/seed.json` so specs navigate directly instead of
@@ -452,10 +482,13 @@ harmlessly) and any real Google/Resend call.
 
 ## Where the category colours are applied
 
-Events (`data-event-type`): `CalendarClient` (month grid + day summary),
+Events (`data-event-type`): `calendar/WeekRow` and `calendar/DaySummaryModal`
+(shared by the Calendar's month grid and Home's Activity week),
 `calendar/events/[eventId]`, `BandOverviewTab` (title row only — the expanded
-panel stays neutral), `home/UpcomingShows`, `home/RecentEvents`.
+panel stays neutral), `home/ActivityWeek` (the phone's day list),
+`home/RecentEvents`.
 
-Todos take the same mechanism: `TodoRow` and `bands/[bandId]/todos/[todoId]`.
+Todos take the same mechanism: `TodoRow` (whose `TodoSummary` Home's Activity
+tab reuses) and `bands/[bandId]/todos/[todoId]`.
 Both sets are re-tinted per theme in `globals.css`, so a new theme that wants
 its own palette overrides the tokens rather than any component.

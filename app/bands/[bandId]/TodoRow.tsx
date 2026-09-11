@@ -27,6 +27,56 @@ function isOverdue(deadline: string | null, status: TodoStatus): boolean {
   return new Date(`${deadline}T00:00:00`) < midnight;
 }
 
+/**
+ * A todo's title and the line under it — who has it, and when it's due.
+ *
+ * Its own component because Home's Activity tab lists the same todos
+ * read-only, and the owner / deadline / overdue wording should have one home
+ * rather than two that drift. Renders inside whatever row or link the caller
+ * provides; the colours come from the `data-event-type` the caller sets.
+ */
+export function TodoSummary({
+  todo,
+  currentUserId,
+}: {
+  todo: Todo;
+  currentUserId: string;
+}) {
+  const overdue = isOverdue(todo.deadline, todo.status);
+  return (
+    <>
+      <span className="flex min-w-0 items-start gap-2">
+        <span className="min-w-0 break-words font-medium text-[color:var(--event-accent)]">
+          {todo.title}
+        </span>
+        {todo.shared && (
+          <span className="mt-0.5 shrink-0 rounded bg-[color:var(--event-fill)] px-1.5 py-0.5 text-[0.625rem] font-medium text-[color:var(--event-accent)]">
+            Shared
+          </span>
+        )}
+      </span>
+      <span className="text-xs minor-text-theme-colors">
+        {todo.shared
+          ? todo.ownerName
+            ? `${todo.ownerId === currentUserId ? 'You' : todo.ownerName}`
+            : 'Unassigned'
+          : 'Private'}
+        {' · '}
+        {todo.deadline ? (
+          /* Overdue is a property of an active todo, not a fourth
+             status — a cancelled one being "late" means nothing. */
+          <span className={overdue ? 'font-medium text-danger' : ''}>
+            Due {todo.deadline}
+            {overdue ? ' · overdue' : ''}
+          </span>
+        ) : (
+          <>Added {formatTimeAgoOrDate(todo.createdAt)}</>
+        )}
+      </span>
+    </>
+  );
+}
+
 const STATUS_MOVES: { to: TodoStatus; label: string }[] = [
   { to: 'active', label: 'Mark active' },
   { to: 'complete', label: 'Mark complete' },
@@ -60,7 +110,6 @@ export function TodoRow({
 }) {
   const go = useNavigate();
   const share = useShareLink();
-  const overdue = isOverdue(todo.deadline, todo.status);
   const canUnshare =
     todo.creatorId === currentUserId || todo.ownerId === currentUserId;
 
@@ -76,34 +125,7 @@ export function TodoRow({
           onClick={() => go(todoHref(bandId, todo.id))}
           className="flex min-w-0 flex-1 flex-col gap-0.5 text-left"
         >
-          <span className="flex min-w-0 items-start gap-2">
-            <span className="min-w-0 break-words font-medium text-[color:var(--event-accent)]">
-              {todo.title}
-            </span>
-            {todo.shared && (
-              <span className="mt-0.5 shrink-0 rounded bg-[color:var(--event-fill)] px-1.5 py-0.5 text-[0.625rem] font-medium text-[color:var(--event-accent)]">
-                Shared
-              </span>
-            )}
-          </span>
-          <span className="text-xs minor-text-theme-colors">
-            {todo.shared
-              ? todo.ownerName
-                ? `${todo.ownerId === currentUserId ? 'You' : todo.ownerName}`
-                : 'Unassigned'
-              : 'Private'}
-            {' · '}
-            {todo.deadline ? (
-              /* Overdue is a property of an active todo, not a fourth
-                 status — a cancelled one being "late" means nothing. */
-              <span className={overdue ? 'font-medium text-danger' : ''}>
-                Due {todo.deadline}
-                {overdue ? ' · overdue' : ''}
-              </span>
-            ) : (
-              <>Added {formatTimeAgoOrDate(todo.createdAt)}</>
-            )}
-          </span>
+          <TodoSummary todo={todo} currentUserId={currentUserId} />
         </button>
 
         <ActionMenu label={`Actions for ${todo.title}`} disabled={busy}>

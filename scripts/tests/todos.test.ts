@@ -4,12 +4,18 @@ import assert from 'node:assert/strict';
 import { closeDb } from '../../lib/db';
 import { upsertUser } from '../../lib/db/users';
 import { deleteUsersByGoogleSub } from '../../lib/db/accounts';
-import { addMember, createBand, deleteBand } from '../../lib/db/bands';
+import {
+  addMember,
+  createBand,
+  deleteBand,
+  removeMember,
+} from '../../lib/db/bands';
 import {
   countTodosByStatus,
   createTodo,
   deleteTodo,
   getTodoForUser,
+  listMyTodos,
   listTodos,
   setTodoOwner,
   setTodoShared,
@@ -303,5 +309,83 @@ test('links round-trip, and an edit replaces them', async () => {
     assert.equal(await getTodoForUser(id, sam.id), null);
   } finally {
     await cleanup(bandId, 'LINKS');
+  }
+});
+
+/*
+ * Home's Activity tab reads todos across every band at once. It has to be the
+ * per-band "mine" list and nothing more: if the two ever disagree, a todo is
+ * on your band's list and missing from Home, or the reverse.
+ */
+test('across bands, "mine" is exactly the union of each band’s "mine"', async () => {
+  const { sam, alex, bandId, mk } = await fixture('XBAND');
+  const other = await createBand(sam.id, 'TD Other XBAND');
+  await addMember(other.id, alex.id, 'member');
+  try {
+    await mk({ title: 'Private' });
+    await mk({ title: 'Shared, mine', shared: true, owner: sam.id });
+    await mk({ title: 'Shared, Alex’s', shared: true, owner: alex.id });
+    await mk({ by: alex.id, title: 'Alex private' });
+
+    const inOther = (o: { by?: string; title: string; owner?: string }) =>
+      createTodo({
+        bandId: other.id,
+        creatorId: o.by ?? sam.id,
+        title: o.title,
+        description: null,
+        shared: Boolean(o.owner),
+        ownerId: o.owner ?? null,
+        deadline: null,
+        links: [],
+      });
+    await inOther({ title: 'Other private' });
+    await inOther({
+      by: alex.id,
+      title: 'Raised by Alex, mine',
+      owner: sam.id,
+    });
+    await setTodoStatus(
+      (await inOther({ title: 'Other, done' })).id,
+      'complete',
+    );
+
+    const perBand = [
+      ...(await listTodos(bandId, sam.id, { scope: 'mine', status: 'active' })),
+      ...(await listTodos(other.id, sam.id, {
+        scope: 'mine',
+        status: 'active',
+      })),
+    ].map((t) => t.title);
+    const across = (await listMyTodos(sam.id, 'active')).map((t) => t.title);
+
+    assert.deepEqual([...across].sort(), [...perBand].sort());
+    assert.deepEqual([...across].sort(), [
+      'Other private',
+      'Private',
+      'Raised by Alex, mine',
+      'Shared, mine',
+    ]);
+  } finally {
+    await deleteBand(other.id);
+    await cleanup(bandId, 'XBAND');
+  }
+});
+
+/*
+ * The per-band query leans on its API route to check membership first. This
+ * one has no such caller, so it checks for itself — or a private todo from a
+ * band you left would follow you to Home for good.
+ */
+test('leaving a band takes its todos off the cross-band list', async () => {
+  const { alex, bandId, mk } = await fixture('XLEAVE');
+  try {
+    await mk({ by: alex.id, title: 'Alex private' });
+    await mk({ title: 'Assigned to Alex', shared: true, owner: alex.id });
+    assert.equal((await listMyTodos(alex.id, 'active')).length, 2);
+
+    await removeMember(bandId, alex.id);
+    assert.deepEqual(await listMyTodos(alex.id, 'active'), []);
+  } finally {
+    await cleanup(bandId, 'XLEAVE');
   }
 });

@@ -2,12 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Modal } from '../Modal';
 import { useTrackPending } from '../PendingActionProvider';
-import { formatDateLong, formatTime12h, formatTimeRange } from '@/lib/format';
-import { eventColorKey } from './eventColors';
-import { layoutWeekBars, lastDayOf } from './eventBars';
-import { eventLabel } from './eventLabel';
+import { WeekRow } from './WeekRow';
+import { DaySummaryModal } from './DaySummaryModal';
 import { useCurrentBand } from '../CurrentBandProvider';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -44,22 +41,6 @@ interface CalendarEvent {
 
 const pad = (n: number) => n.toString().padStart(2, '0');
 
-// Bar geometry, in px because the overlay is positioned against the cell box
-// rather than flowing inside it. `BAR_TOP_PX` clears the day number (p-1 plus
-// a 24px circle); the pitch is one bar plus the gap under it.
-const BAR_TOP_PX = 30;
-const BAR_PITCH_PX = 18;
-const BAR_BOTTOM_PX = 6;
-/** Keeps a quiet week the same height it has always been. */
-const MIN_CELL_PX = 96;
-
-/** An event's display location: prefer its venue (name + address). */
-function displayLocation(ev: CalendarEvent): string | null {
-  if (ev.venueName)
-    return [ev.venueName, ev.venueAddress].filter(Boolean).join(', ');
-  return ev.location;
-}
-
 /**
  * Month calendar. Navigable by month, today highlighted. Fetches the
  * visible month's events and renders them into the day cells; clicking a
@@ -90,13 +71,7 @@ export function CalendarClient() {
   const dateStr = (d: number) =>
     `${view.year}-${pad(view.month + 1)}-${pad(d)}`;
 
-  /** Everything covering this day — a multi-day event counts on all of them. */
-  const eventsOn = (day: string) =>
-    events.filter((ev) => ev.date <= day && lastDayOf(ev) >= day);
-  const isToday = (d: number) =>
-    today.getFullYear() === view.year &&
-    today.getMonth() === view.month &&
-    today.getDate() === d;
+  const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
 
   const load = useCallback(async () => {
     const from = `${view.year}-${pad(view.month + 1)}-01`;
@@ -195,159 +170,24 @@ export function CalendarClient() {
           ))}
         </div>
 
-        {/* One row per week. Events are drawn as bars in an overlay rather
-            than as chips inside each cell, so a multi-day event is a single
-            bar across the days it covers. The overlay is click-through: the
-            cell underneath still owns the tap that opens the day summary,
-            which is where an event is actually read. */}
-        {weeks.map((week, wi) => {
-          const days = week.map((d) => (d === null ? null : dateStr(d)));
-          const { segments, laneCount } = layoutWeekBars(days, events);
-          const minHeight = Math.max(
-            MIN_CELL_PX,
-            BAR_TOP_PX + laneCount * BAR_PITCH_PX + BAR_BOTTOM_PX,
-          );
-          return (
-            <div key={wi} className="relative">
-              <div className="grid grid-cols-7 gap-px bg-fill-strong">
-                {week.map((d, i) => (
-                  <div
-                    key={i}
-                    style={{ minHeight }}
-                    className={
-                      d === null
-                        ? 'bg-neutral-50/60 dark:bg-neutral-900/40'
-                        : 'bg-surface'
-                    }
-                  >
-                    {d !== null && (
-                      // The whole cell is clickable — even with no events —
-                      // and opens that day's summary modal.
-                      <button
-                        type="button"
-                        onClick={() => setSummaryDate(dateStr(d))}
-                        aria-label={`Events on ${dateStr(d)}`}
-                        className="flex h-full w-full flex-col items-start p-1 text-left hover:bg-surface-soft"
-                      >
-                        <span
-                          className={
-                            isToday(d)
-                              ? 'inline-flex h-6 w-6 items-center justify-center rounded-full bg-cyan-600 text-xs font-medium text-white'
-                              : 'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs text-fg-muted'
-                          }
-                        >
-                          {d}
-                        </span>
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 grid grid-cols-7 gap-px px-1"
-                style={{
-                  top: BAR_TOP_PX,
-                  gridAutoRows: `${BAR_PITCH_PX}px`,
-                }}
-              >
-                {segments.map((seg) => (
-                  <span
-                    // A week-crossing event contributes one segment per week,
-                    // so the column keeps the key unique within this row.
-                    key={`${seg.event.id}-${seg.startCol}`}
-                    title={eventLabel(seg.event)}
-                    data-event-type={eventColorKey(seg.event.eventType)}
-                    style={{
-                      gridColumn: `${seg.startCol + 1} / span ${seg.endCol - seg.startCol + 1}`,
-                      gridRow: seg.lane + 1,
-                    }}
-                    className={
-                      'truncate bg-[var(--event-fill)] px-1 text-[0.6875rem] leading-4 text-[var(--event-accent)] ' +
-                      // A cut end is drawn flat and without its accent edge,
-                      // so a bar reads as continuing past the week rather
-                      // than as a separate event that happens to abut it.
-                      // That edge is the whole signal — an arrow glyph here
-                      // rendered as an emoji box in the grid's font.
-                      (seg.continuesBefore
-                        ? 'rounded-l-none '
-                        : 'rounded-l border-l-2 border-[var(--event-accent)] ') +
-                      (seg.continuesAfter ? 'rounded-r-none' : 'rounded-r')
-                    }
-                  >
-                    {eventLabel(seg.event)}
-                    {!seg.continuesBefore && seg.event.time
-                      ? ` ${formatTime12h(seg.event.time)}`
-                      : ''}
-                  </span>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+        {/* One row per week — see WeekRow, shared with Home's Activity week. */}
+        {weeks.map((week, wi) => (
+          <WeekRow
+            key={wi}
+            days={week.map((d) => (d === null ? null : dateStr(d)))}
+            events={events}
+            today={todayStr}
+            onSelectDay={setSummaryDate}
+          />
+        ))}
       </div>
 
       {summaryDate && (
-        <Modal
+        <DaySummaryModal
+          date={summaryDate}
+          events={events}
           onClose={() => setSummaryDate(null)}
-          labelledBy="day-summary-title"
-          size="sm"
-        >
-          <h2 id="day-summary-title" className="text-base font-semibold">
-            {formatDateLong(summaryDate)}
-          </h2>
-          {eventsOn(summaryDate).length === 0 ? (
-            <p className="mt-3 text-sm minor-text-theme-colors">
-              No events on this day.
-            </p>
-          ) : (
-            <ul className="mt-3 flex max-h-72 flex-col gap-1 overflow-auto">
-              {eventsOn(summaryDate).map((ev) => {
-                const loc = displayLocation(ev);
-                return (
-                  <li key={ev.id}>
-                    <Link
-                      href={`/calendar/events/${ev.id}`}
-                      data-event-type={eventColorKey(ev.eventType)}
-                      className="block rounded-md border border-line border-l-[3px] border-l-[var(--event-accent)] px-3 py-2 hover:bg-surface-soft dark:border-l-[var(--event-accent)]"
-                    >
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="truncate font-medium">
-                          {eventLabel(ev)}
-                        </span>
-                        {ev.time && (
-                          <span className="shrink-0 text-xs minor-text-theme-colors">
-                            {formatTimeRange(ev.time, ev.endTime)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="truncate text-xs minor-text-theme-colors">
-                        {ev.bandName}
-                        {loc ? ` · ${loc}` : ''}
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          <div className="mt-4 flex items-center justify-between gap-2">
-            <Link
-              href={`/calendar/events/new?date=${summaryDate}`}
-              className="btn-outline"
-            >
-              Add event
-            </Link>
-            <button
-              type="button"
-              onClick={() => setSummaryDate(null)}
-              className="btn-ghost"
-            >
-              Close
-            </button>
-          </div>
-        </Modal>
+        />
       )}
     </div>
   );

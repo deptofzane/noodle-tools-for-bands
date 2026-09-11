@@ -11,16 +11,19 @@ import {
 import { Modal } from '../Modal';
 import { useToast } from '../ToastProvider';
 import { completionInstant } from './eventTiming';
-import type { UpcomingShow } from './UpcomingShows';
+import type { EventListItem } from '@/lib/db/events';
 import { usePersistedBoolean } from '../usePersistedBoolean';
 import { eventColorKey } from '../calendar/eventColors';
 import { eventLabel } from '../calendar/eventLabel';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+/** How far back "recent" reaches — the week behind, mirroring the week ahead. */
+const WINDOW_MS = 7 * DAY_MS;
 
 /**
- * Events that finished within the last 24 hours, across the user's bands —
- * shown above Upcoming so a just-played show is still one tap away. Windowed
+ * Events that finished within the last seven days, across the user's bands —
+ * the last section of Home's Activity tab, so a show from last weekend still
+ * offers its notes button midweek, which is when notes get written. Windowed
  * against the viewer's own clock (computed on mount, so there's no
  * server/client hydration mismatch), and starts minimized. Renders nothing
  * when there's nothing recent.
@@ -34,7 +37,7 @@ export function RecentEvents({
   shows,
   bandIds,
 }: {
-  shows: UpcomingShow[];
+  shows: EventListItem[];
   bandIds: string[];
 }) {
   const showToast = useToast();
@@ -56,7 +59,7 @@ export function RecentEvents({
 
   const canManage = new Set(bandIds);
 
-  const openNotes = async (s: UpcomingShow) => {
+  const openNotes = async (s: EventListItem) => {
     setTarget({ id: s.id, title: eventLabel(s) });
     setNotes('');
     setLoading(true);
@@ -96,7 +99,7 @@ export function RecentEvents({
 
   const recent = shows
     .map((s) => ({ s, end: completionInstant(s).getTime() }))
-    .filter(({ end }) => end <= now && end > now - DAY_MS)
+    .filter(({ end }) => end <= now && end > now - WINDOW_MS)
     .sort((a, b) => b.end - a.end) // most recently finished first
     .map(({ s }) => s);
 
@@ -118,7 +121,7 @@ export function RecentEvents({
         </span>
         <h2 className="text-sm font-medium">Recent events</h2>
         <span className="text-xs minor-text-theme-colors">
-          <span aria-hidden="true">·</span> last 24 hours · {recent.length}
+          <span aria-hidden="true">·</span> last 7 days · {recent.length}
         </span>
       </button>
 

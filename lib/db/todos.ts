@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from './index';
-import { todoLinks, todos, users } from './schema';
+import { bandMembers, todoLinks, todos, users } from './schema';
 import type { NoteLink, NoteLinkInput } from './user-notes';
 
 /**
@@ -190,6 +190,45 @@ export async function listTodos(
     .orderBy(...TODO_ORDER)
     .limit(opts.limit ?? Number.MAX_SAFE_INTEGER)
     .offset(opts.offset ?? 0);
+  return withLinks(rows.map(toTodo));
+}
+
+/**
+ * The user's "mine" todos in one status, across every band they belong to —
+ * what Home's Activity tab lists before its band filter narrows it.
+ *
+ * Deliberately the per-band `listTodos(…, { scope: 'mine' })` and nothing
+ * more: the same `visible` and `inScope` predicates, so a todo can't be on a
+ * band's Mine list and missing here, or the reverse. Ordered the same way too,
+ * so under "All bands" deadlines interleave across bands rather than grouping
+ * by band.
+ *
+ * The one addition is the membership join. `listTodos` can omit it because
+ * its API route checks membership before calling; nothing checks for this one,
+ * and without the join a private todo you raised in a band you've since left
+ * would follow you to Home for good.
+ */
+export async function listMyTodos(
+  userId: string,
+  status: TodoStatus,
+): Promise<Todo[]> {
+  const rows = await db
+    .select({
+      ...TODO_COLUMNS,
+      creatorName: creators.name,
+      ownerName: owners.name,
+    })
+    .from(todos)
+    .innerJoin(
+      bandMembers,
+      and(eq(bandMembers.bandId, todos.bandId), eq(bandMembers.userId, userId)),
+    )
+    .innerJoin(creators, eq(creators.id, todos.creatorId))
+    .leftJoin(owners, eq(owners.id, todos.ownerId))
+    .where(
+      and(visible(userId), inScope('mine', userId), eq(todos.status, status)),
+    )
+    .orderBy(...TODO_ORDER);
   return withLinks(rows.map(toTodo));
 }
 
