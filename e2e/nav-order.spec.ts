@@ -104,6 +104,7 @@ test('the phone drawer is two groups, in order', async ({ page }) => {
     'History',
     'Open Conversations',
     'Chat',
+    'Venues',
     'Events',
     'Close menu',
   ]);

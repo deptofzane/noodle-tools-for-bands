@@ -272,6 +272,10 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
   const mobileBottomLinks: NavLink[] = [
     ...pickLinks(['Home', 'History', 'Open Conversations', 'Chat']),
     ...otherBandChatLinks,
+    {
+      href: selectedBandId ? `/bands/${selectedBandId}?tab=venues` : '/bands',
+      label: 'Venues',
+    },
     /*
      * Events goes to the same page the bar's Overview tab does: `events` is
      * the band page's default tab. Named explicitly rather than relying on
@@ -809,6 +813,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
                       role="none"
                       className="mt-auto flex flex-col gap-0.5 lg:hidden"
                     >
+                      {divider}
                       {bandRow}
                       {mobileBottomLinks.map(renderLink)}
                     </span>

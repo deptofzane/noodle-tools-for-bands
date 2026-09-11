@@ -6,6 +6,8 @@ import { useTrackPending } from '../PendingActionProvider';
 import { WeekRow } from './WeekRow';
 import { DaySummaryModal } from './DaySummaryModal';
 import { useCurrentBand } from '../CurrentBandProvider';
+import { ActionMenu, ActionMenuItem, MenuSectionLabel } from '../ActionMenu';
+import { useNavigate } from '../useNavigate';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [
@@ -48,6 +50,7 @@ const pad = (n: number) => n.toString().padStart(2, '0');
  */
 export function CalendarClient() {
   const trackPending = useTrackPending();
+  const go = useNavigate();
   const today = new Date();
   const [view, setView] = useState({
     year: today.getFullYear(),
@@ -143,7 +146,10 @@ export function CalendarClient() {
             currently "in", and isn't offered until there is one. The band
             list resolves after mount, so this appears a beat late rather
             than pointing somewhere useless in the meantime. */}
-        <span className="flex justify-end gap-2 flex-wrap ml-2 ">
+        {/* Two buttons beside the month nav is more than a phone's header
+            row can hold, so there they collapse into the same ⋯ menu every
+            other surface uses. Both routes stay one tap away either way. */}
+        <span className="ml-2 hidden flex-wrap justify-end gap-2 lg:flex">
           {currentBandId && (
             <Link
               href={`/bands/${currentBandId}?tab=events`}
@@ -155,6 +161,21 @@ export function CalendarClient() {
           <Link href="/calendar/events/new" className="btn-primary">
             Add event
           </Link>
+        </span>
+        <span className="ml-2 lg:hidden">
+          <ActionMenu label="Calendar actions">
+            <MenuSectionLabel>Calendar</MenuSectionLabel>
+            <ActionMenuItem onClick={() => go('/calendar/events/new')}>
+              Add event
+            </ActionMenuItem>
+            {currentBandId && (
+              <ActionMenuItem
+                onClick={() => go(`/bands/${currentBandId}?tab=events`)}
+              >
+                View events
+              </ActionMenuItem>
+            )}
+          </ActionMenu>
         </span>
       </div>
 
