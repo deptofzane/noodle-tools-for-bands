@@ -3,7 +3,7 @@ import { getUserIdByFeedToken } from '@/lib/db/calendarFeeds';
 import { listEventsForFeed, type FeedEvent } from '@/lib/db/events';
 import { buildCalendar, type IcsEvent } from '@/lib/ics';
 import { rateLimitByIp } from '@/lib/rate-limit';
-import { eventLabel } from '@/app/calendar/eventLabel';
+import { eventLabel } from '@/app/scheduling/eventLabel';
 
 /**
  * GET /api/calendar/<token> — a read-only iCalendar feed of the events
@@ -23,7 +23,7 @@ function describe(ev: FeedEvent, appUrl: string): string | null {
   const parts: string[] = [];
   if (ev.details) parts.push(ev.details);
   if (ev.setlistName) parts.push(`Setlist: ${ev.setlistName}`);
-  parts.push(`${appUrl}/calendar/events/${ev.id}`);
+  parts.push(`${appUrl}/scheduling/events/${ev.id}`);
   return parts.length ? parts.join('\n\n') : null;
 }
 
@@ -67,7 +67,7 @@ export async function GET(
     endTime: ev.endTime,
     location: eventLocation(ev),
     description: describe(ev, appUrl),
-    url: `${appUrl}/calendar/events/${ev.id}`,
+    url: `${appUrl}/scheduling/events/${ev.id}`,
     updatedAt: ev.updatedAt,
   }));
 

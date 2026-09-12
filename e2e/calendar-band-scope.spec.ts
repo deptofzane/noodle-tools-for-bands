@@ -76,7 +76,7 @@ async function calendarAs(page: import('@playwright/test').Page, bandId: string)
     (id) => localStorage.setItem('selectedBandId', id),
     bandId,
   );
-  await page.goto('/calendar');
+  await page.goto('/scheduling');
   // The grid is band-scoped and renders nothing until the band list resolves.
   await expect(
     page.getByRole('button', { name: 'Calendar actions' }),

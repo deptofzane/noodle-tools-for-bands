@@ -63,7 +63,7 @@ test.afterAll(async () => {
 async function activity(page: import('@playwright/test').Page) {
   await page.addInitScript(() => localStorage.setItem('homeTab', 'activity'));
   await page.goto('/home');
-  return page.getByRole('region', { name: 'Calendar' });
+  return page.getByRole('region', { name: 'Full calendar' });
 }
 
 test('the month calendar spans every band the user is in', async ({ page }) => {

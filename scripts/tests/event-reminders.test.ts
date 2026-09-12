@@ -19,7 +19,7 @@ import {
 import {
   EVENT_COLOR_KEYS,
   eventColorKey,
-} from '../../app/calendar/eventColors';
+} from '../../app/scheduling/eventColors';
 
 after(closeDb);
 

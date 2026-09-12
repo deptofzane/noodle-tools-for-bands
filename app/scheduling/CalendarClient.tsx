@@ -81,38 +81,21 @@ export function CalendarClient() {
       events={shown}
       actions={
         <>
-          {/* Both routes are this band's, like the grid itself, and aren't
-              offered until the band list resolves — so they appear a beat
-              late rather than pointing somewhere useless meanwhile. */}
-          {/* Two buttons beside the month nav is more than a phone's header
-              row can hold, so there they collapse into the same ⋯ menu every
-              other surface uses. Both routes stay one tap away either way. */}
+          {/* The event list used to be reachable from here; it's the Events
+              pill above now, so this is down to the one action the calendar
+              itself doesn't offer. The phone keeps it in the same ⋯ menu
+              every other surface uses rather than in the month-nav row. */}
           <span className="ml-2 hidden flex-wrap justify-end gap-2 lg:flex">
-            {currentBandId && (
-              <Link
-                href={`/bands/${currentBandId}?tab=events`}
-                className="btn-outline text-wrap"
-              >
-                Events
-              </Link>
-            )}
-            <Link href="/calendar/events/new" className="btn-primary">
+            <Link href="/scheduling/events/new" className="btn-primary">
               Add event
             </Link>
           </span>
           <span className="ml-2 lg:hidden">
             <ActionMenu label="Calendar actions">
               <MenuSectionLabel>Calendar</MenuSectionLabel>
-              <ActionMenuItem onClick={() => go('/calendar/events/new')}>
+              <ActionMenuItem onClick={() => go('/scheduling/events/new')}>
                 Add event
               </ActionMenuItem>
-              {currentBandId && (
-                <ActionMenuItem
-                  onClick={() => go(`/bands/${currentBandId}?tab=events`)}
-                >
-                  View events
-                </ActionMenuItem>
-              )}
             </ActionMenu>
           </span>
         </>

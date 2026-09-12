@@ -41,7 +41,7 @@ export default async function EventPage({
 
   return (
     <main className="main-container">
-      <PageHeader defaultHref="/calendar" defaultHrefName="Calendar" />
+      <PageHeader defaultHref="/scheduling" defaultHrefName="Scheduling" />
 
       <div className="pb-4">
         <h1 className="title-text">{eventLabel(event)}</h1>
@@ -99,7 +99,7 @@ export default async function EventPage({
                 <MapLink address={event.venueAddress} label={event.venueName} />
               ) : canManage && event.venueId ? (
                 <Link
-                  href={`/bands/${event.bandId}/venues/${event.venueId}/edit`}
+                  href={`/scheduling/venues/${event.venueId}/edit`}
                   className="text-accent hover:underline"
                 >
                   {event.venueName}

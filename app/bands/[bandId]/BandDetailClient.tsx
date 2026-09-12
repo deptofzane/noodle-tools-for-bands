@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BandMembersTab } from './BandMembersTab';
-import { BandOverviewTab } from './BandOverviewTab';
-import { BandVenuesTab } from './BandVenuesTab';
 import { BandNotesTab } from './BandNotesTab';
 import { BandTodosTab } from './BandTodosTab';
 import {
@@ -20,11 +18,10 @@ import { LoadingBlock } from '../../Spinner';
 
 /**
  * Band detail coordinator: fetches the band's data, owns the tab state, and
- * renders the tab bar plus the active tab (Events / Venues / Todos /
- * Notes / Polls).
+ * renders the tab bar plus the active tab (Todos / Notes / Polls).
  * The tab bodies live in their own components. Audio and Setlists live on
- * their own page at `/bands/[bandId]/audio`, and Chat at
- * `/bands/[bandId]/chat`.
+ * their own page at `/bands/[bandId]/audio`, Chat at `/bands/[bandId]/chat`,
+ * and Events and Venues on `/scheduling`.
  */
 export function BandDetailClient({
   bandId,
@@ -44,7 +41,7 @@ export function BandDetailClient({
 }) {
   const [activeTab, setActiveTab] = useState<BandTab>(initialTab);
 
-  const { data, setlists, shows, venues, error, reload } = useBandData(bandId);
+  const { data, error, reload } = useBandData(bandId);
 
   // Mirror the active tab into the URL (?tab=…) so browser-back and refresh
   // restore it. Uses history.replaceState — no navigation/refetch, and it
@@ -52,7 +49,7 @@ export function BandDetailClient({
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
-    if (activeTab === 'events') url.searchParams.delete('tab');
+    if (activeTab === DEFAULT_BAND_TAB) url.searchParams.delete('tab');
     else url.searchParams.set('tab', activeTab);
     window.history.replaceState(window.history.state, '', url.toString());
   }, [activeTab]);
@@ -141,19 +138,6 @@ export function BandDetailClient({
           canManage={isOwner}
           onReload={reload}
         />
-      )}
-
-      {activeTab === 'events' && (
-        <BandOverviewTab
-          bandId={bandId}
-          shows={shows}
-          setlists={setlists}
-          onReload={reload}
-        />
-      )}
-
-      {activeTab === 'venues' && (
-        <BandVenuesTab bandId={bandId} venues={venues} onReload={reload} />
       )}
 
       {activeTab === 'todos' && (

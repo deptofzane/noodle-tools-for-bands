@@ -10,7 +10,7 @@ test('band switch: a page that is not about a band stays put', () => {
   // sending someone from the calendar to a band Overview loses their place.
   for (const path of [
     '/home',
-    '/calendar',
+    '/scheduling',
     '/history',
     '/settings',
     '/about',

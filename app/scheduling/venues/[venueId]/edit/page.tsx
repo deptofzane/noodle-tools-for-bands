@@ -2,35 +2,35 @@ import { notFound, redirect } from 'next/navigation';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getBandById, getMembership } from '@/lib/db/bands';
 import { getVenue } from '@/lib/db/venues';
-import { PageHeader } from '../../../../../PageHeader';
+import { PageHeader } from '../../../../PageHeader';
 import { VenueForm } from '../../VenueForm';
 
 /**
- * Edit-venue page. Server shell — checks band membership and that the venue
- * belongs to the band, then hands its fields to the client form.
+ * Edit-venue page. Server shell — the venue names its band, so membership is
+ * checked against that, then its fields go to the client form.
  */
 export default async function EditVenuePage({
   params,
 }: {
-  params: Promise<{ bandId: string; venueId: string }>;
+  params: Promise<{ venueId: string }>;
 }) {
-  const { bandId, venueId } = await params;
+  const { venueId } = await params;
 
   const user = await getCurrentDbUser();
   if (!user) redirect('/login');
-  if (!(await getMembership(user.id, bandId))) notFound();
-
-  const band = await getBandById(bandId);
-  if (!band) notFound();
 
   const venue = await getVenue(venueId);
-  if (!venue || venue.bandId !== bandId) notFound();
+  if (!venue) notFound();
+  if (!(await getMembership(user.id, venue.bandId))) notFound();
+
+  const band = await getBandById(venue.bandId);
+  if (!band) notFound();
 
   return (
     <main className="main-container">
-      <PageHeader defaultHref={`/bands/${bandId}?tab=venues`} />
+      <PageHeader defaultHref="/scheduling?view=venues" />
       <VenueForm
-        bandId={bandId}
+        bandId={venue.bandId}
         venueId={venueId}
         bandName={band.name}
         initial={{

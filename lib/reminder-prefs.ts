@@ -91,7 +91,7 @@ export const DEFAULT_REMINDERS: Record<
 /**
  * Preset event types to the category their reminders are keyed on.
  *
- * A deliberate mirror of `BY_LABEL` in `app/calendar/eventColors.ts`, matched
+ * A deliberate mirror of `BY_LABEL` in `app/scheduling/eventColors.ts`, matched
  * case-insensitively on the trimmed label for the same reason: `event_type` is
  * free text, so a hand-typed "show" is still a show. Anything unrecognised —
  * a band's own invented type, or no type at all — is 'other'.

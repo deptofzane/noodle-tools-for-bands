@@ -3,8 +3,8 @@
 import { ensureOk } from '@/lib/api';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTrackPending } from '../../../PendingActionProvider';
-import { useToast } from '../../../ToastProvider';
+import { useTrackPending } from '../../PendingActionProvider';
+import { useToast } from '../../ToastProvider';
 import { useCanGoBack } from '@/app/NavigationHistoryProvider';
 
 export interface VenueFields {
@@ -56,7 +56,7 @@ export function VenueForm({
   const set = (k: keyof VenueFields, v: string) =>
     setFields((prev) => ({ ...prev, [k]: v }));
 
-  const venuesHref = `/bands/${bandId}?tab=venues`;
+  const venuesHref = `/scheduling?view=venues`;
   const isEdit = Boolean(venueId);
 
   // No `router.refresh()` here: it would refetch *this* route, the one being

@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { layoutWeekBars, lastDayOf } from '../../app/calendar/eventBars';
-import { eventLabel } from '../../app/calendar/eventLabel';
-import { eventColorKey } from '../../app/calendar/eventColors';
+import { layoutWeekBars, lastDayOf } from '../../app/scheduling/eventBars';
+import { eventLabel } from '../../app/scheduling/eventLabel';
+import { eventColorKey } from '../../app/scheduling/eventColors';
 import {
   addDays,
   daySpan,

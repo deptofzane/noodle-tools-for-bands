@@ -1,13 +1,13 @@
 'use client';
 
-import { useNavigate } from '../../../../useNavigate';
+import { useNavigate } from '../../../useNavigate';
 import {
   ActionMenu,
   MenuIconRow,
   MenuSectionLabel,
-} from '../../../../ActionMenu';
-import { useShareLink } from '../../../../useShareLink';
-import { LinkIcon, PencilIcon } from '../../../../icons';
+} from '../../../ActionMenu';
+import { useShareLink } from '../../../useShareLink';
+import { LinkIcon, PencilIcon } from '../../../icons';
 import { venueHref } from '@/lib/routes';
 
 /**
@@ -18,11 +18,9 @@ import { venueHref } from '@/lib/routes';
  * deleting one is already looking.
  */
 export function ViewVenueActions({
-  bandId,
   venueId,
   name,
 }: {
-  bandId: string;
   venueId: string;
   name: string;
 }) {
@@ -39,14 +37,14 @@ export function ViewVenueActions({
             icon: <PencilIcon size={18} />,
             label: `Edit ${name}`,
             title: 'Edit venue',
-            onClick: () => go(`/bands/${bandId}/venues/${venueId}/edit`),
+            onClick: () => go(`/scheduling/venues/${venueId}/edit`),
           },
           {
             key: 'share',
             icon: <LinkIcon size={18} />,
             label: `Copy a link to ${name}`,
             title: 'Share venue',
-            onClick: () => void share(venueHref(bandId, venueId), 'Venue'),
+            onClick: () => void share(venueHref(venueId), 'Venue'),
           },
         ]}
       />

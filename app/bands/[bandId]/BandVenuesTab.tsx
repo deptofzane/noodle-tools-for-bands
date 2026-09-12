@@ -109,14 +109,14 @@ export function BandVenuesTab({
                   icon: <EyeIcon size={18} />,
                   label: `View ${venue.name}`,
                   title: 'View venue',
-                  onClick: () => go(venueHref(bandId, venue.id)),
+                  onClick: () => go(venueHref(venue.id)),
                 },
                 {
                   key: 'edit',
                   icon: <PencilIcon size={18} />,
                   label: `Edit ${venue.name}`,
                   title: 'Edit venue',
-                  onClick: () => go(`/bands/${bandId}/venues/${venue.id}/edit`),
+                  onClick: () => go(`/scheduling/venues/${venue.id}/edit`),
                 },
                 {
                   key: 'share',
@@ -124,7 +124,7 @@ export function BandVenuesTab({
                   label: `Copy a link to ${venue.name}`,
                   title: 'Share venue',
                   onClick: () =>
-                    void share(venueHref(bandId, venue.id), 'Venue'),
+                    void share(venueHref(venue.id), 'Venue'),
                 },
               ]}
             />
@@ -200,7 +200,7 @@ export function BandVenuesTab({
           >
             <h2 className="text-sm font-medium">Venues</h2>
           </MinimizeToggle>
-          <Link href={`/bands/${bandId}/venues/new`} className="btn-outline">
+          <Link href={`/scheduling/venues/new?bandId=${bandId}`} className="btn-outline">
             Create venue
           </Link>
         </div>

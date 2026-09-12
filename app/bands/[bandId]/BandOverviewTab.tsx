@@ -34,7 +34,7 @@ import {
 import { MapLink } from '../../MapLink';
 import { eventHref, liveHref, practiceHref } from '@/lib/routes';
 import { CollapsibleSection } from '@/app/CollapsibleSection';
-import { eventColorKey } from '../../calendar/eventColors';
+import { eventColorKey } from '../../scheduling/eventColors';
 
 /**
  * The Overview tab: upcoming Shows, Past shows, and (for non-owners) a Leave
@@ -196,7 +196,7 @@ export function BandOverviewTab({
                   icon: <PencilIcon size={18} />,
                   label: `Edit ${show.title}`,
                   title: 'Edit event',
-                  onClick: () => go(`/calendar/events/${show.id}/edit`),
+                  onClick: () => go(`/scheduling/events/${show.id}/edit`),
                 },
                 {
                   key: 'share',
@@ -210,7 +210,7 @@ export function BandOverviewTab({
             {/* Acts on the event, so it sits with the event's own row and
                 above anything belonging to the setlist booked for it. */}
             <ActionMenuItem
-              onClick={() => go(`/calendar/events/new?cloneFrom=${show.id}`)}
+              onClick={() => go(`/scheduling/events/new?cloneFrom=${show.id}`)}
             >
               Clone event
             </ActionMenuItem>
@@ -351,7 +351,7 @@ export function BandOverviewTab({
             </MinimizeToggle>
           </span>
           <Link
-            href={`/calendar/events/new?bandId=${bandId}`}
+            href={`/scheduling/events/new?bandId=${bandId}`}
             className="btn-outline"
           >
             Add event

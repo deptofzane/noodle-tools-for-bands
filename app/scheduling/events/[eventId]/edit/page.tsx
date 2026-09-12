@@ -23,7 +23,7 @@ export default async function EditEventPage({
   const event = await getEventForUser(user.id, eventId);
   if (!event) notFound();
   if (!(await getMembership(user.id, event.bandId)))
-    redirect(`/calendar/events/${eventId}`);
+    redirect(`/scheduling/events/${eventId}`);
 
   const [setlists, venues] = await Promise.all([
     listBandSetlistNames(event.bandId),

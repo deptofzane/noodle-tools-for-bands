@@ -204,7 +204,7 @@ test('turning it on mirrors the bar and moves the drawer left', async ({
     .getByRole('link', { name: 'Overview' })
     .boundingBox())!;
   const calendar = (await tabs
-    .getByRole('link', { name: 'Calendar' })
+    .getByRole('link', { name: 'Scheduling' })
     .boundingBox())!;
   expect(overview.x).toBeGreaterThan(calendar.x);
 

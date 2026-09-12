@@ -27,7 +27,7 @@ test.beforeAll(async () => {
 });
 
 const openPicker = async (page: import('@playwright/test').Page) => {
-  await page.goto('/calendar/events/new');
+  await page.goto('/scheduling/events/new');
   await page.getByRole('button', { name: 'Choose a saved venue…' }).click();
   await expect(
     page.getByRole('heading', { name: 'Choose a venue' }),

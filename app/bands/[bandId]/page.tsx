@@ -29,6 +29,10 @@ export default async function BandDetailPage({
   if (tab === 'audio') redirect(`/bands/${bandId}/audio`);
   if (tab === 'setlists') redirect(`/bands/${bandId}/audio?tab=setlists`);
   if (tab === 'chat') redirect(`/bands/${bandId}/chat`);
+  // Events and Venues moved to Scheduling, which shows them for whichever
+  // band is current — so these drop the band id rather than carrying it.
+  if (tab === 'events') redirect('/scheduling?view=events');
+  if (tab === 'venues') redirect('/scheduling?view=venues');
 
   return (
     <main className="main-container">

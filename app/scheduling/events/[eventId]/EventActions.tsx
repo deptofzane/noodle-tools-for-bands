@@ -43,7 +43,7 @@ export function EventActions({
               icon: <PencilIcon size={18} />,
               label: 'Edit this event',
               title: 'Edit event',
-              onClick: () => go(`/calendar/events/${eventId}/edit`),
+              onClick: () => go(`/scheduling/events/${eventId}/edit`),
             },
             {
               key: 'share',
@@ -66,7 +66,7 @@ export function EventActions({
           it. */}
       {canManage && (
         <ActionMenuItem
-          onClick={() => go(`/calendar/events/new?cloneFrom=${eventId}`)}
+          onClick={() => go(`/scheduling/events/new?cloneFrom=${eventId}`)}
         >
           Clone event
         </ActionMenuItem>

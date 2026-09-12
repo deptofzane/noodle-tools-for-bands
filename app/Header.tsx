@@ -64,7 +64,7 @@ interface NavLink {
  * choosing "Band" swaps the menu's contents for the band list (plus a "Back"
  * row), so entries stay full-width and thumb-sized on a phone.
  *
- * Active-tab matching is intentionally exact: `/bands`, `/calendar`,
+ * Active-tab matching is intentionally exact: `/bands`, `/scheduling`,
  * `/open-conversations`, and `/history` each get their own dedicated
  * highlight. Routes outside this nav (notably `/notes/[conversationId]`)
  * leave the header un-highlighted, which is the least-wrong choice —
@@ -218,7 +218,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
     },
     { href: overviewHref, label: 'Overview', icon: <OverviewIcon /> },
     { href: audioHref, label: 'Audio', icon: <AudioIcon /> },
-    { href: '/calendar', label: 'Calendar', icon: <CalendarIcon /> },
+    { href: '/scheduling', label: 'Scheduling', icon: <CalendarIcon /> },
     // { href: '/bands', label: 'Bands' },
     {
       href: chatHref,
@@ -273,7 +273,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
     ...pickLinks(['Home', 'History', 'Open Conversations', 'Chat']),
     ...otherBandChatLinks,
     {
-      href: selectedBandId ? `/bands/${selectedBandId}?tab=venues` : '/bands',
+      href: '/scheduling?view=venues',
       label: 'Venues',
     },
     /*
@@ -283,7 +283,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
      * ever moves.
      */
     {
-      href: selectedBandId ? `/bands/${selectedBandId}?tab=events` : '/bands',
+      href: '/scheduling?view=events',
       label: 'Events',
     },
   ];

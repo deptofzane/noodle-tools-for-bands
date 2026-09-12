@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { PillTabs } from '../PillTabs';
 
 type HomeTab = 'notifications' | 'activity';
 const STORAGE_KEY = 'homeTab';
@@ -68,39 +69,19 @@ export function HomeTabs({
 
   return (
     <div className="flex flex-col gap-4">
-      <div
-        role="tablist"
-        aria-label="Home"
-        className="mx-auto inline-flex gap-1 rounded-full border border-line p-1"
-      >
-        {TABS.map((t) => {
-          const selected = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              role="tab"
-              id={`home-tab-${t.key}`}
-              aria-selected={selected}
-              aria-controls="home-tabpanel"
-              onClick={() => choose(t.key)}
-              className={
-                'flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition ' +
-                (selected
-                  ? 'bg-accent-fill text-accent'
-                  : 'minor-text-theme-colors hover:bg-surface-hover')
-              }
-            >
-              {t.label}
-              {t.key === 'notifications' && !selected && unreadCount > 0 && (
-                <span className="rounded-full bg-blue-600 px-1.5 text-[0.625rem] font-semibold leading-4 text-white">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      <PillTabs
+        label="Home"
+        idPrefix="home-tab"
+        controls="home-tabpanel"
+        // Null until the saved tab is known, and '' matches no pill — which
+        // is the intended look for that frame.
+        activeKey={tab ?? ''}
+        onChange={(key) => choose(key as HomeTab)}
+        tabs={TABS.map((t) => ({
+          ...t,
+          badge: t.key === 'notifications' ? unreadCount : undefined,
+        }))}
+      />
 
       {tab && (
         <div

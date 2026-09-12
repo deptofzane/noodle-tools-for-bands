@@ -2,33 +2,34 @@ import { notFound, redirect } from 'next/navigation';
 import { getCurrentDbUser } from '@/lib/current-user';
 import { getMembership } from '@/lib/db/bands';
 import { getVenue } from '@/lib/db/venues';
-import { PageHeader } from '../../../../PageHeader';
-import { MapLink } from '../../../../MapLink';
+import { PageHeader } from '../../../PageHeader';
+import { MapLink } from '../../../MapLink';
 import { ViewVenueActions } from './ViewVenueActions';
 
 /**
  * One venue, in full.
  *
- * The Venues tab shows these as expandable rows in a list; this is the page a
- * shared link points at, and where a long set of notes is actually readable.
+ * The Venues list shows these as expandable rows; this is the page a shared
+ * link points at, and where a long set of notes is actually readable.
  *
- * Server shell, like the edit page beside it: band membership first, then that
- * the venue belongs to *this* band — otherwise a venue id from another band
- * would render under this band's URL.
+ * The venue names its own band, so — unlike when this lived under
+ * `/bands/[bandId]/` — there is no band id in the URL that could disagree with
+ * it. That removes the mismatch case entirely; what's left to check is whether
+ * the viewer belongs to the band that owns it.
  */
 export default async function ViewVenuePage({
   params,
 }: {
-  params: Promise<{ bandId: string; venueId: string }>;
+  params: Promise<{ venueId: string }>;
 }) {
-  const { bandId, venueId } = await params;
+  const { venueId } = await params;
 
   const user = await getCurrentDbUser();
   if (!user) redirect('/login');
-  if (!(await getMembership(user.id, bandId))) notFound();
 
   const venue = await getVenue(venueId);
-  if (!venue || venue.bandId !== bandId) notFound();
+  if (!venue) notFound();
+  if (!(await getMembership(user.id, venue.bandId))) notFound();
 
   const hasDetails = Boolean(
     venue.address ||
@@ -41,18 +42,14 @@ export default async function ViewVenuePage({
   return (
     <main className="main-container">
       <PageHeader
-        defaultHref={`/bands/${bandId}?tab=venues`}
+        defaultHref="/scheduling?view=venues"
         defaultHrefName="Venues"
       />
 
       <div className="flex items-start justify-between gap-3">
         <h1 className="title-text break-words">{venue.name}</h1>
         <div className="shrink-0">
-          <ViewVenueActions
-            bandId={bandId}
-            venueId={venue.id}
-            name={venue.name}
-          />
+          <ViewVenueActions venueId={venue.id} name={venue.name} />
         </div>
       </div>
 

@@ -5,7 +5,6 @@ import { createAlbum, listAlbums } from '../lib/db/albums';
 import { createTodo, listTodos } from '../lib/db/todos';
 import { createEvent, listBandEvents } from '../lib/db/events';
 import { createVenue, listBandVenues } from '../lib/db/venues';
-import { createBand } from '../lib/db/bands';
 import { createNote, listBandNotesForUser } from '../lib/db/user-notes';
 
 /**
@@ -126,6 +125,18 @@ test.beforeAll(async () => {
         links: [],
       })
     ).id;
+});
+
+/**
+ * Venues and Events belong to Scheduling now, and Scheduling shows whichever
+ * band is *current* — which stops being the seeded one as soon as a test in
+ * here creates a second band. Pinning keeps those navigations about this band.
+ */
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(
+    (id) => localStorage.setItem('selectedBandId', id),
+    seed.bandId,
+  );
 });
 
 /** Accessible names of the menu's children, in DOM order. */
@@ -288,7 +299,7 @@ test.describe('per-song action menus', () => {
   });
 
   test('event page: the row precedes Remove', async ({ page }) => {
-    await page.goto(`/calendar/events/${eventId}`);
+    await page.goto(`/scheduling/events/${eventId}`);
     const names = await openMenu(page, 'Song actions');
     await expectSongRow(names, 0);
     expect(names[3]).toContain('Remove song from setlist');
@@ -361,7 +372,7 @@ test.describe('remaining action menus', () => {
   test.use({ permissions: ['clipboard-read', 'clipboard-write'] });
 
   test('venue row: View reaches the new page', async ({ page }) => {
-    await page.goto(`/bands/${seed.bandId}?tab=venues`);
+    await page.goto('/scheduling?view=venues');
     const names = await openMenu(page, `Actions for ${VENUE}`);
     expect(names[0]).toBe(`View ${VENUE}`);
     expect(names[1]).toBe(`Edit ${VENUE}`);
@@ -370,13 +381,13 @@ test.describe('remaining action menus', () => {
     expect(names[3]).toBe('Delete venue');
 
     await page.getByRole('menuitem', { name: `View ${VENUE}` }).click();
-    await expect(page).toHaveURL(`/bands/${seed.bandId}/venues/${venueId}`);
+    await expect(page).toHaveURL(`/scheduling/venues/${venueId}`);
   });
 
   test('venue page: renders its details and offers Edit + Share', async ({
     page,
   }) => {
-    await page.goto(`/bands/${seed.bandId}/venues/${venueId}`);
+    await page.goto(`/scheduling/venues/${venueId}`);
     await expect(page.getByRole('heading', { name: VENUE })).toBeVisible();
     await expect(page.getByText('12 Test Street')).toBeVisible();
     await expect(page.getByText('Load in through the back.')).toBeVisible();
@@ -393,15 +404,8 @@ test.describe('remaining action menus', () => {
       .click();
     await expect(page.getByText('Venue link copied.')).toBeVisible();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-      `${new URL(page.url()).origin}/bands/${seed.bandId}/venues/${venueId}`,
+      `${new URL(page.url()).origin}/scheduling/venues/${venueId}`,
     );
-  });
-
-  test("venue page 404s for another band's venue id", async ({ page }) => {
-    // The guard that matters: a real venue id under the wrong band URL.
-    const other = await createBand(seed.userId, 'E2E Other Band');
-    const res = await page.goto(`/bands/${other.id}/venues/${venueId}`);
-    expect(res?.status()).toBe(404);
   });
 
   test('note row: owner gets three icons, Delete stays worded', async ({
@@ -434,7 +438,7 @@ test.describe('remaining action menus', () => {
   });
 
   test('overview event menu: the row is named and leads', async ({ page }) => {
-    await page.goto(`/bands/${seed.bandId}?tab=events`);
+    await page.goto('/scheduling?view=events');
     // Scoped to this gig's own row: the band holds more than one event, so an
     // unscoped 'Event actions' is a strict-mode violation waiting to happen.
     await page
@@ -464,7 +468,7 @@ test.describe('remaining action menus', () => {
   });
 
   test('event page: setlist menu gained Share', async ({ page }) => {
-    await page.goto(`/calendar/events/${eventId}`);
+    await page.goto(`/scheduling/events/${eventId}`);
     const names = await openMenu(page, 'Setlist actions');
     const set = E2E.setlistName;
     expect(names.slice(0, 3)).toEqual([
@@ -484,7 +488,7 @@ test.describe('remaining action menus', () => {
   });
 
   test('event page: its own menu is Edit + Share + Clone', async ({ page }) => {
-    await page.goto(`/calendar/events/${eventId}`);
+    await page.goto(`/scheduling/events/${eventId}`);
     const names = await openMenu(page, 'Event actions');
     expect(names).toEqual([
       'Edit this event',
@@ -507,7 +511,7 @@ test.describe('route progress from menus', () => {
   const bar = (page: Page) => page.locator('[data-route-progress]');
 
   test('a kebab navigation raises the bar', async ({ page }) => {
-    await page.goto(`/bands/${seed.bandId}?tab=venues`);
+    await page.goto('/scheduling?view=venues');
     await expect(bar(page)).toHaveAttribute('data-route-progress', 'idle');
 
     // Hold the venue page's payload so the bar is observable.
@@ -520,7 +524,7 @@ test.describe('route progress from menus', () => {
     await page.getByRole('menuitem', { name: `View ${VENUE}` }).click();
 
     await expect(bar(page)).toHaveAttribute('data-route-progress', 'active');
-    await expect(page).toHaveURL(`/bands/${seed.bandId}/venues/${venueId}`);
+    await expect(page).toHaveURL(`/scheduling/venues/${venueId}`);
     // And it clears once the route commits, rather than sitting there.
     await expect(bar(page)).toHaveAttribute('data-route-progress', 'idle');
   });
@@ -541,7 +545,7 @@ test.describe('route progress from menus', () => {
   });
 
   test('the bar still tracks ordinary links', async ({ page }) => {
-    await page.goto(`/bands/${seed.bandId}?tab=venues`);
+    await page.goto('/scheduling?view=venues');
     await page.route('**/venues/new**', async (route) => {
       await new Promise((r) => setTimeout(r, 2000));
       await route.continue();

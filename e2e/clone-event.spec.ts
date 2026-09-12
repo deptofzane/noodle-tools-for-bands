@@ -45,14 +45,26 @@ test.beforeAll(async () => {
     ).id;
 });
 
+/**
+ * The events list is Scheduling's now, and it shows whichever band is
+ * *current* — pin it, so a band left behind by another spec can't decide what
+ * this one is looking at.
+ */
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(
+    (id) => localStorage.setItem('selectedBandId', id),
+    seed.bandId,
+  );
+});
+
 test('the event page menu clones into a prefilled create screen', async ({
   page,
 }) => {
-  await page.goto(`/calendar/events/${eventId}`);
+  await page.goto(`/scheduling/events/${eventId}`);
   await page.getByRole('button', { name: 'Event actions' }).click();
   await page.getByRole('menuitem', { name: 'Clone event' }).click();
 
-  await expect(page).toHaveURL(`/calendar/events/new?cloneFrom=${eventId}`);
+  await expect(page).toHaveURL(`/scheduling/events/new?cloneFrom=${eventId}`);
 
   // Everything but the date came across — including the private notes.
   await expect(page.getByLabel('Title')).toHaveValue(SOURCE);
@@ -71,7 +83,7 @@ test('the event page menu clones into a prefilled create screen', async ({
 test('a cloned multi-day event keeps its length once a date is picked', async ({
   page,
 }) => {
-  await page.goto(`/calendar/events/new?cloneFrom=${eventId}`);
+  await page.goto(`/scheduling/events/new?cloneFrom=${eventId}`);
 
   await page.getByLabel('Date', { exact: true }).fill('2031-02-27');
   // Two days beyond the start, and across a month boundary.
@@ -84,7 +96,7 @@ test('a cloned multi-day event keeps its length once a date is picked', async ({
 });
 
 test('the Events tab menu offers the same clone', async ({ page }) => {
-  await page.goto(`/bands/${seed.bandId}?tab=events`);
+  await page.goto('/scheduling?view=events');
   // Scoped to this event's own row, not `.first()` — the seeded band holds
   // several events and their order is not this test's business.
   await page
@@ -94,6 +106,6 @@ test('the Events tab menu offers the same clone', async ({ page }) => {
     .click();
   await page.getByRole('menuitem', { name: 'Clone event' }).click();
 
-  await expect(page).toHaveURL(/\/calendar\/events\/new\?cloneFrom=/);
+  await expect(page).toHaveURL(/\/scheduling\/events\/new\?cloneFrom=/);
   await expect(page.getByLabel('Date', { exact: true })).toHaveValue('');
 });

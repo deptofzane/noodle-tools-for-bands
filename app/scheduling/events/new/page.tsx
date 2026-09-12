@@ -69,7 +69,7 @@ export default async function NewEventPage({
 
   return (
     <main className="main-container">
-      <PageHeader defaultHref="/calendar" />
+      <PageHeader defaultHref="/scheduling" />
 
       <NewEventClient
         bands={bands}

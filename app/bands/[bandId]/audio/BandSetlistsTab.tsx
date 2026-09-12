@@ -238,7 +238,7 @@ export function BandSetlistsTab({
               */}
               <ActionMenuItem
                 onClick={() =>
-                  go(`/calendar/events/new?bandId=${bandId}&setlistId=${sl.id}`)
+                  go(`/scheduling/events/new?bandId=${bandId}&setlistId=${sl.id}`)
                 }
               >
                 Create event using this setlist

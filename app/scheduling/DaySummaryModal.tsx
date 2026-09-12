@@ -60,7 +60,7 @@ export function DaySummaryModal({
             return (
               <li key={ev.id}>
                 <Link
-                  href={`/calendar/events/${ev.id}`}
+                  href={`/scheduling/events/${ev.id}`}
                   data-event-type={eventColorKey(ev.eventType)}
                   className="block rounded-md border border-line border-l-[3px] border-l-[var(--event-accent)] px-3 py-2 hover:bg-surface-soft dark:border-l-[var(--event-accent)]"
                 >
@@ -86,7 +86,7 @@ export function DaySummaryModal({
       )}
       <div className="mt-4 flex items-center justify-between gap-2">
         <Link
-          href={`/calendar/events/new?date=${date}`}
+          href={`/scheduling/events/new?date=${date}`}
           className="btn-outline"
         >
           Add event

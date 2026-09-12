@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { MonthGrid, type MonthView } from '../calendar/MonthGrid';
-import { useMonthEvents } from '../calendar/useMonthEvents';
-import { visibleInBand } from '../calendar/bandFilter';
+import { MonthGrid, type MonthView } from '../scheduling/MonthGrid';
+import { useMonthEvents } from '../scheduling/useMonthEvents';
+import { visibleInBand } from '../scheduling/bandFilter';
 import { ActivitySection } from './ActivitySection';
 
 /**

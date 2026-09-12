@@ -14,6 +14,31 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['googleapis'],
 
   /**
+   * `/calendar` became `/scheduling`, and these keep the old paths working.
+   *
+   * Not just for bookmarks. Two kinds of link are already out in the world and
+   * can't be rewritten: the iCalendar feed writes an absolute
+   * `…/calendar/events/<id>` into every event people have subscribed in Google
+   * or Apple Calendar, and each push notification carries its URL in the
+   * payload, so notifications already sitting on a phone still point at the
+   * old path. Both would dead-end without this.
+   *
+   * `:path*` matches zero or more segments, so bare `/calendar` is covered
+   * too. `/api/calendar/<token>` — the feed's own URL, which subscribers
+   * cannot re-add silently — is a different prefix and is deliberately
+   * untouched.
+   */
+  async redirects() {
+    return [
+      {
+        source: '/calendar/:path*',
+        destination: '/scheduling/:path*',
+        permanent: true,
+      },
+    ];
+  },
+
+  /**
    * Baseline security headers, applied to every response.
    *
    * No Content-Security-Policy yet, deliberately. The app loads Google's

@@ -9,12 +9,11 @@ import {
   formatDateShort,
   formatTimeRange,
 } from '@/lib/format';
-import { WeekRow } from '../calendar/WeekRow';
-import { DaySummaryModal } from '../calendar/DaySummaryModal';
+import { DaySummaryModal } from '../scheduling/DaySummaryModal';
 import { ActivitySection } from './ActivitySection';
-import { lastDayOf } from '../calendar/eventBars';
-import { eventColorKey } from '../calendar/eventColors';
-import { eventLabel } from '../calendar/eventLabel';
+import { lastDayOf } from '../scheduling/eventBars';
+import { eventColorKey } from '../scheduling/eventColors';
+import { eventLabel } from '../scheduling/eventLabel';
 
 /** `YYYY-MM-DD` as e.g. "Sat, Sep 13" — read as UTC so no timezone shifts the day. */
 function formatWeekday(day: string, opts: Intl.DateTimeFormatOptions): string {
@@ -85,26 +84,6 @@ export function ActivityWeek({
         <NothingThisWeek nextEvent={nextEvent} today={today} />
       ) : (
         <>
-          {/* <div className="hidden overflow-hidden rounded-lg border border-line lg:block">
-            <div className="grid grid-cols-7 gap-px bg-fill-strong">
-              {days.map((day) => (
-                <div
-                  key={day}
-                  className="bg-surface-soft py-1.5 text-center text-xs font-medium minor-text-theme-colors"
-                >
-                  {formatWeekday(day, { weekday: 'short' })}
-                </div>
-              ))}
-            </div>
-            <WeekRow
-              days={days}
-              events={inWeek}
-              today={today}
-              onSelectDay={setSummaryDate}
-            />
-          </div> */}
-
-          {/* <ol className="flex flex-col gap-3 lg:hidden"> */}
           <ol className="flex flex-col gap-3">
             {days.map((day, i) => (
               <WeekDay
@@ -174,7 +153,7 @@ function WeekDay({
           {events.map((ev) => (
             <li key={ev.id}>
               <Link
-                href={`/calendar/events/${ev.id}`}
+                href={`/scheduling/events/${ev.id}`}
                 data-event-type={eventColorKey(ev.eventType)}
                 className="block rounded-md border-l-[3px] border-l-[color:var(--event-accent)] bg-[color:var(--event-fill)] px-3 py-2"
               >
@@ -213,7 +192,7 @@ function NothingThisWeek({
           {' '}
           Next up:{' '}
           <Link
-            href={`/calendar/events/${next.id}`}
+            href={`/scheduling/events/${next.id}`}
             className="font-medium text-accent hover:underline"
           >
             {eventLabel(next)}

@@ -241,7 +241,7 @@ export function NewEventClient({
       });
       showToast('Event created.', 'success');
       // `replace`, not `push`: a form left in history is what Back returns to.
-      router.replace(`/calendar/events/${id}`);
+      router.replace(`/scheduling/events/${id}`);
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setBusy(false);

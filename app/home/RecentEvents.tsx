@@ -13,8 +13,8 @@ import { useToast } from '../ToastProvider';
 import { completionInstant } from './eventTiming';
 import type { EventListItem } from '@/lib/db/events';
 import { usePersistedBoolean } from '../usePersistedBoolean';
-import { eventColorKey } from '../calendar/eventColors';
-import { eventLabel } from '../calendar/eventLabel';
+import { eventColorKey } from '../scheduling/eventColors';
+import { eventLabel } from '../scheduling/eventLabel';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** How far back "recent" reaches — the week behind, mirroring the week ahead. */
@@ -134,7 +134,7 @@ export function RecentEvents({
               className="flex items-center gap-1 border-l-[3px] border-l-[color:var(--event-accent)] bg-[color:var(--event-fill)] px-3 py-2.5"
             >
               <Link
-                href={`/calendar/events/${s.id}`}
+                href={`/scheduling/events/${s.id}`}
                 className="-mx-1 flex min-w-0 flex-1 flex-col items-start justify-start gap-3 rounded px-1 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
               >
                 <span className="flex min-w-0 flex-col">

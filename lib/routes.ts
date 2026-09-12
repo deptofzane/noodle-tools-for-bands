@@ -41,7 +41,7 @@ export function practiceSongsApi(setlistId: string): string {
  * for whom they mean nothing.
  */
 export function eventHref(eventId: string): string {
-  return `/calendar/events/${eventId}`;
+  return `/scheduling/events/${eventId}`;
 }
 
 export function setlistHref(bandId: string, setlistId: string): string {
@@ -72,8 +72,8 @@ export function todoHref(bandId: string, todoId: string): string {
   return `/bands/${bandId}/todos/${todoId}`;
 }
 
-export function venueHref(bandId: string, venueId: string): string {
-  return `/bands/${bandId}/venues/${venueId}`;
+export function venueHref(venueId: string): string {
+  return `/scheduling/venues/${venueId}`;
 }
 
 /**
@@ -83,7 +83,7 @@ export function venueHref(bandId: string, venueId: string): string {
  * were — change band from the Calendar and you had to navigate back to it.
  * The rule now is "stay put unless the URL names the band you just left":
  *
- *   - Nothing band-specific in the path (`/home`, `/calendar`, `/settings`,
+ *   - Nothing band-specific in the path (`/home`, `/scheduling`, `/settings`,
  *     a song, a practice screen) → `null`, meaning don't navigate at all. The
  *     current band is only a pointer for the nav; the page is still the page.
  *   - The band's own pages (`/bands/[id]`, `/bands/[id]/audio`) → the same

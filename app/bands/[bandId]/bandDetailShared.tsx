@@ -166,7 +166,7 @@ export interface Venue {
 export interface Show {
   id: string;
   title: string;
-  /** Drives the colour coding — see app/calendar/eventColors.ts. */
+  /** Drives the colour coding — see app/scheduling/eventColors.ts. */
   eventType: string | null;
   date: string;
   /** Last day, inclusive; null when it ends the day it starts. */

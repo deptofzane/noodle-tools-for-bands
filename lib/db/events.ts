@@ -36,7 +36,7 @@ export interface EventListItem {
   bandId: string;
   bandName: string;
   title: string;
-  /** Drives the calendar's colour coding — see app/calendar/eventColors.ts. */
+  /** Drives the calendar's colour coding — see app/scheduling/eventColors.ts. */
   eventType: string | null;
   /**
    * Playable songs in the event's setlist — markers (set breaks) don't count,
@@ -60,7 +60,7 @@ export interface EventListItem {
 export interface BandEvent {
   id: string;
   title: string;
-  /** Drives the colour coding — see app/calendar/eventColors.ts. */
+  /** Drives the colour coding — see app/scheduling/eventColors.ts. */
   eventType: string | null;
   date: string; // YYYY-MM-DD start
   /** Last day, inclusive; null when it ends the day it starts. */

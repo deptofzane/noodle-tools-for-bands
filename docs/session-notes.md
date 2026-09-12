@@ -379,6 +379,33 @@ Last updated: 2 September 2026.
   (`ActivitySection` gained `defaultOpen`). A default only governs people who
   have never touched the panel — `usePersistedBoolean` writes on toggle, so a
   stored choice still wins, and there's a test for that.
+- **`/calendar` is `/scheduling`, and holds three pills.** Calendar, Events and
+  Venues — the last two moved off the band page, which is now Todos / Notes /
+  Polls with `todos` as its default; old `?tab=events|venues` links redirect.
+  The page path moved but **`/api/calendar/<token>` deliberately did not**: a
+  subscriber can't silently re-add a feed URL, so breaking that would be
+  unrecoverable for them.
+- **The `/calendar/:path*` redirect is not about bookmarks.** The iCalendar
+  feed writes absolute `…/calendar/events/<id>` links into calendars people
+  have already subscribed, and a push notification carries its URL in the
+  payload, so notifications already delivered still point at the old path.
+  Neither can be rewritten after the fact.
+- **Scheduling's pills keep their state in the URL; Home's don't.** `PillTabs`
+  is shared, but Home remembers its tab per device while Scheduling reads
+  `?view=` — the ☰ drawer links straight to Events and Venues, so those have to
+  be addressable. Calendar is the default and stays paramless, the same rule
+  the band page uses for its own default tab. `HomeTabs` keeps its own
+  mount-gating: the feed marks everything read the moment it mounts.
+- **A venue page derives its band from the venue.** Moving to
+  `/scheduling/venues/[venueId]` removed the band id from the URL, which
+  removed the "real venue id under the wrong band" mismatch case entirely —
+  there is no longer anything to disagree with. The guard that remains is
+  membership, and it has its own test; the old mismatch test was deleted
+  rather than rewritten, because its premise no longer exists.
+- **`useBandData` has no empty-`bandId` guard**, and `useCurrentBand` returns
+  `''` both while the band list is in flight and when the user has none — so
+  Scheduling mounts its Events/Venues panels only once there's a band, or it
+  would fetch `/api/bands//events`.
 - **`/` is dynamic and public.** Signed out it's a landing page; signed in it
   redirects to `/home`. `start_url` stays `/` so installed apps are unaffected
   and no manifest refetch is needed. It is deliberately _not_ precached — its
@@ -526,7 +553,7 @@ harmlessly) and any real Google/Resend call.
 
 - `pnpm test:db` — **251 node tests across 41 files**, ~21s, self-cleaning.
   Must stay serialized (`--test-concurrency=1`).
-- `pnpm test:e2e` — Playwright, **158 tests across 36 specs**, against a
+- `pnpm test:e2e` — Playwright, **163 tests across 37 specs**, against a
   **production build** (the service worker is disabled in dev, so offline
   specs run in dev prove nothing). Seeds and tears down its own band; ids are
   written to `e2e/.auth/seed.json` so specs navigate directly instead of

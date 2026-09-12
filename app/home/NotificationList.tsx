@@ -64,7 +64,7 @@ function hrefFor(n: NotificationItem): string {
           n.kind === 'event-day-before' ||
           n.kind === 'event-day-of')
       )
-        return `/calendar/events/${n.subjectId}`;
+        return `/scheduling/events/${n.subjectId}`;
       // Shows live on the band page (and the calendar); land on the band.
       return `/bands/${n.bandId}`;
     case 'band':

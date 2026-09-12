@@ -1,29 +1,28 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * The Calendar's two actions collapse into a ⋯ menu on a phone, where the
- * header row can't hold them beside the month nav. Desktop keeps the buttons.
+ * The Calendar panel's action collapses into a ⋯ menu on a phone, where the
+ * header row can't hold it beside the month nav. Desktop keeps the button.
+ *
+ * Reaching the event *list* is the Events pill's job now, so neither the
+ * inline "Events" button nor its "View events" menu item exists — and both
+ * absences are asserted, since a stale duplicate beside the pill is exactly
+ * what this move was meant to remove.
  */
-test('on a phone they live in the ⋯ menu, and Events is renamed', async ({
-  page,
-}) => {
-  await page.goto('/calendar');
+test('on a phone Add event lives in the ⋯ menu', async ({ page }) => {
+  await page.goto('/scheduling');
   // Not inline at this width.
   await expect(page.getByRole('link', { name: 'Add event' })).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Calendar actions' }).click();
   const menu = page.getByRole('menu');
-  // "Events" is called "View events" here.
   await expect(
     menu.getByRole('menuitem', { name: 'View events' }),
-  ).toBeVisible();
-  await expect(
-    menu.getByRole('menuitem', { name: 'Events', exact: true }),
   ).toHaveCount(0);
   await expect(menu.getByRole('menuitem', { name: 'Add event' })).toBeVisible();
 
   await menu.getByRole('menuitem', { name: 'Add event' }).click();
-  await expect(page).toHaveURL(/\/calendar\/events\/new$/);
+  await expect(page).toHaveURL(/\/scheduling\/events\/new$/);
 });
 
 test.describe('desktop', () => {
@@ -33,10 +32,11 @@ test.describe('desktop', () => {
     hasTouch: false,
   });
 
-  test('keeps both buttons inline, with no ⋯ menu', async ({ page }) => {
-    await page.goto('/calendar');
+  test('keeps Add event inline, with no ⋯ menu', async ({ page }) => {
+    await page.goto('/scheduling');
     await expect(page.getByRole('link', { name: 'Add event' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Events' })).toBeVisible();
+    // The event list is the Events pill, not a button beside the month nav.
+    await expect(page.getByRole('link', { name: 'Events' })).toHaveCount(0);
     await expect(
       page.getByRole('button', { name: 'Calendar actions' }),
     ).toHaveCount(0);

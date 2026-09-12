@@ -146,18 +146,14 @@ test('the band picker narrows todos and events together', async ({ page }) => {
 
   // The week is collapsed by default now, and it's one of the things the
   // picker narrows — so open it before asking what it lists.
-  const toggle = page.getByRole('button', { name: /^Upcoming events/ });
+  const toggle = page.getByRole('button', { name: /^This week/ });
   if ((await toggle.getAttribute('aria-expanded')) !== 'true')
     await toggle.click();
 
-  // Scoped to the week: the month calendar above lists the same event, so a
+  // Scoped to the week: the month calendar below lists the same event, so a
   // page-wide search for it matches twice.
-  const week = page.getByRole('region', { name: 'Upcoming events' });
-  // Rendered twice inside there too — desktop grid and phone list, with CSS
-  // choosing one — so ask for the visible copy rather than the first.
-  await expect(
-    week.getByText('E2E Week Show').filter({ visible: true }),
-  ).toBeVisible();
+  const week = page.getByRole('region', { name: 'This week' });
+  await expect(week.getByText('E2E Week Show')).toBeVisible();
 
   await page.getByRole('combobox', { name: 'Band' }).click();
   await page.getByRole('option', { name: 'E2E Home Second' }).click();
@@ -168,15 +164,15 @@ test('the band picker narrows todos and events together', async ({ page }) => {
   await expect(week.getByText('E2E Week Show')).toHaveCount(0);
 });
 
-test('the phone lists all seven days of the rolling week', async ({ page }) => {
+test('the week lists all seven days', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('homeTab', 'activity'));
   await page.goto('/home');
-  // Collapsed by default now that the month calendar sits above it.
-  const toggle = page.getByRole('button', { name: /^Upcoming events/ });
+  // Collapsed by default now that the month calendar sits below it.
+  const toggle = page.getByRole('button', { name: /^This week/ });
   if ((await toggle.getAttribute('aria-expanded')) !== 'true')
     await toggle.click();
 
-  const week = page.getByRole('region', { name: 'Upcoming events' });
+  const week = page.getByRole('region', { name: 'This week' });
   // Today and Tomorrow by name, then five more — including the seventh, which
   // is the one a list cut short by a fixed bar would lose.
   await expect(week.locator('ol > li > h3')).toHaveCount(7);
@@ -194,7 +190,7 @@ test('Recent events reaches back seven days, and no further', async ({
   if ((await toggle.getAttribute('aria-expanded')) !== 'true')
     await toggle.click();
 
-  // By role, not by text: the month calendar above lists these same events,
+  // By role, not by text: the month calendar below lists these same events,
   // and both are inside the current month. Its bars sit in an aria-hidden
   // overlay with no role, so asking for the link asks only about this list.
   await expect(page.getByRole('link', { name: 'E2E Recent In' })).toBeVisible();
@@ -203,16 +199,16 @@ test('Recent events reaches back seven days, and no further', async ({
   ).toHaveCount(0);
 });
 
-test('Todos starts expanded, Upcoming events folded, and both remember', async ({
+test('Todos starts expanded, This week folded, and both remember', async ({
   page,
 }) => {
   await page.addInitScript(() => localStorage.setItem('homeTab', 'activity'));
   await page.goto('/home');
 
   const todos = page.getByRole('button', { name: /^Todos/ });
-  const week = page.getByRole('button', { name: /^Upcoming events/ });
+  const week = page.getByRole('button', { name: /^This week/ });
   // First view: todos open, the week folded away behind its toggle now that
-  // the month calendar covers the same ground above it.
+  // the month calendar covers the same ground below it.
   await expect(todos).toHaveAttribute('aria-expanded', 'true');
   await expect(week).toHaveAttribute('aria-expanded', 'false');
   await expect(page.getByText('E2E Home Todo A')).toBeVisible();
@@ -232,7 +228,7 @@ test('Todos starts expanded, Upcoming events folded, and both remember', async (
     'false',
   );
   await expect(
-    page.getByRole('button', { name: /^Upcoming events/ }),
+    page.getByRole('button', { name: /^This week/ }),
   ).toHaveAttribute('aria-expanded', 'true');
 });
 

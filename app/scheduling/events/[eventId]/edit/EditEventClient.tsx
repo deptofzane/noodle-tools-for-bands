@@ -95,7 +95,7 @@ export function EditEventClient({
       endDate: prev.endDate && v && prev.endDate < v ? '' : prev.endDate,
     }));
 
-  const eventHref = `/calendar/events/${eventId}`;
+  const eventHref = `/scheduling/events/${eventId}`;
 
   // No `router.refresh()` here: it would refetch *this* route, the one being
   // left. Refreshing the page we land on is `RefreshAfterEdit`'s job, in the

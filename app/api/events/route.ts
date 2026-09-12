@@ -7,7 +7,7 @@ import { getSetlist } from '@/lib/db/setlists';
 import { getVenue } from '@/lib/db/venues';
 import { notify } from '@/lib/db/notifications';
 import { addHoursToTime, DEFAULT_EVENT_DURATION_HOURS } from '@/lib/format';
-import { isTimeOff, TIME_OFF_TITLE } from '@/app/calendar/eventLabel';
+import { isTimeOff, TIME_OFF_TITLE } from '@/app/scheduling/eventLabel';
 
 const TIME_RE = /^\d{2}:\d{2}$/;
 

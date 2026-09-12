@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { visibleInBand } from '../../app/calendar/bandFilter';
+import { visibleInBand } from '../../app/scheduling/bandFilter';
 
 /**
  * Narrowing a calendar to one band.

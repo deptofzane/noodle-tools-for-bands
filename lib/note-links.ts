@@ -66,7 +66,7 @@ export function noteLinkHref(link: NoteLink, bandId: string): string | null {
       // thing the moment the old song page became a redirect to this one.
       return `/notes/${link.targetId}/practice`;
     case 'event':
-      return `/calendar/events/${link.targetId}`;
+      return `/scheduling/events/${link.targetId}`;
     case 'venue':
       return `/bands/${bandId}/venues/${link.targetId}/edit`;
     case 'setlist':

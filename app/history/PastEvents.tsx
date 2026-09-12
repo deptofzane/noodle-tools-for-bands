@@ -8,7 +8,7 @@ import { PAGE_SIZE } from '@/lib/paging';
 import { LoadMore } from '../LoadMore';
 import { usePagedList } from '../usePagedList';
 import { useCurrentBand } from '../CurrentBandProvider';
-import { eventLabel } from '../calendar/eventLabel';
+import { eventLabel } from '../scheduling/eventLabel';
 
 interface PastEvent {
   id: string;
@@ -88,7 +88,7 @@ export function PastEvents() {
           return (
             <li key={event.id}>
               <Link
-                href={`/calendar/events/${event.id}`}
+                href={`/scheduling/events/${event.id}`}
                 className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-surface-soft md:px-3 md:py-1.5"
               >
                 <div className="min-w-0 flex-1">
