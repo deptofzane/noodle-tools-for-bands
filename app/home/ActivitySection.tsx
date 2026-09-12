@@ -16,6 +16,7 @@ export function ActivitySection({
   title,
   count,
   persistKey,
+  defaultOpen = true,
   children,
 }: {
   /** The heading's id, which also names the section for assistive tech. */
@@ -23,9 +24,15 @@ export function ActivitySection({
   title: string;
   count: number;
   persistKey: string;
+  /**
+   * How the section sits before anyone has touched it. Only the default —
+   * `usePersistedBoolean` writes on toggle, so a section someone has opened or
+   * closed keeps their choice regardless of what this says.
+   */
+  defaultOpen?: boolean;
   children: ReactNode;
 }) {
-  const [open, setOpen] = usePersistedBoolean(persistKey, true);
+  const [open, setOpen] = usePersistedBoolean(persistKey, defaultOpen);
 
   return (
     <section className="flex flex-col gap-2" aria-labelledby={id}>

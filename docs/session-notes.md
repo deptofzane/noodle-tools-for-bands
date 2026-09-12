@@ -350,6 +350,35 @@ Last updated: 2 September 2026.
   assertion in that spec. The route has no GET: `settings/page.tsx` loads the
   prefs in its existing `Promise.all` and hands the client `Map` entries, an
   array being the shape that crosses the boundary.
+- **The two calendars swapped scope.** `/calendar` used to span every band the
+  viewer was in; it now shows the *current* band, and Home's Activity tab
+  carries the all-bands month instead. One grid serves both — `MonthGrid`,
+  extracted from `CalendarClient` and verified inert with a `maxDiffPixels: 0`
+  baseline taken from the pre-extraction build. The caller owns the month,
+  because the month on screen is what decides which events to fetch.
+- **A band-scoped calendar still keeps your personal invites.** `visibleInBand`
+  is "this band's events, plus anything I was added to individually", and an
+  invite needs no flag to spot: if the event's band isn't one of yours, being
+  invited is the only reason you can see it. History's band narrowing
+  deliberately does the opposite (`listPastEventsForUser`) — "this band's
+  history" is a claim about the band, a calendar is a claim about you. The
+  filter is client-side over a whole-month fetch (`useMonthEvents`), so
+  changing band costs no request and can't spin.
+- **An event can now be on Home's Activity tab twice** — once as a bar on the
+  month calendar and once in Upcoming events or Recent events — so a page-wide
+  `getByText('title')` there is ambiguous and fails on strict mode. Scope to
+  the section, or ask by role: `WeekRow`'s bars live in an `aria-hidden`
+  overlay and have no role at all, so `getByRole('link', …)` reaches the lists
+  and never the calendar.
+- **Home's Activity tab holds two event sets.** The page's server fetch is a
+  rolling ±9-day buffer feeding Upcoming events and Recent events;
+  `ActivityMonth` fetches the visible month separately, because a nine-day
+  window can't answer for March. Worth unifying only if a third consumer shows
+  up.
+- **"Upcoming events" starts collapsed** now that the month sits above it
+  (`ActivitySection` gained `defaultOpen`). A default only governs people who
+  have never touched the panel — `usePersistedBoolean` writes on toggle, so a
+  stored choice still wins, and there's a test for that.
 - **`/` is dynamic and public.** Signed out it's a landing page; signed in it
   redirects to `/home`. `start_url` stays `/` so installed apps are unaffected
   and no manifest refetch is needed. It is deliberately _not_ precached — its
@@ -495,9 +524,9 @@ harmlessly) and any real Google/Resend call.
 
 ## Test suite
 
-- `pnpm test:db` — **246 node tests across 40 files**, ~21s, self-cleaning.
+- `pnpm test:db` — **251 node tests across 41 files**, ~21s, self-cleaning.
   Must stay serialized (`--test-concurrency=1`).
-- `pnpm test:e2e` — Playwright, **152 tests across 34 specs**, against a
+- `pnpm test:e2e` — Playwright, **158 tests across 36 specs**, against a
   **production build** (the service worker is disabled in dev, so offline
   specs run in dev prove nothing). Seeds and tears down its own band; ids are
   written to `e2e/.auth/seed.json` so specs navigate directly instead of
@@ -514,7 +543,7 @@ harmlessly) and any real Google/Resend call.
 - Pure-logic modules get their own node tests without a database:
   `note-links`, `notification-changes`, `notification-groups`,
   `format-timestamps`, `event-bars`, `band-switch`, `chordpro`, `staleness`,
-  `reminder-schedule`.
+  `reminder-schedule`, `band-filter`.
 
 ## Routing shape worth knowing
 

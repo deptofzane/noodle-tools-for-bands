@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { EventListItem } from '@/lib/db/events';
 import type { Todo } from '@/lib/db/todos';
@@ -8,6 +8,7 @@ import { todoHref } from '@/lib/routes';
 import { Select } from '../Select';
 import { TodoSummary } from '../bands/[bandId]/TodoRow';
 import { todoTone } from '../bands/[bandId]/todos/todoTone';
+import { ActivityMonth } from './ActivityMonth';
 import { ActivitySection } from './ActivitySection';
 import { ActivityWeek } from './ActivityWeek';
 import { OpenPolls, type OpenPoll } from './OpenPolls';
@@ -73,6 +74,7 @@ export function ActivityTab({
   const inBand = <T extends { bandId: string }>(rows: T[]) =>
     all ? rows : rows.filter((r) => r.bandId === band);
   const bandName = new Map(bands.map((b) => [b.id, b.name]));
+  const myBandIds = useMemo(() => new Set(bands.map((b) => b.id)), [bands]);
 
   // The overall next event only stands in for this band if it *is* this
   // band's; pointing at another band's show under a filter would be wrong.
@@ -91,6 +93,8 @@ export function ActivityTab({
           ...bands.map((b) => ({ value: b.id, label: b.name })),
         ]}
       />
+
+      <OpenPolls polls={inBand(polls)} />
 
       <ActivitySection
         id="activity-todos"
@@ -136,7 +140,10 @@ export function ActivityTab({
         serverToday={serverToday}
       />
 
-      <OpenPolls polls={inBand(polls)} />
+      {/* The month across every band by default, narrowed by the picker
+          above. Unlike the lists here it keeps events you were personally
+          invited to, whichever band they belong to — see `visibleInBand`. */}
+      <ActivityMonth selectedBandId={all ? '' : band} myBandIds={myBandIds} />
 
       <RecentEvents shows={inBand(events)} bandIds={bands.map((b) => b.id)} />
     </div>

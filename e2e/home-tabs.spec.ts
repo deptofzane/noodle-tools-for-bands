@@ -5,8 +5,8 @@ import { upsertUser } from '../lib/db/users';
 import { deleteUsersByGoogleSub } from '../lib/db/accounts';
 import { addMember, createBand, deleteBand } from '../lib/db/bands';
 import { createNotification } from '../lib/db/notifications';
-import { createTodo } from '../lib/db/todos';
-import { createEvent } from '../lib/db/events';
+import { createTodo, deleteTodo } from '../lib/db/todos';
+import { createEvent, deleteEvent } from '../lib/db/events';
 
 /**
  * Home as two tabs. What these guard against:
@@ -20,6 +20,16 @@ import { createEvent } from '../lib/db/events';
 const seed = readSeed();
 const OTHER_SUB = 'e2e-home-tabs-other';
 let secondBandId = '';
+/**
+ * Rows created in the *seeded* band, which nothing else tears down — deleting
+ * the second band takes its own todo with it, but these would survive the run
+ * and come back as a duplicate on the next one, which reads as a strict-mode
+ * violation rather than as leftover data.
+ */
+const madeInSeedBand: { todos: string[]; events: string[] } = {
+  todos: [],
+  events: [],
+};
 
 /** A local `YYYY-MM-DD`, `offset` days from today. */
 const day = (offset: number) => {
@@ -74,15 +84,21 @@ test.beforeAll(async () => {
   });
 
   secondBandId = (await createBand(seed.userId, 'E2E Home Second')).id;
-  await todo('E2E Home Todo A', seed.bandId);
+  madeInSeedBand.todos.push((await todo('E2E Home Todo A', seed.bandId)).id);
   await todo('E2E Home Todo B', secondBandId);
 
-  await event('E2E Week Show', day(2));
-  await event('E2E Recent In', day(-3));
-  await event('E2E Recent Out', day(-8));
+  for (const [title, offset] of [
+    ['E2E Week Show', 2],
+    ['E2E Recent In', -3],
+    ['E2E Recent Out', -8],
+  ] as const) {
+    madeInSeedBand.events.push((await event(title, day(offset))).id);
+  }
 });
 
 test.afterAll(async () => {
+  for (const id of madeInSeedBand.events) await deleteEvent(id);
+  for (const id of madeInSeedBand.todos) await deleteTodo(id);
   await deleteBand(secondBandId);
   await deleteUsersByGoogleSub([OTHER_SUB]);
 });
@@ -127,10 +143,20 @@ test('the band picker narrows todos and events together', async ({ page }) => {
 
   await expect(page.getByText('E2E Home Todo A')).toBeVisible();
   await expect(page.getByText('E2E Home Todo B')).toBeVisible();
-  // Rendered twice — desktop grid and phone list — with CSS choosing one, so
-  // ask for the visible copy rather than the first in the DOM.
+
+  // The week is collapsed by default now, and it's one of the things the
+  // picker narrows — so open it before asking what it lists.
+  const toggle = page.getByRole('button', { name: /^Upcoming events/ });
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true')
+    await toggle.click();
+
+  // Scoped to the week: the month calendar above lists the same event, so a
+  // page-wide search for it matches twice.
+  const week = page.getByRole('region', { name: 'Upcoming events' });
+  // Rendered twice inside there too — desktop grid and phone list, with CSS
+  // choosing one — so ask for the visible copy rather than the first.
   await expect(
-    page.getByText('E2E Week Show').filter({ visible: true }),
+    week.getByText('E2E Week Show').filter({ visible: true }),
   ).toBeVisible();
 
   await page.getByRole('combobox', { name: 'Band' }).click();
@@ -139,12 +165,17 @@ test('the band picker narrows todos and events together', async ({ page }) => {
   await expect(page.getByText('E2E Home Todo B')).toBeVisible();
   await expect(page.getByText('E2E Home Todo A')).toHaveCount(0);
   // The week show belongs to the other band, so it goes too.
-  await expect(page.getByText('E2E Week Show')).toHaveCount(0);
+  await expect(week.getByText('E2E Week Show')).toHaveCount(0);
 });
 
 test('the phone lists all seven days of the rolling week', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('homeTab', 'activity'));
   await page.goto('/home');
+  // Collapsed by default now that the month calendar sits above it.
+  const toggle = page.getByRole('button', { name: /^Upcoming events/ });
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true')
+    await toggle.click();
+
   const week = page.getByRole('region', { name: 'Upcoming events' });
   // Today and Tomorrow by name, then five more — including the seventh, which
   // is the one a list cut short by a fixed bar would lose.
@@ -163,11 +194,16 @@ test('Recent events reaches back seven days, and no further', async ({
   if ((await toggle.getAttribute('aria-expanded')) !== 'true')
     await toggle.click();
 
-  await expect(page.getByText('E2E Recent In')).toBeVisible();
-  await expect(page.getByText('E2E Recent Out')).toHaveCount(0);
+  // By role, not by text: the month calendar above lists these same events,
+  // and both are inside the current month. Its bars sit in an aria-hidden
+  // overlay with no role, so asking for the link asks only about this list.
+  await expect(page.getByRole('link', { name: 'E2E Recent In' })).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'E2E Recent Out' }),
+  ).toHaveCount(0);
 });
 
-test('Todos and Upcoming events start expanded, and remember being minimized', async ({
+test('Todos starts expanded, Upcoming events folded, and both remember', async ({
   page,
 }) => {
   await page.addInitScript(() => localStorage.setItem('homeTab', 'activity'));
@@ -175,17 +211,21 @@ test('Todos and Upcoming events start expanded, and remember being minimized', a
 
   const todos = page.getByRole('button', { name: /^Todos/ });
   const week = page.getByRole('button', { name: /^Upcoming events/ });
-  // First view: both open, contents showing.
+  // First view: todos open, the week folded away behind its toggle now that
+  // the month calendar covers the same ground above it.
   await expect(todos).toHaveAttribute('aria-expanded', 'true');
-  await expect(week).toHaveAttribute('aria-expanded', 'true');
+  await expect(week).toHaveAttribute('aria-expanded', 'false');
   await expect(page.getByText('E2E Home Todo A')).toBeVisible();
 
   await todos.click();
   await expect(todos).toHaveAttribute('aria-expanded', 'false');
   await expect(page.getByText('E2E Home Todo A')).toHaveCount(0);
   // Independent: minimizing one leaves the other alone.
-  await expect(week).toHaveAttribute('aria-expanded', 'true');
+  await expect(week).toHaveAttribute('aria-expanded', 'false');
 
+  // A default only applies until you say otherwise: opening the week has to
+  // survive a reload, the same as closing todos does.
+  await week.click();
   await page.reload();
   await expect(page.getByRole('button', { name: /^Todos/ })).toHaveAttribute(
     'aria-expanded',

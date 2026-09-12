@@ -74,15 +74,18 @@ export function ActivityWeek({
   return (
     <ActivitySection
       id="activity-week"
-      title="Upcoming events"
+      title="This week"
       count={inWeek.length}
       persistKey="homeActivityWeekOpen"
+      // Collapsed until asked for: the month calendar above now covers the
+      // week at a glance, and this is the longer-form view behind it.
+      defaultOpen={false}
     >
       {inWeek.length === 0 ? (
         <NothingThisWeek nextEvent={nextEvent} today={today} />
       ) : (
         <>
-          <div className="hidden overflow-hidden rounded-lg border border-line lg:block">
+          {/* <div className="hidden overflow-hidden rounded-lg border border-line lg:block">
             <div className="grid grid-cols-7 gap-px bg-fill-strong">
               {days.map((day) => (
                 <div
@@ -99,9 +102,10 @@ export function ActivityWeek({
               today={today}
               onSelectDay={setSummaryDate}
             />
-          </div>
+          </div> */}
 
-          <ol className="flex flex-col gap-3 lg:hidden">
+          {/* <ol className="flex flex-col gap-3 lg:hidden"> */}
+          <ol className="flex flex-col gap-3">
             {days.map((day, i) => (
               <WeekDay
                 key={day}
