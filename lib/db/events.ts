@@ -640,3 +640,58 @@ export async function removeEventMember(
       and(eq(eventMembers.eventId, eventId), eq(eventMembers.userId, userId)),
     );
 }
+
+/** An event the reminder sweep might have to act on. */
+export interface ReminderCandidate {
+  id: string;
+  bandId: string;
+  bandName: string;
+  title: string;
+  eventType: string | null;
+  date: string;
+  endDate: string | null;
+  createdAt: Date;
+  createdBy: string;
+  actorName: string | null;
+  /** The band's zone — reminders fire at a local hour, so this decides when. */
+  timezone: string;
+}
+
+/**
+ * Events the sweep needs to consider, across every band.
+ *
+ * Bounded on both sides so a scheduled run scans a handful of rows rather than
+ * the whole table: nothing whose last day is already behind `from` can still
+ * be reminded about, and nothing starting after `to` is within even the
+ * week-before window. The caller passes a day of slack on each end, because
+ * the bands' own timezones decide the real boundaries and the sweep can't know
+ * them until it has the rows.
+ *
+ * The band's name and the creator's are selected here rather than looked up
+ * per insert: notifications snapshot both, and a sweep writes one row per
+ * member per offset.
+ */
+export async function listEventsForReminders(
+  from: string,
+  to: string,
+): Promise<ReminderCandidate[]> {
+  return db
+    .select({
+      id: events.id,
+      bandId: events.bandId,
+      bandName: bands.name,
+      title: events.title,
+      eventType: events.eventType,
+      date: events.date,
+      endDate: events.endDate,
+      createdAt: events.createdAt,
+      createdBy: events.createdBy,
+      actorName: users.name,
+      timezone: bands.timezone,
+    })
+    .from(events)
+    .innerJoin(bands, eq(bands.id, events.bandId))
+    .leftJoin(users, eq(users.id, events.createdBy))
+    .where(and(gte(lastDay, from), lte(events.date, to)))
+    .orderBy(asc(events.date));
+}

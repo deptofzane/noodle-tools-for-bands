@@ -55,6 +55,16 @@ function hrefFor(n: NotificationItem): string {
         ? `/bands/${n.bandId}/audio/uploads/${n.day}`
         : `/bands/${n.bandId}/audio`;
     case 'event':
+      // A reminder is about one dated thing, so it opens that thing: you
+      // tapped "Today: …" to see where and when. The added/updated kinds keep
+      // landing on the band page, which is where they always have.
+      if (
+        n.subjectId &&
+        (n.kind === 'event-week-before' ||
+          n.kind === 'event-day-before' ||
+          n.kind === 'event-day-of')
+      )
+        return `/calendar/events/${n.subjectId}`;
       // Shows live on the band page (and the calendar); land on the band.
       return `/bands/${n.bandId}`;
     case 'band':
@@ -92,6 +102,12 @@ function messageFor(n: NotificationItem): string {
   const who = n.isSelf ? 'You' : (n.actorName ?? 'Someone');
   const band = n.bandName ?? 'the band';
   switch (n.kind) {
+    case 'event-week-before':
+      return `Next week: ${n.subjectLabel ?? 'an event'}`;
+    case 'event-day-before':
+      return `Tomorrow: ${n.subjectLabel ?? 'an event'}`;
+    case 'event-day-of':
+      return `Today: ${n.subjectLabel ?? 'an event'}`;
     case 'song-comment':
       return `${who} commented on ${n.subjectLabel ?? 'a song'}`;
     case 'chat-message':

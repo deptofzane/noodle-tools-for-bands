@@ -79,6 +79,28 @@ export const PREF_GROUPS: PrefGroup[] = [
         label: 'Event updates',
         description: 'When an event’s details are edited.',
       },
+      /*
+       * One row per offset rather than a single merged "reminders" row: these
+       * rows carry the push toggle, which is kind-wide, so merging them would
+       * make it impossible to keep the morning-of buzz while silencing the
+       * week-ahead one. Which event *types* produce each offset is the grid's
+       * job, not these.
+       */
+      {
+        kinds: ['event-week-before'],
+        label: 'Event reminders — a week before',
+        description: 'A week ahead of an event, for the types chosen below.',
+      },
+      {
+        kinds: ['event-day-before'],
+        label: 'Event reminders — the day before',
+        description: 'The day before an event, for the types chosen below.',
+      },
+      {
+        kinds: ['event-day-of'],
+        label: 'Event reminders — the day of',
+        description: 'On the morning of an event, for the types chosen below.',
+      },
     ],
   },
   {

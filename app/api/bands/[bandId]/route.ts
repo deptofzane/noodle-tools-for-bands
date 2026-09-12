@@ -4,8 +4,10 @@ import {
   deleteBand,
   getBandById,
   getMembership,
+  isValidTimezone,
   listMembers,
   renameBand,
+  setBandTimezone,
 } from '@/lib/db/bands';
 import { notify } from '@/lib/db/notifications';
 
@@ -30,7 +32,10 @@ export async function GET(
 
 /**
  * PATCH /api/bands/[bandId]
- *   Body: { name: string } → rename the band (≤100 chars). Owners only.
+ *   Body: { name?: string, timezone?: string } → rename the band (≤100 chars)
+ *   and/or set the zone its event reminders fire in. Owners only. At least one
+ *   field is required; sending neither is a bad request rather than a silent
+ *   no-op that still announces "updated" to the band.
  */
 export async function PATCH(
   req: Request,
@@ -45,14 +50,34 @@ export async function PATCH(
   }
 
   const body = await req.json().catch(() => null);
-  const name = typeof body?.name === 'string' ? body.name.trim() : '';
-  if (!name || name.length > 100)
+  const hasName = typeof body?.name === 'string';
+  const hasTimezone = typeof body?.timezone === 'string';
+  if (!hasName && !hasTimezone)
+    return NextResponse.json(
+      { error: 'bad_request', message: 'Nothing to update.' },
+      { status: 400 },
+    );
+
+  const name = hasName ? (body.name as string).trim() : '';
+  if (hasName && (!name || name.length > 100))
     return NextResponse.json(
       { error: 'bad_name', message: 'Band name required (≤100 chars).' },
       { status: 400 },
     );
 
-  const band = await renameBand(bandId, name);
+  const timezone = hasTimezone ? (body.timezone as string).trim() : '';
+  // An unknown zone wouldn't fail later — it would quietly shift every
+  // reminder — so it's rejected here rather than stored.
+  if (hasTimezone && !isValidTimezone(timezone))
+    return NextResponse.json(
+      { error: 'bad_timezone', message: 'Unknown timezone.' },
+      { status: 400 },
+    );
+
+  let band = hasName
+    ? await renameBand(bandId, name)
+    : await getBandById(bandId);
+  if (hasTimezone) band = await setBandTimezone(bandId, timezone);
   if (!band) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   await notify({
     bandId,
@@ -60,7 +85,7 @@ export async function PATCH(
     kind: 'band-updated',
     subjectType: 'band',
     subjectId: bandId,
-    subjectLabel: name,
+    subjectLabel: band.name,
   });
   return NextResponse.json({ band });
 }

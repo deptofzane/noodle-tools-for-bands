@@ -59,7 +59,13 @@ export function BandsClient({ currentUserId }: { currentUserId: string }) {
         const r = await fetch('/api/bands', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: trimmed }),
+          // The band's reminders fire at a local hour, and a band is almost
+          // always in its creator's timezone — so seed it here rather than
+          // leaving every new band on UTC until someone finds the setting.
+          body: JSON.stringify({
+            name: trimmed,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          }),
         });
         await ensureOk(r);
         const data = (await r.json()) as { band: { id: string } };

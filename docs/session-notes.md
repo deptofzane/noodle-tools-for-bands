@@ -291,6 +291,65 @@ Last updated: 2 September 2026.
 - **Home's todo rows are read-only.** They reuse `TodoSummary` and link to the
   todo. Status, sharing and delete carry confirmations and refresh rules in
   the band's Todos tab that don't belong on Home.
+- **Event reminders are the first time-triggered thing in the app.** Nothing
+  else fires because time passed — even `poll-auto-closed` happens when the
+  last member votes. So the decision that matters is what wakes them: a cron
+  POST to `/api/cron/event-reminders` behind `CRON_SECRET`, and _all_ the
+  judgement in `createDueEventReminders`. Changing the trigger touches one
+  route and nothing else. With no secret configured the route answers 503
+  rather than running: an open trigger reaches lock screens.
+- **`dueReminders` is pure, and `lib/reminder-prefs.ts` exists so it can be.**
+  The vocabulary and defaults were originally beside the queries, which meant
+  importing the scheduling maths opened a connection pool. The split is why
+  `reminder-schedule.test.ts` runs with no database and no `load-env` — if it
+  ever needs one, something has been imported that shouldn't be.
+- **Reminders fire at 09:00 in the band's own zone** (`bands.timezone`,
+  seeded from the creator's browser). 09:00 is also why the maths never meets
+  the hour that doesn't exist on the morning the clocks go forward — that gap
+  is at 02:00/03:00 everywhere. Each offset is resolved in _its own_ local day:
+  subtracting 7×24h from the day-of instant lands an hour out across a DST
+  change, and there is a test that fails if you do.
+- **Reminders are per-recipient rows, not one broadcast.** Who wants which
+  offset for which kind of event is a per-person preference, and a shared row
+  can't answer it — filtering at read time would have put a join to `events` on
+  the feed, the unread count and push targeting alike. Idempotency is a partial
+  unique index on `(subject_id, kind, recipient_id)`; the sweep's
+  `onConflictDoNothing` takes **`where`**, not the `targetWhere` that
+  `onConflictDoUpdate` takes (as the upload rollup does) — same job, different
+  spelling, and getting it wrong fails every insert.
+- **A reminder never predates the event being created.** Book a gig two days
+  out and the week-before moment is already behind you; without the
+  `created_at` floor it fires the instant the sweep next runs, which reads as
+  a bug rather than a reminder.
+- **The actor trap has two halves.** `actor_id` is NOT NULL and there is no
+  system user, so a reminder carries the event's creator. `SELF_VISIBLE_KINDS`
+  fixes the _feed_; push is a separate path that excludes the actor
+  unconditionally, so `listPushTargets` now exempts the three reminder kinds.
+  Every other kind is somebody's action and rightly skips them — a reminder is
+  not an action at all. Miss either half and whoever booked the gig is the one
+  member never told, silently.
+- **Reminder preferences are keyed on the calendar's colour key, not
+  `event_type`.** The type is free text a band can invent, which is no basis
+  for a preference key; the colour keys are a closed set the app already
+  collapses free text into. `lib` never imports from `app`, so that mapping is
+  written twice and `event-reminders.test.ts` asserts the copies agree —
+  a type that coloured one way and reminded another would be indefensible.
+  Only explicit choices are stored; absence means the default (shows get all
+  three, everything else the morning of, time off nothing), so a new category
+  or offset arrives sensible for everyone with no backfill.
+- **The reminder grid stores disagreements, not choices.** Settings ›
+  Notifications shows three blocks of checkboxes — one per offset, a box per
+  category — rather than a 6×3 matrix, which at phone width needs either
+  abbreviated headers or sideways scrolling. `PATCH
+  /api/notifications/reminder-prefs` writes a row only where the choice differs
+  from the default and **deletes** it when the choice returns to the default;
+  that is what keeps "no row means default" true, so changing a default later
+  still reaches everyone who never disagreed. On screen the two are
+  indistinguishable, so `reminder-prefs.spec.ts` asserts the row is _gone_
+  after a toggle back — a version that always writes passes every on-screen
+  assertion in that spec. The route has no GET: `settings/page.tsx` loads the
+  prefs in its existing `Promise.all` and hands the client `Map` entries, an
+  array being the shape that crosses the boundary.
 - **`/` is dynamic and public.** Signed out it's a landing page; signed in it
   redirects to `/home`. `start_url` stays `/` so installed apps are unaffected
   and no manifest refetch is needed. It is deliberately _not_ precached — its
@@ -436,9 +495,9 @@ harmlessly) and any real Google/Resend call.
 
 ## Test suite
 
-- `pnpm test:db` — **228 node tests across 37 files**, ~20s, self-cleaning.
+- `pnpm test:db` — **246 node tests across 40 files**, ~21s, self-cleaning.
   Must stay serialized (`--test-concurrency=1`).
-- `pnpm test:e2e` — Playwright, **141 tests across 30 specs**, against a
+- `pnpm test:e2e` — Playwright, **152 tests across 34 specs**, against a
   **production build** (the service worker is disabled in dev, so offline
   specs run in dev prove nothing). Seeds and tears down its own band; ids are
   written to `e2e/.auth/seed.json` so specs navigate directly instead of
@@ -454,7 +513,8 @@ harmlessly) and any real Google/Resend call.
   directly.
 - Pure-logic modules get their own node tests without a database:
   `note-links`, `notification-changes`, `notification-groups`,
-  `format-timestamps`, `event-bars`, `band-switch`, `chordpro`, `staleness`.
+  `format-timestamps`, `event-bars`, `band-switch`, `chordpro`, `staleness`,
+  `reminder-schedule`.
 
 ## Routing shape worth knowing
 

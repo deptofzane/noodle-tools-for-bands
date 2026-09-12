@@ -4,6 +4,7 @@ import { getCurrentDbUser } from '@/lib/current-user';
 import { getUserAccount } from '@/lib/db/accounts';
 import { hasAllDriveScopes } from '@/lib/google';
 import { getMutedKinds, getPushMutedKinds } from '@/lib/db/notifications';
+import { getReminderPrefs } from '@/lib/db/event-reminders';
 import { getOrCreateFeedToken } from '@/lib/db/calendarFeeds';
 import { startGoogleConnect, disconnectGoogle } from '../account-actions';
 import { ThemeToggle } from '../ThemeToggle';
@@ -11,6 +12,7 @@ import { FontSizeControl } from './FontSizeControl';
 import { NavOrderControl } from './NavOrderControl';
 import { CalendarSubscription } from './CalendarSubscription';
 import { NotificationPreferences } from './NotificationPreferences';
+import { ReminderPrefs } from './ReminderPrefs';
 import { PushNotificationToggle } from './PushNotificationToggle';
 import { SettingsTabs, type SettingsTab } from './SettingsTabs';
 import { DeleteAccount } from './DeleteAccount';
@@ -50,10 +52,13 @@ export default async function SettingsPage({
   // session can outlive the identity it was minted with, and these columns are
   // uuids that Postgres refuses outright when handed anything else.
   const dbUser = await getCurrentDbUser();
-  const [mutedKinds, pushMutedKinds, googleAccount, feedToken] =
+  const [mutedKinds, pushMutedKinds, reminderPrefs, googleAccount, feedToken] =
     await Promise.all([
       dbUser ? getMutedKinds(dbUser.id) : Promise.resolve([]),
       dbUser ? getPushMutedKinds(dbUser.id) : Promise.resolve([]),
+      dbUser
+        ? getReminderPrefs(dbUser.id)
+        : Promise.resolve(new Map<string, boolean>()),
       dbUser ? getUserAccount(dbUser.id, 'google') : Promise.resolve(null),
       dbUser ? getOrCreateFeedToken(dbUser.id) : Promise.resolve(null),
     ]);
@@ -228,6 +233,9 @@ export default async function SettingsPage({
             initialMuted={mutedKinds}
             initialPushMuted={pushMutedKinds}
           />
+          {/* Entries, not the Map itself: a plain array is the shape this
+              crosses the server/client boundary in. */}
+          <ReminderPrefs initial={[...reminderPrefs.entries()]} />
         </div>
       ),
     },

@@ -107,6 +107,16 @@ export const passwordResetTokens = pgTable(
 export const bands = pgTable('bands', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
+  /**
+   * The band's home timezone, as an IANA name ("America/Denver").
+   *
+   * Event reminders are anchored to a local hour — "the day before" is a
+   * local-day idea, and a UTC database rolls its day over mid-evening for
+   * anyone west of Greenwich. Seeded from the creator's browser so a new band
+   * is right without anyone thinking about it; 'UTC' is only what rows written
+   * before this column existed fall back to.
+   */
+  timezone: text('timezone').notNull().default('UTC'),
   createdBy: uuid('created_by')
     .notNull()
     .references(() => users.id),
@@ -230,6 +240,12 @@ export const notificationKind = pgEnum('notification_kind', [
   'todo-completed',
   'todo-cancelled',
   'todo-taken-private',
+  // Event reminders, one kind per offset. Separate kinds rather than one with
+  // a field so each can be muted on its own — a band may want the morning-of
+  // nudge and nothing else.
+  'event-week-before',
+  'event-day-before',
+  'event-day-of',
 ]);
 
 // What a notification points at, for building its link.
@@ -342,6 +358,14 @@ export const notifications = pgTable(
     uniqueIndex('notifications_band_day_rollup_unique')
       .on(t.bandId, t.day)
       .where(sql`${t.kind} = 'audio-added' and ${t.subjectId} is null`),
+    // At most one reminder per (event, offset, person). The sweep runs on a
+    // schedule and may run twice over the same window — a missed run catches
+    // up by sending late, which only works if sending twice is impossible.
+    // This is the index the sweep's ON CONFLICT infers, so its predicate has
+    // to stay in step with that query's.
+    uniqueIndex('notifications_event_reminder_unique')
+      .on(t.subjectId, t.kind, t.recipientId)
+      .where(sql`subject_type = 'event' and recipient_id is not null`),
   ],
 );
 
@@ -365,6 +389,32 @@ export const notificationMutes = pgTable(
     kind: notificationKind('kind').notNull(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.kind] })],
+);
+
+/**
+ * Which event types a user wants each reminder offset for.
+ *
+ * Only *explicit* choices live here — absence means "whatever the default for
+ * this category is" (see DEFAULT_REMINDERS). Storing the whole matrix per user
+ * would need a backfill now and another every time a category or offset is
+ * added; this way a new one arrives with a sensible default for everybody.
+ *
+ * `category` is the event's colour key ('show', 'practice', …), not its
+ * `event_type`: the type is free text a band can invent, which is no basis for
+ * a preference key, while the colour keys are a closed set the app already
+ * collapses free text into.
+ */
+export const eventReminderPrefs = pgTable(
+  'event_reminder_prefs',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    category: text('category').notNull(),
+    kind: notificationKind('kind').notNull(),
+    enabled: boolean('enabled').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.category, t.kind] })],
 );
 
 // A kind the user doesn't want pushed to their devices, independent of the

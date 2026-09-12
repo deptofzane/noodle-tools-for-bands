@@ -7,6 +7,36 @@ import { ConfirmModal } from '../../../ConfirmModal';
 import { useTrackPending } from '../../../PendingActionProvider';
 import { useToast } from '../../../ToastProvider';
 import { LoadingBlock } from '../../../Spinner';
+import { Select } from '../../../Select';
+
+/** This device's zone, or null where the runtime won't say. */
+const deviceZone = (() => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+})();
+
+/**
+ * Every zone this runtime knows, with the band's current one guaranteed to be
+ * present — an older browser without `supportedValuesOf` still has to be able
+ * to see (and keep) what's stored, rather than silently showing a blank field
+ * over a value it can't list.
+ */
+function zoneOptions(current: string) {
+  let zones: string[] = [];
+  try {
+    zones = Intl.supportedValuesOf?.('timeZone') ?? [];
+  } catch {
+    zones = [];
+  }
+  const all = new Set<string>(zones);
+  if (current) all.add(current);
+  if (deviceZone) all.add(deviceZone);
+  all.add('UTC');
+  return [...all].sort().map((z) => ({ value: z, label: z }));
+}
 
 interface Member {
   userId: string;
@@ -16,7 +46,7 @@ interface Member {
 }
 
 interface BandDetail {
-  band: { id: string; name: string };
+  band: { id: string; name: string; timezone: string };
   members: Member[];
   myRole: 'owner' | 'member';
 }
@@ -39,6 +69,8 @@ export function EditBandClient({ bandId }: { bandId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [renaming, setRenaming] = useState(false);
+  const [timezone, setTimezone] = useState('');
+  const [savingTz, setSavingTz] = useState(false);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<Member | null>(null);
@@ -67,6 +99,7 @@ export function EditBandClient({ bandId }: { bandId: string }) {
       const d = (await res.json()) as BandDetail;
       setData(d);
       setName(d.band.name);
+      setTimezone(d.band.timezone);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -113,6 +146,31 @@ export function EditBandClient({ bandId }: { bandId: string }) {
       showToast(e instanceof Error ? e.message : String(e));
     } finally {
       setRenaming(false);
+    }
+  };
+
+  const handleTimezone = async (next: string) => {
+    if (!data || savingTz || next === data.band.timezone) return;
+    setTimezone(next);
+    setSavingTz(true);
+    try {
+      await trackPending(async () => {
+        const r = await fetch(`/api/bands/${bandId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ timezone: next }),
+        });
+        await ensureOk(r);
+      });
+      showToast('Timezone updated.', 'success');
+      await load();
+    } catch (e) {
+      // Put the field back to what's actually stored, so it can't show a
+      // zone the reminders aren't using.
+      setTimezone(data.band.timezone);
+      showToast(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSavingTz(false);
     }
   };
 
@@ -309,6 +367,34 @@ export function EditBandClient({ bandId }: { bandId: string }) {
             {renaming ? 'Saving…' : 'Save'}
           </button>
         </form>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-sm font-medium">Timezone</h2>
+        <p className="text-[0.6875rem] minor-text-theme-colors">
+          When event reminders go out. &ldquo;The day before&rdquo; means the
+          day before <em>here</em>, so a band on tour should set the zone it
+          keeps time in.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            value={timezone}
+            onChange={handleTimezone}
+            ariaLabel="Band timezone"
+            className="w-full sm:w-72"
+            options={zoneOptions(timezone)}
+          />
+          {deviceZone && deviceZone !== timezone && (
+            <button
+              type="button"
+              onClick={() => handleTimezone(deviceZone)}
+              disabled={savingTz}
+              className="rounded-md border border-line-strong px-3 py-2 text-sm font-medium hover:bg-surface-soft disabled:opacity-50"
+            >
+              Use {deviceZone}
+            </button>
+          )}
+        </div>
       </section>
 
       <section className="flex flex-col gap-2">

@@ -106,6 +106,13 @@ const SELF_VISIBLE_KINDS = [
   'audio-added',
   'song-created',
   'album-created',
+  // Reminders are attributed to whoever created the event only because
+  // `actor_id` is NOT NULL and there is no system user. Without these three
+  // here, that person — often the one who booked the gig — is the only member
+  // who never gets reminded about it, silently.
+  'event-week-before',
+  'event-day-before',
+  'event-day-of',
 ] as const;
 
 /** SQL: notification is from someone else, or is a self-visible kind. */

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "notifications_event_reminder_unique" ON "notifications" USING btree ("subject_id","kind","recipient_id") WHERE subject_type = 'event' and recipient_id is not null;

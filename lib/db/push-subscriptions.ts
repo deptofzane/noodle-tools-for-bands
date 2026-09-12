@@ -7,6 +7,7 @@ import {
   pushSubscriptions,
 } from './schema';
 import type { NotificationKind } from './notifications';
+import { REMINDER_KINDS } from '../reminder-prefs';
 
 /**
  * Web Push subscriptions — one row per installed device/browser. The endpoint
@@ -126,7 +127,16 @@ export async function listPushTargets(input: {
     )
     .where(
       and(
-        ne(pushSubscriptions.userId, input.actorId),
+        /*
+         * Every other kind is somebody's doing, and nobody needs a buzz for
+         * the thing they just did. A reminder isn't an action at all — it
+         * carries the event's creator only because `actor_id` is NOT NULL and
+         * there is no system user — so excluding the actor there would leave
+         * whoever booked the gig as the one member never pushed about it.
+         */
+        (REMINDER_KINDS as readonly string[]).includes(input.kind)
+          ? undefined
+          : ne(pushSubscriptions.userId, input.actorId),
         // Still band-scoped as well: a recipient who has since left the band
         // shouldn't be reachable through it.
         input.recipientId

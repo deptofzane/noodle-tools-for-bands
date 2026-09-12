@@ -59,6 +59,72 @@ const cleanup = async (bandId: string, tag: string) => {
 const titles = async (userId: string) =>
   (await listNotifications(userId)).notifications.map((n) => n.subjectLabel);
 
+/*
+ * Push deliberately skips whoever acted: nobody needs a buzz for the thing
+ * they just did. Reminders are the one kind that isn't an action — they carry
+ * the event's creator only because `actor_id` is NOT NULL — so the rule is
+ * suspended for them. Without that, whoever booked the gig is the single
+ * member never pushed about it, and nothing anywhere fails to say so.
+ */
+test('push skips the actor, except for reminders', async () => {
+  const tag = 'PUSHREM';
+  const { actor, target, bandId } = await fixture(tag);
+  try {
+    for (const u of [actor, target])
+      await savePushSubscription({
+        userId: u.id,
+        endpoint: `https://fcm.googleapis.com/fcm/send/${tag}-${u.id}`,
+        p256dh: 'p256dh-test-key',
+        auth: 'auth-test-key',
+      });
+
+    const ordinary = await listPushTargets({
+      bandId,
+      actorId: actor.id,
+      kind: 'event-added',
+    });
+    assert.deepEqual(
+      ordinary.map((t) => t.userId),
+      [target.id],
+      'the actor is left out of their own action',
+    );
+
+    const reminder = await listPushTargets({
+      bandId,
+      actorId: actor.id,
+      kind: 'event-day-of',
+    });
+    assert.deepEqual(
+      [...reminder.map((t) => t.userId)].sort(),
+      [actor.id, target.id].sort(),
+      'a reminder reaches the creator too',
+    );
+
+    // Targeting still narrows it, and a mute still silences it.
+    const justActor = await listPushTargets({
+      bandId,
+      actorId: actor.id,
+      kind: 'event-day-of',
+      recipientId: actor.id,
+    });
+    assert.deepEqual(
+      justActor.map((t) => t.userId),
+      [actor.id],
+    );
+
+    await setKindMuted(actor.id, 'event-day-of', true);
+    const muted = await listPushTargets({
+      bandId,
+      actorId: actor.id,
+      kind: 'event-day-of',
+      recipientId: actor.id,
+    });
+    assert.deepEqual(muted, [], 'muting the kind still wins');
+  } finally {
+    await cleanup(bandId, tag);
+  }
+});
+
 test('a targeted notification reaches only its recipient', async () => {
   const { actor, target, other, bandId } = await fixture('ONE');
   try {
@@ -156,7 +222,9 @@ test('a muted kind is still muted when it is addressed to you', async () => {
   }
 });
 
-test('push goes to the recipient alone, and never to the actor', async () => {
+// "never to the actor" holds for every kind that is somebody's action, which
+// is all of them bar the three reminders — see the reminder test above.
+test('push goes to the recipient alone, and never to an ordinary kind’s actor', async () => {
   const { actor, target, other, bandId } = await fixture('PUSH');
   try {
     for (const u of [actor, target, other]) {

@@ -17,11 +17,21 @@ export class BandAccessError extends Error {
 export async function createBand(
   creatorUserId: string,
   name: string,
+  /**
+   * IANA zone the band keeps time in — event reminders fire at a local hour,
+   * so this decides when. The caller passes the creator's browser zone; left
+   * out, the column's 'UTC' default stands, which is only right by accident.
+   */
+  timezone?: string,
 ): Promise<Band> {
   return db.transaction(async (tx) => {
     const [band] = await tx
       .insert(bands)
-      .values({ name, createdBy: creatorUserId })
+      .values({
+        name,
+        createdBy: creatorUserId,
+        ...(timezone ? { timezone } : {}),
+      })
       .returning();
     await tx
       .insert(bandMembers)
@@ -64,6 +74,40 @@ export async function renameBand(
     .where(eq(bands.id, bandId))
     .returning();
   return row ?? null;
+}
+
+/**
+ * Set the band's timezone. Validated by the caller — an unknown IANA name
+ * would silently shift every reminder rather than fail, so it is checked
+ * against `Intl` before it reaches here.
+ */
+export async function setBandTimezone(
+  bandId: string,
+  timezone: string,
+): Promise<Band | null> {
+  const [row] = await db
+    .update(bands)
+    .set({ timezone })
+    .where(eq(bands.id, bandId))
+    .returning();
+  return row ?? null;
+}
+
+/**
+ * Whether a string is a timezone this runtime knows.
+ *
+ * `Intl.DateTimeFormat` throws `RangeError` on an unknown zone, which is the
+ * only reliable check available without shipping a zone table — and it is the
+ * same list the reminder maths will use, so anything that passes here can be
+ * converted later.
+ */
+export function isValidTimezone(tz: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function getMembership(userId: string, bandId: string) {

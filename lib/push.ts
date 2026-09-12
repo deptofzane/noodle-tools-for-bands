@@ -50,6 +50,14 @@ function pushBody(
   previousLabel: string | null,
 ): string {
   switch (kind) {
+    // Reminders aren't somebody's doing, so they never name an actor — the
+    // event's creator is only on the row because `actor_id` is NOT NULL.
+    case 'event-week-before':
+      return `Next week: ${subjectLabel ?? 'an event'} (${band})`;
+    case 'event-day-before':
+      return `Tomorrow: ${subjectLabel ?? 'an event'} (${band})`;
+    case 'event-day-of':
+      return `Today: ${subjectLabel ?? 'an event'} (${band})`;
     case 'song-comment':
       return `${who} commented on ${subjectLabel ?? 'a song'}`;
     case 'chat-message':
