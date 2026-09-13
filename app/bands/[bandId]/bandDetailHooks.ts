@@ -22,11 +22,16 @@ export interface BandDetail {
 }
 
 /**
- * Loads the band's detail, setlists, events, and venues in one shot. Returns
- * the data plus a `reload` used after mutations. The initial load runs through
- * the pending tracker so the global busy indicator reflects it.
+ * Scheduling's slice: the band, plus the setlists, events and venues its
+ * Events and Venues pills render. Four requests in one shot, and a `reload`
+ * for after mutations; the initial load runs through the pending tracker so
+ * the global busy indicator reflects it.
+ *
+ * Named for its page on purpose. A page that needs only the band should use
+ * `useBandDetail` — Overview used to call this one and paid for three
+ * responses it never read.
  */
-export function useBandData(bandId: string) {
+export function useBandSchedulingData(bandId: string) {
   const [data, setData] = useState<BandDetail | null>(null);
   const [setlists, setSetlists] = useState<Setlist[]>([]);
   const [shows, setShows] = useState<Show[]>([]);
@@ -72,7 +77,7 @@ export function useBandData(bandId: string) {
 /**
  * The Audio page's slice of the same data: the band itself (for the heading
  * and the membership check), its songs, and its setlists (for "Add to
- * setlist"). Same contract as `useBandData` — data plus a `reload`.
+ * setlist"). Same contract as the hooks beside it — data plus a `reload`.
  */
 export function useBandAudioData(bandId: string) {
   const [data, setData] = useState<BandDetail | null>(null);
@@ -238,14 +243,15 @@ export function useBandChatStream(bandId: string): number {
 }
 
 /**
- * The Chat page's slice of the band: the members it needs for @-mentions and
- * the role that decides who can moderate.
+ * The band itself — its name, its members, and your role in it. One request.
  *
- * Deliberately not `useBandData` — that also pulls setlists, events and
- * venues, none of which chat renders, for the same reason `useBandUploads` is
+ * What a page uses when it needs the band but none of its contents: Chat (for
+ * @-mentions and who can moderate) and Overview (whose Todos, Notes and Polls
+ * each fetch their own). Deliberately not `useBandSchedulingData`, which also
+ * pulls setlists, events and venues — for the same reason `useBandUploads` is
  * kept separate.
  */
-export function useBandChatData(bandId: string) {
+export function useBandDetail(bandId: string) {
   const [data, setData] = useState<BandDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const trackPending = useTrackPending();

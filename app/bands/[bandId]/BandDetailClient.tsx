@@ -14,7 +14,7 @@ import {
   type BandTab,
 } from './bandTabs';
 import { PillTabs } from '../../PillTabs';
-import { useBandData } from './bandDetailHooks';
+import { useBandDetail } from './bandDetailHooks';
 import { LoadingBlock } from '../../Spinner';
 
 /**
@@ -42,7 +42,9 @@ export function BandDetailClient({
 }) {
   const [activeTab, setActiveTab] = useState<BandTab>(initialTab);
 
-  const { data, error, reload } = useBandData(bandId);
+  // One request: the band and its members. Todos, Notes and Polls each fetch
+  // their own, so nothing here needs setlists, events or venues.
+  const { data, error, reload } = useBandDetail(bandId);
 
   // Mirror the active tab into the URL (?tab=…) so browser-back and refresh
   // restore it. Uses history.replaceState — no navigation/refetch, and it

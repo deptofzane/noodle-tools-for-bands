@@ -1,7 +1,7 @@
 'use client';
 
 import { BandChat } from '../BandChat';
-import { useBandChatData, useBandChatStream } from '../bandDetailHooks';
+import { useBandDetail, useBandChatStream } from '../bandDetailHooks';
 import { LoadingBlock } from '../../../Spinner';
 
 /**
@@ -15,7 +15,7 @@ export function BandChatClient({
   bandId: string;
   currentUserId: string;
 }) {
-  const { data, error } = useBandChatData(bandId);
+  const { data, error } = useBandDetail(bandId);
   const chatChange = useBandChatStream(bandId);
 
   if (error) {

@@ -402,10 +402,18 @@ Last updated: 2 September 2026.
   there is no longer anything to disagree with. The guard that remains is
   membership, and it has its own test; the old mismatch test was deleted
   rather than rewritten, because its premise no longer exists.
-- **`useBandData` has no empty-`bandId` guard**, and `useCurrentBand` returns
-  `''` both while the band list is in flight and when the user has none — so
-  Scheduling mounts its Events/Venues panels only once there's a band, or it
-  would fetch `/api/bands//events`.
+- **`useBandSchedulingData` has no empty-`bandId` guard**, and `useCurrentBand`
+  returns `''` both while the band list is in flight and when the user has none
+  — so Scheduling mounts its Events/Venues panels only once there's a band, or
+  it would fetch `/api/bands//events`.
+- **One band hook per page, named for that page.** `useBandSchedulingData`
+  (band + setlists + events + venues), `useBandAudioData` (band + songs +
+  setlists), `useBandUploads` (paged, mounted with its tab), and
+  `useBandDetail` (the band alone) shared by Chat and Overview. Overview used
+  to call the four-request hook and read only the first response — wasting
+  three requests on load *and* again on every `reload()`, which each of its
+  mutations triggers. Adding a page here means picking the narrowest hook, not
+  widening an existing one.
 - **Two tab idioms, split on purpose.** `PillTabs` is the rounded row on Home,
   Scheduling, Overview and Audio; `TabStrip` is the sliding underline still
   used by Settings, File management and History. Pills are the top-level

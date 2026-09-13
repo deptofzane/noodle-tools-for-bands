@@ -8,7 +8,7 @@ import { LoadingBlock } from '../Spinner';
 import { CalendarClient } from './CalendarClient';
 import { EventsPanel } from './EventsPanel';
 import { VenuesPanel } from './VenuesPanel';
-import { useBandData } from '../bands/[bandId]/bandDetailHooks';
+import { useBandSchedulingData } from '../bands/[bandId]/bandDetailHooks';
 import {
   SCHEDULING_VIEWS,
   type SchedulingView,
@@ -92,7 +92,8 @@ function BandPanels({
   bandId: string;
   view: 'events' | 'venues';
 }) {
-  const { data, setlists, shows, venues, error, reload } = useBandData(bandId);
+  const { data, setlists, shows, venues, error, reload } =
+    useBandSchedulingData(bandId);
 
   if (error) {
     return (
