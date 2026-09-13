@@ -406,6 +406,20 @@ Last updated: 2 September 2026.
   `''` both while the band list is in flight and when the user has none — so
   Scheduling mounts its Events/Venues panels only once there's a band, or it
   would fetch `/api/bands//events`.
+- **Two tab idioms, split on purpose.** `PillTabs` is the rounded row on Home,
+  Scheduling, Overview and Audio; `TabStrip` is the sliding underline still
+  used by Settings, File management and History. Pills are the top-level
+  "which section am I in" choice; the strip suits places with more, narrower
+  categories, and it scrolls horizontally where pills don't.
+- **Overview's tab names used to be lowercase to assistive tech.** They were
+  the keys themselves with a CSS `capitalize`, which doesn't change the text a
+  screen reader reads — so the accessible names were `todos`/`notes`/`polls`.
+  `TAB_LABELS` in `bandTabs.ts` spells them out, mirroring `audioTabs.ts`.
+- **Audio's four pills fit, with about 39px to spare at 412px** (373 of 412,
+  and 336 of 360 on a narrower phone — the buttons flex down rather than
+  overflow). Measured rather than assumed, which is why `PillTabs` has no
+  scroll handling: it would have been dead weight. A fifth Audio tab is the
+  point at which that stops being true.
 - **`/` is dynamic and public.** Signed out it's a landing page; signed in it
   redirects to `/home`. `start_url` stays `/` so installed apps are unaffected
   and no manifest refetch is needed. It is deliberately _not_ precached — its

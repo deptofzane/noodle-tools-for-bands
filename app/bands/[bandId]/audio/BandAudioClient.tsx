@@ -20,7 +20,7 @@ import { AddAudioSourceModal } from './AddAudioSourceModal';
 import { useBandAudioData } from '../bandDetailHooks';
 import type { Conversation } from '../bandDetailShared';
 import { LoadingBlock } from '../../../Spinner';
-import { TabStrip } from '../../../TabStrip';
+import { PillTabs } from '../../../PillTabs';
 import {
   AUDIO_TABS,
   AUDIO_TAB_STORAGE_KEY,
@@ -399,58 +399,54 @@ export function BandAudioClient({
       </span>
 
       {/* Tabs */}
-      <TabStrip label="Audio sections" activeKey={activeTab}>
-        {AUDIO_TABS.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            role="tab"
-            data-tab-key={tab}
-            aria-selected={activeTab === tab}
-            onClick={() => setActiveTab(tab)}
-            className={
-              '-mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-3 py-2 text-sm font-medium transition ' +
-              (activeTab === tab
-                ? 'text-accent'
-                : 'minor-text-theme-colors hover:text-fg-strong')
-            }
-          >
-            {TAB_LABELS[tab]}
-          </button>
-        ))}
-      </TabStrip>
+      <PillTabs
+        label="Audio sections"
+        idPrefix="audio-tab"
+        controls="audio-tabpanel"
+        activeKey={activeTab}
+        onChange={(key) => setActiveTab(key as AudioTab)}
+        tabs={AUDIO_TABS.map((tab) => ({ key: tab, label: TAB_LABELS[tab] }))}
+      />
 
-      {activeTab === 'queue' && <SongQueue />}
+      {/* The modals below are the page's, not this panel's, so they stay
+          outside it. */}
+      <div
+        role="tabpanel"
+        id="audio-tabpanel"
+        aria-labelledby={`audio-tab-${activeTab}`}
+      >
+        {activeTab === 'queue' && <SongQueue />}
 
-      {activeTab === 'songs' && (
-        <BandAudioList
-          bandId={bandId}
-          conversations={conversations}
-          bandName={data?.band.name ?? null}
-          canUseDrive={canUseDrive}
-          importProgress={importProgress}
-          audioBusy={audioBusy}
-          rowsDisabled={deleting || archiving}
-          onOpenChooser={() => setChooseOpen(true)}
-          onCreateSong={() => setCreateOpen(true)}
-          onAddToSetlist={openAddToSetlist}
-          onEditSong={(c) => go(`/notes/${c.id}/edit`)}
-          onViewSong={(c) => go(songHref(c.id))}
-          onToggleArchive={handleToggleArchive}
-          onDelete={(c) => setDeleteTarget(c)}
-        />
-      )}
+        {activeTab === 'songs' && (
+          <BandAudioList
+            bandId={bandId}
+            conversations={conversations}
+            bandName={data?.band.name ?? null}
+            canUseDrive={canUseDrive}
+            importProgress={importProgress}
+            audioBusy={audioBusy}
+            rowsDisabled={deleting || archiving}
+            onOpenChooser={() => setChooseOpen(true)}
+            onCreateSong={() => setCreateOpen(true)}
+            onAddToSetlist={openAddToSetlist}
+            onEditSong={(c) => go(`/notes/${c.id}/edit`)}
+            onViewSong={(c) => go(songHref(c.id))}
+            onToggleArchive={handleToggleArchive}
+            onDelete={(c) => setDeleteTarget(c)}
+          />
+        )}
 
-      {activeTab === 'setlists' && (
-        <BandSetlistsTab
-          bandId={bandId}
-          setlists={setlists}
-          onReload={reload}
-        />
-      )}
+        {activeTab === 'setlists' && (
+          <BandSetlistsTab
+            bandId={bandId}
+            setlists={setlists}
+            onReload={reload}
+          />
+        )}
 
-      {/* Mounted only while its tab is open — that's what makes it lazy. */}
-      {activeTab === 'uploads' && <UploadHistory bandId={bandId} />}
+        {/* Mounted only while its tab is open — that's what makes it lazy. */}
+        {activeTab === 'uploads' && <UploadHistory bandId={bandId} />}
+      </div>
 
       <ConfirmModal
         open={deleteTarget !== null}

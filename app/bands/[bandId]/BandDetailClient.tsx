@@ -9,10 +9,11 @@ import {
   BAND_ACTIVE_TAB_KEY,
   BAND_TABS,
   DEFAULT_BAND_TAB,
+  TAB_LABELS,
   isBandTab,
   type BandTab,
 } from './bandTabs';
-import { TabStrip } from '../../TabStrip';
+import { PillTabs } from '../../PillTabs';
 import { useBandData } from './bandDetailHooks';
 import { LoadingBlock } from '../../Spinner';
 
@@ -110,43 +111,37 @@ export function BandDetailClient({
       </span>
 
       {/* Tabs */}
-      <TabStrip label="Band sections" activeKey={activeTab}>
-        {BAND_TABS.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            role="tab"
-            data-tab-key={tab}
-            aria-selected={activeTab === tab}
-            onClick={() => changeTab(tab)}
-            className={
-              '-mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-3 py-2 text-sm font-medium capitalize transition ' +
-              (activeTab === tab
-                ? 'text-accent'
-                : 'minor-text-theme-colors hover:text-fg-strong')
-            }
-          >
-            {tab}
-          </button>
-        ))}
-      </TabStrip>
+      <PillTabs
+        label="Band sections"
+        idPrefix="band-tab"
+        controls="band-tabpanel"
+        activeKey={activeTab}
+        onChange={(key) => changeTab(key as BandTab)}
+        tabs={BAND_TABS.map((tab) => ({ key: tab, label: TAB_LABELS[tab] }))}
+      />
 
-      {activeTab === 'polls' && (
-        <BandMembersTab
-          bandId={bandId}
-          members={data.members}
-          canManage={isOwner}
-          onReload={reload}
-        />
-      )}
+      <div
+        role="tabpanel"
+        id="band-tabpanel"
+        aria-labelledby={`band-tab-${activeTab}`}
+      >
+        {activeTab === 'polls' && (
+          <BandMembersTab
+            bandId={bandId}
+            members={data.members}
+            canManage={isOwner}
+            onReload={reload}
+          />
+        )}
 
-      {activeTab === 'todos' && (
-        <BandTodosTab bandId={bandId} currentUserId={currentUserId} />
-      )}
+        {activeTab === 'todos' && (
+          <BandTodosTab bandId={bandId} currentUserId={currentUserId} />
+        )}
 
-      {activeTab === 'notes' && (
-        <BandNotesTab bandId={bandId} currentUserId={currentUserId} />
-      )}
+        {activeTab === 'notes' && (
+          <BandNotesTab bandId={bandId} currentUserId={currentUserId} />
+        )}
+      </div>
     </div>
   );
 }

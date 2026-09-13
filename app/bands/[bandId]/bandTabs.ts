@@ -8,6 +8,19 @@ export const BAND_TABS = ['todos', 'notes', 'polls'] as const;
 export type BandTab = (typeof BAND_TABS)[number];
 
 /**
+ * What each tab is called on screen.
+ *
+ * These used to be the keys themselves, capitalised in CSS — which left the
+ * *accessible* name lowercase, since `text-transform` doesn't change the text.
+ * Spelling them out fixes that and gives the pills somewhere to read from.
+ */
+export const TAB_LABELS: Record<BandTab, string> = {
+  todos: 'Todos',
+  notes: 'Notes',
+  polls: 'Polls',
+};
+
+/**
  * Where the last-used tab is remembered. Read on a paramless visit to
  * `/bands/[id]`, so anything that wants to send someone to a particular tab
  * has to set it too.

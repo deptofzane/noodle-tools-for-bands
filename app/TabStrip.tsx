@@ -13,9 +13,12 @@ const useIsomorphicLayoutEffect =
  *
  * The tabs are content-width and the strip scrolls horizontally, so the
  * underline can't be expressed in CSS alone — it's measured from the selected
- * button and moved with a transform. Children stay the caller's business
- * (Overview's chat tab carries an unread badge); they just need
- * `data-tab-key`, which is how the strip finds the one to sit under.
+ * button and moved with a transform. Children stay the caller's business — a
+ * plain label, or one carrying a badge; they just need `data-tab-key`, which
+ * is how the strip finds the one to sit under.
+ *
+ * Settings, File management and History still use this. Home, Scheduling and
+ * the two band pages use `PillTabs` instead.
  *
  * Each button should keep `border-b-2 border-transparent` so the row's height
  * doesn't shift — the coloured line is this indicator, not the button.
