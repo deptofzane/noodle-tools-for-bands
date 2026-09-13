@@ -103,6 +103,7 @@ export function BandDetailClient({
 
   return (
     <div className="flex flex-col gap-4">
+      {/* TODO: decide whether to keep or not */}
       {/* <span className="flex items-center justify-between gap-2">
         <h1 className="title-text">{data.band.name}</h1>
         {isOwner && (
