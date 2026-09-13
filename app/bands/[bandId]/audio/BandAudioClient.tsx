@@ -394,9 +394,9 @@ export function BandAudioClient({
 
   return (
     <div className="flex flex-col gap-4">
-      <span className="flex items-baseline gap-2">
+      {/* <span className="flex items-baseline gap-2">
         <h1 className="title-text">Audio</h1>
-      </span>
+      </span> */}
 
       {/* Tabs */}
       <PillTabs

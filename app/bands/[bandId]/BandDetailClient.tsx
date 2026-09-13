@@ -101,14 +101,14 @@ export function BandDetailClient({
 
   return (
     <div className="flex flex-col gap-4">
-      <span className="flex items-center justify-between gap-2">
+      {/* <span className="flex items-center justify-between gap-2">
         <h1 className="title-text">{data.band.name}</h1>
         {isOwner && (
           <Link href={`/bands/${bandId}/edit`} className="shrink-0 btn-outline">
             Edit band
           </Link>
         )}
-      </span>
+      </span> */}
 
       {/* Tabs */}
       <PillTabs
