@@ -31,7 +31,7 @@ const field =
 /**
  * Create or edit a venue. With a `venueId` it PATCHes an existing venue;
  * without one it POSTs a new venue for the band. Save and Cancel both return
- * to the band's Venues tab.
+ * to the Venues list on Scheduling.
  */
 export function VenueForm({
   bandId,

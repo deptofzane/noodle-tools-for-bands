@@ -277,10 +277,9 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
       label: 'Venues',
     },
     /*
-     * Events goes to the same page the bar's Overview tab does: `events` is
-     * the band page's default tab. Named explicitly rather than relying on
-     * that default, so this keeps pointing at the events list if the default
-     * ever moves.
+     * Both of these name their pill explicitly rather than leaning on
+     * Scheduling's default view, so a change to that default can't quietly
+     * redirect the drawer.
      */
     {
       href: '/scheduling?view=events',

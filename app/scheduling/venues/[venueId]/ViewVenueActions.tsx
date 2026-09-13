@@ -14,7 +14,7 @@ import { venueHref } from '@/lib/routes';
  * The venue page's kebab.
  *
  * No View — this is the venue's own page — and no Delete: that lives on the
- * Venues tab, next to the list it removes a row from, which is where someone
+ * Venues list, beside the row it removes, which is where someone
  * deleting one is already looking.
  */
 export function ViewVenueActions({

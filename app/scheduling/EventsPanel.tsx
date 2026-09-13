@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useNavigate } from '../../useNavigate';
+import { useNavigate } from '../useNavigate';
 import { ensureOk } from '@/lib/api';
 import {
   formatDateRange,
@@ -14,34 +14,34 @@ import {
   ActionMenuItem,
   MenuIconRow,
   MenuSectionLabel,
-} from '../../ActionMenu';
-import { EyeIcon, LinkIcon, PencilIcon } from '../../icons';
-import { useShareLink } from '../../useShareLink';
-import { ConfirmModal } from '../../ConfirmModal';
-import { useTrackPending } from '../../PendingActionProvider';
-import { useToast } from '../../ToastProvider';
-import { usePersistedBoolean } from '../../usePersistedBoolean';
-import { usePersistedStringSet } from '../../usePersistedStringSet';
-import { useOfflineDownload } from '../../offline/useOfflineDownload';
-import { OfflineBadge } from '../../offline/OfflineBadge';
-import { usePlaylistPlayer } from '../../player/PlaylistPlayer';
+} from '../ActionMenu';
+import { EyeIcon, LinkIcon, PencilIcon } from '../icons';
+import { useShareLink } from '../useShareLink';
+import { ConfirmModal } from '../ConfirmModal';
+import { useTrackPending } from '../PendingActionProvider';
+import { useToast } from '../ToastProvider';
+import { usePersistedBoolean } from '../usePersistedBoolean';
+import { usePersistedStringSet } from '../usePersistedStringSet';
+import { useOfflineDownload } from '../offline/useOfflineDownload';
+import { OfflineBadge } from '../offline/OfflineBadge';
+import { usePlaylistPlayer } from '../player/PlaylistPlayer';
 import {
   MinimizeToggle,
   setlistQueue,
   type Setlist,
   type Show,
-} from './bandDetailShared';
-import { MapLink } from '../../MapLink';
+} from '../bands/[bandId]/bandDetailShared';
+import { MapLink } from '../MapLink';
 import { eventHref, liveHref, practiceHref } from '@/lib/routes';
 import { CollapsibleSection } from '@/app/CollapsibleSection';
-import { eventColorKey } from '../../scheduling/eventColors';
+import { eventColorKey } from './eventColors';
 
 /**
- * The Overview tab: upcoming Shows, Past shows, and (for non-owners) a Leave
+ * The Events panel: upcoming Shows, Past shows, and (for non-owners) a Leave
  * button. Owns its own collapse/expand UI state; the parent supplies the data,
  * a reload callback, and the leave handler.
  */
-export function BandOverviewTab({
+export function EventsPanel({
   bandId,
   shows,
   setlists,

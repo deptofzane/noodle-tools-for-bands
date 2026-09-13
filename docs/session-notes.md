@@ -69,7 +69,7 @@ Last updated: 2 September 2026.
   and shrinks offline downloads. Needs ffmpeg in a background job plus a
   `delivery` variant on `song_files`.
 - **Practice/Live are still offered for an empty setlist** on the band
-  Overview event rows (`BandOverviewTab`) and the event detail page
+  Overview event rows (`EventsPanel`) and the event detail page
   (`EventSetlistActions`). Both `/home` → Upcoming and the event page's song
   list say when a setlist is empty; it's the actions beside them that don't
   check.
@@ -600,7 +600,7 @@ harmlessly) and any real Google/Resend call.
 
 Events (`data-event-type`): `calendar/WeekRow` and `calendar/DaySummaryModal`
 (shared by the Calendar's month grid and Home's Activity week),
-`calendar/events/[eventId]`, `BandOverviewTab` (title row only — the expanded
+`scheduling/events/[eventId]`, `EventsPanel` (title row only — the expanded
 panel stays neutral), `home/ActivityWeek` (the phone's day list),
 `home/RecentEvents`.
 

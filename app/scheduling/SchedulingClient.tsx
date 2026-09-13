@@ -6,8 +6,8 @@ import { PillTabs } from '../PillTabs';
 import { useCurrentBand } from '../CurrentBandProvider';
 import { LoadingBlock } from '../Spinner';
 import { CalendarClient } from './CalendarClient';
-import { BandOverviewTab } from '../bands/[bandId]/BandOverviewTab';
-import { BandVenuesTab } from '../bands/[bandId]/BandVenuesTab';
+import { EventsPanel } from './EventsPanel';
+import { VenuesPanel } from './VenuesPanel';
 import { useBandData } from '../bands/[bandId]/bandDetailHooks';
 import {
   SCHEDULING_VIEWS,
@@ -104,14 +104,14 @@ function BandPanels({
   if (!data) return <LoadingBlock />;
 
   return view === 'events' ? (
-    <BandOverviewTab
+    <EventsPanel
       bandId={bandId}
       shows={shows}
       setlists={setlists}
       onReload={reload}
     />
   ) : (
-    <BandVenuesTab bandId={bandId} venues={venues} onReload={reload} />
+    <VenuesPanel bandId={bandId} venues={venues} onReload={reload} />
   );
 }
 

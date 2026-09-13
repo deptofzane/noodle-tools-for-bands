@@ -2,32 +2,32 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useNavigate } from '../../useNavigate';
+import { useNavigate } from '../useNavigate';
 import { ensureOk } from '@/lib/api';
 import {
   ActionMenu,
   ActionMenuItem,
   MenuIconRow,
   MenuSectionLabel,
-} from '../../ActionMenu';
-import { EyeIcon, LinkIcon, PencilIcon } from '../../icons';
-import { useShareLink } from '../../useShareLink';
+} from '../ActionMenu';
+import { EyeIcon, LinkIcon, PencilIcon } from '../icons';
+import { useShareLink } from '../useShareLink';
 import { venueHref } from '@/lib/routes';
-import { ConfirmModal } from '../../ConfirmModal';
-import { usePersistedBoolean } from '../../usePersistedBoolean';
-import { usePersistedStringSet } from '../../usePersistedStringSet';
-import { useTrackPending } from '../../PendingActionProvider';
-import { useToast } from '../../ToastProvider';
-import { MinimizeToggle, type Venue } from './bandDetailShared';
-import { MapLink } from '../../MapLink';
+import { ConfirmModal } from '../ConfirmModal';
+import { usePersistedBoolean } from '../usePersistedBoolean';
+import { usePersistedStringSet } from '../usePersistedStringSet';
+import { useTrackPending } from '../PendingActionProvider';
+import { useToast } from '../ToastProvider';
+import { MinimizeToggle, type Venue } from '../bands/[bandId]/bandDetailShared';
+import { MapLink } from '../MapLink';
 
 /**
- * The Venues tab: the band's saved venues (each expandable to reveal its
+ * The Venues panel: the band's saved venues (each expandable to reveal its
  * contact details and notes), plus a Create button. Each venue has a kebab to
  * edit or delete it. Owns its own collapse state; the parent supplies the data
  * and a reload callback.
  */
-export function BandVenuesTab({
+export function VenuesPanel({
   bandId,
   venues,
   onReload,
