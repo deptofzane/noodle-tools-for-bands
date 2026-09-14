@@ -37,7 +37,7 @@ export interface ScheduledEvent {
  * `hourCycle: 'h23'` rather than `hour12: false`, which renders midnight as
  * hour 24 in some locales and would put the offset a day out.
  */
-export function zoneOffsetMs(at: Date, timezone: string): number {
+function zoneOffsetMs(at: Date, timezone: string): number {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
     hourCycle: 'h23',

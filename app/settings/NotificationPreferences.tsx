@@ -4,6 +4,8 @@ import { useCallback, useState } from 'react';
 import type { NotificationKind } from '@/lib/db/notifications';
 import { useToast } from '../ToastProvider';
 import { usePersistedStringSet } from '../usePersistedStringSet';
+import { Switch } from './Switch';
+import { ReminderPrefs } from './ReminderPrefs';
 import {
   ALL_PREF_KINDS,
   PREF_GROUPS,
@@ -18,58 +20,6 @@ import {
 
 type Kind = NotificationKind;
 type Channel = 'feed' | 'push';
-
-/**
- * A switch that can also be half-on.
- *
- * `mixed` is only ever a master's state — some of what it governs is on and
- * some isn't. ARIA has a word for exactly this (`aria-checked="mixed"`), and
- * the knob sits between the two ends so it reads as "not settled" rather than
- * as a third setting.
- */
-function Switch({
-  on,
-  mixed = false,
-  disabled,
-  label,
-  title,
-  onToggle,
-}: {
-  on: boolean;
-  mixed?: boolean;
-  disabled: boolean;
-  label: string;
-  title?: string;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={mixed ? 'mixed' : on}
-      title={title}
-      aria-label={label}
-      disabled={disabled}
-      onClick={onToggle}
-      className={
-        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:opacity-40 ' +
-        (mixed
-          ? 'bg-blue-600/50'
-          : on
-            ? 'bg-blue-600'
-            : 'bg-neutral-300 dark:bg-neutral-700')
-      }
-    >
-      <span
-        aria-hidden="true"
-        className={
-          'inline-block h-5 w-5 transform rounded-full bg-white shadow transition ' +
-          (mixed ? 'translate-x-2.5' : on ? 'translate-x-5' : 'translate-x-0.5')
-        }
-      />
-    </button>
-  );
-}
 
 /**
  * Per-user, per-channel notification toggles, in three layers.
@@ -91,9 +41,12 @@ function Switch({
 export function NotificationPreferences({
   initialMuted,
   initialPushMuted,
+  reminderPrefs,
 }: {
   initialMuted: Kind[];
   initialPushMuted: Kind[];
+  /** Forwarded to the Event reminders card, which renders below the groups. */
+  reminderPrefs: [string, boolean][];
 }) {
   const [muted, setMuted] = useState<Set<Kind>>(new Set(initialMuted));
   const [pushMuted, setPushMuted] = useState<Set<Kind>>(
@@ -346,6 +299,20 @@ export function NotificationPreferences({
           {PREF_GROUPS.map(renderGroup)}
         </ul>
       </div>
+
+      {/* Rendered here rather than beside this component so its per-offset
+          switches read the same `muted`/`pushMuted` the masters above do —
+          two copies would drift apart the moment either was touched. */}
+      <ReminderPrefs
+        initial={reminderPrefs}
+        channels={{
+          feedOn,
+          pushOn,
+          busy: busy !== null,
+          apply: (key, kinds, channel, enabled) =>
+            void apply(key, kinds, channel, enabled),
+        }}
+      />
     </div>
   );
 }

@@ -67,6 +67,29 @@ test('turning a default-on reminder off sticks, and back on again', async ({
   expect((await stored()).has(key)).toBe(false);
 });
 
+test('each offset’s switches sit with its event types, not in Calendar', async ({
+  page,
+}) => {
+  await openReminders(page);
+
+  // The offset's own In app / Push switches, inside its block and above the
+  // types it applies to — the two halves of one decision.
+  const dayOf = group(page, 'the day of');
+  await expect(
+    dayOf.getByRole('switch', { name: 'Remind me the day of in app' }),
+  ).toBeVisible();
+  await expect(
+    dayOf.getByRole('switch', { name: 'Remind me the day of push' }),
+  ).toBeVisible();
+
+  // And nothing left behind in the Calendar section. Opened first, since a
+  // collapsed group would make this pass without proving anything.
+  await page.getByRole('button', { name: /^Calendar/ }).click();
+  await expect(
+    page.getByRole('switch', { name: /Event reminders/ }),
+  ).toHaveCount(0);
+});
+
 test('turning a default-off reminder on sticks', async ({ page }) => {
   await openReminders(page);
 

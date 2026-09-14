@@ -28,11 +28,10 @@ import {
  *   one-liners and the original return type and error semantics flow
  *   through untouched. If the inner promise rejects, `trackPending`
  *   still decrements the counter (via `try/finally`) and re-throws.
- * - **`usePendingCount` returns 0 outside a provider.** The provider
- *   wraps the entire signed-in layout; the only place that doesn't
- *   have a provider is the login route's stripped layout, where we
- *   don't render the Header anyway. Returning 0 instead of throwing
- *   makes the hook safe to consume from any client subtree.
+ * Nothing currently *reads* `pendingCount` — the Header's spinner became
+ * `RouteProgress`. The counter is kept because `trackPending` is the wrapper
+ * 40-odd call sites already use, and giving it a reader again is a one-line
+ * change; but until something does, incrementing it buys nothing.
  *
  * Intentionally NOT tracked: background SSE long-polls and recurring
  * 30-second background polls. Wrapping those would make the spinner
@@ -105,15 +104,6 @@ export function useTrackPending(): <T>(fn: () => Promise<T>) => Promise<T> {
   const ctx = useContext(PendingActionContext);
   if (!ctx) return <T,>(fn: () => Promise<T>) => fn();
   return ctx.trackPending;
-}
-
-/**
- * Read the current in-flight count. Returns 0 outside a provider.
- * Header.tsx uses this to render the spinner.
- */
-export function usePendingCount(): number {
-  const ctx = useContext(PendingActionContext);
-  return ctx?.pendingCount ?? 0;
 }
 
 /**

@@ -79,28 +79,6 @@ export const PREF_GROUPS: PrefGroup[] = [
         label: 'Event updates',
         description: 'When an event’s details are edited.',
       },
-      /*
-       * One row per offset rather than a single merged "reminders" row: these
-       * rows carry the push toggle, which is kind-wide, so merging them would
-       * make it impossible to keep the morning-of buzz while silencing the
-       * week-ahead one. Which event *types* produce each offset is the grid's
-       * job, not these.
-       */
-      {
-        kinds: ['event-week-before'],
-        label: 'Event reminders — a week before',
-        description: 'A week ahead of an event, for the types chosen below.',
-      },
-      {
-        kinds: ['event-day-before'],
-        label: 'Event reminders — the day before',
-        description: 'The day before an event, for the types chosen below.',
-      },
-      {
-        kinds: ['event-day-of'],
-        label: 'Event reminders — the day of',
-        description: 'On the morning of an event, for the types chosen below.',
-      },
     ],
   },
   {
@@ -187,8 +165,29 @@ export const PREF_GROUPS: PrefGroup[] = [
 export const groupKinds = (g: PrefGroup): NotificationKind[] =>
   g.rows.flatMap((r) => r.kinds);
 
-export const ALL_PREF_KINDS: NotificationKind[] =
-  PREF_GROUPS.flatMap(groupKinds);
+/**
+ * The reminder offsets, which are configured outside the groups.
+ *
+ * Their in-app/push switches sit on the Event reminders card instead, directly
+ * above the event types each offset applies to — the two halves of one
+ * decision, which reads badly split across two sections. One switch per offset
+ * rather than a merged "reminders" row, because push is kind-wide and silencing
+ * the week-ahead buzz shouldn't cost the morning-of one.
+ *
+ * They stay in `ALL_PREF_KINDS` regardless: they're still notifications, so
+ * "All notifications" has to reach them, and the test that every kind has a
+ * home would otherwise stop seeing them.
+ */
+export const REMINDER_PREF_KINDS: NotificationKind[] = [
+  'event-week-before',
+  'event-day-before',
+  'event-day-of',
+];
+
+export const ALL_PREF_KINDS: NotificationKind[] = [
+  ...PREF_GROUPS.flatMap(groupKinds),
+  ...REMINDER_PREF_KINDS,
+];
 
 /**
  * A row can push only if any of its kinds can. The pin row is the case: both

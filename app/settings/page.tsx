@@ -12,7 +12,6 @@ import { FontSizeControl } from './FontSizeControl';
 import { NavOrderControl } from './NavOrderControl';
 import { CalendarSubscription } from './CalendarSubscription';
 import { NotificationPreferences } from './NotificationPreferences';
-import { ReminderPrefs } from './ReminderPrefs';
 import { PushNotificationToggle } from './PushNotificationToggle';
 import { SettingsTabs, type SettingsTab } from './SettingsTabs';
 import { DeleteAccount } from './DeleteAccount';
@@ -229,13 +228,16 @@ export default async function SettingsPage({
       content: (
         <div className="flex flex-col gap-4">
           <PushNotificationToggle />
+          {/* Reminder prefs go through here rather than beside it: the card
+              renders inside, so its per-offset switches share one copy of the
+              muted/push state with the master switches. Entries, not the Map
+              itself — a plain array is the shape this crosses the
+              server/client boundary in. */}
           <NotificationPreferences
             initialMuted={mutedKinds}
             initialPushMuted={pushMutedKinds}
+            reminderPrefs={[...reminderPrefs.entries()]}
           />
-          {/* Entries, not the Map itself: a plain array is the shape this
-              crosses the server/client boundary in. */}
-          <ReminderPrefs initial={[...reminderPrefs.entries()]} />
         </div>
       ),
     },

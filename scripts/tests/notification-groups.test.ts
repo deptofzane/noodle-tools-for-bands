@@ -6,6 +6,7 @@ import { FEED_ONLY_KINDS } from '../../lib/notification-kinds';
 import {
   ALL_PREF_KINDS,
   PREF_GROUPS,
+  REMINDER_PREF_KINDS,
   masterClickTurnsOn,
   masterState,
   pushableKinds,
@@ -107,4 +108,26 @@ test('the merged rows are the intended pairs, and nothing else', () => {
     'poll-auto-closed+poll-closed',
     'todo-cancelled+todo-completed',
   ]);
+});
+
+test('reminder offsets sit outside the groups but inside the masters', () => {
+  const grouped = PREF_GROUPS.flatMap((g) => g.rows).flatMap((r) => r.kinds);
+
+  for (const kind of REMINDER_PREF_KINDS) {
+    // Their switches live on the Event reminders card, above the event types
+    // each offset covers — putting a second copy in a group would give one
+    // setting two switches that could disagree.
+    assert.equal(
+      grouped.includes(kind),
+      false,
+      `${kind} is configured on the reminders card, not in a group`,
+    );
+    // But they are still notifications: silencing everything has to silence
+    // them, and the "every kind has a home" test above reads this list.
+    assert.equal(
+      ALL_PREF_KINDS.includes(kind),
+      true,
+      `"All notifications" must still reach ${kind}`,
+    );
+  }
 });

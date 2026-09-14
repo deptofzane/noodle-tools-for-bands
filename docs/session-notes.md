@@ -317,6 +317,23 @@ Last updated: 2 September 2026.
   `onConflictDoNothing` takes **`where`**, not the `targetWhere` that
   `onConflictDoUpdate` takes (as the upload rollup does) — same job, different
   spelling, and getting it wrong fails every insert.
+- **The sweep batches, in three passes.** Decide what's due; load every band's
+  members (one query each, in parallel) and every one of those people's
+  preferences (`getReminderPrefsForUsers`, one query total); then insert in
+  chunks of 500. It used to issue an INSERT per (event, member, offset) and a
+  preferences query per person, which multiplied out as bands grew. `returning`
+  still names only the rows that were really new, and each one is matched back
+  to its push by the `(subject_id, kind, recipient_id)` triple — the same
+  triple the unique index is built on.
+- **Nothing asserts the reminder push.** The sweep's five tests cover which
+  rows get written and that a second run writes none, so they'd catch a
+  batching mistake — but a push aimed at the wrong person would pass them all.
+  Worth knowing before trusting them on a change to that half.
+- **`pendingCount` is written but never read.** `trackPending` is wrapped
+  around ~40 call sites and still increments the counter, but the Header's
+  spinner became `RouteProgress` and nothing renders from it any more. Either
+  give it a reader again or retire the counter — it currently costs a render
+  per action for nothing.
 - **A reminder never predates the event being created.** Book a gig two days
   out and the week-before moment is already behind you; without the
   `created_at` floor it fires the instant the sweep next runs, which reads as
@@ -337,6 +354,21 @@ Last updated: 2 September 2026.
   Only explicit choices are stored; absence means the default (shows get all
   three, everything else the morning of, time off nothing), so a new category
   or offset arrives sensible for everyone with no backfill.
+- **A reminder offset's switches live with its event types, not in a group.**
+  Turning an offset on and choosing what it covers are one decision, and they
+  used to sit in different sections. The three offsets are therefore absent
+  from `PREF_GROUPS` but still present in `ALL_PREF_KINDS`, so "All
+  notifications" reaches them and the "every kind has a home" test still sees
+  them; `notification-groups.test.ts` asserts both halves. `ReminderPrefs`
+  renders inside `NotificationPreferences` so the two share one copy of
+  `muted`/`pushMuted` — a second copy would let a switch disagree with the
+  master above it.
+- **A `<legend>` only names its `<fieldset>` as the *first* child.** Wrapping
+  it in a flex div to seat the switches beside it silently cost the group its
+  accessible name and broke every `getByRole('group', …)` in the reminder
+  spec. `role="group"` with `aria-labelledby` pointing at a heading gives the
+  same name with free layout — and keeps the switches' own labels out of it,
+  which embedding them in a legend would not.
 - **The reminder grid stores disagreements, not choices.** Settings ›
   Notifications shows three blocks of checkboxes — one per offset, a box per
   category — rather than a 6×3 matrix, which at phone width needs either
@@ -573,9 +605,9 @@ harmlessly) and any real Google/Resend call.
 
 ## Test suite
 
-- `pnpm test:db` — **251 node tests across 41 files**, ~21s, self-cleaning.
+- `pnpm test:db` — **252 node tests across 41 files**, ~22s, self-cleaning.
   Must stay serialized (`--test-concurrency=1`).
-- `pnpm test:e2e` — Playwright, **163 tests across 37 specs**, against a
+- `pnpm test:e2e` — Playwright, **164 tests across 37 specs**, against a
   **production build** (the service worker is disabled in dev, so offline
   specs run in dev prove nothing). Seeds and tears down its own band; ids are
   written to `e2e/.auth/seed.json` so specs navigate directly instead of
