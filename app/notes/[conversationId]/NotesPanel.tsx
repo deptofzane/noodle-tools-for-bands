@@ -18,7 +18,7 @@ import { LoadingBlock } from '../../Spinner';
  * Data flow:
  *   1. On mount, fetch the conversation (notes + closed + activity +
  *      members) from /api/conversations/[id], and mark it read so the
- *      Open Conversations badges clear.
+ *      Open conversations badges clear.
  *   2. A periodic poll (DB-backed; no Drive Changes SSE anymore) keeps
  *      collaborator changes flowing in.
  *
@@ -237,7 +237,7 @@ export function NotesPanel({
               className="rounded-md border border-line-strong px-2 py-0.5 text-[0.6875rem] font-medium text-fg-soft hover:bg-surface-soft disabled:opacity-50"
               title={
                 closed
-                  ? 'Reopen this conversation so it shows up in Open Conversations'
+                  ? 'Reopen this conversation so it shows up in Open conversations'
                   : 'Mark this conversation closed (moves it to History)'
               }
             >

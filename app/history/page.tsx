@@ -8,7 +8,7 @@ import { PageHeader } from '../PageHeader';
  * History page — the record of what's already finished, in three categories:
  * closed conversations, closed polls, and past events.
  *
- * "Open Conversations" (the default Annotated view) shows what's still in
+ * "Open conversations" (the default Annotated view) shows what's still in
  * flight. Reading a closed conversation from here does NOT reopen it — only
  * adding a new note auto-reopens (server-side via `addNoteToOwnFile`).
  */
@@ -31,7 +31,7 @@ export default async function HistoryPage({
           Conversations you&apos;ve closed, polls that have been decided, and
           events that have already happened. Anything still active lives in{' '}
           <Link href="/open-conversations" className="text-accent underline">
-            Open Conversations
+            Open conversations
           </Link>
           .
         </p>

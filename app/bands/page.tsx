@@ -4,7 +4,7 @@ import { BandsClient } from './BandsClient';
 
 /**
  * Bands index. Server shell — verifies the session, then defers to the
- * client component for data fetching (mirrors the Open Conversations
+ * client component for data fetching (mirrors the Open conversations
  * page). Bands are app-internal, so no Drive scopes are required here.
  */
 export default async function BandsPage() {

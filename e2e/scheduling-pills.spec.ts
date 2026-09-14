@@ -140,6 +140,59 @@ test('going back to Calendar drops the parameter', async ({ page }) => {
  * band. What's left to get wrong is membership: the page must not render a
  * venue belonging to a band you're not in, just because you know its id.
  */
+/**
+ * The ☰ drawer's Events and Venues links, used from Scheduling itself.
+ *
+ * The deep-link test above arrives with `page.goto`, which mounts the client
+ * fresh — so it passed for months while these links did nothing. Navigating
+ * *within* the route is the case that broke: the shell re-rendered, the
+ * component didn't remount, and a `useState` copy of the view ignored it.
+ *
+ * The third case is the one a naive fix still fails: a pill tap rewrites the
+ * URL without telling the router, so asking the drawer for a view the router
+ * thinks you're already on has to work too.
+ */
+async function drawerTo(page: Page, name: string) {
+  await page.getByRole('button', { name: /^Menu/ }).click();
+  await expect(page.locator('#app-nav-menu')).toBeVisible();
+  await page.waitForTimeout(350);
+  await page.getByRole('menuitem', { name, exact: true }).click();
+}
+
+const selected = (page: Page, name: string) =>
+  expect(
+    page
+      .getByRole('tablist', { name: 'Scheduling' })
+      .getByRole('tab', { name }),
+  ).toHaveAttribute('aria-selected', 'true');
+
+test('the drawer switches view while already on Scheduling', async ({
+  page,
+}) => {
+  await scheduling(page);
+  await drawerTo(page, 'Events');
+  await selected(page, 'Events');
+  await expect(page).toHaveURL(/\/scheduling\?view=events$/);
+
+  await drawerTo(page, 'Venues');
+  await selected(page, 'Venues');
+});
+
+test('the drawer still works after a pill tap has rewritten the URL', async ({
+  page,
+}) => {
+  await scheduling(page, '?view=events');
+  // Back to Calendar, which drops the parameter.
+  await page
+    .getByRole('tablist', { name: 'Scheduling' })
+    .getByRole('tab', { name: 'Calendar' })
+    .click();
+  await expect(page).toHaveURL(/\/scheduling$/);
+
+  await drawerTo(page, 'Events');
+  await selected(page, 'Events');
+});
+
 test('a venue in a band you’re not in is not found', async ({ page }) => {
   const res = await page.goto(`/scheduling/venues/${strangerVenueId}`);
   expect(res?.status()).toBe(404);

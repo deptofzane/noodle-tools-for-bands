@@ -16,7 +16,7 @@ import {
  *
  * Replaces the Drive-era `listAnnotatedFiles` / `listMentionsOfUser` /
  * client-side seen-cache with indexed SQL:
- *   - "Open Conversations" = conversations in the bands you belong to,
+ *   - "Open conversations" = conversations in the bands you belong to,
  *     filtered by closed state (membership IS the access scope now, so
  *     there's no participation-scope gap — a mention reaches you even in
  *     a conversation you haven't posted in, as long as you're in the band).
@@ -53,7 +53,7 @@ export async function listConversationsForUser(
   /**
    * Optional window over the result. Applied to the base query, so the
    * follow-up lookups (actors, mentions) only cover the page. Omitted means
-   * the whole list, which is what the Open Conversations view wants.
+   * the whole list, which is what the Open conversations view wants.
    */
   window?: { limit: number; offset: number },
   /**

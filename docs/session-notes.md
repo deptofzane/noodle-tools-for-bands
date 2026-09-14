@@ -422,6 +422,30 @@ Last updated: 2 September 2026.
   have already subscribed, and a push notification carries its URL in the
   payload, so notifications already delivered still point at the old path.
   Neither can be rewritten after the fact.
+- **`useState(initialX)` ignores every later prop, and a same-route navigation
+  never remounts.** Scheduling's pills held the view in `useState` and mirrored
+  it out with `history.replaceState`. The ☰ drawer's Events/Venues links go to
+  `/scheduling?view=…`; from Scheduling itself that re-renders the server shell
+  but doesn't remount the client, so `useState` kept its first value and the
+  pills never moved — the URL was correct the whole time. The fix is to read
+  the prop directly and write with `router.replace` rather than `replaceState`,
+  so the router knows the URL changed and the prop it feeds back stays fresh.
+  Anything else mirroring a tab into the URL this way (`BandDetailClient`,
+  `BandAudioClient`, `HistoryClient`, `SettingsTabs`, `Practice`, `Live`) has
+  the same shape; it only bites where something links to the same route with a
+  different param, which today only Scheduling does.
+- **Mutation-tested, and the first mutation lied.** Reverting only the *read*
+  half (prop instead of URL) left `router.replace` in place, so both drawer
+  tests still passed and nearly certified a test that proves nothing. Only
+  restoring the defect *in full* — `useState` **and** `replaceState` — failed
+  them. A partial mutation is worse than none: it reads as confirmation. It
+  also showed the plainer fix was enough, so a `useSearchParams` +
+  `<Suspense>` version was dropped as unnecessary.
+- **A deep-link test that uses `page.goto` does not cover in-app navigation.**
+  `goto` mounts the component, which is precisely the case that worked. The
+  drawer links were broken the whole time the spec was green. Scheduling now
+  has two tests that navigate *within* the route, one of them after a pill tap
+  has rewritten the URL.
 - **Scheduling's pills keep their state in the URL; Home's don't.** `PillTabs`
   is shared, but Home remembers its tab per device while Scheduling reads
   `?view=` — the ☰ drawer links straight to Events and Venues, so those have to

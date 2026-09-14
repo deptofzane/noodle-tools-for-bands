@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PillTabs } from '../PillTabs';
 import { useCurrentBand } from '../CurrentBandProvider';
 import { LoadingBlock } from '../Spinner';
@@ -10,6 +10,7 @@ import { EventsPanel } from './EventsPanel';
 import { VenuesPanel } from './VenuesPanel';
 import { useBandSchedulingData } from '../bands/[bandId]/bandDetailHooks';
 import {
+  DEFAULT_SCHEDULING_VIEW,
   SCHEDULING_VIEWS,
   type SchedulingView,
 } from './schedulingViews';
@@ -36,22 +37,36 @@ const LABELS: Record<SchedulingView, string> = {
 export function SchedulingClient({
   initialView,
 }: {
+  /** The server's reading of `?view=`, used until the client has its own. */
   initialView: SchedulingView;
 }) {
-  const [view, setView] = useState<SchedulingView>(initialView);
+  const router = useRouter();
   const { bandId, loaded } = useCurrentBand();
 
-  // Mirror the view into the URL so refresh and browser-back restore it, and
-  // so the ☰ drawer can link straight to a pill. `replaceState` rather than a
-  // navigation: no refetch, and no history entry per pill tap. Calendar is the
-  // default and stays paramless, as the band page does with its own tabs.
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const url = new URL(window.location.href);
-    if (view === 'calendar') url.searchParams.delete('view');
-    else url.searchParams.set('view', view);
-    window.history.replaceState(window.history.state, '', url.toString());
-  }, [view]);
+  /*
+   * The view comes straight from the prop — the server's reading of `?view=` —
+   * with no `useState` copy of it.
+   *
+   * There used to be a copy, mirrored back out with `history.replaceState`,
+   * and the ☰ drawer's Events and Venues links broke on it: a same-route
+   * navigation re-renders the server shell without remounting this component,
+   * so `useState` kept its first value and ignored every later prop. Props
+   * themselves update fine, so reading this one directly is the whole fix.
+   *
+   * The write side must be `router.replace`, not `replaceState`: the router has
+   * to know the URL changed, or the prop it feeds back here goes stale.
+   * `replace` so pill taps don't stack history entries, and no scroll reset
+   * since the pills sit at the top of what's changing.
+   */
+  const view = initialView;
+
+  const choose = (next: SchedulingView) =>
+    router.replace(
+      next === DEFAULT_SCHEDULING_VIEW
+        ? '/scheduling'
+        : `/scheduling?view=${next}`,
+      { scroll: false },
+    );
 
   return (
     <div className="flex flex-col gap-4">
@@ -60,7 +75,7 @@ export function SchedulingClient({
         idPrefix="scheduling-tab"
         controls="scheduling-tabpanel"
         activeKey={view}
-        onChange={(key) => setView(key as SchedulingView)}
+        onChange={(key) => choose(key as SchedulingView)}
         tabs={SCHEDULING_VIEWS.map((v) => ({ key: v, label: LABELS[v] }))}
       />
 

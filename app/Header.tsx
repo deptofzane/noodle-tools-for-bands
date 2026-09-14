@@ -237,7 +237,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
     ...otherBandChatLinks,
     {
       href: '/open-conversations',
-      label: 'Open Conversations',
+      label: 'Open conversations',
       menuOnly: true,
     },
     {
@@ -270,7 +270,7 @@ export function Header({ userEmail }: { userEmail?: string | null }) {
 
   const mobileTopLinks = pickLinks(['Settings', 'File management', 'About']);
   const mobileBottomLinks: NavLink[] = [
-    ...pickLinks(['Home', 'History', 'Open Conversations', 'Chat']),
+    ...pickLinks(['Home', 'History', 'Open conversations', 'Chat']),
     ...otherBandChatLinks,
     {
       href: '/scheduling?view=venues',

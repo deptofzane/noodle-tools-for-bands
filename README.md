@@ -22,7 +22,7 @@ Highlights:
 - Threaded notes with @-mentions, replies, edit/delete, resolve, and
   thread deep-links; live cross-user updates via Postgres
   LISTEN/NOTIFY → SSE
-- Open Conversations / History with server-computed New / Mentioned
+- Open conversations / History with server-computed New / Mentioned
   badges; closed-conversation flow; activity log
 - Audio imported from Drive into S3-compatible object storage (Cloudflare
   R2 in prod, MinIO in dev); Howler.js playback over a Range-capable serve
@@ -145,7 +145,7 @@ Conversations**. From there:
 - **Bands** → create a band, add members by email, and **Add audio**
   (Google Picker) to register Drive files as conversations
 - Open a conversation → playback + the threaded notes panel
-- **Open Conversations** → active conversations across your bands, with
+- **Open conversations** → active conversations across your bands, with
   New / Mentioned badges
 - **History** → conversations you've marked closed
 - **Account** → sign out, theme toggle, session debug
@@ -218,7 +218,7 @@ migrated the earlier `bytea` blobs into the bucket.
 │   │   │       ├── members/[userId]/route.ts    # DELETE member (owner)
 │   │   │       └── conversations/route.ts       # GET list, POST register audio
 │   │   ├── conversations/
-│   │   │   ├── annotated/route.ts               # Open Conversations / History list
+│   │   │   ├── annotated/route.ts               # Open conversations / History list
 │   │   │   └── [conversationId]/
 │   │   │       ├── route.ts                     # GET load (notes+activity), PATCH closed
 │   │   │       ├── read/route.ts                # POST mark seen (clears badges)

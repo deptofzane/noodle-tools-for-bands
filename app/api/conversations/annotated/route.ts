@@ -15,7 +15,7 @@ import { readWindow, splitPage } from '@/lib/paging';
  * Membership is still what grants access, so an id the caller isn't in
  * matches nothing.
  *
- * Unpaged by default: Open Conversations shows everything still in flight,
+ * Unpaged by default: Open conversations shows everything still in flight,
  * and that list is bounded by how much is actually open. Pass `limit` to page
  * it — History does, since closed conversations only accumulate — and the
  * response then carries `hasMore`.

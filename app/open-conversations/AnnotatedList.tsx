@@ -7,7 +7,7 @@ import { actorLabel, formatRelativeTime } from '@/lib/format';
 import { LoadingBlock } from '../Spinner';
 
 /**
- * Open Conversations list (Postgres).
+ * Open conversations list (Postgres).
  *
  * Fetches /api/conversations/annotated — conversations across all the
  * bands the user belongs to, with server-computed badge state. Badges:

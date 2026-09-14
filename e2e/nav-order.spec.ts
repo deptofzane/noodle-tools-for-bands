@@ -102,7 +102,7 @@ test('the phone drawer is two groups, in order', async ({ page }) => {
     expect.stringMatching(/^Band/),
     'Home',
     'History',
-    'Open Conversations',
+    'Open conversations',
     'Chat',
     'Venues',
     'Events',
