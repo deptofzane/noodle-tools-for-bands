@@ -5,17 +5,29 @@ import { useNavigate } from '../../../useNavigate';
 import { ActionMenu, ActionMenuItem } from '../../../ActionMenu';
 import { Spinner } from '../../../Spinner';
 import { usePersistedBoolean } from '../../../usePersistedBoolean';
-import { MinimizeToggle, type Conversation } from '../bandDetailShared';
+import {
+  DEFAULT_SONG_SORT,
+  SongSortButtons,
+  nextSongSort,
+  songDisplayName,
+  sortSongs,
+  type SongSort,
+} from '../../../songSort';
+import { type Conversation } from '../bandDetailShared';
 import { SongRow } from './SongRow';
 import { BandAlbumList } from './BandAlbumList';
 import { AddToAlbumModal } from './AddToAlbumModal';
 import type { AlbumWithTracks } from '@/lib/db/albums';
 
 /**
- * The Audio page's body: a search box that filters both the active Audio list
- * and the Archived Audio list (each within its own collapsible container). Owns
- * its search and minimize UI state; the parent supplies the songs and the row
- * action handlers, and owns the "Add audio" source modal.
+ * The Audio page's body: the band's songs, searchable and sortable, with an
+ * Albums view behind a two-state switch.
+ *
+ * The list used to sit inside a collapsible container beside an Archived one.
+ * The archived list moved to History, which left a single section collapsing
+ * away from nothing — so the songs are simply the page now. Owns the search,
+ * sort and view state; the parent supplies the songs and the row handlers, and
+ * owns the "Add audio" source modal.
  */
 export function BandAudioList({
   bandId,
@@ -49,7 +61,7 @@ export function BandAudioList({
   onDelete: (c: Conversation) => void;
 }) {
   const [search, setSearch] = useState('');
-  const [audioMinimized, setAudioMinimized] = useState(false);
+  const [sort, setSort] = useState<SongSort>(DEFAULT_SONG_SORT);
   const go = useNavigate();
 
   /**
@@ -92,8 +104,10 @@ export function BandAudioList({
 
   const q = search.trim().toLowerCase();
   const matches = (c: Conversation) =>
-    !q || (c.audioFileName ?? 'Untitled audio').toLowerCase().includes(q);
-  const visibleActive = activeSongs ? activeSongs.filter(matches) : null;
+    !q || songDisplayName(c).toLowerCase().includes(q);
+  const visibleActive = activeSongs
+    ? sortSongs(activeSongs.filter(matches), sort)
+    : null;
 
   const row = (c: Conversation) => (
     <SongRow
@@ -123,15 +137,9 @@ export function BandAudioList({
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <span className="flex min-w-0 items-center gap-2">
-            <MinimizeToggle
-              minimized={audioMinimized}
-              onToggle={() => setAudioMinimized((v) => !v)}
-              label={albumView ? 'Albums' : 'Audio'}
-            >
-              <h2 className="text-sm font-medium">
-                {albumView ? 'Albums' : 'Audio'}
-              </h2>
-            </MinimizeToggle>
+            <h2 className="text-base font-semibold">
+              {albumView ? 'Albums' : 'Songs'}
+            </h2>
             {/* Progress sits beside the heading now that the actions are in a
                 menu: a disabled kebab can't be opened to read a busy label, so
                 this is the only place the work is visible. `role="status"` is
@@ -201,7 +209,16 @@ export function BandAudioList({
             </ActionMenu>
           </span>
         </div>
-        {!audioMinimized && albumView && (
+
+        {/* Albums carry their own order, so the sort belongs to the songs. */}
+        {!albumView && (
+          <SongSortButtons
+            sort={sort}
+            onSort={(key) => setSort((prev) => nextSongSort(prev, key))}
+          />
+        )}
+
+        {albumView && (
           <BandAlbumList
             bandId={bandId}
             albums={albums}
@@ -217,18 +234,14 @@ export function BandAudioList({
             onDelete={onDelete}
           />
         )}
-        {!audioMinimized &&
-          !albumView &&
-          activeSongs &&
-          activeSongs.length === 0 && (
-            <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
-              No songs yet. Use the ⋯ menu above to “Create song without audio”
-              from a name, or “Upload audio file(s)”{' '}
-              {canUseDrive ? 'from Drive or your device' : 'from your device'}.
-            </p>
-          )}
-        {!audioMinimized &&
-          !albumView &&
+        {!albumView && activeSongs && activeSongs.length === 0 && (
+          <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
+            No songs yet. Use the ⋯ menu above to “Create song without audio”
+            from a name, or “Upload audio file(s)”{' '}
+            {canUseDrive ? 'from Drive or your device' : 'from your device'}.
+          </p>
+        )}
+        {!albumView &&
           activeSongs &&
           activeSongs.length > 0 &&
           visibleActive &&
@@ -237,14 +250,14 @@ export function BandAudioList({
               No audio matches “{search.trim()}”.
             </p>
           )}
-        {!audioMinimized &&
-          !albumView &&
-          visibleActive &&
-          visibleActive.length > 0 && (
-            <ul className="divide-y divide-line rounded-lg border border-line">
-              {visibleActive.map(row)}
-            </ul>
-          )}
+        {!albumView && visibleActive && visibleActive.length > 0 && (
+          <ul
+            aria-label="Songs"
+            className="divide-y divide-line rounded-lg border border-line"
+          >
+            {visibleActive.map(row)}
+          </ul>
+        )}
       </section>
 
       {albumTarget && (
