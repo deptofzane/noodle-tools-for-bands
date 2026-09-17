@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ArchivedAudio } from './ArchivedAudio';
 import { ClosedPolls } from './ClosedPolls';
 import { HistoryList } from './HistoryList';
 import { PastEvents } from './PastEvents';
@@ -94,6 +95,7 @@ export function HistoryClient({ initialTab }: { initialTab?: HistoryTab }) {
           {activeTab === 'conversations' && <HistoryList />}
           {activeTab === 'polls' && <ClosedPolls />}
           {activeTab === 'events' && <PastEvents />}
+          {activeTab === 'audio' && <ArchivedAudio />}
         </>
       )}
     </div>

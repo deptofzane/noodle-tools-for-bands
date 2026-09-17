@@ -1,5 +1,5 @@
 import '../scripts/load-env';
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import { getReminderPrefs } from '../lib/db/event-reminders';
 import { prefKey } from '../lib/reminder-prefs';
 import { readSeed } from './fixtures';
@@ -19,6 +19,28 @@ const group = (p: Page, offset: string) =>
 
 const box = (p: Page, offset: string, category: string) =>
   group(p, offset).getByRole('checkbox', { name: category });
+
+/**
+ * Toggle a box and wait for the save to land before moving on.
+ *
+ * `check()` resolves when the DOM updates, not when the PATCH does, so
+ * reloading straight after raced the request and could read back the old
+ * value. It passed for a while and then started failing only inside the full
+ * suite, where the machine is busier — the worst way to find out.
+ */
+async function toggleBox(
+  p: Page,
+  locator: Locator,
+  how: 'check' | 'uncheck',
+): Promise<void> {
+  const saved = p.waitForResponse(
+    (r) =>
+      r.url().includes('/api/notifications/reminder-prefs') &&
+      r.request().method() === 'PATCH',
+  );
+  await locator[how]();
+  await saved;
+}
 
 async function openReminders(p: Page) {
   await p.goto('/settings?tab=notifications');
@@ -50,7 +72,7 @@ test('turning a default-on reminder off sticks, and back on again', async ({
   const stored = () => getReminderPrefs(readSeed().userId);
   const key = prefKey('show', 'event-week-before');
 
-  await weekShows.uncheck();
+  await toggleBox(page, weekShows, 'uncheck');
   await page.reload();
   await expect(box(page, 'a week before', 'Shows')).not.toBeChecked();
   // The disagreement is written down.
@@ -58,7 +80,7 @@ test('turning a default-on reminder off sticks, and back on again', async ({
 
   // Back to the default. This path deletes the stored row rather than pinning
   // it, so it has to round-trip as well as the disagreement did...
-  await box(page, 'a week before', 'Shows').check();
+  await toggleBox(page, box(page, 'a week before', 'Shows'), 'check');
   await page.reload();
   await expect(box(page, 'a week before', 'Shows')).toBeChecked();
   // ...and leave no row behind. Storing an explicit `true` here would look
@@ -93,12 +115,12 @@ test('each offset’s switches sit with its event types, not in Calendar', async
 test('turning a default-off reminder on sticks', async ({ page }) => {
   await openReminders(page);
 
-  await box(page, 'the day of', 'Time off').check();
+  await toggleBox(page, box(page, 'the day of', 'Time off'), 'check');
   await page.reload();
   await expect(box(page, 'the day of', 'Time off')).toBeChecked();
 
   // Restore, so this spec leaves the shared e2e user as it found them.
-  await box(page, 'the day of', 'Time off').uncheck();
+  await toggleBox(page, box(page, 'the day of', 'Time off'), 'uncheck');
   await page.reload();
   await expect(box(page, 'the day of', 'Time off')).not.toBeChecked();
 });

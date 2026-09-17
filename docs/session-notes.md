@@ -402,6 +402,28 @@ Last updated: 2 September 2026.
   the section, or ask by role: `WeekRow`'s bars live in an `aria-hidden`
   overlay and have no role at all, so `getByRole('link', …)` reaches the lists
   and never the calendar.
+- **Archived songs live on History › Archived Audio, and nowhere else.** The
+  Songs list's Archived container is gone. That tab therefore carries
+  Un-archive — it was the container's only affordance, so without it archiving
+  would be a one-way door. It reuses `/api/bands/[bandId]/conversations`
+  (which already returns archived rows) and searches and sorts client-side: a
+  band's songs are a bounded list the Audio page fetches whole anyway.
+  `createdAt` is the upload date, as the Uploads history already treats it.
+- **Two fixtures can't test a sort key.** The first version of the archived
+  spec used "first alphabetically, oldest" and "last alphabetically, newest",
+  so name order and date order were identical and a comparator that ignored
+  the chosen key passed every assertion — the mutation caught it. It takes
+  three rows whose name and date orders differ as *sequences* (here Bravo is
+  newest but sorts second) before an assertion can tell the keys apart.
+- **Home's month calendar remembers its month for the visit.** It lives in
+  sessionStorage (`homeActivityMonth`), not localStorage: coming back from
+  another page — or from the Notifications tab, which unmounts the panel —
+  lands where you were, but opening the app next week starts on this month
+  rather than one you paged to and forgot. Read in the `useState` initializer,
+  which is only hydration-safe because `HomeTabs` never renders the panel on
+  the server; it also avoids fetching today's month and then the saved one.
+  Its test navigates through the nav rather than `page.goto`, for the reason
+  given under the Scheduling drawer bug.
 - **Home's Activity tab holds two event sets.** The page's server fetch is a
   rolling ±9-day buffer feeding Upcoming events and Recent events;
   `ActivityMonth` fetches the visible month separately, because a nine-day
@@ -631,7 +653,7 @@ harmlessly) and any real Google/Resend call.
 
 - `pnpm test:db` — **252 node tests across 41 files**, ~22s, self-cleaning.
   Must stay serialized (`--test-concurrency=1`).
-- `pnpm test:e2e` — Playwright, **164 tests across 37 specs**, against a
+- `pnpm test:e2e` — Playwright, **173 tests across 38 specs**, against a
   **production build** (the service worker is disabled in dev, so offline
   specs run in dev prove nothing). Seeds and tears down its own band; ids are
   written to `e2e/.auth/seed.json` so specs navigate directly instead of

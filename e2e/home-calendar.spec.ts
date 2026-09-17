@@ -107,3 +107,36 @@ test('paging to another month fetches it', async ({ page }) => {
   // so it can only be here if paging actually refetched.
   await expect(calendar.getByText('E2E Home Cal Next')).toBeVisible();
 });
+
+test('the month is still there after leaving Home and coming back', async ({
+  page,
+}) => {
+  const calendar = await activity(page);
+  const now = new Date();
+  const nextLabel = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    1,
+  ).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  await calendar.getByRole('button', { name: 'Next month' }).click();
+  await expect(calendar.getByRole('heading', { name: nextLabel })).toBeVisible();
+
+  // Through the nav, not `page.goto`: an in-app navigation is what people do,
+  // and a fresh page load is exactly the kind of shortcut that let the
+  // Scheduling drawer bug pass its tests.
+  const nav = (href: string) =>
+    page.locator(`#app-nav a[href="${href}"]`).filter({ visible: true }).first();
+  await nav('/scheduling').click();
+  await expect(page).toHaveURL(/\/scheduling/);
+  await nav('/home').click();
+  await expect(page).toHaveURL(/\/home$/);
+
+  await expect(
+    page
+      .getByRole('region', { name: 'Full calendar' })
+      .getByRole('heading', { name: nextLabel }),
+  ).toBeVisible();
+  // And its events came with it, rather than the heading moving alone.
+  await expect(page.getByText('E2E Home Cal Next')).toBeVisible();
+});

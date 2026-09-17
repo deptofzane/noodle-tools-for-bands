@@ -50,7 +50,6 @@ export function BandAudioList({
 }) {
   const [search, setSearch] = useState('');
   const [audioMinimized, setAudioMinimized] = useState(false);
-  const [archivedMinimized, setArchivedMinimized] = useState(true);
   const go = useNavigate();
 
   /**
@@ -87,14 +86,14 @@ export function BandAudioList({
     };
   }, [albumView, albums, bandId]);
 
+  // Archived songs live on History's Archived Audio tab now, along with the
+  // only way to bring one back.
   const activeSongs = conversations?.filter((c) => !c.archived) ?? null;
-  const archivedSongs = conversations?.filter((c) => c.archived) ?? [];
 
   const q = search.trim().toLowerCase();
   const matches = (c: Conversation) =>
     !q || (c.audioFileName ?? 'Untitled audio').toLowerCase().includes(q);
   const visibleActive = activeSongs ? activeSongs.filter(matches) : null;
-  const visibleArchived = archivedSongs.filter(matches);
 
   const row = (c: Conversation) => (
     <SongRow
@@ -247,30 +246,6 @@ export function BandAudioList({
             </ul>
           )}
       </section>
-
-      {!albumView && archivedSongs.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <MinimizeToggle
-            minimized={archivedMinimized}
-            onToggle={() => setArchivedMinimized((v) => !v)}
-            label="Archived Audio"
-          >
-            <h2 className="text-sm font-medium minor-text-theme-colors">
-              Archived Audio
-            </h2>
-          </MinimizeToggle>
-          {!archivedMinimized && visibleArchived.length > 0 && (
-            <ul className="divide-y divide-line rounded-lg border border-line">
-              {visibleArchived.map(row)}
-            </ul>
-          )}
-          {!archivedMinimized && visibleArchived.length === 0 && (
-            <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
-              No archived audio matches “{search.trim()}”.
-            </p>
-          )}
-        </section>
-      )}
 
       {albumTarget && (
         <AddToAlbumModal

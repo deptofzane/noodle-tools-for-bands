@@ -4,7 +4,12 @@
  * module becomes a client reference and can't be called during the server
  * render.
  */
-export const HISTORY_TABS = ['conversations', 'polls', 'events'] as const;
+export const HISTORY_TABS = [
+  'conversations',
+  'polls',
+  'events',
+  'audio',
+] as const;
 
 export type HistoryTab = (typeof HISTORY_TABS)[number];
 
@@ -12,6 +17,7 @@ export const HISTORY_TAB_LABELS: Record<HistoryTab, string> = {
   conversations: 'Conversations',
   polls: 'Closed polls',
   events: 'Past events',
+  audio: 'Archived Audio',
 };
 
 export const DEFAULT_HISTORY_TAB: HistoryTab = 'conversations';

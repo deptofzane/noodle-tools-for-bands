@@ -321,6 +321,16 @@ export function BandAudioClient({
         });
         await ensureOk(r);
       });
+      // `c.archived` is the state *before* the toggle, so it picks the wording:
+      // the song has just gone the other way. Named, because a list of songs
+      // gives an unnamed "it" nothing to attach to.
+      const name = c.audioFileName ?? 'Untitled audio';
+      showToast(
+        c.archived
+          ? `${name} is no longer archived`
+          : `${name} has been archived and can be viewed on the History page`,
+        'success',
+      );
       await reload();
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
