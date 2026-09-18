@@ -19,6 +19,8 @@ import { createEvent, deleteEvent } from '../lib/db/events';
  */
 const seed = readSeed();
 const OTHER_SUB = 'e2e-home-tabs-other';
+/** An event in the week with a setlist behind it. */
+const WEEK_SETLIST = 'E2E Week Setlist Show';
 let secondBandId = '';
 /**
  * Rows created in the *seeded* band, which nothing else tears down — deleting
@@ -38,7 +40,12 @@ const day = (offset: number) => {
   return d.toLocaleDateString('en-CA');
 };
 
-const event = (title: string, date: string, bandId = seed.bandId) =>
+const event = (
+  title: string,
+  date: string,
+  bandId = seed.bandId,
+  setlistId: string | null = null,
+) =>
   createEvent({
     bandId,
     title,
@@ -50,7 +57,7 @@ const event = (title: string, date: string, bandId = seed.bandId) =>
     location: null,
     details: null,
     notes: null,
-    setlistId: null,
+    setlistId,
     venueId: null,
     createdBy: seed.userId,
   });
@@ -94,6 +101,12 @@ test.beforeAll(async () => {
   ] as const) {
     madeInSeedBand.events.push((await event(title, day(offset))).id);
   }
+
+  // Booked with the seeded setlist, which has a song — so Practice and Live
+  // have somewhere to go. 'E2E Week Show' above deliberately has none.
+  madeInSeedBand.events.push(
+    (await event(WEEK_SETLIST, day(3), seed.bandId, seed.setlistId)).id,
+  );
 });
 
 test.afterAll(async () => {
@@ -178,6 +191,31 @@ test('the week lists all seven days', async ({ page }) => {
   await expect(week.locator('ol > li > h3')).toHaveCount(7);
   await expect(week.getByRole('heading', { name: 'Today' })).toBeVisible();
   await expect(week.getByRole('heading', { name: 'Tomorrow' })).toBeVisible();
+});
+
+test('an event with a setlist offers Practice and Live', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('homeTab', 'activity'));
+  await page.goto('/home');
+
+  const toggle = page.getByRole('button', { name: /^This week/ });
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true')
+    await toggle.click();
+
+  const week = page.getByRole('region', { name: 'This week' });
+  const booked = week.getByRole('listitem').filter({ hasText: WEEK_SETLIST });
+
+  await expect(
+    booked.getByRole('link', { name: `Practice the setlist for ${WEEK_SETLIST}` }),
+  ).toHaveAttribute('href', `/practice?setlist=${seed.setlistId}`);
+  await expect(
+    booked.getByRole('link', { name: `Live for ${WEEK_SETLIST}` }),
+  ).toHaveAttribute('href', `/live?setlist=${seed.setlistId}`);
+
+  // The event with no setlist gets neither — otherwise this would pass against
+  // links rendered on every row.
+  const plain = week.getByRole('listitem').filter({ hasText: 'E2E Week Show' });
+  await expect(plain.getByRole('link', { name: /^Practice/ })).toHaveCount(0);
+  await expect(plain.getByRole('link', { name: /^Live/ })).toHaveCount(0);
 });
 
 test('Recent events reaches back seven days, and no further', async ({

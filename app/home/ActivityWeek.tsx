@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { EventListItem } from '@/lib/db/events';
 import { addDays } from '@/lib/event-dates';
+import { liveHref, practiceHref } from '@/lib/routes';
 import {
   formatDateRange,
   formatDateShort,
@@ -151,11 +152,16 @@ function WeekDay({
       ) : (
         <ul className="flex flex-col gap-1">
           {events.map((ev) => (
-            <li key={ev.id}>
+            <li
+              key={ev.id}
+              data-event-type={eventColorKey(ev.eventType)}
+              className="rounded-md border-l-[3px] border-l-[color:var(--event-accent)] bg-[color:var(--event-fill)]"
+            >
+              {/* The accent now lives on the row, not this link, so the
+                  setlist links below sit inside the same coloured block. */}
               <Link
                 href={`/scheduling/events/${ev.id}`}
-                data-event-type={eventColorKey(ev.eventType)}
-                className="block rounded-md border-l-[3px] border-l-[color:var(--event-accent)] bg-[color:var(--event-fill)] px-3 py-2"
+                className="block px-3 py-2"
               >
                 <span className="block truncate text-sm font-medium text-[color:var(--event-accent)]">
                   {eventLabel(ev)}
@@ -164,6 +170,28 @@ function WeekDay({
                   {weekDayMeta(ev, day)}
                 </span>
               </Link>
+              {/* Siblings rather than nested — a link inside a link is invalid,
+                  and these go somewhere else entirely. Gated on the song count
+                  as well as the setlist: an empty set (or one that's all
+                  markers) would open Practice with nothing to practise. */}
+              {ev.setlistId && ev.setlistSongCount > 0 && (
+                <div className="flex gap-2 px-3 pb-2">
+                  <Link
+                    href={practiceHref(ev.setlistId)}
+                    aria-label={`Practice the setlist for ${eventLabel(ev)}`}
+                    className="rounded border border-line px-2 py-0.5 text-xs font-medium text-[color:var(--event-accent)] hover:bg-surface"
+                  >
+                    Practice
+                  </Link>
+                  <Link
+                    href={liveHref(ev.setlistId)}
+                    aria-label={`Live for ${eventLabel(ev)}`}
+                    className="rounded border border-line px-2 py-0.5 text-xs font-medium text-[color:var(--event-accent)] hover:bg-surface"
+                  >
+                    Live
+                  </Link>
+                </div>
+              )}
             </li>
           ))}
         </ul>

@@ -9,7 +9,12 @@ import {
   MenuSectionLabel,
 } from '../../../ActionMenu';
 import { useShareLink } from '../../../useShareLink';
-import { EyeIcon, LinkIcon, PencilIcon } from '../../../icons';
+import {
+  EyeIcon,
+  LinkIcon,
+  PencilIcon,
+  SheetMusicIcon,
+} from '../../../icons';
 import { songHref } from '@/lib/routes';
 import { formatSongMeta, formatTimeAgoOrDate } from '@/lib/format';
 import { useToast } from '../../../ToastProvider';
@@ -127,6 +132,20 @@ export function SongRow({
           aria-hidden="true"
           className="ml-3 h-8 w-8 shrink-0 rounded-full border border-dashed border-line-strong"
         />
+      )}
+
+      {/* Only when there's a chart to find. It leads to the same page the
+          row's name does — the point is that it says, at a glance, which songs
+          have sheet music without opening anything. */}
+      {c.hasSheetMusic && (
+        <Link
+          href={`/notes/${c.id}/practice?from=audio`}
+          aria-label={`View ${songName} — has sheet music`}
+          title="Has sheet music"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line-strong minor-text-theme-colors hover:text-fg-strong"
+        >
+          <SheetMusicIcon size={16} />
+        </Link>
       )}
 
       <Link

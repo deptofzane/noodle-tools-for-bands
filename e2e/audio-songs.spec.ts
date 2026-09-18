@@ -1,7 +1,7 @@
 import '../scripts/load-env';
 import { test, expect, type Page } from '@playwright/test';
 import { eq } from 'drizzle-orm';
-import { readSeed } from './fixtures';
+import { E2E, readSeed } from './fixtures';
 import { db } from '../lib/db';
 import { conversations } from '../lib/db/schema';
 import {
@@ -72,6 +72,32 @@ test('the songs are the page, with no container to collapse', async ({
   // And the collapse control is gone — it rendered as "Minimize Audio".
   await expect(
     page.getByRole('button', { name: /^(Minimize|Expand) (Audio|Albums)$/ }),
+  ).toHaveCount(0);
+});
+
+test('a song with sheet music gets an icon beside Play', async ({ page }) => {
+  await page.goto(`/bands/${seed.bandId}/audio?tab=songs`);
+  const list = page.getByRole('list', { name: 'Songs' });
+  await expect(list).toBeVisible();
+
+  // The seeded song has a chart; it leads to the same page its name does.
+  const withChart = list
+    .getByRole('listitem')
+    .filter({ hasText: E2E.songName });
+  const icon = withChart.getByRole('link', { name: /has sheet music/ });
+  await expect(icon).toBeVisible();
+  await expect(icon).toHaveAttribute(
+    'href',
+    `/notes/${seed.songId}/practice?from=audio`,
+  );
+
+  // This spec's fixtures have no chart, so they get none — without this the
+  // test would pass against an icon rendered on every row.
+  await expect(
+    list
+      .getByRole('listitem')
+      .filter({ hasText: ALPHA })
+      .getByRole('link', { name: /has sheet music/ }),
   ).toHaveCount(0);
 });
 

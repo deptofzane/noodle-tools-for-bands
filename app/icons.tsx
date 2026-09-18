@@ -31,6 +31,30 @@ export function EyeIcon({ size = 16 }: { size?: number }) {
   );
 }
 
+/**
+ * It has sheet music: a page with a note on it.
+ *
+ * Staff lines rather than a bare note, so it doesn't read as "audio" beside
+ * the play button it sits next to.
+ */
+export function SheetMusicIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      {...strokeProps}
+      aria-hidden="true"
+    >
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M8 8h8" />
+      <path d="M8 11.5h8" />
+      <circle cx="10" cy="16.5" r="1.5" />
+      <path d="M11.5 16.5V13l3.5-1" />
+    </svg>
+  );
+}
+
 /** Save it to the device: an arrow into a tray. */
 export function DownloadIcon({ size = 16 }: { size?: number }) {
   return (

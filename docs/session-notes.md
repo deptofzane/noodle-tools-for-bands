@@ -664,7 +664,7 @@ harmlessly) and any real Google/Resend call.
 
 - `pnpm test:db` — **252 node tests across 41 files**, ~22s, self-cleaning.
   Must stay serialized (`--test-concurrency=1`).
-- `pnpm test:e2e` — Playwright, **177 tests across 39 specs**, against a
+- `pnpm test:e2e` — Playwright, **179 tests across 39 specs**, against a
   **production build** (the service worker is disabled in dev, so offline
   specs run in dev prove nothing). Seeds and tears down its own band; ids are
   written to `e2e/.auth/seed.json` so specs navigate directly instead of
