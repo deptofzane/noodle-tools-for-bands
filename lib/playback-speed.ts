@@ -15,6 +15,18 @@ export function ratePercent(rate: number): number {
   return Math.round(rate * 100);
 }
 
+/** How far one tap of the speed arrows moves, in percent. */
+export const SPEED_STEP = 5;
+
+/**
+ * The rate one arrow tap away: a full step from wherever it is (97 → 102, not
+ * a snap to 100), clamped into range.
+ */
+export function stepSpeed(rate: number, direction: 1 | -1): number {
+  const next = ratePercent(rate) + direction * SPEED_STEP;
+  return Math.min(SPEED_MAX, Math.max(SPEED_MIN, next)) / 100;
+}
+
 /**
  * What a typed speed should become, as a playback rate.
  *

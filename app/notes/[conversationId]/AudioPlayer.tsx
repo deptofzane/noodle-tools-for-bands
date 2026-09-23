@@ -14,6 +14,7 @@ import {
   ratePercent,
   SPEED_MAX,
   SPEED_MIN,
+  stepSpeed,
 } from '@/lib/playback-speed';
 
 /** One selectable audio version, for the in-player version switcher. */
@@ -429,17 +430,22 @@ function useTransportKeys({
  * "150" would snap to the minimum on the first digit. Escape abandons the
  * edit. A junk value falls back to whatever was showing rather than resetting
  * to 100, which would silently discard a speed someone had set.
+ *
+ * The arrows either side step a full 5% per tap (see `stepSpeed`); `stacked`
+ * puts them above and below the field for the narrow desktop rail.
  */
 function SpeedInput({
   rate,
   onRateChange,
   disabled,
   className,
+  stacked = false,
 }: {
   rate: number;
   onRateChange: (rate: number) => void;
   disabled: boolean;
   className: string;
+  stacked?: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
 
@@ -449,7 +455,23 @@ function SpeedInput({
     if (next !== null) onRateChange(next);
   };
 
-  return (
+  const pct = ratePercent(rate);
+  const arrow = (direction: 1 | -1) => (
+    <button
+      type="button"
+      onClick={() => onRateChange(stepSpeed(rate, direction))}
+      disabled={
+        disabled || (direction === 1 ? pct >= SPEED_MAX : pct <= SPEED_MIN)
+      }
+      aria-label={direction === 1 ? 'Speed up 5%' : 'Slow down 5%'}
+      title={direction === 1 ? 'Speed up 5%' : 'Slow down 5%'}
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line-strong text-xs text-fg-soft hover:bg-surface-soft disabled:opacity-40"
+    >
+      <span aria-hidden="true">{direction === 1 ? '▲' : '▼'}</span>
+    </button>
+  );
+
+  const field = (
     <span className="flex items-center gap-0.5">
       <input
         type="number"
@@ -476,6 +498,20 @@ function SpeedInput({
       <span aria-hidden="true" className="text-xs text-neutral-500">
         %
       </span>
+    </span>
+  );
+
+  return stacked ? (
+    <span className="flex flex-col items-center gap-1">
+      {arrow(1)}
+      {field}
+      {arrow(-1)}
+    </span>
+  ) : (
+    <span className="flex items-center gap-1">
+      {arrow(-1)}
+      {field}
+      {arrow(1)}
     </span>
   );
 }
@@ -679,6 +715,7 @@ function AudioPlayerRail({
                     rate={practice.rate}
                     onRateChange={practice.onRateChange}
                     disabled={!isReady}
+                    stacked
                     className="h-9 w-12 rounded-md border border-line-strong bg-transparent text-center text-xs font-medium text-fg-soft disabled:opacity-40"
                   />
                 </span>
