@@ -8,6 +8,10 @@ import { readSeed } from './fixtures';
  */
 const seed = readSeed();
 
+// The seeded band starts on UTC, and so do CI runners — pin the device to a
+// different zone or the quick-set button never appears.
+test.use({ timezoneId: 'America/Denver' });
+
 test('the quick-set button stores this device’s zone', async ({ page }) => {
   await page.goto(`/bands/${seed.bandId}/edit`);
   const select = page.getByRole('combobox', { name: 'Band timezone' });
