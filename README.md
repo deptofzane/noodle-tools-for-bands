@@ -1,7 +1,5 @@
 # Noodle
 
-Built as an experiment to gain experience working with Claude Code
-
 Timestamped, collaborative notes on Google Drive audio files. Built with
 Next.js (App Router, TypeScript, Tailwind), Auth.js v5 for Google sign-in,
 Postgres (Drizzle ORM) for conversation data, and the Google Drive API
