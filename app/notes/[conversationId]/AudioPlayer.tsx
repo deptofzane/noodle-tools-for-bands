@@ -520,8 +520,11 @@ function Stepper({
     </button>
   );
 
+  // A suffix (speed's %) sits inside the field where the browser's own
+  // spinner arrows would be — those are hidden to make room, and the ▲/▼
+  // buttons do the same job.
   const field = (
-    <span className="flex items-center gap-0.5">
+    <span className="relative flex items-center">
       <input
         type="number"
         inputMode="numeric"
@@ -542,10 +545,17 @@ function Stepper({
         disabled={disabled}
         aria-label={label}
         title={title}
-        className={className}
+        className={
+          suffix
+            ? `${className} pr-4 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`
+            : className
+        }
       />
       {suffix && (
-        <span aria-hidden="true" className="text-xs text-neutral-500">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute right-1.5 text-xs text-neutral-500"
+        >
           {suffix}
         </span>
       )}
@@ -846,7 +856,7 @@ function AudioPlayerRail({
                   <span aria-hidden="true">↺</span>10s
                 </button>
                 {/* The rail is narrow, so the field is sized to three digits
-                    and the % sits outside it. */}
+                    with the % tucked inside it. */}
                 <span className="flex flex-col w-full items-center justify-center gap-0.5 text-[0.6875rem] text-fg-muted">
                   Speed
                   <SpeedInput
@@ -857,8 +867,6 @@ function AudioPlayerRail({
                     className="h-9 w-12 rounded-md border border-line-strong bg-transparent text-center text-xs font-medium text-fg-soft disabled:opacity-40"
                   />
                 </span>
-                {/* Captioned: unlike speed, a bare number with no unit
-                    doesn't say what it is. */}
                 <span className="flex w-full flex-col items-center gap-1 text-center text-[0.6875rem] text-fg-muted">
                   Pitch
                   <PitchInput
