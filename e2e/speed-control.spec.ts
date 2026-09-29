@@ -64,15 +64,25 @@ test.describe('desktop', () => {
     page,
   }) => {
     await page.goto(`/notes/${seed.songId}/practice`);
-    await field(page).waitFor();
-    const up = await page
-      .getByRole('button', { name: 'Speed up 5%' })
-      .boundingBox();
-    const box = await field(page).boundingBox();
-    const down = await page
-      .getByRole('button', { name: 'Slow down 5%' })
-      .boundingBox();
-    expect(up!.y + up!.height).toBeLessThanOrEqual(box!.y);
-    expect(down!.y).toBeGreaterThanOrEqual(box!.y + box!.height);
+    // The player renders its phone layout until it knows the viewport is
+    // desktop-sized, so wait for the rail rather than measuring the swap.
+    await expect
+      .poll(async () => {
+        const up = await page
+          .getByRole('button', { name: 'Speed up 5%' })
+          .boundingBox();
+        const box = await field(page).boundingBox();
+        const down = await page
+          .getByRole('button', { name: 'Slow down 5%' })
+          .boundingBox();
+        return (
+          !!up &&
+          !!box &&
+          !!down &&
+          up.y + up.height <= box.y &&
+          down.y >= box.y + box.height
+        );
+      })
+      .toBe(true);
   });
 });

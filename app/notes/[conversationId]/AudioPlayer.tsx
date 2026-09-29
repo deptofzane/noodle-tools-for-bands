@@ -16,6 +16,14 @@ import {
   SPEED_MIN,
   stepSpeed,
 } from '@/lib/playback-speed';
+import {
+  loadPitch,
+  parsePitch,
+  PITCH_MAX,
+  PITCH_MIN,
+  savePitch,
+  stepPitch,
+} from '@/lib/pitch-shift';
 
 /** One selectable audio version, for the in-player version switcher. */
 export type PlayerVersion = {
@@ -100,6 +108,12 @@ export function AudioPlayer({
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rate, setRate] = useState(1);
+  // Half-steps, remembered per song on this device — so read after mount.
+  const [pitch, setPitch] = useState(0);
+  const [pitchUnsupported, setPitchUnsupported] = useState(false);
+  useEffect(() => {
+    setPitch(conversationId ? loadPitch(conversationId) : 0);
+  }, [conversationId]);
 
   // Version switching. When versions are supplied, the player streams the
   // selected one (defaulting to the version flagged `isDefault`); otherwise
@@ -329,6 +343,26 @@ export function AudioPlayer({
     if (isReady) engineRef.current?.setRate(rate);
   }, [isReady, rate]);
 
+  const applyPitch = useCallback((semitones: number) => {
+    void engineRef.current?.setPitch(semitones).then((ok) => {
+      if (!ok) setPitchUnsupported(true);
+    });
+  }, []);
+
+  // Apply the pitch after each (re)load — a new engine starts unshifted — and
+  // when a stored one arrives.
+  useEffect(() => {
+    if (isReady) applyPitch(pitch);
+  }, [isReady, pitch, applyPitch]);
+
+  const changePitch = (semitones: number) => {
+    setPitch(semitones);
+    if (conversationId) savePitch(conversationId, semitones);
+    // Also in the tap itself, not just the effect: iOS only lets audio start
+    // from a user gesture.
+    applyPitch(semitones);
+  };
+
   return (
     <AudioPlayerView
       fileName={effectiveFileName}
@@ -349,6 +383,9 @@ export function AudioPlayer({
           ? {
               rate,
               onRateChange: setRate,
+              pitch,
+              onPitchChange: changePitch,
+              pitchUnsupported,
               onStartOver: startOver,
               onBack10: back10,
               onForward10: forward10,
@@ -422,27 +459,43 @@ function useTransportKeys({
 }
 
 /**
- * The speed field, shared by both player layouts so the clamping is written
- * once.
+ * A number field between ▼/▲ arrows — the shape the speed and pitch controls
+ * share. `stacked` puts the arrows above and below the field for the narrow
+ * desktop rail; otherwise they sit either side of it.
  *
  * Typing is held in local state and only committed on blur or Enter: clamping
  * every keystroke makes the field impossible to type in — clearing it to type
  * "150" would snap to the minimum on the first digit. Escape abandons the
- * edit. A junk value falls back to whatever was showing rather than resetting
- * to 100, which would silently discard a speed someone had set.
- *
- * The arrows either side step a full 5% per tap (see `stepSpeed`); `stacked`
- * puts them above and below the field for the narrow desktop rail.
+ * edit. What a typed value becomes (including junk, which should keep the
+ * current setting) is the owner's call, via `onCommit`.
  */
-function SpeedInput({
-  rate,
-  onRateChange,
+function Stepper({
+  value,
+  onCommit,
+  onStep,
+  min,
+  max,
+  step,
+  label,
+  title,
+  upLabel,
+  downLabel,
+  suffix,
   disabled,
   className,
   stacked = false,
 }: {
-  rate: number;
-  onRateChange: (rate: number) => void;
+  value: number;
+  onCommit: (raw: string) => void;
+  onStep: (direction: 1 | -1) => void;
+  min: number;
+  max: number;
+  step: number;
+  label: string;
+  title: string;
+  upLabel: string;
+  downLabel: string;
+  suffix?: string;
   disabled: boolean;
   className: string;
   stacked?: boolean;
@@ -451,20 +504,16 @@ function SpeedInput({
 
   const commit = (raw: string) => {
     setDraft(null);
-    const next = parseSpeedPercent(raw);
-    if (next !== null) onRateChange(next);
+    onCommit(raw);
   };
 
-  const pct = ratePercent(rate);
   const arrow = (direction: 1 | -1) => (
     <button
       type="button"
-      onClick={() => onRateChange(stepSpeed(rate, direction))}
-      disabled={
-        disabled || (direction === 1 ? pct >= SPEED_MAX : pct <= SPEED_MIN)
-      }
-      aria-label={direction === 1 ? 'Speed up 5%' : 'Slow down 5%'}
-      title={direction === 1 ? 'Speed up 5%' : 'Slow down 5%'}
+      onClick={() => onStep(direction)}
+      disabled={disabled || (direction === 1 ? value >= max : value <= min)}
+      aria-label={direction === 1 ? upLabel : downLabel}
+      title={direction === 1 ? upLabel : downLabel}
       className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line-strong text-xs text-fg-soft hover:bg-surface-soft disabled:opacity-40"
     >
       <span aria-hidden="true">{direction === 1 ? '▲' : '▼'}</span>
@@ -476,10 +525,10 @@ function SpeedInput({
       <input
         type="number"
         inputMode="numeric"
-        min={SPEED_MIN}
-        max={SPEED_MAX}
-        step={5}
-        value={draft ?? String(ratePercent(rate))}
+        min={min}
+        max={max}
+        step={step}
+        value={draft ?? String(value)}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={(e) => commit(e.target.value)}
         onKeyDown={(e) => {
@@ -491,13 +540,15 @@ function SpeedInput({
           }
         }}
         disabled={disabled}
-        aria-label={`Playback speed, percent. ${SPEED_MIN} to ${SPEED_MAX}.`}
-        title="Playback speed"
+        aria-label={label}
+        title={title}
         className={className}
       />
-      <span aria-hidden="true" className="text-xs text-neutral-500">
-        %
-      </span>
+      {suffix && (
+        <span aria-hidden="true" className="text-xs text-neutral-500">
+          {suffix}
+        </span>
+      )}
     </span>
   );
 
@@ -513,6 +564,88 @@ function SpeedInput({
       {field}
       {arrow(1)}
     </span>
+  );
+}
+
+/**
+ * Playback speed, in percent. A junk value keeps whatever was showing rather
+ * than resetting to 100, which would silently discard a speed someone had
+ * set; the arrows step a full 5% (see `stepSpeed`).
+ */
+function SpeedInput({
+  rate,
+  onRateChange,
+  ...rest
+}: {
+  rate: number;
+  onRateChange: (rate: number) => void;
+  disabled: boolean;
+  className: string;
+  stacked?: boolean;
+}) {
+  return (
+    <Stepper
+      {...rest}
+      value={ratePercent(rate)}
+      onCommit={(raw) => {
+        const next = parseSpeedPercent(raw);
+        if (next !== null) onRateChange(next);
+      }}
+      onStep={(direction) => onRateChange(stepSpeed(rate, direction))}
+      min={SPEED_MIN}
+      max={SPEED_MAX}
+      step={5}
+      label={`Playback speed, percent. ${SPEED_MIN} to ${SPEED_MAX}.`}
+      title="Playback speed"
+      upLabel="Speed up 5%"
+      downLabel="Slow down 5%"
+      suffix="%"
+    />
+  );
+}
+
+/**
+ * Pitch shift, in half-steps. Where the browser can't shift (no AudioWorklet),
+ * the control is replaced by a note saying so, rather than showing a setting
+ * the audio isn't following.
+ */
+function PitchInput({
+  pitch,
+  onPitchChange,
+  unsupported,
+  ...rest
+}: {
+  pitch: number;
+  onPitchChange: (semitones: number) => void;
+  unsupported: boolean;
+  disabled: boolean;
+  className: string;
+  stacked?: boolean;
+}) {
+  if (unsupported) {
+    return (
+      <span role="status" className="text-xs text-fg-muted">
+        Not supported on this device
+      </span>
+    );
+  }
+  return (
+    <Stepper
+      {...rest}
+      value={pitch}
+      onCommit={(raw) => {
+        const next = parsePitch(raw);
+        if (next !== null) onPitchChange(next);
+      }}
+      onStep={(direction) => onPitchChange(stepPitch(pitch, direction))}
+      min={PITCH_MIN}
+      max={PITCH_MAX}
+      step={1}
+      label={`Pitch, half-steps. ${PITCH_MIN} to ${PITCH_MAX}.`}
+      title="Pitch"
+      upLabel="Pitch up a half-step"
+      downLabel="Pitch down a half-step"
+    />
   );
 }
 
@@ -576,6 +709,10 @@ function AudioPlayerRail({
   practice?: {
     rate: number;
     onRateChange: (rate: number) => void;
+    pitch: number;
+    onPitchChange: (semitones: number) => void;
+    /** The browser can't shift pitch; the control gives way to a note. */
+    pitchUnsupported: boolean;
     onStartOver: () => void;
     onBack10: () => void;
     onForward10: () => void;
@@ -719,6 +856,19 @@ function AudioPlayerRail({
                     className="h-9 w-12 rounded-md border border-line-strong bg-transparent text-center text-xs font-medium text-fg-soft disabled:opacity-40"
                   />
                 </span>
+                {/* Captioned: unlike speed, a bare number with no unit
+                    doesn't say what it is. */}
+                <span className="flex w-full flex-col items-center gap-1 text-center text-[0.6875rem] text-fg-muted">
+                  Pitch
+                  <PitchInput
+                    pitch={practice.pitch}
+                    onPitchChange={practice.onPitchChange}
+                    unsupported={practice.pitchUnsupported}
+                    disabled={!isReady}
+                    stacked
+                    className="h-9 w-12 rounded-md border border-line-strong bg-transparent text-center text-xs font-medium text-fg-soft disabled:opacity-40"
+                  />
+                </span>
               </>
             )}
 
@@ -805,6 +955,10 @@ export function AudioPlayerView({
   practice?: {
     rate: number;
     onRateChange: (rate: number) => void;
+    pitch: number;
+    onPitchChange: (semitones: number) => void;
+    /** The browser can't shift pitch; the control gives way to a note. */
+    pitchUnsupported: boolean;
     onStartOver: () => void;
     onBack10: () => void;
     onForward10: () => void;
@@ -1005,6 +1159,17 @@ export function AudioPlayerView({
                 <SpeedInput
                   rate={practice.rate}
                   onRateChange={practice.onRateChange}
+                  disabled={!isReady}
+                  className="w-14 shrink-0 rounded-md border border-line-strong bg-surface px-1.5 py-1 text-xs disabled:opacity-50"
+                />
+              </span>
+
+              <span className="flex items-center gap-1.5 text-xs text-fg-muted">
+                Pitch
+                <PitchInput
+                  pitch={practice.pitch}
+                  onPitchChange={practice.onPitchChange}
+                  unsupported={practice.pitchUnsupported}
                   disabled={!isReady}
                   className="w-14 shrink-0 rounded-md border border-line-strong bg-surface px-1.5 py-1 text-xs disabled:opacity-50"
                 />

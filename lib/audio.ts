@@ -71,8 +71,132 @@ export type AudioEngine = {
   isPlaying: () => boolean;
   /** Set playback speed (1 = normal). */
   setRate: (rate: number) => void;
+  /**
+   * Shift pitch by half-steps (0 = as recorded). See `pitchRoute`. Resolves
+   * false when this browser can't shift, in which case it plays unshifted.
+   */
+  setPitch: (semitones: number) => Promise<boolean>;
   destroy: () => void;
 };
+
+/**
+ * Pitch shifting, which the <audio> element can't do on its own.
+ *
+ * The element's output is pulled into Web Audio and run through a Signalsmith
+ * Stretch worklet. The element still streams and still honours the service
+ * worker cache — only the decoded samples take the detour.
+ *
+ * Two constraints shape this:
+ *   - An element can be attached to Web Audio exactly once, ever. Howler
+ *     recycles its html5 elements through a pool, so the source node is
+ *     remembered per element and reused by whatever track gets it next.
+ *   - Once attached, the element is silent unless its source is connected to
+ *     something. An element is therefore never left without a route: it goes
+ *     through the shifter while shifted, and straight to the speakers when not.
+ *
+ * Nothing is attached until a non-zero pitch is first asked for, so anyone who
+ * never touches pitch keeps the plain <audio> path — including playback with
+ * the screen locked, which a Web Audio route doesn't reliably get on iOS.
+ */
+let pitchContext: AudioContext | null = null;
+const elementSources = new WeakMap<
+  HTMLAudioElement,
+  MediaElementAudioSourceNode
+>();
+
+type StretchNode = AudioNode & {
+  start: () => void;
+  stop: () => void;
+  schedule: (change: { semitones: number }) => void;
+};
+
+function pitchRoute(node: HTMLAudioElement) {
+  let stretch: Promise<StretchNode> | null = null;
+  let semitones = 0;
+
+  const ctx = () => (pitchContext ??= new AudioContext());
+  const source = () => {
+    let s = elementSources.get(node);
+    if (!s) {
+      // Recorded before anything else can throw: the attachment can't be
+      // retried, so losing track of it would strand the element.
+      s = ctx().createMediaElementSource(node);
+      elementSources.set(node, s);
+      s.connect(ctx().destination);
+    }
+    return s;
+  };
+  const makeStretch = async () => {
+    const { default: SignalsmithStretch } = await import('signalsmith-stretch');
+    const n = (await SignalsmithStretch(ctx())) as StretchNode;
+    n.connect(ctx().destination);
+    n.start();
+    return n;
+  };
+
+  const direct = () => {
+    const src = elementSources.get(node);
+    if (!src) return;
+    src.disconnect();
+    src.connect(ctx().destination);
+  };
+
+  /**
+   * Restart a context the OS stopped (a call, a lock) or one created outside
+   * a tap, which browsers start suspended. Without this the element plays on
+   * and nothing comes out. Only works from a tap, which is where it's called.
+   */
+  const wake = () => {
+    if (elementSources.has(node) && ctx().state !== 'running') {
+      void ctx().resume();
+    }
+  };
+
+  return {
+    set: async (next: number): Promise<boolean> => {
+      semitones = next;
+      if (next === 0) {
+        direct();
+        return true;
+      }
+      const src = source();
+      wake();
+      stretch ??= makeStretch();
+      let s: StretchNode;
+      try {
+        s = await stretch;
+      } catch (err) {
+        // No worklet support (an old browser, an insecure origin). The element
+        // is already routed direct by `source()`, so it plays unshifted rather
+        // than not at all.
+        stretch = null;
+        console.warn('Pitch shifting unavailable', err);
+        return false;
+      }
+      // A later call — or `release` — may have landed while it was loading.
+      if (semitones !== next) return true;
+      s.schedule({ semitones: next });
+      src.disconnect();
+      src.connect(s);
+      return true;
+    },
+    wake,
+    /** Hand the element back direct, so the next track to get it can play. */
+    release: () => {
+      // Voids any `set` still waiting on the worklet: it would otherwise
+      // finish by routing the element into the node torn down below.
+      semitones = 0;
+      direct();
+      stretch
+        ?.then((s) => {
+          s.stop();
+          s.disconnect();
+        })
+        .catch(() => {});
+      stretch = null;
+    },
+  };
+}
 
 export type AudioEngineOptions = {
   url: string;
@@ -177,6 +301,7 @@ export function createAudioEngine(opts: AudioEngineOptions): AudioEngine {
    * started it.
    */
   const node = html5Node(sound);
+  const pitch = node ? pitchRoute(node) : null;
   let settleTimer: ReturnType<typeof setTimeout> | null = null;
 
   /**
@@ -237,6 +362,7 @@ export function createAudioEngine(opts: AudioEngineOptions): AudioEngine {
     play: () => {
       if (sound.playing()) return;
       primeForPlayback();
+      pitch?.wake();
       sound.play();
     },
     pause: () => sound.pause(),
@@ -251,6 +377,8 @@ export function createAudioEngine(opts: AudioEngineOptions): AudioEngine {
     setRate: (rate: number) => {
       sound.rate(rate);
     },
+    setPitch: (semitones: number) =>
+      pitch ? pitch.set(semitones) : Promise.resolve(semitones === 0),
     /**
      * Stop, then unload. The explicit `stop()` puts Howler's HTML5
      * audio element into a clean state before `unload()` returns it
@@ -271,6 +399,7 @@ export function createAudioEngine(opts: AudioEngineOptions): AudioEngine {
         node.removeEventListener('play', reportPlayState);
         node.removeEventListener('pause', reportPlayState);
       }
+      pitch?.release();
       try {
         sound.stop();
       } catch {
