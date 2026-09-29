@@ -847,7 +847,8 @@ function AudioPlayerRail({
                 </button>
                 {/* The rail is narrow, so the field is sized to three digits
                     and the % sits outside it. */}
-                <span className="flex w-full items-center justify-center gap-0.5">
+                <span className="flex flex-col w-full items-center justify-center gap-0.5 text-[0.6875rem] text-fg-muted">
+                  Speed
                   <SpeedInput
                     rate={practice.rate}
                     onRateChange={practice.onRateChange}
