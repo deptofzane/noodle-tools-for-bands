@@ -791,6 +791,37 @@ function AudioPlayerRail({
 
           {/* Controls */}
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            {hasVersionSwitcher && (
+              <ActionMenu
+                label="Audio version"
+                align="left"
+                triggerClassName={ctrl}
+                icon={
+                  <span title="Audio version" className="flex items-center">
+                    <VersionsIcon />
+                  </span>
+                }
+              >
+                <p
+                  role="presentation"
+                  className="px-4 pb-1 pt-1 text-xs font-medium minor-text-theme-colors sm:px-3"
+                >
+                  Versions:
+                </p>
+                {versions!.list.map((v) => (
+                  <ActionMenuItem
+                    key={v.id}
+                    onClick={() => versions!.onSelect(v.id)}
+                  >
+                    {/* The check marks the one playing; the space keeps the
+                        others' text aligned with it. */}
+                    {(v.id === versions!.selectedId ? '✓ ' : '\u2007 ') +
+                      (v.label || v.fileName) +
+                      (v.isDefault ? ' (default)' : '')}
+                  </ActionMenuItem>
+                ))}
+              </ActionMenu>
+            )}
             <button
               type="button"
               onClick={onTogglePlay}
@@ -857,7 +888,7 @@ function AudioPlayerRail({
                 </button>
                 {/* The rail is narrow, so the field is sized to three digits
                     with the % tucked inside it. */}
-                <span className="flex flex-col w-full items-center justify-center gap-0.5 text-[0.6875rem] text-fg-muted">
+                <span className="flex flex-col w-full items-center justify-center gap-0.5 text-[0.6875rem] text-fg-muted pb-2">
                   Speed
                   <SpeedInput
                     rate={practice.rate}
@@ -867,7 +898,7 @@ function AudioPlayerRail({
                     className="h-9 w-12 rounded-md border border-line-strong bg-transparent text-center text-xs font-medium text-fg-soft disabled:opacity-40"
                   />
                 </span>
-                <span className="flex w-full flex-col items-center gap-1 text-center text-[0.6875rem] text-fg-muted">
+                <span className="flex w-full flex-col items-center gap-1 text-center text-[0.6875rem] text-fg-muted pb-2">
                   Pitch
                   <PitchInput
                     pitch={practice.pitch}
@@ -879,38 +910,6 @@ function AudioPlayerRail({
                   />
                 </span>
               </>
-            )}
-
-            {hasVersionSwitcher && (
-              <ActionMenu
-                label="Audio version"
-                align="left"
-                triggerClassName={ctrl}
-                icon={
-                  <span title="Audio version" className="flex items-center">
-                    <VersionsIcon />
-                  </span>
-                }
-              >
-                <p
-                  role="presentation"
-                  className="px-4 pb-1 pt-1 text-xs font-medium minor-text-theme-colors sm:px-3"
-                >
-                  Versions:
-                </p>
-                {versions!.list.map((v) => (
-                  <ActionMenuItem
-                    key={v.id}
-                    onClick={() => versions!.onSelect(v.id)}
-                  >
-                    {/* The check marks the one playing; the space keeps the
-                        others' text aligned with it. */}
-                    {(v.id === versions!.selectedId ? '✓ ' : '\u2007 ') +
-                      (v.label || v.fileName) +
-                      (v.isDefault ? ' (default)' : '')}
-                  </ActionMenuItem>
-                ))}
-              </ActionMenu>
             )}
           </div>
         </div>
