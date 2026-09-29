@@ -141,6 +141,27 @@ test('the section controls appear only when the box is checked, spanning the son
   await expect(startField(page)).toHaveCount(0);
 });
 
+test('with the options closed, a note says a section is on', async ({
+  page,
+}) => {
+  const note = page.getByText('Custom start and stop time is enabled.');
+  const toggle = page.getByRole('button', { name: 'Playback options' });
+  await open(page);
+  await toggle.click();
+  await expect(note).toHaveCount(0);
+
+  await toggle.click();
+  await checkbox(page).check();
+  await expect(note).toHaveCount(0);
+  await toggle.click();
+  await expect(note).toBeVisible();
+
+  await toggle.click();
+  await checkbox(page).uncheck();
+  await toggle.click();
+  await expect(note).toHaveCount(0);
+});
+
 test('the slider and the fields follow each other', async ({ page }) => {
   await open(page);
   await checkbox(page).check();

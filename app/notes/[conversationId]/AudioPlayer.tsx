@@ -1405,6 +1405,14 @@ export function AudioPlayerView({
         )}
       </div>
 
+      {/* With the panel shut, nothing else says why playback keeps to part
+          of the song. */}
+      {!optionsOpen && practice?.section?.value.on && (
+        <p className="mt-3 text-xs text-fg-muted">
+          Custom start and stop time is enabled.
+        </p>
+      )}
+
       {optionsOpen && (practice || hasVersionSwitcher) && (
         <div
           id="audio-player-options"
