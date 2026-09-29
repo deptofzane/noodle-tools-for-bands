@@ -206,7 +206,7 @@ export function Practice({
   // itself, at an offset that clears the desktop nav bar — `fixed` at the top
   // and 4.5rem tall. z-50 keeps it above the sheet music it scrolls across.
   const colCls =
-    'contents lg:block lg:w-[8rem] lg:shrink-0 lg:z-50' +
+    'contents lg:block lg:w-auto lg:shrink-0 lg:z-50' +
     ' lg:sticky lg:top-[var(--app-nav-h)]';
 
   const layout = (

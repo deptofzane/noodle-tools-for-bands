@@ -77,6 +77,12 @@ type AudioPlayerProps = {
   variant?: 'bar' | 'rail';
 };
 
+/**
+ * Height of the rail's seek-bar column. Shared with the section's column so
+ * its slider runs the same length, lined up with the seek bar.
+ */
+const RAIL_SEEK_HEIGHT = 'h-[28rem]';
+
 /** Name this player claims when it takes over playback (see `audioFocus`). */
 const FOCUS_OWNER = 'song';
 
@@ -174,9 +180,7 @@ export function AudioPlayer({
 
   // The practice section: a start/stop range, optionally looped. Saved per
   // song *version* — versions put the same passage at different times — and
-  // read once the duration is known, since it's clamped to it. Mobile only
-  // for now: the rail has no controls for it yet, so it isn't applied there
-  // either — a limit you can't see or switch off would just be a bug.
+  // read once the duration is known, since it's clamped to it.
   const [section, setSection] = useState<Section | null>(null);
   const secKey = conversationId
     ? sectionKey(conversationId, selectedVersion?.id ?? 'default')
@@ -196,8 +200,7 @@ export function AudioPlayer({
     setSection({ ...saved, start, stop: clampStop(saved.stop, start, duration) });
   }, [isReady, secKey, duration]);
 
-  const activeSection =
-    hasPracticeOptions && variant === 'bar' && section?.on ? section : null;
+  const activeSection = hasPracticeOptions && section?.on ? section : null;
   // Read by the tick loop and engine callbacks, which outlive a render.
   const activeSectionRef = useRef(activeSection);
   activeSectionRef.current = activeSection;
@@ -780,80 +783,134 @@ type SectionControlsProps = {
 };
 
 /**
- * The practice section's controls: a checkbox that reveals a two-handled
- * slider over the whole song, a time field for each end, and a Repeat
- * toggle. The slider and the fields show the same two values, so either can
- * be used and the other follows. Keeping the ends a second apart is the
- * player's job (`updateSection`), not this.
+ * The practice section's controls, as pieces each layout arranges its own
+ * way: the phone panel in rows (`SectionControls`), the desktop rail as a
+ * column of its own (`SectionColumn`). The slider and the fields show the
+ * same two values, so either can be used and the other follows. Keeping the
+ * ends a second apart is the player's job (`updateSection`), not these.
  */
-function SectionControls({
+function SectionCheckbox({
+  value,
+  onChange,
+  disabled,
+}: Pick<SectionControlsProps, 'value' | 'onChange'> & { disabled: boolean }) {
+  return (
+    <label className="flex items-center gap-2 text-xs text-fg-soft">
+      <input
+        type="checkbox"
+        checked={value.on}
+        onChange={(e) => onChange({ on: e.target.checked })}
+        disabled={disabled}
+        className="h-4 w-4 shrink-0 accent-blue-600"
+      />
+      Customize start and stop
+    </label>
+  );
+}
+
+/**
+ * Two range inputs on one track, one per end (browsers have no two-thumb
+ * range; see `.section-range`). `vertical` runs it top to bottom like the
+ * rail's seek bar, and fills whatever height its parent gives it.
+ */
+function SectionSlider({
   value,
   duration,
   withHours,
   onChange,
   disabled,
-}: SectionControlsProps & { disabled: boolean }) {
+  vertical = false,
+}: SectionControlsProps & { disabled: boolean; vertical?: boolean }) {
   const pct = (t: number) => (duration > 0 ? (t / duration) * 100 : 0);
   const fmt = (t: number) => formatSectionTime(t, withHours);
+  // Whichever thumb is nearer its far end goes on top, so two thumbs pressed
+  // together at either end can still be pulled apart.
+  const startOnTop = value.start > duration / 2;
+  const thumb = (edge: 'start' | 'stop') => (
+    <input
+      type="range"
+      min={0}
+      max={duration}
+      step={0.01}
+      value={value[edge]}
+      onChange={(e) => onChange({ [edge]: Number(e.target.value) })}
+      disabled={disabled}
+      aria-label={edge === 'start' ? 'Section start' : 'Section stop'}
+      aria-valuetext={fmt(value[edge])}
+      aria-orientation={vertical ? 'vertical' : undefined}
+      className={
+        // `vertical-lr` puts zero at the top, matching the seek bar.
+        vertical ? 'section-range [writing-mode:vertical-lr]' : 'section-range'
+      }
+      style={{ zIndex: (edge === 'start') === startOnTop ? 2 : 1 }}
+    />
+  );
 
+  // The track is inset by half a thumb, the way the browser positions the
+  // thumbs, so the highlight's ends sit under their centres.
+  return vertical ? (
+    <div className="relative w-6 flex-1">
+      <div className="absolute inset-y-2.5 left-1/2 w-1 -translate-x-1/2 rounded-full bg-line-strong">
+        <div
+          className="absolute inset-x-0 rounded-full bg-accent"
+          style={{
+            top: `${pct(value.start)}%`,
+            bottom: `${100 - pct(value.stop)}%`,
+          }}
+        />
+      </div>
+      {thumb('start')}
+      {thumb('stop')}
+    </div>
+  ) : (
+    <div className="relative h-6">
+      <div className="absolute inset-x-2.5 top-1/2 h-1 -translate-y-1/2 rounded-full bg-line-strong">
+        <div
+          className="absolute inset-y-0 rounded-full bg-accent"
+          style={{
+            left: `${pct(value.start)}%`,
+            right: `${100 - pct(value.stop)}%`,
+          }}
+        />
+      </div>
+      {thumb('start')}
+      {thumb('stop')}
+    </div>
+  );
+}
+
+function RepeatToggle({
+  value,
+  onChange,
+  disabled,
+  className = '',
+}: Pick<SectionControlsProps, 'value' | 'onChange'> & {
+  disabled: boolean;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange({ repeat: !value.repeat })}
+      disabled={disabled}
+      aria-pressed={value.repeat}
+      className={`flex h-9 shrink-0 items-center justify-center gap-1 rounded-full border border-line-strong px-2.5 text-xs font-medium text-fg-soft hover:bg-surface-soft disabled:opacity-50 aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-on-accent aria-pressed:hover:bg-accent ${className}`}
+    >
+      <span aria-hidden="true">⟲</span>
+      Repeat
+    </button>
+  );
+}
+
+/** The phone panel's arrangement: checkbox, then slider, then one row. */
+function SectionControls(props: SectionControlsProps & { disabled: boolean }) {
+  const { value, withHours, onChange, disabled } = props;
   return (
     <div className="flex basis-full flex-col gap-3">
-      <label className="flex items-center gap-2 text-xs text-fg-soft">
-        <input
-          type="checkbox"
-          checked={value.on}
-          onChange={(e) => onChange({ on: e.target.checked })}
-          disabled={disabled}
-          className="h-4 w-4 accent-blue-600"
-        />
-        Customize start and stop
-      </label>
-
+      <SectionCheckbox {...props} />
       {value.on && (
         <>
-          <div className="relative h-6">
-            {/* Inset by half a thumb, the way the browser positions the
-                thumbs, so the highlight's ends sit under their centres. */}
-            <div className="absolute inset-x-2.5 top-1/2 h-1 -translate-y-1/2 rounded-full bg-line-strong">
-              <div
-                className="absolute inset-y-0 rounded-full bg-accent"
-                style={{
-                  left: `${pct(value.start)}%`,
-                  right: `${100 - pct(value.stop)}%`,
-                }}
-              />
-            </div>
-            {/* Whichever thumb is nearer its far end goes on top, so two
-                thumbs pressed together at either end can still be pulled
-                apart. */}
-            <input
-              type="range"
-              min={0}
-              max={duration}
-              step={0.01}
-              value={value.start}
-              onChange={(e) => onChange({ start: Number(e.target.value) })}
-              disabled={disabled}
-              aria-label="Section start"
-              aria-valuetext={fmt(value.start)}
-              className="section-range"
-              style={{ zIndex: value.start > duration / 2 ? 2 : 1 }}
-            />
-            <input
-              type="range"
-              min={0}
-              max={duration}
-              step={0.01}
-              value={value.stop}
-              onChange={(e) => onChange({ stop: Number(e.target.value) })}
-              disabled={disabled}
-              aria-label="Section stop"
-              aria-valuetext={fmt(value.stop)}
-              className="section-range"
-              style={{ zIndex: value.start > duration / 2 ? 1 : 2 }}
-            />
-          </div>
-
+          <SectionSlider {...props} />
           <div className="flex flex-wrap items-center gap-3">
             <TimeField
               label="Start"
@@ -869,19 +926,54 @@ function SectionControls({
               onCommit={(t) => onChange({ stop: t })}
               disabled={disabled}
             />
-            <button
-              type="button"
-              onClick={() => onChange({ repeat: !value.repeat })}
-              disabled={disabled}
-              aria-pressed={value.repeat}
-              className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-line-strong px-2.5 text-xs font-medium text-fg-soft hover:bg-surface-soft disabled:opacity-50 aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-on-accent aria-pressed:hover:bg-accent"
-            >
-              <span aria-hidden="true">⟲</span>
-              Repeat
-            </button>
+            <RepeatToggle {...props} />
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * The desktop rail's third column, shown while the section is on: the slider
+ * runs beside the seek bar, the same length and lined up with it, so the
+ * highlighted span sits next to the stretch of song it covers; the fields and
+ * Repeat go underneath. `RAIL_SEEK_HEIGHT` and the spacers keep that line-up.
+ */
+function SectionColumn(props: SectionControlsProps & { disabled: boolean }) {
+  const { value, withHours, onChange, disabled } = props;
+  const spacer = (
+    <span
+      aria-hidden="true"
+      className="invisible font-mono text-[0.6875rem] tabular-nums"
+    >
+      0:00
+    </span>
+  );
+  return (
+    <div className="flex w-24 shrink-0 flex-col gap-2">
+      <div className={`flex flex-col items-center gap-1 ${RAIL_SEEK_HEIGHT}`}>
+        {spacer}
+        <SectionSlider {...props} vertical />
+        {spacer}
+      </div>
+      <TimeField
+        label="Start"
+        value={value.start}
+        withHours={withHours}
+        onCommit={(t) => onChange({ start: t })}
+        disabled={disabled}
+        stacked
+      />
+      <TimeField
+        label="Stop"
+        value={value.stop}
+        withHours={withHours}
+        onCommit={(t) => onChange({ stop: t })}
+        disabled={disabled}
+        stacked
+      />
+      <RepeatToggle {...props} className="w-full" />
     </div>
   );
 }
@@ -897,12 +989,15 @@ function TimeField({
   withHours,
   onCommit,
   disabled,
+  stacked = false,
 }: {
   label: string;
   value: number;
   withHours: boolean;
   onCommit: (seconds: number) => void;
   disabled: boolean;
+  /** Label above the field, which fills the width — for the narrow rail. */
+  stacked?: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
 
@@ -913,7 +1008,13 @@ function TimeField({
   };
 
   return (
-    <label className="flex items-center gap-1.5 text-xs text-fg-muted">
+    <label
+      className={
+        stacked
+          ? 'flex flex-col gap-0.5 text-[0.6875rem] text-fg-muted'
+          : 'flex items-center gap-1.5 text-xs text-fg-muted'
+      }
+    >
       {label}
       <input
         type="text"
@@ -932,7 +1033,7 @@ function TimeField({
         }}
         disabled={disabled}
         aria-label={`Section ${label.toLowerCase()} time`}
-        className="w-24 rounded-md border border-line-strong bg-surface px-1.5 py-1 text-xs tabular-nums disabled:opacity-50"
+        className={`${stacked ? 'w-full' : 'w-24'} rounded-md border border-line-strong bg-surface px-1.5 py-1 text-xs tabular-nums disabled:opacity-50`}
       />
     </label>
   );
@@ -1018,10 +1119,18 @@ function AudioPlayerRail({
   const hasVersionSwitcher = Boolean(versions && versions.list.length > 1);
   const ctrl =
     'flex h-9 w-full items-center justify-center rounded-md border border-line-strong text-xs font-medium text-fg-soft hover:bg-surface-soft disabled:opacity-40';
+  const section = practice?.section;
+  const sectionOn = Boolean(section?.value.on);
 
   return (
     // IN PROGRESS
-    <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-3 h-fit">
+    // The rail sets its own width (Practice leaves it `auto`): wider while
+    // the section's column is showing.
+    <div
+      className={`flex h-fit flex-col gap-3 rounded-lg border border-line bg-surface p-3 ${
+        sectionOn ? 'w-[15rem]' : 'w-[8rem]'
+      }`}
+    >
       {/* Info box */}
       <div className="flex flex-col gap-0.5">
         <h2 className="truncate text-sm font-medium" title={fileName}>
@@ -1044,7 +1153,7 @@ function AudioPlayerRail({
       ) : (
         <div className="flex gap-3">
           {/* Progress, running top to bottom */}
-          <div className="flex flex-col items-center gap-1 h-[28rem]">
+          <div className={`flex flex-col items-center gap-1 ${RAIL_SEEK_HEIGHT}`}>
             <span className="font-mono text-[0.6875rem] tabular-nums minor-text-theme-colors">
               {formatDuration(currentTime)}
             </span>
@@ -1193,8 +1302,14 @@ function AudioPlayerRail({
               </>
             )}
           </div>
+
+          {section && sectionOn && (
+            <SectionColumn {...section} disabled={!isReady} />
+          )}
         </div>
       )}
+
+      {section && !error && <SectionCheckbox {...section} disabled={!isReady} />}
 
       {!isReady && !error && <LoadingBar label="Loading audio" />}
     </div>

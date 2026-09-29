@@ -340,15 +340,76 @@ test('each version keeps its own section; a new one spans the song', async ({
   await expect(stopField(page)).toHaveValue('0:08.00');
 });
 
-test('on desktop, where there are no controls for it yet, a section isn’t applied', async ({
-  page,
-}) => {
-  await open(page);
-  await section(page, '5', '10');
+test.describe('desktop rail', () => {
+  test.use({ viewport: { width: 1280, height: 1000 }, isMobile: false });
 
-  // The player swaps to the rail when the viewport becomes desktop-sized.
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await expect(checkbox(page)).toHaveCount(0);
-  await page.getByRole('slider', { name: 'Seek' }).fill('15');
-  await expectAt(page, 15);
+  /** The rail shows everything at once — there's no options panel to open. */
+  async function openRail(page: Page) {
+    await page.goto(`/notes/${seed.songId}/practice`);
+    await expect(checkbox(page)).toBeEnabled({ timeout: 15_000 });
+  }
+
+  test('checking the box adds a third column: slider, start, stop, repeat', async ({
+    page,
+  }) => {
+    await openRail(page);
+    const rail = page.locator('.rounded-lg', { has: checkbox(page) });
+    const narrow = (await rail.boundingBox())!.width;
+    await expect(startSlider(page)).toHaveCount(0);
+
+    await checkbox(page).check();
+    await expect
+      .poll(async () => (await rail.boundingBox())!.width)
+      .toBeGreaterThan(narrow + 50);
+    await expect(startSlider(page)).toHaveAttribute('aria-orientation', 'vertical');
+
+    // Top to bottom, and all to the right of the transport controls.
+    const play = (await page.getByRole('button', { name: 'Play' }).first().boundingBox())!;
+    const slider = (await stopSlider(page).boundingBox())!;
+    const start = (await startField(page).boundingBox())!;
+    const stop = (await stopField(page).boundingBox())!;
+    const rep = (await repeat(page).boundingBox())!;
+    expect(slider.x).toBeGreaterThan(play.x + play.width);
+    expect(slider.y + slider.height).toBeLessThanOrEqual(start.y);
+    expect(start.y + start.height).toBeLessThanOrEqual(stop.y);
+    expect(stop.y + stop.height).toBeLessThanOrEqual(rep.y);
+
+    // The closed-panel note is a phone thing; the rail shows the box itself.
+    await expect(
+      page.getByText('Custom start and stop time is enabled.'),
+    ).toHaveCount(0);
+
+    await checkbox(page).uncheck();
+    await expect
+      .poll(async () => (await rail.boundingBox())!.width)
+      .toBeCloseTo(narrow, 0);
+  });
+
+  test('the vertical slider and the fields follow each other', async ({
+    page,
+  }) => {
+    await openRail(page);
+    await checkbox(page).check();
+    await type(startField(page), '4.5');
+    await expect(startSlider(page)).toHaveValue('4.5');
+    await stopSlider(page).fill('15.5');
+    await expect(stopField(page)).toHaveValue('0:15.50');
+  });
+
+  test('the section applies here just as on the phone', async ({ page }) => {
+    await openRail(page);
+    await section(page, '5', '10');
+    const seek = page.getByRole('slider', { name: 'Seek' });
+    await seek.fill('15');
+    await expectAt(page, 5);
+    await seek.fill('9');
+    await page.getByRole('button', { name: 'Start over' }).click();
+    await expectAt(page, 5);
+
+    await page.getByRole('button', { name: 'Play' }).first().click();
+    await expect(page.getByRole('button', { name: 'Pause' })).toHaveCount(0, {
+      timeout: 8_000,
+    });
+    await expectAt(page, 5);
+  });
 });
