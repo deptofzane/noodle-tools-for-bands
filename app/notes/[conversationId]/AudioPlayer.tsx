@@ -24,6 +24,17 @@ import {
   savePitch,
   stepPitch,
 } from '@/lib/pitch-shift';
+import {
+  clampStart,
+  clampStop,
+  formatSectionTime,
+  loadSection,
+  parseSectionTime,
+  saveSection,
+  sectionKey,
+  seekInSection,
+  type Section,
+} from '@/lib/practice-section';
 
 /** One selectable audio version, for the in-player version switcher. */
 export type PlayerVersion = {
@@ -161,6 +172,40 @@ export function AudioPlayer({
     ? selectedVersion.mimeType
     : mimeType;
 
+  // The practice section: a start/stop range, optionally looped. Saved per
+  // song *version* — versions put the same passage at different times — and
+  // read once the duration is known, since it's clamped to it. Mobile only
+  // for now: the rail has no controls for it yet, so it isn't applied there
+  // either — a limit you can't see or switch off would just be a bug.
+  const [section, setSection] = useState<Section | null>(null);
+  const secKey = conversationId
+    ? sectionKey(conversationId, selectedVersion?.id ?? 'default')
+    : null;
+  useEffect(() => {
+    if (!isReady || !secKey || duration <= 0) {
+      setSection(null);
+      return;
+    }
+    const saved = loadSection(secKey);
+    if (!saved) {
+      setSection({ on: false, start: 0, stop: duration, repeat: false });
+      return;
+    }
+    // The file may have changed length since this was saved.
+    const start = clampStart(saved.start, Math.min(saved.stop, duration));
+    setSection({ ...saved, start, stop: clampStop(saved.stop, start, duration) });
+  }, [isReady, secKey, duration]);
+
+  const activeSection =
+    hasPracticeOptions && variant === 'bar' && section?.on ? section : null;
+  // Read by the tick loop and engine callbacks, which outlive a render.
+  const activeSectionRef = useRef(activeSection);
+  activeSectionRef.current = activeSection;
+  const clampSeek = useCallback((t: number) => {
+    const sec = activeSectionRef.current;
+    return sec ? seekInSection(t, sec) : t;
+  }, []);
+
   // Show the global pending indicator while the audio is loading. The
   // condition flips off as soon as Howler reports readiness or an
   // error, so the spinner clears at the same moment the "Loading
@@ -200,7 +245,17 @@ export function AudioPlayer({
         setDuration(dur);
         setIsReady(true);
       },
+      // Reached when the section's stop is the end of the file: the element
+      // can finish before the tick loop sees the stop point.
       onEnd: () => {
+        const sec = activeSectionRef.current;
+        if (sec) {
+          engine.seek(sec.start);
+          if (sec.repeat) {
+            engine.play();
+            return;
+          }
+        }
         setIsPlaying(false);
       },
       onError: (err) => {
@@ -221,7 +276,10 @@ export function AudioPlayer({
       onSeek: (sec) => setCurrentTime(sec),
     });
     engineRef.current = engine;
-    setEngine(engine); // share with the notes panel via PlayerContext
+    // Share with the notes panel via PlayerContext. A note's timestamp seeks
+    // straight through this, so it gets the same section clamp as the
+    // player's own controls.
+    setEngine({ ...engine, seek: (t) => engine.seek(clampSeek(t)) });
 
     let destroyed = false;
     const teardown = () => {
@@ -246,7 +304,7 @@ export function AudioPlayer({
       window.removeEventListener('pagehide', handlePageHide);
       teardown();
     };
-  }, [effectiveSrc, effectiveFileName, effectiveMimeType, setEngine]);
+  }, [effectiveSrc, effectiveFileName, effectiveMimeType, setEngine, clampSeek]);
 
   // Tick the current-time display while playing.
   //
@@ -266,7 +324,20 @@ export function AudioPlayer({
     const loop = () => {
       const engine = engineRef.current;
       if (!engine) return;
-      setCurrentTime(engine.getCurrentTime());
+      const t = engine.getCurrentTime();
+      const sec = activeSectionRef.current;
+      if (sec && t >= sec.stop) {
+        // The end of the section: loop, or stop and wait at its start.
+        if (!sec.repeat) engine.pause();
+        engine.seek(sec.start);
+        setCurrentTime(sec.start);
+        if (!sec.repeat) {
+          setIsPlaying(false);
+          return;
+        }
+      } else {
+        setCurrentTime(t);
+      }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -286,6 +357,13 @@ export function AudioPlayer({
     } else {
       // Take over playback so the global playlist player pauses.
       claimAudioFocus(FOCUS_OWNER);
+      // With a section on, every play is a run through it from the top,
+      // not a resume from wherever it was paused.
+      const sec = activeSectionRef.current;
+      if (sec) {
+        engine.seek(sec.start);
+        setCurrentTime(sec.start);
+      }
       engine.play();
       setIsPlaying(true);
     }
@@ -304,35 +382,42 @@ export function AudioPlayer({
     [],
   );
 
-  const seekTo = useCallback((t: number) => {
-    const engine = engineRef.current;
-    if (!engine || !Number.isFinite(t)) return;
-    engine.seek(t);
-    setCurrentTime(t);
-  }, []);
+  // Every seek below goes through `clampSeek`, so a section keeps the
+  // playhead inside it however it's moved.
+  const seekTo = useCallback(
+    (t: number) => {
+      const engine = engineRef.current;
+      if (!engine || !Number.isFinite(t)) return;
+      t = clampSeek(t);
+      engine.seek(t);
+      setCurrentTime(t);
+    },
+    [clampSeek],
+  );
 
   const back10 = useCallback(() => {
     const engine = engineRef.current;
     if (!engine || !isReady) return;
-    const t = Math.max(0, engine.getCurrentTime() - 10);
+    const t = clampSeek(Math.max(0, engine.getCurrentTime() - 10));
     engine.seek(t);
     setCurrentTime(t);
-  }, [isReady]);
+  }, [isReady, clampSeek]);
 
   const forward10 = useCallback(() => {
     const engine = engineRef.current;
     if (!engine || !isReady) return;
     const max = duration || engine.getCurrentTime() + 10;
-    const t = Math.min(max, engine.getCurrentTime() + 10);
+    const t = clampSeek(Math.min(max, engine.getCurrentTime() + 10));
     engine.seek(t);
     setCurrentTime(t);
-  }, [isReady, duration]);
+  }, [isReady, duration, clampSeek]);
 
   const startOver = useCallback(() => {
     const engine = engineRef.current;
     if (!engine || !isReady) return;
-    engine?.seek(0);
-    setCurrentTime(0);
+    const t = activeSectionRef.current?.start ?? 0;
+    engine.seek(t);
+    setCurrentTime(t);
   }, [isReady]);
 
   useTransportKeys({ togglePlay, forward10, back10 });
@@ -363,6 +448,25 @@ export function AudioPlayer({
     applyPitch(semitones);
   };
 
+  const updateSection = (patch: Partial<Section>) => {
+    if (!section || !secKey) return;
+    let { start, stop } = { ...section, ...patch };
+    if (patch.start !== undefined) start = clampStart(start, stop);
+    if (patch.stop !== undefined) stop = clampStop(stop, start, duration);
+    const next = { ...section, ...patch, start, stop };
+    setSection(next);
+    saveSection(secKey, next);
+    // A section that no longer holds the playhead takes it to its start —
+    // turning one on mid-song, or dragging a handle past the playhead.
+    const engine = engineRef.current;
+    if (!next.on || !engine) return;
+    const t = engine.getCurrentTime();
+    if (t < next.start || t >= next.stop) {
+      engine.seek(next.start);
+      setCurrentTime(next.start);
+    }
+  };
+
   return (
     <AudioPlayerView
       fileName={effectiveFileName}
@@ -386,6 +490,15 @@ export function AudioPlayer({
               pitch,
               onPitchChange: changePitch,
               pitchUnsupported,
+              section:
+                section && secKey
+                  ? {
+                      value: section,
+                      duration,
+                      withHours: duration >= 3600,
+                      onChange: updateSection,
+                    }
+                  : null,
               onStartOver: startOver,
               onBack10: back10,
               onForward10: forward10,
@@ -659,6 +772,172 @@ function PitchInput({
   );
 }
 
+type SectionControlsProps = {
+  value: Section;
+  duration: number;
+  withHours: boolean;
+  onChange: (patch: Partial<Section>) => void;
+};
+
+/**
+ * The practice section's controls: a checkbox that reveals a two-handled
+ * slider over the whole song, a time field for each end, and a Repeat
+ * toggle. The slider and the fields show the same two values, so either can
+ * be used and the other follows. Keeping the ends a second apart is the
+ * player's job (`updateSection`), not this.
+ */
+function SectionControls({
+  value,
+  duration,
+  withHours,
+  onChange,
+  disabled,
+}: SectionControlsProps & { disabled: boolean }) {
+  const pct = (t: number) => (duration > 0 ? (t / duration) * 100 : 0);
+  const fmt = (t: number) => formatSectionTime(t, withHours);
+
+  return (
+    <div className="flex basis-full flex-col gap-3">
+      <label className="flex items-center gap-2 text-xs text-fg-soft">
+        <input
+          type="checkbox"
+          checked={value.on}
+          onChange={(e) => onChange({ on: e.target.checked })}
+          disabled={disabled}
+          className="h-4 w-4 accent-blue-600"
+        />
+        Customize start and stop
+      </label>
+
+      {value.on && (
+        <>
+          <div className="relative h-6">
+            {/* Inset by half a thumb, the way the browser positions the
+                thumbs, so the highlight's ends sit under their centres. */}
+            <div className="absolute inset-x-2.5 top-1/2 h-1 -translate-y-1/2 rounded-full bg-line-strong">
+              <div
+                className="absolute inset-y-0 rounded-full bg-accent"
+                style={{
+                  left: `${pct(value.start)}%`,
+                  right: `${100 - pct(value.stop)}%`,
+                }}
+              />
+            </div>
+            {/* Whichever thumb is nearer its far end goes on top, so two
+                thumbs pressed together at either end can still be pulled
+                apart. */}
+            <input
+              type="range"
+              min={0}
+              max={duration}
+              step={0.01}
+              value={value.start}
+              onChange={(e) => onChange({ start: Number(e.target.value) })}
+              disabled={disabled}
+              aria-label="Section start"
+              aria-valuetext={fmt(value.start)}
+              className="section-range"
+              style={{ zIndex: value.start > duration / 2 ? 2 : 1 }}
+            />
+            <input
+              type="range"
+              min={0}
+              max={duration}
+              step={0.01}
+              value={value.stop}
+              onChange={(e) => onChange({ stop: Number(e.target.value) })}
+              disabled={disabled}
+              aria-label="Section stop"
+              aria-valuetext={fmt(value.stop)}
+              className="section-range"
+              style={{ zIndex: value.start > duration / 2 ? 1 : 2 }}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <TimeField
+              label="Start"
+              value={value.start}
+              withHours={withHours}
+              onCommit={(t) => onChange({ start: t })}
+              disabled={disabled}
+            />
+            <TimeField
+              label="Stop"
+              value={value.stop}
+              withHours={withHours}
+              onCommit={(t) => onChange({ stop: t })}
+              disabled={disabled}
+            />
+            <button
+              type="button"
+              onClick={() => onChange({ repeat: !value.repeat })}
+              disabled={disabled}
+              aria-pressed={value.repeat}
+              className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-line-strong px-2.5 text-xs font-medium text-fg-soft hover:bg-surface-soft disabled:opacity-50 aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-on-accent aria-pressed:hover:bg-accent"
+            >
+              <span aria-hidden="true">⟲</span>
+              Repeat
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * One end of the section as a typed time. Like the speed and pitch fields,
+ * typing is held until Enter or blur and Escape abandons it; a time that
+ * doesn't parse keeps the current one.
+ */
+function TimeField({
+  label,
+  value,
+  withHours,
+  onCommit,
+  disabled,
+}: {
+  label: string;
+  value: number;
+  withHours: boolean;
+  onCommit: (seconds: number) => void;
+  disabled: boolean;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+
+  const commit = (raw: string) => {
+    setDraft(null);
+    const t = parseSectionTime(raw);
+    if (t !== null) onCommit(t);
+  };
+
+  return (
+    <label className="flex items-center gap-1.5 text-xs text-fg-muted">
+      {label}
+      <input
+        type="text"
+        autoComplete="off"
+        spellCheck={false}
+        value={draft ?? formatSectionTime(value, withHours)}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            commit((e.target as HTMLInputElement).value);
+          } else if (e.key === 'Escape') {
+            setDraft(null);
+          }
+        }}
+        disabled={disabled}
+        aria-label={`Section ${label.toLowerCase()} time`}
+        className="w-24 rounded-md border border-line-strong bg-surface px-1.5 py-1 text-xs tabular-nums disabled:opacity-50"
+      />
+    </label>
+  );
+}
+
 /** Stacked layers: this song's other audio versions. */
 function VersionsIcon() {
   return (
@@ -723,6 +1002,8 @@ function AudioPlayerRail({
     onPitchChange: (semitones: number) => void;
     /** The browser can't shift pitch; the control gives way to a note. */
     pitchUnsupported: boolean;
+    /** Null until the audio's length is known, or with no song to save to. */
+    section: SectionControlsProps | null;
     onStartOver: () => void;
     onBack10: () => void;
     onForward10: () => void;
@@ -967,6 +1248,8 @@ export function AudioPlayerView({
     onPitchChange: (semitones: number) => void;
     /** The browser can't shift pitch; the control gives way to a note. */
     pitchUnsupported: boolean;
+    /** Null until the audio's length is known, or with no song to save to. */
+    section: SectionControlsProps | null;
     onStartOver: () => void;
     onBack10: () => void;
     onForward10: () => void;
@@ -1211,6 +1494,10 @@ export function AudioPlayerView({
             <span className="ml-auto shrink-0 text-xs text-fg-muted">
               {songMeta}
             </span>
+          )}
+
+          {practice?.section && (
+            <SectionControls {...practice.section} disabled={!isReady} />
           )}
         </div>
       )}

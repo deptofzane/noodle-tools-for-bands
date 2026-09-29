@@ -984,3 +984,66 @@ body {
 .dark .sheet-prose td {
   border-color: rgb(255 255 255 / 0.18);
 }
+
+/*
+ * The practice section's two-handled slider: two range inputs stacked on one
+ * track (browsers have no two-thumb range). The inputs themselves ignore the
+ * pointer so each only answers on its own thumb — otherwise the top one would
+ * swallow every drag meant for the other. The track and the highlighted span
+ * between the thumbs are drawn by the component underneath.
+ */
+.section-range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.section-range::-webkit-slider-runnable-track {
+  height: 100%;
+  background: transparent;
+}
+.section-range::-moz-range-track {
+  background: transparent;
+}
+.section-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  cursor: pointer;
+  /* WebKit pins the thumb to the track's top; centre it on the 1.5rem box. */
+  margin-top: 0.125rem;
+}
+.section-range::-moz-range-thumb {
+  pointer-events: auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  cursor: pointer;
+}
+.section-range:disabled::-webkit-slider-thumb {
+  opacity: 0.4;
+  cursor: default;
+}
+.section-range:disabled::-moz-range-thumb {
+  opacity: 0.4;
+  cursor: default;
+}
+.section-range:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 2px;
+}
+.section-range:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 2px;
+}
