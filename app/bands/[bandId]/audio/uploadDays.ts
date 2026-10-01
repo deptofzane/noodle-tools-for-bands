@@ -13,7 +13,7 @@ import type { PlaylistTrack } from '../../../player/PlaylistPlayer';
  */
 
 /** Local calendar day ("2026-07-30") for an ISO timestamp. */
-export function dayKey(iso: string): string {
+function dayKey(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   const p = (n: number) => n.toString().padStart(2, '0');

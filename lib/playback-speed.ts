@@ -16,7 +16,7 @@ export function ratePercent(rate: number): number {
 }
 
 /** How far one tap of the speed arrows moves, in percent. */
-export const SPEED_STEP = 5;
+const SPEED_STEP = 5;
 
 /**
  * The rate one arrow tap away: a full step from wherever it is (97 → 102, not

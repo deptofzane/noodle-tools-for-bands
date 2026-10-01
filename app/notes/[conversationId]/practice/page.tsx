@@ -3,6 +3,7 @@ import { getCurrentDbUser } from '@/lib/current-user';
 import { getConversationMembership } from '@/lib/db/conversations';
 import { getConversationPracticeSong } from '@/lib/db/setlists';
 import { Practice } from '../../../Practice';
+import { RecordRecent } from '../../../practice/RecordRecent';
 
 /**
  * Practice a single song — the same stepper as setlist practice, but with
@@ -48,6 +49,7 @@ export default async function SongPracticePage({
 
   return (
     <main className="">
+      <RecordRecent bandId={bandId} kind="song" id={conversationId} />
       {/* Practice renders the page header — "Edit song" in it has to follow
           whichever song you've stepped to. */}
       <Practice
@@ -63,6 +65,7 @@ export default async function SongPracticePage({
         // icon in every kebab does; the setlist screen needs its own because
         // that URL carries the position within the set.
         initialThreadId={thread ?? null}
+        pickerCurrent={{ kind: 'song', id: conversationId }}
       />
     </main>
   );

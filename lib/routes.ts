@@ -12,10 +12,19 @@
  * on the same song when `song` is included.
  */
 
-/** Practice a setlist, optionally opening on a given position (0-based). */
-export function practiceHref(setlistId: string, song?: number): string {
+/**
+ * Practice a setlist, optionally opening on a given position (0-based).
+ * `eventId` marks it as opened for that event, so the screen lists the event
+ * rather than the setlist under the picker's "Recent".
+ */
+export function practiceHref(
+  setlistId: string,
+  song?: number,
+  eventId?: string | null,
+): string {
   const q = new URLSearchParams({ setlist: setlistId });
   if (song != null && song > 0) q.set('song', String(song + 1));
+  if (eventId) q.set('event', eventId);
   return `/practice?${q}`;
 }
 

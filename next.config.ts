@@ -133,4 +133,15 @@ export default withSentryConfig(withSerwist(nextConfig), {
   // Routes browser reports through our own origin, so ad blockers don't
   // silently swallow the errors we most need to see.
   tunnelRoute: '/monitoring',
+  // Errors are all we report: tracing is sampled at 0 and replay is off (see
+  // sentry.shared.ts, instrumentation-client.ts). Strip that code from the
+  // bundle rather than ship it to every page unused. Re-enable before turning
+  // either on — `excludeTracing` makes tracing calls no-ops.
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+    excludeTracing: true,
+    excludeReplayShadowDom: true,
+    excludeReplayIframe: true,
+    excludeReplayWorker: true,
+  },
 });

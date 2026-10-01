@@ -6,5 +6,3 @@ import { sharedSentryOptions } from './sentry.shared';
  * and band chat — the private material this app exists to hold.
  */
 Sentry.init(sharedSentryOptions);
-
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

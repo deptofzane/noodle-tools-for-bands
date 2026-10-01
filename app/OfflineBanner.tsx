@@ -10,8 +10,12 @@ import { usePathname } from 'next/navigation';
  * server, and there's nothing to fall back to until a navigation actually
  * fails. The link is a plain `<a>` so it goes through the service worker.
  *
- * Sits above the app's own chrome but below Live mode, which is meant to be
- * chrome-free on stage.
+ * In the page's flow, first thing in the body, rather than fixed over it: a
+ * fixed bar reserved no room and sat on top of each page's header — on the
+ * Practice screen, over Back, Select, Live and the rest — so the controls
+ * that still worked offline couldn't be tapped. In flow it pushes the page
+ * down instead, and scrolls away with it. Live mode, an overlay meant to be
+ * chrome-free on stage, still covers it.
  */
 export function OfflineBanner() {
   const pathname = usePathname();
@@ -34,7 +38,7 @@ export function OfflineBanner() {
   return (
     <div
       role="status"
-      className="fixed inset-x-0 top-0 z-[55] flex items-center justify-center gap-3 bg-warn-fill px-3 py-1.5 text-xs text-amber-900 lg:top-[var(--app-nav-h)] dark:text-amber-200"
+      className="flex items-center justify-center gap-3 bg-warn-fill px-3 py-1.5 text-xs text-amber-900 dark:text-amber-200"
     >
       <span>You’re offline.</span>
       <a href="/offline" className="font-medium underline">

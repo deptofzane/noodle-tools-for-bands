@@ -90,16 +90,6 @@ export async function getConversationMembership(
   return row ?? null;
 }
 
-/** Authorization primitive — throws if the user can't access it. */
-export async function assertConversationMember(
-  userId: string,
-  conversationId: string,
-): Promise<ConversationMembership> {
-  const m = await getConversationMembership(userId, conversationId);
-  if (!m) throw new ConversationAccessError();
-  return m;
-}
-
 /**
  * A band's conversation plus its default audio version's metadata. The audio
  * fields are null for songs created from just a name (no audio yet), which is

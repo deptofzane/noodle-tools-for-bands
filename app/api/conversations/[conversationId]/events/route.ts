@@ -64,7 +64,11 @@ export async function GET(
           // already closed
         }
       };
-      req.signal.addEventListener('abort', cleanup);
+      req.signal.addEventListener('abort', cleanup, { once: true });
+      // A client that left while the membership check above was awaited has
+      // already aborted, and `abort` won't fire again — without this the
+      // heartbeat and the subscription would outlive it indefinitely.
+      if (req.signal.aborted) cleanup();
     },
     cancel() {
       if (heartbeat) clearInterval(heartbeat);

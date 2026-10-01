@@ -1317,12 +1317,10 @@ function AudioPlayerRail({
 }
 
 /**
- * The player's controls, with no audio engine of its own — the caller owns
- * playback and passes state down. Used by `AudioPlayer` (one song, its own
- * engine) and by the full-screen player's Practice tab, which drives the
- * shared queue engine instead, so both show the same bar.
+ * The player's controls, with no audio engine of its own — `AudioPlayer` owns
+ * playback and passes state down.
  */
-export function AudioPlayerView({
+function AudioPlayerView({
   fileName,
   currentTime,
   duration,

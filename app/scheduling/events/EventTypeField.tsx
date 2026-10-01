@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Select } from '../../Select';
 
 /** The kinds offered up front. Anything else is typed in as a custom one. */
-export const EVENT_TYPE_PRESETS = [
+const EVENT_TYPE_PRESETS = [
   'Show',
   'Practice',
   'Writing session',

@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { BandMembersTab } from './BandMembersTab';
 import { BandNotesTab } from './BandNotesTab';
 import { BandTodosTab } from './BandTodosTab';

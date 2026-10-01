@@ -3,7 +3,7 @@
 import { useRef, type KeyboardEvent } from 'react';
 
 /** What a Tab inserts. Spaces, not a tab character — see the hook's note. */
-export const INDENT = '    ';
+const INDENT = '    ';
 
 /**
  * Makes Tab indent inside a textarea instead of leaving it.

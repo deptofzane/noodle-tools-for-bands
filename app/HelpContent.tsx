@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import { B, List, Section } from './legalSections';
+import { List, Section } from './legalSections';
 import { CONTACT_EMAIL } from './legal';
 import { MenuSectionLabel } from './ActionMenu';
 import { AddToQueueIcon, EyeIcon, LinkIcon, PencilIcon } from './icons';

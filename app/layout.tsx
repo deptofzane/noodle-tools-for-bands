@@ -166,11 +166,12 @@ export default async function RootLayout({
               >
                 <CurrentBandProvider enabled={isSignedIn}>
                   <PlaylistPlayerProvider userKey={session?.user?.sub ?? null}>
+                    {/* Before the page, so it's at the top of the flow. */}
+                    <OfflineBanner />
                     {children}
                     {isSignedIn && (
                       <Header userEmail={session?.user?.email ?? null} />
                     )}
-                    <OfflineBanner />
                   </PlaylistPlayerProvider>
                 </CurrentBandProvider>
               </DriveCapabilityProvider>

@@ -22,6 +22,8 @@ import Link from 'next/link';
 import { SongTitle } from './SongTitle';
 import { Spinner } from './Spinner';
 import { useAddAudio } from './notes/[conversationId]/edit/useAddAudio';
+import { PracticePicker } from './practice/PracticePicker';
+import type { RecentRef } from '@/lib/practice-recent';
 import {
   useEffect,
   useState,
@@ -80,6 +82,7 @@ export function Practice({
   shareHref,
   canCloseConversation = false,
   initialThreadId,
+  pickerCurrent,
 }: {
   songs: PracticeSong[];
   /** The band these songs belong to, for the storage warning. */
@@ -125,6 +128,12 @@ export function Practice({
    * a "Copy link" action — a PWA has no address bar to copy from.
    */
   shareHref?: (index: number) => string;
+  /**
+   * What this screen is — a song, a setlist, or an event's setlist. Passed by
+   * the Practice pages (not the full-screen player), and what turns on the
+   * header's "Select" picker, which marks it as current.
+   */
+  pickerCurrent?: RecentRef;
 }) {
   const [ownIndex, setOwnIndex] = usePersistedIndex(
     persistKey ?? null,
@@ -140,6 +149,7 @@ export function Practice({
   const [addedAudio, setAddedAudio] = useState<
     Record<string, PlayerVersion[]>
   >({});
+  const [pickerOpen, setPickerOpen] = useState(false);
   // Who's looking, for the comments panel at the bottom. From the player's
   // context rather than a prop: `/practice` is a precached static shell and
   // can't resolve a user server-side. Null when signed out — the panel then
@@ -223,6 +233,15 @@ export function Practice({
     <>
       {header(
         <span className="flex shrink-0 items-center gap-3">
+          {bandId && pickerCurrent && (
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="py-4 hover:text-fg"
+            >
+              Select
+            </button>
+          )}
           {song.conversationId && song.sheetMusic && (
             <Link
               href={`/notes/${song.conversationId}/live`}
@@ -399,6 +418,14 @@ export function Practice({
             initialThreadId={initialThreadId ?? null}
           />
         </div>
+      )}
+
+      {pickerOpen && bandId && pickerCurrent && (
+        <PracticePicker
+          bandId={bandId}
+          current={pickerCurrent}
+          onClose={() => setPickerOpen(false)}
+        />
       )}
     </>
   );

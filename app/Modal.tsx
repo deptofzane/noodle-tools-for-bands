@@ -6,6 +6,10 @@ const SIZE = {
   sm: 'max-w-sm',
   md: 'max-w-md',
   lg: 'max-w-lg',
+  // Full screen on a phone, for long lists a centred card would cramp;
+  // from `sm` up, a tall card that scrolls inside. The caller lays out its
+  // own column (a fixed head over a scrolling body).
+  sheet: '',
 } as const;
 
 /**
@@ -39,18 +43,25 @@ export function Modal({
     return () => window.removeEventListener('keydown', onKey);
   }, [busy, onClose]);
 
+  const sheet = size === 'sheet';
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby={labelledBy}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${
+        sheet ? 'sm:p-4' : 'p-4'
+      }`}
       onClick={() => {
         if (!busy) onClose();
       }}
     >
       <div
-        className={`w-full ${SIZE[size]} rounded-lg border p-5 shadow-xl border-line bg-surface`}
+        className={
+          sheet
+            ? 'flex h-full w-full flex-col bg-surface px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:h-[85vh] sm:max-w-lg sm:rounded-lg sm:border sm:border-line sm:p-5 sm:shadow-xl'
+            : `w-full ${SIZE[size]} rounded-lg border p-5 shadow-xl border-line bg-surface`
+        }
         onClick={(e) => e.stopPropagation()}
       >
         {children}

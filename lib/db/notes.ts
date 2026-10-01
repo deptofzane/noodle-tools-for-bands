@@ -9,8 +9,8 @@ import { touchConversation } from './conversations';
  * Drive-backed `lib/notes.ts`, but threading, mentions, and activity are
  * now real rows + joins instead of merged JSON files.
  *
- * Authorization is the caller's job: routes must `assertConversationMember`
- * before calling these, and pass the resolved `authorId` (the current
+ * Authorization is the caller's job: routes must check membership
+ * (`requireConversationMember` in lib/api-guard) before calling these, and pass the resolved `authorId` (the current
  * user's DB id). Author-scoped ops (edit/resolve/delete) additionally
  * enforce ownership in their WHERE clause.
  *
