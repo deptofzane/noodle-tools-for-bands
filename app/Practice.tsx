@@ -20,8 +20,11 @@ import {
 } from './notes/[conversationId]/SheetMusic';
 import Link from 'next/link';
 import { SongTitle } from './SongTitle';
+import { Spinner } from './Spinner';
+import { useAddAudio } from './notes/[conversationId]/edit/useAddAudio';
 import {
   useEffect,
+  useState,
   type Dispatch,
   type ReactNode,
   type SetStateAction,
@@ -132,6 +135,11 @@ export function Practice({
   // choice can't live in a `lg:` class. Resolves after mount (see the hook),
   // which means a beat of the bar layout before the rail takes over.
   const isDesktop = useIsDesktop();
+  // Audio added here, by conversation id — laid over the songs we were given
+  // so the player appears without a reload (see `AddAudioButton`).
+  const [addedAudio, setAddedAudio] = useState<
+    Record<string, PlayerVersion[]>
+  >({});
   // Who's looking, for the comments panel at the bottom. From the player's
   // context rather than a prop: `/practice` is a precached static shell and
   // can't resolve a user server-side. Null when signed out — the panel then
@@ -177,7 +185,9 @@ export function Practice({
   const total = songs.length;
   // Clamp in case the list shrank since the last render.
   const current = Math.min(index, total - 1);
-  const song = songs[current]!;
+  const listed = songs[current]!;
+  const added = listed.conversationId && addedAudio[listed.conversationId];
+  const song = added ? { ...listed, audioVersions: added } : listed;
   const canBack = current > 0;
   const canForward = current < total - 1;
   // Both loaders fill `audioVersions`; the queue passes an explicit `src`.
@@ -341,9 +351,19 @@ export function Practice({
               audio"), and this screen is where that song now lives. Say so
               rather than showing a player wired to a file that isn't there. */}
           {song.conversationId && !hasAudio && (
-            <p className="mb-4 rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
-              No audio yet. Add audio from the Edit song page.
-            </p>
+            <div className="mb-4 flex flex-col items-center gap-3 rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
+              <p>No audio yet.</p>
+              <AddAudioButton
+                conversationId={song.conversationId}
+                apiKey={apiKey}
+                onAdded={(versions) =>
+                  setAddedAudio((prev) => ({
+                    ...prev,
+                    [song.conversationId!]: versions,
+                  }))
+                }
+              />
+            </div>
           )}
           {song.conversationId ? (
             <SheetMusic
@@ -389,5 +409,58 @@ export function Practice({
     <PlayerProvider key={song.conversationId}>{layout}</PlayerProvider>
   ) : (
     layout
+  );
+}
+
+/**
+ * "Add audio" for a song that has none: the same chooser as the Edit page's
+ * "Add version". It reports the song's versions back once one lands, rather
+ * than asking the router to refresh — the setlist screens load their songs in
+ * the browser, where a refresh wouldn't reach them.
+ */
+function AddAudioButton({
+  conversationId,
+  apiKey,
+  onAdded,
+}: {
+  conversationId: string;
+  apiKey: string;
+  onAdded: (versions: PlayerVersion[]) => void;
+}) {
+  const audio = useAddAudio({
+    conversationId,
+    apiKey,
+    // A song's first version is its default whatever this says.
+    makeDefault: true,
+    onAdded: async () => {
+      const r = await fetch(
+        `/api/conversations/${conversationId}/audio-versions`,
+        { cache: 'no-store' },
+      );
+      if (r.ok) {
+        onAdded(((await r.json()) as { versions: PlayerVersion[] }).versions);
+      }
+    },
+  });
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={audio.openChooser}
+        disabled={audio.busy}
+        className="btn-outline inline-flex items-center gap-2"
+      >
+        {/* The label already says "Adding…"; the spinner stays out of the
+            accessibility tree so the button doesn't announce it twice. */}
+        {audio.busy && (
+          <span aria-hidden="true" className="flex">
+            <Spinner size="xs" />
+          </span>
+        )}
+        {audio.busy ? 'Adding…' : 'Add audio'}
+      </button>
+      {audio.chooser}
+    </>
   );
 }
