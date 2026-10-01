@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { PillTabs } from '../PillTabs';
+import { useCurrentBand } from '../CurrentBandProvider';
+import { PracticePicker } from '../practice/PracticePicker';
 
 type HomeTab = 'notifications' | 'activity';
 const STORAGE_KEY = 'homeTab';
@@ -24,6 +26,10 @@ const TABS: { key: HomeTab; label: string }[] = [
  * The unread count rides on the Notifications pill while Activity is open;
  * otherwise the nav's Home badge would light up on the page you're already
  * on, with nothing visible to explain it.
+ *
+ * A third pill, Practice, isn't a tab: it opens the Practice screen's
+ * "Select" picker for the current band, and leaves the open tab — and the
+ * remembered one — as they were.
  */
 export function HomeTabs({
   notifications,
@@ -41,6 +47,9 @@ export function HomeTabs({
   // this, reading your notifications and switching to Activity would put the
   // old number straight back on the pill.
   const [unreadCount, setUnreadCount] = useState(unread);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  // The picker is per band; until there is one, there's no Practice pill.
+  const { bandId } = useCurrentBand();
 
   useEffect(() => {
     const cleared = () => setUnreadCount(0);
@@ -76,12 +85,26 @@ export function HomeTabs({
         // Null until the saved tab is known, and '' matches no pill — which
         // is the intended look for that frame.
         activeKey={tab ?? ''}
-        onChange={(key) => choose(key as HomeTab)}
-        tabs={TABS.map((t) => ({
-          ...t,
-          badge: t.key === 'notifications' ? unreadCount : undefined,
-        }))}
+        onChange={(key) =>
+          key === 'practice' ? setPickerOpen(true) : choose(key as HomeTab)
+        }
+        tabs={[
+          ...TABS.map((t) => ({
+            ...t,
+            badge: t.key === 'notifications' ? unreadCount : undefined,
+          })),
+          ...(bandId ? [{ key: 'practice', label: 'Practice' }] : []),
+        ]}
       />
+
+      {pickerOpen && bandId && (
+        <PracticePicker
+          bandId={bandId}
+          // Home isn't showing anything, so nothing is marked current.
+          current={null}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
 
       {tab && (
         <div

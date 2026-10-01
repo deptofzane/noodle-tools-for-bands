@@ -221,3 +221,54 @@ test.describe('desktop', () => {
     await expect(search(page)).toBeFocused();
   });
 });
+
+test.describe('Home', () => {
+  const homeTab = (p: Page, name: string) =>
+    p
+      .getByRole('tablist', { name: 'Home' })
+      .getByRole('tab', { name, exact: true });
+
+  test('the Practice pill opens the picker and leaves the open tab alone', async ({
+    page,
+  }) => {
+    await page.goto('/home');
+    await homeTab(page, 'Activity').click();
+    await homeTab(page, 'Practice').click();
+
+    await expect(dialog(page)).toBeVisible();
+    // Home shows no song, setlist or event, so nothing is current.
+    await expect(dialog(page).locator('[aria-current="page"]')).toHaveCount(0);
+
+    await dialog(page).getByRole('button', { name: 'Close' }).click();
+    await expect(homeTab(page, 'Activity')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(homeTab(page, 'Practice')).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
+
+    // Not remembered as the tab either.
+    await page.reload();
+    await expect(homeTab(page, 'Activity')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
+  test('choosing from it goes to Practice, and Back returns Home', async ({
+    page,
+  }) => {
+    await page.goto('/home');
+    await homeTab(page, 'Practice').click();
+    await search(page).fill('zebra picker song');
+    await dialog(page)
+      .getByRole('link', { name: /Zebra Picker Song/ })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/notes/${made.songId}/practice$`));
+
+    await page.getByRole('button', { name: /Back/ }).first().click();
+    await expect(page).toHaveURL(/\/home$/);
+  });
+});
