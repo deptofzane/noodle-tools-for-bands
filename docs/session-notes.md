@@ -578,9 +578,14 @@ Last updated: 2 September 2026.
   directory needs its own `mkdirSync`.
 - **`bitnami/minio:latest` was removed from Docker Hub.** It 404s. Bitnami's
   images moved to a `bitnamilegacy/` namespace, which is an explicit
-  deprecation holding pen — CI now runs the official `quay.io/minio/minio` as
-  a _step_ instead, because GitHub service containers can't pass the
-  `server /data` argument it needs.
+  deprecation holding pen — so CI moved to the official `quay.io/minio/minio`,
+  run as a _step_ because GitHub service containers can't pass the
+  `server /data` argument it needs. Then MinIO stopped publishing free builds
+  too: its images (quay.io and Docker Hub) refuse anonymous pulls and the
+  dl.min.io binaries return 410. CI and the README now use
+  `chainguard/minio:latest`, which is free, maintained, and a drop-in (same
+  args, env, and health endpoint; runs as non-root but writes to a fresh
+  named volume fine).
 - **Six DB suites write real bytes to object storage** (`albums`,
   `band-uploads`, `serve-cache`, `setlists`, `song-edit`, `song-files`), so
   the db-tests job needs MinIO exactly as e2e does. Symptom is "Object storage

@@ -90,12 +90,13 @@ docker run --name noodle-pg \
 ### 4. Start object storage (MinIO)
 
 Song files (audio + sheet music) live in S3-compatible object storage.
-Locally, run MinIO (production uses Cloudflare R2):
+Locally, run MinIO (production uses Cloudflare R2). MinIO no longer publishes
+a free image, so this uses Chainguard's build — the same server and options:
 
 ```bash
 docker run -d --name noodle-minio -p 9000:9000 -p 9001:9001 \
   -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-  -v noodle-minio-data:/data minio/minio server /data --console-address ":9001"
+  -v noodle-minio-data:/data chainguard/minio server /data --console-address ":9001"
 ```
 
 ### 5. Configure environment

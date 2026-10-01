@@ -70,19 +70,21 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # MinIO as a step rather than a `services:` container.
       #
-      # Service containers can't override a command, and the official image
-      # needs `server /data`. The Bitnami image that did start unattended was
-      # removed from Docker Hub — `bitnami/minio:latest` now 404s, which is
-      # what silently broke this job. Its replacement lives under
-      # `bitnamilegacy/`, an explicit deprecation holding pen, so this uses the
-      # official image that local development already runs and starts it
-      # by hand.
+      # Service containers can't override a command, and the image needs
+      # `server /data`, so it's started by hand.
+      #
+      # Chainguard's build, because MinIO no longer publishes a free one: the
+      # official images (quay.io/minio/minio, minio/minio) now refuse
+      # anonymous pulls, and the release binaries at dl.min.io return 410.
+      # The Bitnami image went first (`bitnamilegacy/` is a frozen holding
+      # pen). Chainguard's `latest` is free, maintained, and takes the same
+      # arguments and env — entrypoint is the `minio` binary.
       - name: Start MinIO
         run: |
           docker run -d --name minio -p 9000:9000 \
             -e MINIO_ROOT_USER=minioadmin \
             -e MINIO_ROOT_PASSWORD=minioadmin \
-            quay.io/minio/minio:latest server /data
+            chainguard/minio:latest server /data
           for i in $(seq 1 30); do
             if curl -fsS http://localhost:9000/minio/health/live >/dev/null; then
               echo "MinIO ready after ${i}s"; exit 0
@@ -144,19 +146,21 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # MinIO as a step rather than a `services:` container.
       #
-      # Service containers can't override a command, and the official image
-      # needs `server /data`. The Bitnami image that did start unattended was
-      # removed from Docker Hub — `bitnami/minio:latest` now 404s, which is
-      # what silently broke this job. Its replacement lives under
-      # `bitnamilegacy/`, an explicit deprecation holding pen, so this uses the
-      # official image that local development already runs and starts it
-      # by hand.
+      # Service containers can't override a command, and the image needs
+      # `server /data`, so it's started by hand.
+      #
+      # Chainguard's build, because MinIO no longer publishes a free one: the
+      # official images (quay.io/minio/minio, minio/minio) now refuse
+      # anonymous pulls, and the release binaries at dl.min.io return 410.
+      # The Bitnami image went first (`bitnamilegacy/` is a frozen holding
+      # pen). Chainguard's `latest` is free, maintained, and takes the same
+      # arguments and env — entrypoint is the `minio` binary.
       - name: Start MinIO
         run: |
           docker run -d --name minio -p 9000:9000 \
             -e MINIO_ROOT_USER=minioadmin \
             -e MINIO_ROOT_PASSWORD=minioadmin \
-            quay.io/minio/minio:latest server /data
+            chainguard/minio:latest server /data
           for i in $(seq 1 30); do
             if curl -fsS http://localhost:9000/minio/health/live >/dev/null; then
               echo "MinIO ready after ${i}s"; exit 0
