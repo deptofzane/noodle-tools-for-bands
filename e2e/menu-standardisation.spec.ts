@@ -487,13 +487,16 @@ test.describe('remaining action menus', () => {
     await expect(page.getByText('Setlist link copied.')).toBeVisible();
   });
 
-  test('event page: its own menu is Edit + Share + Clone', async ({ page }) => {
+  test('event page: its own menu is Edit + Share + Clone + Delete', async ({
+    page,
+  }) => {
     await page.goto(`/scheduling/events/${eventId}`);
     const names = await openMenu(page, 'Event actions');
     expect(names).toEqual([
       'Edit this event',
       'Copy a link to this event',
       'Clone event',
+      'Delete event',
     ]);
     expect(names).not.toContain('Edit event');
   });
