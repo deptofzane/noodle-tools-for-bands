@@ -3,10 +3,14 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Modal } from '../Modal';
+import { useTrackPending } from '../PendingActionProvider';
 import { PillTabs } from '../PillTabs';
 import { SongTitle } from '../SongTitle';
 import { Spinner } from '../Spinner';
+import { useToast } from '../ToastProvider';
 import { useIsDesktop } from '../useIsDesktop';
+import { useNavigate } from '../useNavigate';
+import { ensureOk } from '@/lib/api';
 import { formatDateRange, formatDateShort, formatTime12h } from '@/lib/format';
 import { practiceHref, songHref } from '@/lib/routes';
 import type {
@@ -42,6 +46,7 @@ type Load =
  * event of this band. Recent, then one pill per kind; typing a search shows
  * matches from all three kinds at once, and leaves the pills unselected while
  * it does. Choosing a row is an ordinary navigation, so Back returns here.
+ * Songs and search results also offer starting a new song from just a name.
  */
 export function PracticePicker({
   bandId,
@@ -158,6 +163,8 @@ export function PracticePicker({
             <SearchResults
               data={load.data}
               q={q}
+              typed={query.trim()}
+              bandId={bandId}
               current={current}
               onClose={onClose}
             />
@@ -219,35 +226,60 @@ function TabList({
       </ul>
     );
   }
-  const [items, empty] =
-    tab === 'songs'
-      ? [
-          data.songs.map((s) => <SongRow key={s.id} song={s} {...row} />),
-          'No songs yet.',
-        ]
-      : tab === 'setlists'
-        ? [
-            data.setlists.map((s) => (
-              <SetlistRow key={s.id} setlist={s} {...row} />
-            )),
-            'No setlists with songs yet.',
-          ]
-        : [
-            data.events.map((e) => <EventRow key={e.id} event={e} {...row} />),
-            'No upcoming events with a setlist.',
-          ];
-  return items.length > 0 ? (
-    <ul className="divide-y divide-line">{items}</ul>
+  if (tab === 'songs') {
+    return (
+      <ul className="divide-y divide-line">
+        <NewSong bandId={bandId} onClose={row.onClose} />
+        {data.songs.map((s) => (
+          <SongRow key={s.id} song={s} {...row} />
+        ))}
+      </ul>
+    );
+  }
+  if (tab === 'setlists') {
+    return (
+      <ul className="divide-y divide-line">
+        <li>
+          <Link
+            href={`/bands/${bandId}/setlists/new`}
+            onClick={row.onClose}
+            className={ROW_CLS}
+          >
+            <span className="min-w-0 flex-1 truncate font-medium">
+              + New setlist
+            </span>
+          </Link>
+        </li>
+        {data.setlists.map((s) => (
+          <SetlistRow key={s.id} setlist={s} {...row} />
+        ))}
+      </ul>
+    );
+  }
+  return data.events.length > 0 ? (
+    <ul className="divide-y divide-line">
+      {data.events.map((e) => (
+        <EventRow key={e.id} event={e} {...row} />
+      ))}
+    </ul>
   ) : (
-    <Empty>{empty}</Empty>
+    <Empty>No upcoming events with a setlist.</Empty>
   );
 }
 
 function SearchResults({
   data,
   q,
+  typed,
+  bandId,
   ...row
-}: RowProps & { data: PickerData; q: string }) {
+}: RowProps & {
+  data: PickerData;
+  q: string;
+  /** The search as typed, case kept: the name a new song is offered with. */
+  typed: string;
+  bandId: string;
+}) {
   const has = (...fields: (string | null)[]) =>
     fields.some((f) => f?.toLowerCase().includes(q));
   const songs = data.songs.filter((s) => has(s.title, s.originalArtist));
@@ -256,9 +288,6 @@ function SearchResults({
     has(e.title, e.venueName, e.setlistName),
   );
 
-  if (songs.length + setlists.length + events.length === 0) {
-    return <Empty>Nothing matches “{q}”.</Empty>;
-  }
   const group = (title: string, items: ReactNode[]) =>
     items.length > 0 && (
       <section className="mb-3">
@@ -270,6 +299,9 @@ function SearchResults({
     );
   return (
     <>
+      {songs.length + setlists.length + events.length === 0 && (
+        <Empty>Nothing matches “{q}”.</Empty>
+      )}
       {group(
         'Songs',
         songs.map((s) => <SongRow key={s.id} song={s} {...row} />),
@@ -282,7 +314,111 @@ function SearchResults({
         'Events',
         events.map((e) => <EventRow key={e.id} event={e} {...row} />),
       )}
+      <ul className="divide-y divide-line">
+        <NewSong bandId={bandId} suggested={typed} onClose={row.onClose} />
+      </ul>
     </>
+  );
+}
+
+const ROW_CLS =
+  'flex w-full items-center gap-3 px-1 py-2.5 text-left text-sm hover:bg-surface-hover';
+
+/**
+ * Start a song from just a name, then go practise it. The row turns into the
+ * name field in place rather than opening a modal over this one. `suggested`
+ * is the search as typed, offered as the name.
+ */
+function NewSong({
+  bandId,
+  suggested,
+  onClose,
+}: {
+  bandId: string;
+  suggested?: string;
+  onClose: () => void;
+}) {
+  // Null until the row is chosen.
+  const [name, setName] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const go = useNavigate();
+  const showToast = useToast();
+  const trackPending = useTrackPending();
+
+  const create = async () => {
+    const trimmed = name?.trim();
+    if (!trimmed || creating) return;
+    setCreating(true);
+    try {
+      const id = await trackPending(async () => {
+        const r = await fetch(`/api/bands/${bandId}/conversations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: trimmed }),
+        });
+        await ensureOk(r);
+        const d = (await r.json()) as { conversation: { id: string } };
+        return d.conversation.id;
+      });
+      onClose();
+      go(songHref(id));
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e));
+      setCreating(false);
+    }
+  };
+
+  if (name === null) {
+    return (
+      <li>
+        <button
+          type="button"
+          onClick={() => setName(suggested ?? '')}
+          className={ROW_CLS}
+        >
+          <span className="min-w-0 flex-1 truncate font-medium">
+            {suggested ? `+ Create “${suggested}”` : '+ New song'}
+          </span>
+        </button>
+      </li>
+    );
+  }
+  return (
+    <li>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void create();
+        }}
+        className="flex items-center gap-2 px-1 py-2"
+      >
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Song name"
+          aria-label="Song name"
+          autoFocus
+          disabled={creating}
+          className="min-w-0 flex-1 rounded-md border border-line-strong bg-surface px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+        />
+        <button
+          type="submit"
+          disabled={creating || !name.trim()}
+          className="btn-primary"
+        >
+          {creating ? 'Creating…' : 'Create'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setName(null)}
+          disabled={creating}
+          className="btn-outline"
+        >
+          Cancel
+        </button>
+      </form>
+    </li>
   );
 }
 
@@ -304,8 +440,6 @@ function Row({
   onClose: () => void;
   children: ReactNode;
 }) {
-  const cls =
-    'flex w-full items-center gap-3 px-1 py-2.5 text-left text-sm hover:bg-surface-hover';
   const body = (
     <>
       <span className="min-w-0 flex-1">{children}</span>
@@ -328,12 +462,12 @@ function Row({
           type="button"
           onClick={onClose}
           aria-current="page"
-          className={cls}
+          className={ROW_CLS}
         >
           {body}
         </button>
       ) : (
-        <Link href={href} onClick={onClose} className={cls}>
+        <Link href={href} onClick={onClose} className={ROW_CLS}>
           {body}
         </Link>
       )}

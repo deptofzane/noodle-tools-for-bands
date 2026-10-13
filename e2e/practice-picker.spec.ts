@@ -4,6 +4,7 @@ import { readSeed } from './fixtures';
 import {
   deleteConversation,
   findOrCreateConversation,
+  listBandConversations,
 } from '../lib/db/conversations';
 import { createSetlist, deleteSetlist } from '../lib/db/setlists';
 import { createEvent, deleteEvent } from '../lib/db/events';
@@ -17,6 +18,9 @@ import { createEvent, deleteEvent } from '../lib/db/events';
  */
 const seed = readSeed();
 const made = { songId: '', setlistId: '', eventId: '' };
+// Songs the tests create through the picker; removed afterwards by name.
+const NEW = 'Yak New Song';
+const NEW_SEARCHED = 'Yak Searched Song';
 
 test.beforeAll(async () => {
   made.songId = (
@@ -57,6 +61,11 @@ test.afterAll(async () => {
   if (made.eventId) await deleteEvent(made.eventId);
   if (made.setlistId) await deleteSetlist(made.setlistId);
   if (made.songId) await deleteConversation(made.songId);
+  for (const c of await listBandConversations(seed.bandId)) {
+    if (c.audioFileName === NEW || c.audioFileName === NEW_SEARCHED) {
+      await deleteConversation(c.id);
+    }
+  }
 });
 
 const dialog = (p: Page) => p.getByRole('dialog', { name: 'Select' });
@@ -271,4 +280,46 @@ test.describe('Home', () => {
     await page.getByRole('button', { name: /Back/ }).first().click();
     await expect(page).toHaveURL(/\/home$/);
   });
+
+  test('New song takes a name and opens the song to practise', async ({
+    page,
+  }) => {
+    await page.goto('/home');
+    await homeTab(page, 'Practice').click();
+    await tab(page, 'Songs').click();
+    await dialog(page).getByRole('button', { name: '+ New song' }).click();
+    await dialog(page).getByRole('textbox', { name: 'Song name' }).fill(NEW);
+    await dialog(page).getByRole('button', { name: 'Create' }).click();
+
+    await expect(page).toHaveURL(/\/notes\/[^/]+\/practice$/);
+    await expect(page.getByText(NEW).first()).toBeVisible();
+    await expect(page.getByText('No audio yet.')).toBeVisible();
+  });
+});
+
+test('New setlist opens the new setlist page', async ({ page }) => {
+  await page.goto(`/notes/${seed.songId}/practice`);
+  await openPicker(page);
+  await tab(page, 'Setlists').click();
+  await dialog(page).getByRole('link', { name: '+ New setlist' }).click();
+  await expect(page).toHaveURL(
+    new RegExp(`/bands/${seed.bandId}/setlists/new$`),
+  );
+});
+
+test('a search offers to create a song by that name', async ({ page }) => {
+  await page.goto(`/notes/${seed.songId}/practice`);
+  await openPicker(page);
+  await search(page).fill(NEW_SEARCHED);
+  await dialog(page)
+    .getByRole('button', { name: `+ Create “${NEW_SEARCHED}”` })
+    .click();
+  await expect(
+    dialog(page).getByRole('textbox', { name: 'Song name' }),
+  ).toHaveValue(NEW_SEARCHED);
+  await dialog(page).getByRole('button', { name: 'Create' }).click();
+
+  await expect(page).toHaveURL(/\/notes\/[^/]+\/practice$/);
+  await expect(page).not.toHaveURL(new RegExp(seed.songId));
+  await expect(page.getByText(NEW_SEARCHED).first()).toBeVisible();
 });

@@ -35,7 +35,7 @@ export function SongTitle({
 
   return (
     <>
-      <span className="block truncate">{title}</span>
+      <span className="block truncate text-wrap">{title}</span>
       {second && (
         <span className="block truncate text-xs font-normal minor-text-theme-colors">
           {second}
