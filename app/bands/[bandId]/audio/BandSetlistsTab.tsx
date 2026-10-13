@@ -334,14 +334,14 @@ export function BandSetlistsTab({
             <h2 className="text-sm font-medium">Setlists</h2>
           </MinimizeToggle>
           <Link href={`/bands/${bandId}/setlists/new`} className="btn-outline">
-            Create setlist
+            New setlist
           </Link>
         </div>
         {!setlistsMinimized && (
           <>
             {setlists.length === 0 && (
               <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
-                No setlists yet. Use “Create setlist” to build one.
+                No setlists yet. Use “New setlist” to build one.
               </p>
             )}
             {activeSetlists.length > 0 && (
@@ -351,7 +351,7 @@ export function BandSetlistsTab({
             )}
             {setlists.length > 0 && activeSetlists.length === 0 && (
               <p className="rounded-md border border-line px-3 py-6 text-center text-sm minor-text-theme-colors">
-                No active setlists. Use “Create setlist” to build one.
+                No active setlists. Use “New setlist” to build one.
               </p>
             )}
           </>

@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { Modal } from '../Modal';
+import { Spinner } from '../Spinner';
 import { formatDateLong, formatTimeRange } from '@/lib/format';
 import { eventColorKey } from './eventColors';
 import { lastDayOf } from './eventBars';
@@ -44,6 +46,9 @@ export function DaySummaryModal({
   const dayEvents = events.filter(
     (ev) => ev.date <= date && lastDayOf(ev) >= date,
   );
+  // The link tapped, while its page loads — the modal stays up until then.
+  const [pending, setPending] = useState<string | null>(null);
+  const addHref = `/scheduling/events/new?date=${date}`;
   return (
     <Modal onClose={onClose} labelledBy="day-summary-title" size="sm">
       <h2 id="day-summary-title" className="text-base font-semibold">
@@ -54,24 +59,36 @@ export function DaySummaryModal({
           No events on this day.
         </p>
       ) : (
-        <ul className="mt-3 flex max-h-72 flex-col gap-1 overflow-auto">
+        <ul
+          className={`mt-3 flex max-h-72 flex-col gap-1 overflow-auto${
+            pending ? ' pointer-events-none' : ''
+          }`}
+        >
           {dayEvents.map((ev) => {
             const loc = displayLocation(ev);
+            const href = `/scheduling/events/${ev.id}`;
             return (
               <li key={ev.id}>
                 <Link
-                  href={`/scheduling/events/${ev.id}`}
+                  href={href}
+                  onClick={() => setPending(href)}
                   data-event-type={eventColorKey(ev.eventType)}
-                  className="block rounded-md border border-line border-l-[3px] border-l-[var(--event-accent)] px-3 py-2 hover:bg-surface-soft dark:border-l-[var(--event-accent)]"
+                  className={`block rounded-md border border-line border-l-[3px] border-l-[var(--event-accent)] px-3 py-2 hover:bg-surface-soft dark:border-l-[var(--event-accent)]${
+                    pending && pending !== href ? ' opacity-50' : ''
+                  }`}
                 >
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="truncate font-medium">
                       {eventLabel(ev)}
                     </span>
-                    {ev.time && (
-                      <span className="shrink-0 text-xs minor-text-theme-colors">
-                        {formatTimeRange(ev.time, ev.endTime)}
-                      </span>
+                    {pending === href ? (
+                      <Spinner size="xs" label="Opening" />
+                    ) : (
+                      ev.time && (
+                        <span className="shrink-0 text-xs minor-text-theme-colors">
+                          {formatTimeRange(ev.time, ev.endTime)}
+                        </span>
+                      )
                     )}
                   </div>
                   <div className="truncate text-xs minor-text-theme-colors">
@@ -86,9 +103,13 @@ export function DaySummaryModal({
       )}
       <div className="mt-4 flex items-center justify-between gap-2">
         <Link
-          href={`/scheduling/events/new?date=${date}`}
-          className="btn-outline"
+          href={addHref}
+          onClick={() => setPending(addHref)}
+          className={`btn-outline inline-flex items-center gap-2${
+            pending ? ' pointer-events-none' : ''
+          }`}
         >
+          {pending === addHref && <Spinner size="xs" label="Opening" />}
           Add event
         </Link>
         <button type="button" onClick={() => onClose()} className="btn-ghost">

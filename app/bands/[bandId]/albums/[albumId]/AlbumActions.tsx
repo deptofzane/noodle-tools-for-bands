@@ -66,7 +66,8 @@ export function AlbumActions({ album }: { album: AlbumWithTracks }) {
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
       setDeleteOpen(false);
-    } finally {
+      // Only on failure: a success leaves the button busy until the page
+      // this is on has been left.
       setDeleting(false);
     }
   };

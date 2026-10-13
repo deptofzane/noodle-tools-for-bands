@@ -1,6 +1,7 @@
 import '../scripts/load-env';
 import { test, expect, type Page } from '@playwright/test';
 import { readSeed } from './fixtures';
+import { slowNavigations } from './helpers';
 import {
   deleteConversation,
   findOrCreateConversation,
@@ -295,6 +296,50 @@ test.describe('Home', () => {
     await expect(page.getByText(NEW).first()).toBeVisible();
     await expect(page.getByText('No audio yet.')).toBeVisible();
   });
+});
+
+test('the picker stays up, spinning, until a setlist-to-event switch lands', async ({
+  page,
+}) => {
+  // Same page, new query string: no page load to cover the wait.
+  await page.goto(`/practice?setlist=${made.setlistId}`);
+  await openPicker(page);
+  await search(page).fill('zebra picker gig');
+  await slowNavigations(page);
+  await dialog(page)
+    .getByRole('link', { name: /Zebra Picker Gig/ })
+    .click();
+
+  await expect(
+    dialog(page).getByRole('status', { name: 'Opening' }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`event=${made.eventId}`));
+  await expect(dialog(page)).toHaveCount(0);
+});
+
+test('choosing a song from Home never shows Home again', async ({ page }) => {
+  await page.goto('/home');
+  await page
+    .getByRole('tablist', { name: 'Home' })
+    .getByRole('tab', { name: 'Practice', exact: true })
+    .click();
+  await search(page).fill('zebra picker song');
+  await expect(
+    dialog(page).getByRole('link', { name: /Zebra Picker Song/ }),
+  ).toBeVisible();
+  await slowNavigations(page);
+  await dialog(page)
+    .getByRole('link', { name: /Zebra Picker Song/ })
+    .click();
+
+  // Still up over Home, spinning, for as long as the song takes to load.
+  await expect(
+    dialog(page).getByRole('status', { name: 'Opening' }),
+  ).toBeVisible();
+  // The picker is the progress; the page-wide cover stays out of it.
+  await expect(page.getByRole('status', { name: 'Loading page' })).toBeHidden();
+  await expect(page).toHaveURL(new RegExp(`/notes/${made.songId}/practice$`));
+  await expect(dialog(page)).toHaveCount(0);
 });
 
 test('New setlist opens the new setlist page', async ({ page }) => {

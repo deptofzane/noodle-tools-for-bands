@@ -80,3 +80,18 @@ export async function removeSheet(
 ): Promise<void> {
   await deleteSheetVersion(conversationId, versionId);
 }
+
+/**
+ * Hold up navigations (not prefetches) long enough to see what's on screen
+ * while one is in flight.
+ */
+export const slowNavigations = (page: Page) =>
+  page.route(
+    (url) => url.searchParams.has('_rsc'),
+    async (route) => {
+      if (!route.request().headers()['next-router-prefetch']) {
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+      await route.continue();
+    },
+  );

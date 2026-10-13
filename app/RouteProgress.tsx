@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { Spinner } from './Spinner';
 
 /** Subscribers to manual `startRouteProgress()` calls. */
 const listeners = new Set<() => void>();
@@ -38,12 +39,23 @@ const MAX_MS = 10_000;
  * Decorative by design: Next announces route changes to screen readers on its
  * own, so the bar is `aria-hidden` rather than a second live region competing
  * with the nav's action spinner.
+ *
+ * **The cover.** A navigation that takes more than a beat also swaps the page
+ * for a centred spinner, so the screen being left doesn't sit there looking
+ * like the tap missed. It's CSS (`.route-cover` in globals.css): the element
+ * below hides the `<main>` that follows it, after a delay that lets a fast
+ * page through with no flash, and stands down while a modal is open — a modal
+ * shows its own progress. Unlike the bar, a cover that outstays a misread
+ * click hides the page, so it's kept to clicks and `startRouteProgress()`:
+ * Back/forward gets the bar alone (the Help dialog's history entry pops
+ * without changing the URL), and a tap on the cover dismisses it.
  */
 export function RouteProgress() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [value, setValue] = useState(0);
   const [active, setActive] = useState(false);
+  const [covering, setCovering] = useState(false);
   // Timers live in refs: they're cleared from callbacks that outlive renders.
   const creepRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -61,6 +73,7 @@ export function RouteProgress() {
     if (!activeRef.current) return;
     activeRef.current = false;
     clearTimers();
+    setCovering(false);
     setValue(100);
     // Let the fill animate to full, then fade out and reset for the next run.
     doneRef.current = setTimeout(() => {
@@ -69,21 +82,25 @@ export function RouteProgress() {
     }, 220);
   }, [clearTimers]);
 
-  const start = useCallback(() => {
-    if (activeRef.current) return;
-    activeRef.current = true;
-    if (doneRef.current) clearTimeout(doneRef.current);
-    setActive(true);
-    setValue(8);
-    // Decaying steps: quick at first, crawling as it nears the ceiling, so a
-    // slow page still looks alive without ever implying it's nearly done.
-    creepRef.current = setInterval(() => {
-      setValue((v) =>
-        v >= CEILING ? v : v + Math.max(0.4, (CEILING - v) / 8),
-      );
-    }, 300);
-    watchdogRef.current = setTimeout(finish, MAX_MS);
-  }, [finish]);
+  const start = useCallback(
+    (cover: boolean) => {
+      if (activeRef.current) return;
+      activeRef.current = true;
+      if (doneRef.current) clearTimeout(doneRef.current);
+      setActive(true);
+      setCovering(cover);
+      setValue(8);
+      // Decaying steps: quick at first, crawling as it nears the ceiling, so a
+      // slow page still looks alive without ever implying it's nearly done.
+      creepRef.current = setInterval(() => {
+        setValue((v) =>
+          v >= CEILING ? v : v + Math.max(0.4, (CEILING - v) / 8),
+        );
+      }, 300);
+      watchdogRef.current = setTimeout(finish, MAX_MS);
+    },
+    [finish],
+  );
 
   // A navigation committed (or this is the first render) — complete the bar.
   // Keyed on the query *string*, not the params object: an unrelated re-render
@@ -94,8 +111,10 @@ export function RouteProgress() {
   }, [pathname, query, finish]);
 
   useEffect(() => {
-    const unsubscribe = () => listeners.delete(start);
-    listeners.add(start);
+    const startCovered = () => start(true);
+    const startBare = () => start(false);
+    const unsubscribe = () => listeners.delete(startCovered);
+    listeners.add(startCovered);
 
     const onClick = (e: MouseEvent) => {
       // Only a plain left-click navigates in-page; the rest open tabs/windows
@@ -126,18 +145,18 @@ export function RouteProgress() {
       ) {
         return;
       }
-      start();
+      startCovered();
     };
 
     // Capture phase: `Link`'s own handler calls `preventDefault()` during
     // bubble, so by then the click looks cancelled rather than navigating.
     document.addEventListener('click', onClick, true);
     // Back/forward can re-render a server component too.
-    window.addEventListener('popstate', start);
+    window.addEventListener('popstate', startBare);
     return () => {
       unsubscribe();
       document.removeEventListener('click', onClick, true);
-      window.removeEventListener('popstate', start);
+      window.removeEventListener('popstate', startBare);
     };
   }, [start]);
 
@@ -151,15 +170,25 @@ export function RouteProgress() {
   );
 
   return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-0.5"
-    >
+    <>
       <div
-        data-route-progress={active ? 'active' : 'idle'}
-        className="h-full bg-cyan-600 shadow-[0_0_8px_rgba(8,145,178,0.6)] transition-[width,opacity] duration-200 ease-out dark:bg-cyan-400"
-        style={{ width: `${value}%`, opacity: active ? 1 : 0 }}
-      />
-    </div>
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-0.5"
+      >
+        <div
+          data-route-progress={active ? 'active' : 'idle'}
+          className="h-full bg-cyan-600 shadow-[0_0_8px_rgba(8,145,178,0.6)] transition-[width,opacity] duration-200 ease-out dark:bg-cyan-400"
+          style={{ width: `${value}%`, opacity: active ? 1 : 0 }}
+        />
+      </div>
+      {covering && (
+        <div
+          onClick={finish}
+          className="route-cover fixed inset-0 z-30 flex items-center justify-center"
+        >
+          <Spinner size="lg" label="Loading page" />
+        </div>
+      )}
+    </>
   );
 }

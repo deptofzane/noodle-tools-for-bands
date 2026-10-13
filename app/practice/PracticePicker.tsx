@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Modal } from '../Modal';
 import { useTrackPending } from '../PendingActionProvider';
@@ -47,6 +48,10 @@ type Load =
  * matches from all three kinds at once, and leaves the pills unselected while
  * it does. Choosing a row is an ordinary navigation, so Back returns here.
  * Songs and search results also offer starting a new song from just a name.
+ *
+ * A choice doesn't close the picker: it stays up, the chosen row spinning,
+ * until the new screen arrives — closing at once would show the old screen
+ * for however long the next one takes to load.
  */
 export function PracticePicker({
   bandId,
@@ -62,8 +67,20 @@ export function PracticePicker({
   const [tab, setTab] = useState<PickerTab>(loadPickerTab);
   const [query, setQuery] = useState('');
   const [load, setLoad] = useState<Load>({ status: 'loading' });
+  // The href of the row chosen, while its navigation is in flight.
+  const [pending, setPending] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const isDesktop = useIsDesktop();
+
+  // Close once the URL is no longer the one this opened on. Most choices
+  // replace the page, and this with it; one that only changes the query
+  // string (setlist to setlist) leaves the picker mounted, which is what
+  // this is for.
+  const url = `${usePathname()}?${useSearchParams()}`;
+  const openedOn = useRef(url);
+  useEffect(() => {
+    if (url !== openedOn.current) onClose();
+  }, [url, onClose]);
 
   useEffect(() => {
     let cancelled = false;
@@ -145,7 +162,9 @@ export function PracticePicker({
         id="practice-picker-panel"
         role="tabpanel"
         aria-labelledby={searching ? undefined : `practice-picker-tab-${tab}`}
-        className="mt-3 min-h-0 flex-1 overflow-y-auto"
+        className={`mt-3 min-h-0 flex-1 overflow-y-auto${
+          pending ? ' pointer-events-none' : ''
+        }`}
       >
         {load.status === 'loading' && (
           <div className="flex justify-center py-8">
@@ -166,6 +185,8 @@ export function PracticePicker({
               typed={query.trim()}
               bandId={bandId}
               current={current}
+              pending={pending}
+              onChoose={setPending}
               onClose={onClose}
             />
           ) : (
@@ -174,6 +195,8 @@ export function PracticePicker({
               data={load.data}
               bandId={bandId}
               current={current}
+              pending={pending}
+              onChoose={setPending}
               onClose={onClose}
             />
           ))}
@@ -190,7 +213,12 @@ function Empty({ children }: { children: ReactNode }) {
   );
 }
 
-type RowProps = { current: RecentRef | null; onClose: () => void };
+type RowProps = {
+  current: RecentRef | null;
+  pending: string | null;
+  onChoose: (href: string) => void;
+  onClose: () => void;
+};
 
 function TabList({
   tab,
@@ -229,7 +257,7 @@ function TabList({
   if (tab === 'songs') {
     return (
       <ul className="divide-y divide-line">
-        <NewSong bandId={bandId} onClose={row.onClose} />
+        <NewSong bandId={bandId} />
         {data.songs.map((s) => (
           <SongRow key={s.id} song={s} {...row} />
         ))}
@@ -239,17 +267,9 @@ function TabList({
   if (tab === 'setlists') {
     return (
       <ul className="divide-y divide-line">
-        <li>
-          <Link
-            href={`/bands/${bandId}/setlists/new`}
-            onClick={row.onClose}
-            className={ROW_CLS}
-          >
-            <span className="min-w-0 flex-1 truncate font-medium">
-              + New setlist
-            </span>
-          </Link>
-        </li>
+        <Row href={`/bands/${bandId}/setlists/new`} isCurrent={false} {...row}>
+          <span className="font-medium">+ New setlist</span>
+        </Row>
         {data.setlists.map((s) => (
           <SetlistRow key={s.id} setlist={s} {...row} />
         ))}
@@ -315,7 +335,7 @@ function SearchResults({
         events.map((e) => <EventRow key={e.id} event={e} {...row} />),
       )}
       <ul className="divide-y divide-line">
-        <NewSong bandId={bandId} suggested={typed} onClose={row.onClose} />
+        <NewSong bandId={bandId} suggested={typed} />
       </ul>
     </>
   );
@@ -327,16 +347,15 @@ const ROW_CLS =
 /**
  * Start a song from just a name, then go practise it. The row turns into the
  * name field in place rather than opening a modal over this one. `suggested`
- * is the search as typed, offered as the name.
+ * is the search as typed, offered as the name. Once created it stays on
+ * "Creating…" until the song's screen replaces this one.
  */
 function NewSong({
   bandId,
   suggested,
-  onClose,
 }: {
   bandId: string;
   suggested?: string;
-  onClose: () => void;
 }) {
   // Null until the row is chosen.
   const [name, setName] = useState<string | null>(null);
@@ -360,7 +379,6 @@ function NewSong({
         const d = (await r.json()) as { conversation: { id: string } };
         return d.conversation.id;
       });
-      onClose();
       go(songHref(id));
     } catch (e) {
       showToast(e instanceof Error ? e.message : String(e));
@@ -431,15 +449,17 @@ function Row({
   href,
   isCurrent,
   kind,
+  pending,
+  onChoose,
   onClose,
   children,
-}: {
+}: Omit<RowProps, 'current'> & {
   href: string;
   isCurrent: boolean;
   kind?: string;
-  onClose: () => void;
   children: ReactNode;
 }) {
+  const waiting = pending === href;
   const body = (
     <>
       <span className="min-w-0 flex-1">{children}</span>
@@ -453,6 +473,7 @@ function Row({
           Current
         </span>
       )}
+      {waiting && <Spinner size="sm" label="Opening" />}
     </>
   );
   return (
@@ -467,7 +488,14 @@ function Row({
           {body}
         </button>
       ) : (
-        <Link href={href} onClick={onClose} className={ROW_CLS}>
+        <Link
+          href={href}
+          onClick={(e) => {
+            // A modified click opens a tab; this one isn't going anywhere.
+            if (!e.metaKey && !e.ctrlKey && !e.shiftKey) onChoose(href);
+          }}
+          className={`${ROW_CLS}${pending && !waiting ? ' opacity-50' : ''}`}
+        >
           {body}
         </Link>
       )}
@@ -485,14 +513,14 @@ function SongRow({
   song,
   kind,
   current,
-  onClose,
+  ...row
 }: RowProps & { song: PickerSong; kind?: boolean }) {
   return (
     <Row
       href={songHref(song.id)}
       isCurrent={isCurrent(current, 'song', song.id)}
       kind={kind ? 'Song' : undefined}
-      onClose={onClose}
+      {...row}
     >
       <SongTitle title={song.title} originalArtist={song.originalArtist} />
     </Row>
@@ -503,14 +531,14 @@ function SetlistRow({
   setlist,
   kind,
   current,
-  onClose,
+  ...row
 }: RowProps & { setlist: PickerSetlist; kind?: boolean }) {
   return (
     <Row
       href={practiceHref(setlist.id)}
       isCurrent={isCurrent(current, 'setlist', setlist.id)}
       kind={kind ? 'Setlist' : undefined}
-      onClose={onClose}
+      {...row}
     >
       <span className="block truncate">{setlist.name}</span>
       <span className="block truncate text-xs minor-text-theme-colors">
@@ -524,7 +552,7 @@ function EventRow({
   event,
   kind,
   current,
-  onClose,
+  ...row
 }: RowProps & { event: PickerEvent; kind?: boolean }) {
   const when = [
     formatDateRange(event.date, event.endDate, formatDateShort),
@@ -537,7 +565,7 @@ function EventRow({
       href={practiceHref(event.setlistId, undefined, event.id)}
       isCurrent={isCurrent(current, 'event', event.id)}
       kind={kind ? 'Event' : undefined}
-      onClose={onClose}
+      {...row}
     >
       <span className="block truncate">{event.title}</span>
       <span className="block truncate text-xs minor-text-theme-colors">
