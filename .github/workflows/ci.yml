@@ -51,7 +51,7 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/noodle_test
-      # Six of the suites write real bytes through `addAudioVersion` /
+      # Seven of the suites write real bytes through `addAudioVersion` /
       # `addSheetVersion`, so this job needs object storage exactly as the e2e
       # one does. Without it they fail with "Object storage is not configured".
       S3_ENDPOINT: http://localhost:9000

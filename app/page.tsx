@@ -31,13 +31,12 @@ export default async function RootPage() {
         <h1 className="font-serif text-5xl">
           noo<span className="text-cyan-600">dle</span>
         </h1>
-        <p className="m-0 pb-6 text-sm minor-text-theme-colors">
+        {/* <p className="m-0 pb-6 text-sm minor-text-theme-colors">
           tools for<span className="text-cyan-600"> bands</span>
-        </p>
+        </p> */}
 
         <p className="max-w-sm text-sm text-fg-muted">
-          Setlists, sheet music, and practice tools for your band — on stage and
-          off.
+          Tools for musicians to to share, practice, and plan.
         </p>
 
         <Link
@@ -103,7 +102,7 @@ export default async function RootPage() {
                   </p>
                   <div className="mt-6 flex flex-wrap gap-2">
                     {[
-                      '128 BPM · Key: Bm',
+                      '112 BPM · Key: Dm',
                       'Speed 100%',
                       '↺ 10s',
                       '0:46 · 1 reply',

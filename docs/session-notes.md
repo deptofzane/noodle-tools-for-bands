@@ -534,21 +534,19 @@ Last updated: 2 September 2026.
 
 ## Traps that already cost time
 
-- **`bg-[var(--x)]` silently compiles to nothing.** Tailwind can't tell a
-  colour from a background image, so it drops the utility without warning. Use
-  `bg-[color:var(--x)]`. **Verify by grepping the built CSS** — note Tailwind
-  escapes the colon too, so search loosely for the property name rather than
-  the class.
+- **Ambiguous Tailwind arbitrary values.** When Tailwind can't tell what type
+  an arbitrary value is, it may emit nothing, silently. Plain `bg-[var(--x)]`
+  currently compiles to `background-color` (see `WeekRow`), but add a type hint
+  (`bg-[color:var(--x)]`) when in doubt and **verify by grepping the built
+  CSS** — Tailwind escapes the colon, so search for the property, not the class.
 - **`router.refresh()` refreshes the route you are _on_.** Calling it before
   `router.back()` refetches the page being discarded while the destination is
   restored from the client Router Cache unchanged. `RefreshAfterEdit` in the
-  root layout handles this; edit screens must **not** call `refresh()`
-  themselves.
-- **Service-worker precache matches the query string.** `/practice` never
-  matched `/practice?setlist=…`, so offline navigation failed and the fallback
-  quietly re-served `/offline` — which looked like a dead link. Fixed with
-  `precacheOptions.ignoreURLParametersMatching`; supplying it **replaces** the
-  defaults, so `utm_`/`fbclid` have to be re-listed.
+  root layout refreshes the destination after leaving any `/edit` route; never
+  rely on `refresh()` before `back()`.
+- **Service-worker precache matches the query string.** Fixed with
+  `precacheOptions.ignoreURLParametersMatching` in `app/sw.ts`; supplying it
+  **replaces** the defaults, so `utm_`/`fbclid` have to be re-listed.
 - **`dayKey` is the viewer's _local_ day.** Anything grouping by upload day has
   to agree with it. Fixtures written as UTC instants straddle midnight
   differently depending on where tests run — build them from local wall-clock
@@ -561,41 +559,19 @@ Last updated: 2 September 2026.
 - **A running `next dev` fights `rm -rf .next`.** Intermittent "Failed to
   collect page data" and missing `.nft.json` errors during a production build
   are usually this, not the code.
-- **Don't re-read `window.location` in a second mount effect.** `?tab=events`
-  deep links were broken for exactly this: `BandDetailClient`'s URL-mirror
-  effect strips the param for the default tab, and the restore effect declared
-  below it then saw a paramless URL and let localStorage win. Param presence
-  now arrives as a prop (`tabFromUrl`) from the server page, which is the only
-  place that still sees the original URL. The calendar's
-  `BAND_ACTIVE_TAB_KEY`-on-click workaround was removed with it.
-- **`addAudioVersion` does not make the version default** — that's a separate
-  `setDefaultAudioVersion` call.
-- **`e2e/.auth/` is gitignored, so CI clones without it.** `seed()` writes
-  `seed.json` there in `globalSetup`, and `writeFileSync` doesn't create
-  parents — ENOENT. It passed locally for weeks purely because earlier runs
-  had left the directory behind. `auth.setup.ts` _would_ have created it, but
-  the setup project runs after globalSetup. Anything writing into a gitignored
-  directory needs its own `mkdirSync`.
-- **`bitnami/minio:latest` was removed from Docker Hub.** It 404s. Bitnami's
-  images moved to a `bitnamilegacy/` namespace, which is an explicit
-  deprecation holding pen — so CI moved to the official `quay.io/minio/minio`,
-  run as a _step_ because GitHub service containers can't pass the
-  `server /data` argument it needs. Then MinIO stopped publishing free builds
-  too: its images (quay.io and Docker Hub) refuse anonymous pulls and the
-  dl.min.io binaries return 410. CI and the README now use
-  `chainguard/minio:latest`, which is free, maintained, and a drop-in (same
-  args, env, and health endpoint; runs as non-root but writes to a fresh
-  named volume fine).
-- **Six DB suites write real bytes to object storage** (`albums`,
-  `band-uploads`, `serve-cache`, `setlists`, `song-edit`, `song-files`), so
-  the db-tests job needs MinIO exactly as e2e does. Symptom is "Object storage
-  is not configured", nowhere near the actual cause.
-- **Resend does not throw on API errors.** `emails.send()` returns
-  `{ data, error }` (SDK 6.x), and `forgot/route.ts` always answers 200 for
-  enumeration safety — so a bad `EMAIL_FROM`, an unverified domain or a rate
-  limit look identical to success at the HTTP level. `lib/email.ts` now
-  inspects the result and logs the refusal; the log is the only place a
-  failure is visible, so check it before theorising about DNS.
+- **Don't re-read `window.location` in a second mount effect.** An earlier
+  effect may already have rewritten the URL. Pass param presence down as a prop
+  from the server page instead (as `BandDetailClient`'s `tabFromUrl` does).
+- **Anything writing into a gitignored directory needs its own `mkdirSync`.**
+  CI clones without it (`e2e/.auth/` bit us this way).
+- **Seven DB suites write real bytes to object storage** (`albums`,
+  `band-files`, `band-uploads`, `serve-cache`, `setlists`, `song-edit`,
+  `song-files`), so the db-tests job needs MinIO exactly as e2e does. Symptom
+  is "Object storage is not configured", nowhere near the actual cause. Use
+  `chainguard/minio` — Bitnami's and MinIO's own images are gone or gated.
+- **Resend does not throw on API errors**, and `forgot/route.ts` always answers
+  200, so failures only show in the log `lib/email.ts` writes. Check it before
+  theorising about DNS.
 - **dotenv does not override variables already in the environment.** Which
   means `env -u FOO` doesn't reproduce "FOO unset" — `scripts/load-env` just
   refills it from `.env.local`. Set it _empty_ instead to simulate CI.
@@ -615,10 +591,9 @@ Last updated: 2 September 2026.
   modal's buttons unclickable — Playwright reported the button being
   "intercepted by its own parent", forever. Scope wide minimums to `sm:` and
   up. The symptom looks like a flaky click; it's a real phone-layout bug.
-- **Three separate bugs came from one URL change** (`/bands/../setlists/../practice`
-  → `/practice?setlist=`): the precache match, a stale runtime SW rule, and
-  `OfflineClient` passing a synthesised URL where a setlist id was expected. If
-  something offline misbehaves, grep for the old path shape first.
+- **If something offline misbehaves, grep for the old path shape**
+  (`/bands/../setlists/../practice`, now `/practice?setlist=`). That one URL
+  change caused three separate bugs.
 
 ---
 

@@ -29,7 +29,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Noodle',
     short_name: 'Noodle',
     description:
-      'Setlists, sheet music, and practice tools for your band — on stage and off.',
+      'Tools for musicians to to share, practice, and plan.',
     id: '/',
     start_url: '/',
     scope: '/',
